@@ -1,0 +1,52 @@
+# BinderHub chart config is top-level
+config:
+  BinderHub:
+    auth_enabled: true
+
+jupyterhub:
+  proxy:
+    https:
+      enabled: true
+      hosts:
+        - <INSERT_HOSTS> # From below example: example.com
+      letsencrypt:
+        # Insert email for Let's Encrypt to contact about keeping certs valid
+        contactEmail: <INSERT_CONTACT_EMAIL>
+  hub:
+    redirectToServer: false
+    config:
+      Authenticator:
+        auto_login: true
+      GenericOAuthenticator:
+        # Can specify other admin users, list using "-" for each line
+        admin_users:
+          - <INSERT_ADMIN_USER>
+        login_service: "AWS Cognito"
+        # Must create an app client for this application and copy those secrets here
+        client_id: <INSERT_AWS_COGNITO_CLIENT_ID>
+        client_secret: <INSERT_AWS_COGNITO_CLIENT_SECRET>
+        # Can use kubernetes public-proxy or your own domain but cannot use HTTPS without using own domain
+        # Must have the same end part of the link as these are specific to JupyterHub (e.g. "/hub/oauth_callback")
+        # This must match what is in the AWS Cognito app client
+        oauth_callback_url: <INSERT_AWS_COGNITO_OAUTH_CALLBACK_URL> # Ex. https://example.com/hub/oauth_callback
+        # Must have the same end part of the link as these are specific to JupyterHub (e.g. "/oauth2/authorize")
+        # Must just replace the AWS Cognito domain (in the examples you replace "example" and the region)
+        authorize_url: <INSERT_AWS_COGNITO_AUTHORIZE_URL> # Ex. https://example.auth.us-east-1.amazoncognito.com/oauth2/authorize
+        token_url: <INSERT_AWS_COGNITO_TOKEN_URL> # Ex. https://example.auth.us-east-1.amazoncognito.com/oauth2/token
+        userdata_url: <INSERT_AWS_COGNITO_USERDATA_URL> # Ex. https://example.auth.us-east-1.amazoncognito.com/oauth2/userInfo
+        # Can alter this to fit your scope
+        scope:
+          - openid
+          - phone
+          - profile
+          - email
+      JupyterHub:
+        authenticator_class: generic-oauth
+      BinderSpawner:
+        auth_enabled: false
+        cors_allow_origin: '*'
+    services:
+      binder:
+        oauth_no_confirm: true
+        oauth_redirect_uri: "<INSERT_BINDER_URL_CALLBACK>" # Binder url, need to match ending of exampleEx. "http://111111.us-east-1.elb.amazonaws.com/oauth_callback" or "http://binder.example.com/oauth_callback"
+        oauth_client_id: "<INSERT_BINDER_OAUTH_CLIENT_ID>" # Need separate app client for binder ex. "11111111"

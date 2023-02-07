@@ -1,0 +1,158 @@
+# BinderHub chart config is top-level
+config:
+  BinderHub:
+    use_registry: true
+    image_prefix: <INSERT_DOCKERHUB_USERNAME>/binder-
+    hub_url: <INSERT_JUPYTERHUB_URL> # URL for the Jupyterhub associated with the binder Ex. https://hub.binder.example.com
+    cors_allow_origin: '*'
+    auth_enabled: true
+
+jupyterhub:
+  debug:
+    enabled: true
+  cull:
+    enabled: true
+    timeout: 3600
+    every: 300
+  singleuser:
+    cmd: jupyterhub-singleuser
+    startTimeout: 600
+    storage:
+      capacity: 100Gi
+      extraVolumes:
+        - name: dh-helio-efs
+          persistentVolumeClaim:
+            claimName: efs-persist
+        - name: shm-volume
+          emptyDir:
+            medium: Memory
+      extraVolumeMounts:
+        - name: dh-helio-efs
+          mountPath: /home/jovyan/efs
+        - name: dh-helio-efs
+          mountPath: /efs
+        - name: shm-volume
+          mountPath: /dev/shm
+    networkTools:
+      image:
+        name: jupyterhub/k8s-network-tools
+        tag: "1.2.0"
+    initContainers:
+      - name: nfs-fixer
+        image: alpine:3
+        securityContext:
+          runAsUser: 0
+        volumeMounts:
+        - name: dh-helio-efs
+          mountPath: /efs
+        command:
+        - sh
+        - -c
+        - (chmod 0775 /efs; chown 1000:100 /efs)  
+    profileList:
+    - display_name: "Small Server"
+      description: "Small notebook server. 1GB RAM/1 CPU reserved. Up to 4GB RAM/4 CPU as needed."
+      default: true
+      kubespawner_override:
+        mem_guarantee: 1G
+        mem_limit: 4G
+        cpu_guarantee: 1
+        cpu_limit: 4
+    - display_name: "Large Server"
+      description: "Large notebook server. 2GB RAM/2 CPU reserved. Up to 8GB RAM/4 CPU as needed."
+      kubespawner_override:
+        mem_guarantee: 2G
+        mem_limit: 8G
+        cpu_guarantee: 2
+        cpu_limit: 4
+    - display_name: "Extra Large Server"
+      description: "Extra Large notebook server. 16GB RAM/4 CPU reserved."
+      kubespawner_override:
+        mem_guarantee: 13G
+        mem_limit: 16G
+        cpu_guarantee: 3
+        cpu_limit: 4
+    - display_name: "GPU Server"
+      description: "Notebook server with access to an NVidia T4 GPU. 16GB RAM/4 CPU reserved."
+      kubespawner_override:
+        mem_guarantee: 13G
+        mem_limit: 16G
+        cpu_guarantee: 3
+        cpu_limit: 4
+        environment: {'NVIDIA_DRIVER_CAPABILITIES': 'compute,utility'}
+        node_selector:
+          nvidia.com/gpu: "true"
+        tolerations: [{'key': 'nvidia.com/gpu','operator': 'Equal','value': 'true','effect': 'NoSchedule'},{'key': 'hub.jupyter.org/dedicated','operator': 'Equal','value': 'user','effect': 'NoSchedule'}]
+        extra_resource_limits: {"nvidia.com/gpu": "1"}
+    image:
+      name: public.ecr.aws/q3h7b4o8/helio-notebook-pyhc
+      tag: "v0.13_13"
+  ### This sets a default CPU and Memory resource request which is used by the userPlaceholder pod to simulate a user's notebook
+    cpu:
+      guarantee: 1
+      limit: 4
+    memory:
+      guarantee: 1G
+      limit: 4G
+    # extraEnv:
+    #   DASK_GATEWAY__CLUSTER__OPTIONS__IMAGE: '{JUPYTER_IMAGE_SPEC}'
+    # serviceAccountName: helio-dh-role
+  proxy:
+    secretSync:
+      image:
+        name: jupyterhub/k8s-secret-sync
+        tag: "1.2.0"
+    chp:
+      nodeSelector:
+        lifecycle: OnDemand
+      image:
+        name: jupyterhub/configurable-http-proxy
+        tag: "4.5.0"
+    traefik:
+      image:
+        name: traefik
+        tag: "v2.4.11"
+  hub:
+    redirectToServer: false
+    image:
+      name: jupyterhub/k8s-hub
+      tag: "1.2.0"
+    nodeSelector:
+      lifecycle: OnDemand
+    extraConfig:
+      myConfig: |
+        c.KubeSpawner.service_account = 'helio-dh-role'
+    extraEnv:
+      EXTRA_PIP_PACKAGES: >-
+        boto3
+        dask_gatway_server
+  prePuller:
+    pause:
+      image:
+        name: k8s.gcr.io/pause
+        tag: "3.5"
+    extraImages:
+      alpine:
+        name: alpine
+        tag: "3"
+    hook:
+      enabled: true
+      image:
+        name: jupyterhub/k8s-image-awaiter
+        tag: "1.2.0"
+  scheduling:
+    userScheduler:
+      image:
+        name: k8s.gcr.io/kube-scheduler
+        tag: "v1.19.13"
+    podPriority:
+      enabled: true
+    userPlaceholder:
+      enabled: true
+      replicas: 0 # Increase if you want a standby pool of machines for faster user login experience
+      image:
+        name: k8s.gcr.io/pause
+        tag: "3.5"
+    userPods:
+      nodeAffinity:
+        matchNodePurpose: require

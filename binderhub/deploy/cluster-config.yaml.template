@@ -1,0 +1,228 @@
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+
+metadata:
+  name: <INSERT_EKS_NAME>
+  region: <INSERT_REGION>
+  version: "1.22"
+
+secretsEncryption:
+    keyARN: <INSERT_KMS_ARN>
+
+
+availabilityZones: [<INSERT_PRIMARY_AVAILABILITY_ZONE>,<INSERT_SECONDARY_AVAILABILITY_ZONE>]
+
+iam:
+  withOIDC: true
+  serviceAccounts:
+  - metadata:
+      name: helio-dh-role
+      # if no namespace is set, "default" will be used;
+      # the namespace will be created if it doesn't exist already
+      labels: {aws-usage: "application"}
+    attachPolicyARNs:
+    - "<INSERT_helio-s3-policy_ARN>"
+  - metadata:
+      name: cluster-autoscaler
+      # if no namespace is set, "default" will be used;
+      # the namespace will be created if it doesn't exist already
+      namespace: kube-system
+    attachPolicyARNs:
+    - "<INSERT_k8s-asg-policy_ARN>"
+  - metadata:
+      name: admin
+      # if no namespace is set, "default" will be used;
+      # the namespace will be created if it doesn't exist already
+      namespace: kube-system
+    attachPolicyARNs:
+    - "<INSERT_k8s-asg-policy_ARN>"
+
+nodeGroups:
+  - name: ng-user-gpu-spot
+    instanceType: mixed
+    desiredCapacity: 0
+    minSize: 0
+    maxSize: 5
+    iam:
+      attachPolicyARNs:
+        - arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM
+        - arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy
+        - arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy
+        - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
+      withAddonPolicies:
+        autoScaler: true
+        ebs: true
+        fsx: true
+        efs: true
+        albIngress: true
+        cloudWatch: true
+    instancesDistribution:
+      instanceTypes: ["g4dn.xlarge","g4dn.2xlarge"]
+      onDemandBaseCapacity: 0
+      onDemandPercentageAboveBaseCapacity: 0
+      spotAllocationStrategy: lowest-price
+    tags:
+      k8s.io/cluster-autoscaler/node-template/label/lifecycle: Ec2Spot
+      k8s.io/cluster-autoscaler/node-template/label/intent: apps
+      k8s.io/cluster-autoscaler/node-template/label/node-purpose: user
+      k8s.io/cluster-autoscaler/node-template/label/hub.jupyter.org/node-purpose: user
+      k8s.io/cluster-autoscaler/node-template/taint/dedicated: nvidia.com/gpu=true
+      k8s.io/cluster-autoscaler/node-template/label/nvidia.com/gpu: 'true'
+      k8s.io/cluster-autoscaler/node-template/label/k8s.amazonaws.com/accelerator: nvidia-tesla-t4
+      k8s.io/cluster-autoscaler/enabled: 'true'
+    labels:
+      lifecycle: Ec2Spot
+      nvidia.com/gpu: 'true'
+      k8s.amazonaws.com/accelerator: nvidia-tesla-t4
+      hub.jupyter.org/node-purpose: user
+    taints:
+      nvidia.com/gpu: "true:NoSchedule"
+    availabilityZones: [<INSERT_PRIMARY_AVAILABILITY_ZONE>]
+    ssh:
+      enableSsm: true
+
+  - name: ng-user-compute-spot
+    minSize: 0
+    maxSize: 15
+    desiredCapacity: 1
+    availabilityZones: [<INSERT_PRIMARY_AVAILABILITY_ZONE>]
+    instancesDistribution:
+      instanceTypes: ["m5.xlarge", "m5n.xlarge", "m5d.xlarge", "m5dn.xlarge", "m4.xlarge", "m5.2xlarge", "m5n.2xlarge", "m5d.2xlarge", "m5dn.2xlarge", "m4.2xlarge"]
+      onDemandBaseCapacity: 0
+      onDemandPercentageAboveBaseCapacity: 0
+      spotAllocationStrategy: lowest-price
+    labels:
+      lifecycle: Ec2Spot
+      intent: apps
+      aws.amazon.com/spot: "true"
+      node-purpose: user
+      hub.jupyter.org/node-purpose: user
+    taints:
+      hub.jupyter.org/dedicated: "user:NoSchedule"
+    tags:
+      k8s.io/cluster-autoscaler/node-template/label/lifecycle: Ec2Spot
+      k8s.io/cluster-autoscaler/node-template/label/intent: apps
+      k8s.io/cluster-autoscaler/node-template/label/node-purpose: user
+      k8s.io/cluster-autoscaler/node-template/label/hub.jupyter.org/node-purpose: user
+      k8s.io/cluster-autoscaler/node-template/taint/hub.jupyter.org/dedicated: 'user:NoSchedule'
+    iam:
+      attachPolicyARNs:
+        - arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM
+        - arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy
+        - arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy
+        - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
+      withAddonPolicies:
+        autoScaler: true
+        ebs: true
+        fsx: true
+        efs: true
+        albIngress: true
+        cloudWatch: true
+    ssh:
+      enableSsm: true
+
+  # - name: ng-burst-gpu-spot
+  #   instanceType: mixed
+  #   desiredCapacity: 0
+  #   minSize: 0
+  #   maxSize: 5
+  #   iam:
+  #     attachPolicyARNs:
+  #       - arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM
+  #       - arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy
+  #       - arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy
+  #       - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
+  #     withAddonPolicies:
+  #       autoScaler: true
+  #       ebs: true
+  #       fsx: true
+  #       efs: true
+  #       albIngress: true
+  #       cloudWatch: true
+  #   instancesDistribution:
+  #     instanceTypes: ["g4dn.xlarge","g4dn.2xlarge"]
+  #     onDemandBaseCapacity: 0
+  #     onDemandPercentageAboveBaseCapacity: 0
+  #     spotAllocationStrategy: lowest-price
+  #   taints:
+  #     hub.jupyter.org/dedicated: "user:NoSchedule"
+  #     nvidia.com/gpu: "true:NoSchedule"
+  #   tags:
+  #     k8s.io/cluster-autoscaler/node-template/label/lifecycle: Ec2Spot
+  #     k8s.io/cluster-autoscaler/node-template/label/intent: apps
+  #     k8s.io/cluster-autoscaler/node-template/label/node-purpose: user
+  #     k8s.io/cluster-autoscaler/node-template/label/hub.jupyter.org/node-purpose: user
+  #     k8s.io/cluster-autoscaler/node-template/taint/dedicated: nvidia.com/gpu=true
+  #     k8s.io/cluster-autoscaler/node-template/label/nvidia.com/gpu: 'true'
+  #     k8s.io/cluster-autoscaler/node-template/label/k8s.amazonaws.com/accelerator: nvidia-tesla-t4
+  #     k8s.io/cluster-autoscaler/enabled: 'true'
+  #   labels:
+  #     lifecycle: Ec2Spot
+  #     nvidia.com/gpu: 'true'
+  #     k8s.amazonaws.com/accelerator: nvidia-tesla-t4
+  #     hub.jupyter.org/node-purpose: user
+  #   availabilityZones: [<INSERT_PRIMARY_AVAILABILITY_ZONE>]
+  #   ssh:
+  #     enableSsm: true
+
+  - name: ng-burst-compute-spot
+    minSize: 0
+    maxSize: 10
+    desiredCapacity: 0
+    availabilityZones: [<INSERT_PRIMARY_AVAILABILITY_ZONE>]
+    instancesDistribution:
+      instanceTypes: ["m5n.8xlarge", "m5.8xlarge", "m4.8xlarge"] 
+      onDemandBaseCapacity: 0
+      onDemandPercentageAboveBaseCapacity: 0
+      spotAllocationStrategy: lowest-price
+    labels:
+      lifecycle: Ec2Spot
+      intent: apps
+      aws.amazon.com/spot: "true"
+      node-purpose: user
+      hub.jupyter.org/node-purpose: user
+    tags:
+      k8s.io/cluster-autoscaler/node-template/label/lifecycle: Ec2Spot
+      k8s.io/cluster-autoscaler/node-template/label/intent: apps
+      k8s.io/cluster-autoscaler/node-template/label/node-purpose: user
+      k8s.io/cluster-autoscaler/node-template/label/hub.jupyter.org/node-purpose: user
+    iam:
+      attachPolicyARNs:
+        - arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM
+        - arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy
+        - arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy
+        - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
+      withAddonPolicies:
+        autoScaler: true
+        ebs: true
+        fsx: true
+        efs: true
+        albIngress: true
+        cloudWatch: true
+    ssh:
+      enableSsm: true
+
+managedNodeGroups:
+  - name: ng-daskhub-services
+    instanceType: t3a.medium
+    minSize: 1
+    maxSize: 1
+    desiredCapacity: 1
+    availabilityZones: [<INSERT_PRIMARY_AVAILABILITY_ZONE>]
+    labels:
+      lifecycle: OnDemand
+    iam:
+      attachPolicyARNs:
+        - arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM
+        - arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy
+        - arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy
+        - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
+      withAddonPolicies:
+        autoScaler: true
+        ebs: true
+        fsx: true
+        efs: true
+        albIngress: true
+        cloudWatch: true
+    ssh:
+      enableSsm: true

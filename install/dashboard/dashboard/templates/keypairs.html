@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block content %}
+
+<title>Manage Key Pairs</title>
+
+{% if message|length > 0 %}
+<div class="alert alert-success alert-dismissible fade show" role="alert">
+    {{ message|safe }}
+    {% if download %}
+        <a class="btn btn-primary" href="download?type=keypair" role="button">Download Keypair File</a>
+    {% endif %}
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>
+{% endif %}
+
+<div class="row">
+    <!-- Active Key Pairs-->
+    <div class="col col-md-6">
+        <div class="card">
+          <div class="card-header">
+            <h2 class="mb-3">Active Key Pairs</h2>
+          </div>
+          <div class="card-body">
+            {% if keypairs|length > 0 %}
+                {% for keypair in keypairs %}
+                    <div class="row">
+                      <div class="col-sm">
+                          {{ keypair.KeyName }}
+                      </div>
+                      <div class="col-sm">
+                          <form method="post">
+                              <button type="submit" class="btn btn-danger" name="delete_button" value="{{ keypair.KeyName }}">Delete</button>
+                          </form>
+                      </div>
+                    </div>
+                {% endfor %}
+              {% else %}
+                <p>No active keypairs</p>
+              {% endif %}
+            </div>
+        </div>
+    </div>
+    <!-- Create Key Pair-->
+    <div class="col col-md-6">
+        <div class="card">
+          <div class="card-header">
+            <h2 class="mb-3">Create New Key Pair</h2>
+          </div>
+          <div class="card-body">
+            {% if keypairs|length<5 %}
+                <form method="post">
+                  <!-- Instance Name -->
+                  <div class="form-group">
+                    <label for="keypair_name">Key Pair Name</label>
+                    <input type="text" class="form-control" name="keypair_name" id="keypair_name" placeholder="Name">
+                  </div>
+                  <button type="submit" class="btn btn-primary" name="create_keypair" value="create_keypair">Create Key Pair</button>
+                </form>
+            {% else %}
+              <p>You cannot have more than 5 active keypairs. Please delete an existing key pair in order to create a new one.</p>
+            {% endif %}
+          </div>
+        </div>
+    </div>
+</div>
+
+
+{% endblock %}

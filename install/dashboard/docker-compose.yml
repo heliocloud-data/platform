@@ -1,0 +1,39 @@
+version: "3.9"
+
+services:
+  dashboard:
+    image: 424120911029.dkr.ecr.us-east-1.amazonaws.com/dashboard-test/dashboard
+    build: dashboard
+    ports:
+      - 80:80
+    secrets:
+      - user_pool_client_secret
+      - identity_pool_id
+      - user_pool_client_id
+      - flask_secret_key
+    environment:
+      - APP_NAME=helio-dh # must match name of user pool
+      - REGION=us-east-1
+      - PYTHONUNBUFFERED=1
+      - USER_POOL_ID=us-east-1_p09cMJeEj
+      - SITE_URL=https://dashboard.hsdcloud.org
+      - DEFAULT_SECURITY_GROUP_ID=sg-06c31fde056a59b0d
+
+x-aws-cloudformation:
+  Resources:
+    DashboardTCP80TargetGroup:
+      Properties:
+        HealthCheckPath: /health
+        Matcher:
+          HttpCode: 200-499
+
+secrets:
+  user_pool_client_secret:
+    file: secrets/user_pool_client_secret.txt
+  identity_pool_id:
+    file: secrets/identity_pool_id.txt
+  user_pool_client_id:
+    file: secrets/user_pool_client_id.txt
+  flask_secret_key:
+    file: secrets/flask_secret_key.txt
+

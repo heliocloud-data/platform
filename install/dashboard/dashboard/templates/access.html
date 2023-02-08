@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+{% block content %}
+
+<title>Manage Access Keys</title>
+
+{% if message|length > 0 %}
+<div class="alert alert-success alert-dismissible fade show" role="alert">
+    {{ message|safe }}
+    {% if download=='session_token' %}
+        <a class="btn btn-primary" href="download?type=session_token" role="button">Download Token</a>
+    {% elif download=='secret_key' %}
+        <a class="btn btn-primary" href="download?type=secret_key" role="button">Download Secret Key</a>
+    {% endif %}
+  <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>
+{% endif %}
+
+<h2>Access Keys</h2>
+<div class="container-fluid">
+    <!-- Active Access Keys-->
+    {% if active_access_keys|length + inactive_access_keys|length > 0 %}
+    <p>Maximum of two access keys allowed at one time. Delete any access keys you are no longer using. Never share your keys with anyone else.</p>
+        <div class="row mb-2">
+          <div class="col-3">
+              <b>Access Key ID</b>
+          </div>
+          <div class="col-1">
+              <b>Status</b>
+          </div>
+          <div class="col-2">
+              <b>Creation Date</b>
+          </div>
+          <div class="col-2"></div>
+          <div class="col-4"></div>
+        </div>
+        {% for key in active_access_keys %}
+            <div class="row mb-2">
+              <div class="col-3">
+                  {{ key.AccessKeyId }}
+              </div>
+              <div class="col-1">
+                  Active
+              </div>
+              <div class="col-2">
+                  {{ key.CreateDate.strftime('%Y-%m-%d') }}
+              </div>
+              <div class="col-2">
+                  <div class="dropdown">
+                      <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Actions</button>
+                      <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                        <a class="dropdown-item" href="access_key_action?action=set_inactive&access_key_id={{key.AccessKeyId}}">Set as Inactive</a>
+                        <a class="dropdown-item" href="access_key_action?action=delete&access_key_id={{key.AccessKeyId}}">Delete Key</a>
+                      </div>
+                  </div>
+              </div>
+              <div class="col-4">
+                {% if mfa_devices|length > 0 %}
+                <div class="dropdown">
+                    <button class="btn btn-secondary dropdown-toggle" type="button" id="refresh_token_dropdown" data-bs-toggle="dropdown" aria-expanded="false">Generate Tokens</button>
+                    <div class="dropdown-menu">
+                      <form class="px-4 py-5" method="post">
+                        <div class="form-group">
+                            <label for="access_id">Access Key ID</label>
+                            <input class="form-control" readonly type="text" id="access_id" name="access_id" value={{ key.AccessKeyId }}>
+                        </div>
+                        <div class="form-group">
+                          <label for="secret_key">AWS Secret Access Key</label>
+                          <input class="form-control" type="text" id="secret_key" name="secret_key" placeholder="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="mfa_arn"><b>Select MFA Device</b></label>
+                            <select class="form-control" name="mfa_arn" id="mfa_arn" required>
+                              {% for device in mfa_devices %}
+                               <option>{{ device.SerialNumber }}</option>
+                              {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                          <label for="mfa_code">MFA Code</label>
+                          <input class="form-control" id="mfa_code" name="mfa_code" placeholder="123456" required>
+                        </div>
+                        <button type="submit" class="btn btn-success" name="refresh_tokens" value="refresh_tokens">Generate Session Token</button>
+                      </form>
+                    </div>
+                </div>
+                {% else %}
+                <span class="d-inline-block" tabindex="0" data-bs-toggle="tooltip" title="No MFA devices. Please set up an MFA device to generate session token.">
+                    <button class="btn btn-secondary" type="button" disabled>Generate Session Token</button>
+                </span>
+                {% endif %}
+              </div>
+            </div>
+        {% endfor %}
+    <!-- Inactive Access Keys-->
+        {% for key in inactive_access_keys %}
+            <div class="row mb-2">
+              <div class="col-3">
+                  {{ key.AccessKeyId }}
+              </div>
+              <div class="col-1">
+                  Inactive
+              </div>
+              <div class="col-2">
+                  {{ key.CreateDate.strftime('%Y-%m-%d') }}
+              </div>
+              <div class="col-2">
+                  <div class="dropdown">
+                      <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Actions</button>
+                      <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                        <a class="dropdown-item" href="access_key_action?action=set_active&access_key_id={{key.AccessKeyId}}">Set as Active</a>
+                        <a class="dropdown-item" href="access_key_action?action=delete&access_key_id={{key.AccessKeyId}}">Delete Key</a>
+                      </div>
+                  </div>
+              </div>
+              <div class="col-4"></div>
+            </div>
+        {% endfor %}
+      {% else %}
+        <p>No access keys.</p>
+      {% endif %}
+</div>
+
+<div class="container-fluid">
+  {% if active_access_keys|length + inactive_access_keys|length <2 %}
+    <div class="row mb-5">
+        <form method="post">
+            <p style="text-align:center"><button type="submit" class="btn btn-success" name="create_access_key" value="create_access_key">Create New Long-Term Access Key</button></p>
+        </form>
+    </div>
+  {% else %}
+    <div class="row mb-5">
+        <span class="d-inline-block" tabindex="0" data-bs-toggle="tooltip" title="Only two keys allowed. Delete a key before creating a new one.">
+            <p style="text-align:center"><button class="btn btn-success" type="button" disabled>Create New Long-Term Access Key</button></p>
+        </span>
+    </div>
+  {% endif %}
+</div>
+
+
+{% endblock %}

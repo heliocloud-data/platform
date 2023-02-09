@@ -58,7 +58,7 @@ def start_aws_session(id_token):
 def get_weekly_overall_cost(aws_session, username):
     time_end = (datetime.datetime.now() + datetime.timedelta(days=1)).strftime('%Y-%m-%d')
     week_start = (datetime.datetime.now() - datetime.timedelta(days=7)).strftime('%Y-%m-%d')
-    overall_start = '2022-01-01'
+    overall_start = (datetime.datetime.now() - datetime.timedelta(days=365)).strftime('%Y-%m-%d')
     ce_client = aws_session.client('ce')
     week_resp = ce_client.get_cost_and_usage(
         TimePeriod={

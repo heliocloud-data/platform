@@ -16,7 +16,7 @@ services:
       - REGION=us-east-1
       - PYTHONUNBUFFERED=1
       - USER_POOL_ID=us-east-1_p09cMJeEj
-      - SITE_URL=https://dashboard.hsdcloud.org
+      - SITE_URL=https://portal.hsdcloud.org
       - DEFAULT_SECURITY_GROUP_ID=sg-06c31fde056a59b0d
 
 x-aws-cloudformation:
@@ -36,4 +36,3 @@ secrets:
     file: secrets/user_pool_client_id.txt
   flask_secret_key:
     file: secrets/flask_secret_key.txt
-

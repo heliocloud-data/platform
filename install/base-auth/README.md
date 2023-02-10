@@ -1,0 +1,1 @@
+This folder contains the AWS CDK stack definition for provisioning user authentication and authorization services in AWS - namely via Cognito. This is a necessary precursor to creatining end-user accounts the HelioCloud instance, which allow said users to login to the various HelioCloud services:  daskhub, binderhub,  user dashboard, etc. 

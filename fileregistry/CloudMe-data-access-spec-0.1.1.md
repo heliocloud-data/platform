@@ -20,6 +20,8 @@ Findability is through the 'HelioDataRegistry' JSON index of S3 buckets, which l
 
 (Diagram here)  github.com/whatever/HelioDataRegistry.json -> s3://aplcloud.com/mybucket/catalog.json -> individual dataset fileregistries(.csv)
 
+![Data Registry Schema](dataRegistry_diagram.png)
+
 Datasets are findable by going to 'HelioDataRegistry.json' to get endpoints, then visiting each S3 endpoint to get the catalog listing of datasets available.
 
 Accessing the actual data involves accessing each dataset's file registry index files. The fileRegistry consists of CSV files, one per year. Therefore, a user has the choice to:
@@ -72,15 +74,18 @@ Here is a sample 'HelioDataRegistry.json' for three buckets at two sites.
     "registry": [
         {
             "endpoint": "s3://gov-nasa-hdrl-data1/",
-            "name": "GSFC HelioCloud Set 1"
+            "name": "GSFC HelioCloud Set 1",
+            "region": "us-east-1"
         },
         {
             "endpoint": "s3://gov-nasa-hdrl-data2/",
-            "name": "GSFC HelioCloud Set 2"
+            "name": "GSFC HelioCloud Set 2",
+            "region": "us-east-1"
         },
         {
             "endpoint": "s3://edu-apl-helio-public/",
-            "name": "APL HelioCLoud"
+            "name": "APL HelioCLoud",
+            "region": "us-west-1"
         }
     ]
 }
@@ -90,7 +95,7 @@ Here is a sample 'HelioDataRegistry.json' for three buckets at two sites.
 
 The catalog.json file has an entry for each dataset stored within the given S3 bucket. **endpoint** and **name** are identical to the item in the global data registry.
 
-Globally the catalog.json describes the endpoint with the following items. Note that **endpoint** and **name** are included for clarity sake, and should be the same as was provided to the global registry.
+Globally the catalog.json describes the endpoint with the following items. Note that **endpoint** and **name** are included for clarity sake (being duplicates of the main registry) as JSON does not allow for comments, and should be the same as was provided to the global registry.
 
 * **endpoint** - same as was provided to GlobalDataRegistry.json, an accessble S3 (or equivalent) bucket link
 * **name** - same as was provided to GlobalDataRegistry.json, a descriptive name for the dataset.

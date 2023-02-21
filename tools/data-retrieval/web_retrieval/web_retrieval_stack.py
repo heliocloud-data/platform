@@ -32,34 +32,38 @@ class WebRetrievalStack(Stack):
                                                           "./web_retrieval/lambdas"),
                                                       timeout=Duration.minutes(10))
 
-        data_load_parse_small_lambda = lambda_alpha.PythonFunction(self, "data_load_parse_small_lambda",
-                                                                   entry='./web_retrieval/lambdas/load_files',
-                                                                   index='data_load_parse_small.py',
-                                                                   runtime=lambda_.Runtime.PYTHON_3_9,
-                                                                   handler="lambda_handler",
-                                                                   timeout=Duration.minutes(10),
-                                                                   memory_size=256,
-                                                                   ephemeral_storage_size=Size.mebibytes(512))
+        # 3 levels of same lambda function with more memory and storage to try to move
+        # files in as small and cost effective way as possible (uses smaller resource unless 
+        # there is a failure and steps up to larger resources)
+        data_load_parse_small_lambda = lambda_.Function(self, "data_load_parse_small_lambda",
+                                                        runtime=lambda_.Runtime.PYTHON_3_9,
+                                                        handler="data_load.lambda_handler",
+                                                        code=lambda_.Code.from_asset(
+                                                            "./web_retrieval/lambdas"),
+                                                        timeout=Duration.minutes(
+                                                            10),
+                                                        memory_size=256,
+                                                        ephemeral_storage_size=Size.mebibytes(512))
 
-        data_load_parse_medium_lambda = lambda_alpha.PythonFunction(self, "data_load_parse_medium_lambda",
-                                                                    entry='./web_retrieval/lambdas/load_files',
-                                                                    index='data_load_parse_medium.py',
-                                                                    runtime=lambda_.Runtime.PYTHON_3_9,
-                                                                    handler="lambda_handler",
-                                                                    timeout=Duration.minutes(
-                                                                        10),
-                                                                    memory_size=512,
-                                                                    ephemeral_storage_size=Size.mebibytes(1024))
+        data_load_parse_medium_lambda = lambda_.Function(self, "data_load_parse_medium_lambda",
+                                                         runtime=lambda_.Runtime.PYTHON_3_9,
+                                                         handler="data_load.lambda_handler",
+                                                         code=lambda_.Code.from_asset(
+                                                             "./web_retrieval/lambdas"),
+                                                         timeout=Duration.minutes(
+                                                             10),
+                                                         memory_size=512,
+                                                         ephemeral_storage_size=Size.mebibytes(1024))
 
-        data_load_parse_large_lambda = lambda_alpha.PythonFunction(self, "data_load_parse_large_lambda",
-                                                                   entry='./web_retrieval/lambdas/load_files',
-                                                                   index='data_load_parse_large.py',
-                                                                   runtime=lambda_.Runtime.PYTHON_3_9,
-                                                                   handler="lambda_handler",
-                                                                   timeout=Duration.minutes(
-                                                                       10),
-                                                                   memory_size=512,
-                                                                   ephemeral_storage_size=Size.mebibytes(4096))
+        data_load_parse_large_lambda = lambda_.Function(self, "data_load_parse_large_lambda",
+                                                        runtime=lambda_.Runtime.PYTHON_3_9,
+                                                        handler="data_load.lambda_handler",
+                                                        code=lambda_.Code.from_asset(
+                                                            "./web_retrieval/lambdas"),
+                                                        timeout=Duration.minutes(
+                                                            10),
+                                                        memory_size=512,
+                                                        ephemeral_storage_size=Size.mebibytes(4096))
 
         log_failures_lambda = lambda_.Function(self, "log_failures_lambda",
                                                runtime=lambda_.Runtime.PYTHON_3_9,

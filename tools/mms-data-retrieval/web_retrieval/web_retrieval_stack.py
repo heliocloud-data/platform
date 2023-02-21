@@ -33,7 +33,7 @@ class WebRetrievalStack(Stack):
                                                       timeout=Duration.minutes(10))
 
         # 3 levels of same lambda function with more memory and storage to try to move
-        # files in as small and cost effective way as possible (uses smaller resource unless 
+        # files in as small and cost effective way as possible (uses smaller resource unless
         # there is a failure and steps up to larger resources)
         data_load_parse_small_lambda = lambda_.Function(self, "data_load_parse_small_lambda",
                                                         runtime=lambda_.Runtime.PYTHON_3_9,

@@ -18,20 +18,6 @@ class WebRetrievalStack(Stack):
     def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
-        # # Create Lambda function that gets code from within directory
-        # # Can also specify from inline, from bucket, from docker build
-
-        # # Makes S3 bucket with given id
-        # s3 = s3_.Bucket(self, "testbucket")
-
-        # # Create an S3 notification that when event occurs will start Lambda
-        # notification = aws_s3_notifications.LambdaDestination(function)
-
-        # # Makes a notification on the S3 bucket when there is an object added that
-        # # calls lambda
-        # # Structure of event notification here: https://docs.aws.amazon.com/AmazonS3/latest/userguide/notification-content-structure.html
-        # s3.add_event_notification(s3_.EventType.OBJECT_CREATED, notification)
-
         ############
         # Makes S3 bucket with given id
         s3_save_data = s3_.Bucket(self, 's3_save_data')
@@ -51,8 +37,7 @@ class WebRetrievalStack(Stack):
                                                                    index='data_load_parse_small.py',
                                                                    runtime=lambda_.Runtime.PYTHON_3_9,
                                                                    handler="lambda_handler",
-                                                                   timeout=Duration.minutes(
-                                                                       10),
+                                                                   timeout=Duration.minutes(10),
                                                                    memory_size=256,
                                                                    ephemeral_storage_size=Size.mebibytes(512))
 
@@ -123,11 +108,6 @@ class WebRetrievalStack(Stack):
         ############
 
         # Lambdas for start full pipeline step functions
-        # chunk_file_lambda=lambda_.Function(self, "chunk_file_lambda",
-        #                                     runtime = lambda_.Runtime.PYTHON_3_9,
-        #                                     handler = "chunk_file.lambda_handler",
-        #                                     code = lambda_.Code.from_asset("./web_retrieval/lambdas"))
-
         chunk_file_lambda = lambda_alpha.PythonFunction(self, "chunk_file_lambda",
                                                         entry='./web_retrieval/lambdas/chunk_files',
                                                         index='chunk_file.py',
@@ -148,7 +128,6 @@ class WebRetrievalStack(Stack):
         # Include the state machine in a Task state with callback pattern
         data_upload_sm_job = sfn_tasks.StepFunctionsStartExecution(self, "data upload sm job",
                                                                    state_machine=data_upload_sm,
-                                                                   # integration_pattern=sfn.IntegrationPattern.WAIT_FOR_TASK_TOKEN,
                                                                    input=sfn.TaskInput.from_object({
                                                                        "AWS_STEP_FUNCTIONS_STARTED_BY_EXECUTION_ID.$": "$$.Execution.Id",
                                                                        "Payload.$": "$"

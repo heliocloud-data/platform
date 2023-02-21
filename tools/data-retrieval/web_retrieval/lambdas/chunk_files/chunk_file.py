@@ -1,10 +1,6 @@
-import boto3
-import csv
-import os
-import glob
-import json
-import urllib.parse
 from io import StringIO
+import os
+import boto3
 import pandas as pd
 import numpy as np
 
@@ -23,12 +19,10 @@ def split_csv(df, chunk_size, bucket, key, request_name):
     num_chunks = int(np.ceil(num_request_items / chunk_size))
     chunks = np.array_split(df, num_chunks)
     # write chunks to the S3 bucket
-    print(len(chunks))
+
     for i, c in enumerate(chunks):
-        print(i)
         chunk_name = request_name + '_chunk' + str(i) + '.csv'
         chunk_key = os.path.join('upload_chunk', chunk_name)
-        print(chunk_name)
         try:
             save_path = os.path.join('s3://' + bucket, chunk_key)
             print('####')
@@ -47,7 +41,6 @@ def split_csv(df, chunk_size, bucket, key, request_name):
         dict['request_name'] = request_name
         dict['bucket'] = bucket
         chunk_json.append(dict)
-    print(chunk_json)
     return chunk_json
 
 
@@ -57,18 +50,16 @@ def lambda_handler(event, context):
     request_name = event['request_name']
 
     chunk_size = 100  # number of requests to split into each file
-    print("in chunked file")
-    print(request_name)
+
     # only run script if file is a 'upload_manifest'
     if 'upload_manifest/' in key:
         try:
             s = s3.get_object(Bucket=bucket, Key=key)
-            print(request_name)
             # load in to a pandas dataframe
             df = pd.read_csv(StringIO(s['Body'].read().decode('utf-8')))
 
-            chunked_files = split_csv(df, chunk_size, bucket, key, request_name)
-            print(chunked_files)
+            chunked_files = split_csv(
+                df, chunk_size, bucket, key, request_name)
             return {
                 'statusCode': 200,
                 'request_name': request_name,

@@ -1,16 +1,17 @@
-import json
-import boto3
-import pandas as pd
+import os
 from io import StringIO
 from dateutil import parser
-import os
+import pandas as pd
+import boto3
 
 s3 = boto3.client('s3')
+
 
 def fillempty(val):
     if not val:
         val = 'None'
     return val
+
 
 def parse_csv(dataframe, save_s3_bucket):
     '''
@@ -36,23 +37,16 @@ def parse_csv(dataframe, save_s3_bucket):
         upload_req.append(message)
     return upload_req
 
+
 def lambda_handler(event, context):
     request_name = event['request_name']
     key = event['chunk']
     bucket = event['bucket']
     save_s3_bucket = os.environ.get('SAVE_S3_BUCKET')
-    print('$$$$$$$$$$')
-    print(save_s3_bucket)
 
-    # try:
     s = s3.get_object(Bucket=bucket, Key=key)
     df = pd.read_csv(StringIO(s['Body'].read().decode('utf-8')))
     upload_reqs = parse_csv(df, save_s3_bucket)
-    
-    
-    # 
-    # except Exception as e:
-    #     print("Error fetching file chunk")
 
     return {
         'statusCode': 200,

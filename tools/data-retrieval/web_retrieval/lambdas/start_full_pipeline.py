@@ -1,7 +1,7 @@
 import json
-import boto3
 import os
 import urllib.parse
+import boto3
 
 
 def lambda_handler(event, context):
@@ -16,9 +16,6 @@ def lambda_handler(event, context):
     # Get environment variables passed to lambda in stack
     state_machine_arn = os.environ.get('STEPFUNCTION_ARN')
 
-    print(key)
-    print(request_name)
-    print('*****')
     # TODO requirement that within upload_manifest folder
     #  only run script if file is a 'upload_manifest'
     if 'upload_manifest/' in key:
@@ -27,8 +24,7 @@ def lambda_handler(event, context):
             'bucket': bucket,
             'key': key
         }
-        print(state_machine_arn)
-        print(bucket, key)
+
         try:
             client = boto3.client('stepfunctions')
             response = client.start_execution(
@@ -45,6 +41,3 @@ def lambda_handler(event, context):
         except Exception as e:
             print(e)
             print("Error fetching object")
-            # raise e
-
-

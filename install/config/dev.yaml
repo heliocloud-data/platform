@@ -1,7 +1,8 @@
+# Configuration file to use be used during a HelioCloud installation
+
 # S3 data_sets to use for storing data sets
 # These will be configured as publicly visible, requestor pays, delete protected
 public_data_buckets:
-
   # Optional (for dev & test only)
   removal_policy: "DESTROY"
   names: [

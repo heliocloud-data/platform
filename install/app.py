@@ -3,8 +3,9 @@ import os
 
 import aws_cdk as cdk
 
-from data_sets.data_sets_stack import DataSetsStack
-from registry.registry_stack import RegistryStack
+from base_data.registry_stack import RegistryStack
+from base_data.data_sets_stack import DataSetsStack
+
 
 # Initialize the CDK app
 app = cdk.App()
@@ -40,3 +41,4 @@ RegistryStack(app, "RegistryStack",
     )
 
 app.synth()
+

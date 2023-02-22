@@ -1,13 +1,14 @@
-# S3 buckets to use for storing data sets
+# S3 data_sets to use for storing data sets
 # These will be configured as publicly visible, requestor pays, delete protected
-public_data_buckets: [
-  "edu-jhuapl-helio1",
-  "edu-jhuapl-helio2",
-  "edu-jhuapl-helio3"
-]
+public_data_buckets:
 
-# Registration upload bucket
-# Will be configured as a private bucket visible only for internal HelioCloud upload processes
-registration_upload_bucket: "edu-jhuapl-uploads"
+  # Optional (for dev & test only)
+  removal_policy: "DESTROY"
+  names: [
+    "edu-jhuapl-helio1",
+    "edu-jhuapl-helio2",
+    "edu-jhuapl-helio3"
+  ]
+
 
 

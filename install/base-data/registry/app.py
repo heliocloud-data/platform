@@ -3,6 +3,7 @@ import os
 
 import aws_cdk as cdk
 
+from data_sets.data_sets_stack import DataSetsStack
 from registry.registry_stack import RegistryStack
 
 # Initialize the CDK app
@@ -14,6 +15,10 @@ if config is None:
     raise Exception("No configuration file was specified. Re-run using flag '-c config=<name of config file>")
 else:
     print("Using configuration file " + config)
+
+
+# Create the data buckets in S3
+DataSetsStack(app, "DataSetsStack")
 
 # Instantiate the registry
 RegistryStack(app, "RegistryStack",

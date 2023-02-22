@@ -20,20 +20,11 @@ class RegistryStack(Stack):
         with open(config, 'r') as file:
             configuration = yaml.safe_load(file)
 
-        # Provision the requested data buckets
-        for data_bucket in configuration['public_data_buckets']:
-            print("Creating bucket: " + data_bucket)
-            bucket = s3.Bucket(self, data_bucket,
-                               bucket_name=data_bucket,
-                               versioned=True,
-                               removal_policy=cdk.RemovalPolicy.DESTROY,
-                               auto_delete_objects=True)
-
-        # Provision the requested upload bucket
-        upload_bucket = configuration['registration_upload_bucket']
-        bucket = s3.Bucket(self, upload_bucket,
-                           bucket_name=upload_bucket,
-                           versioned=True,
+        # Provision a staging bucket for use with the registry service
+        bucket = s3.Bucket(self,
+                           "StagingBucket",
                            removal_policy=cdk.RemovalPolicy.DESTROY,
                            auto_delete_objects=True)
+        print("Created bucket " + bucket.bucket_name + " as a staging bucket.")
+
 

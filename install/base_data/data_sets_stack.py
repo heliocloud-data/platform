@@ -1,8 +1,10 @@
+import aws_cdk.custom_resources
 import yaml
 import aws_cdk as cdk
 from aws_cdk import (
     Stack,
     aws_s3 as s3,
+    custom_resources as resources,
 )
 from constructs import Construct
 
@@ -21,15 +23,15 @@ class DataSetsStack(Stack):
         with open(config, 'r') as file:
             configuration = yaml.safe_load(file)
 
-        # Provision the requested data buckets
+        # Create s3 buckets for data storage in this HelioCloud, using the names from the configuration and
+        # setting the bucket open for public reading.
+        # re: object_ownership - default is that the uploading account owns the object. We are being explicit here
+        # to ensure there is only a *single* owner of the content in the bucket:  this heliocloud instance
         for data_bucket in configuration['public_data_buckets']['names']:
-            print("Creating bucket: " + data_bucket)
             bucket = s3.Bucket(self, data_bucket,
                                bucket_name=data_bucket,
                                public_read_access=True,
-                               removal_policy=cdk.RemovalPolicy.RETAIN,
-                               object_ownership=s3.ObjectOwnership.BUCKET_OWNER_ENFORCED,
-                               versioned=True)
+                               object_ownership=s3.ObjectOwnership.BUCKET_OWNER_ENFORCED)
 
             # TODO: Setup inventory service: https://pypi.org/project/aws-cdk.aws-s3/
             # TODO: Setup for requestor pays: https://github.com/aws-cloudformation/cloudformation-coverage-roadmap/issues/123

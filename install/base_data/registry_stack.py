@@ -15,16 +15,11 @@ class RegistryStack(Stack):
     def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
-        # get the configuration file from the context
-        config = self.node.try_get_context("config")
-        with open(config, 'r') as file:
-            configuration = yaml.safe_load(file)
-
-        # Provision a staging bucket for use with the registry service
+        # Provision a staging S3 bucket for the data set registry process
+        # Destroyed on removal, as this is a temporary bucket
         bucket = s3.Bucket(self,
                            "StagingBucket",
                            removal_policy=cdk.RemovalPolicy.DESTROY,
                            auto_delete_objects=True)
-        print("Created bucket " + bucket.bucket_name + " as a staging bucket.")
 
 

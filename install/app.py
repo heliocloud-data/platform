@@ -3,8 +3,14 @@ import os
 
 import aws_cdk as cdk
 
-from base_data.registry_stack import RegistryStack
+from base_aws.base_aws_stack import BaseAwsStack
+from base_auth.authorization_stack import AuthStack
 from base_data.data_sets_stack import DataSetsStack
+from base_data.registry_stack import RegistryStack
+
+from daskhub.daskhub_stack import DaskhubStack
+from dashboard.dashboard_stack import DashboardStack
+from binderhub.binderhub_stack import BinderhubStack
 
 
 # Initialize the CDK app
@@ -17,12 +23,18 @@ if config is None:
 else:
     print("Using configuration file " + config)
 
+# First, setup base AWS environment
+BaseAwsStack(app, "BaseAwsStack")
 
-# Create the data buckets in S3
+# Next comes auth & data
+AuthStack(app, "AuthStack")
 DataSetsStack(app, "DataSetsStack")
-
-# Instantiate the registry
 RegistryStack(app, "RegistryStack")
+
+# Then,  all the "hubs"?  Dashboard?
+DaskhubStack(app, "DaskhubStack")
+DashboardStack(app, "DashboardStack")
+BinderhubStack(app, "BinderhubStack")
 
 app.synth()
 

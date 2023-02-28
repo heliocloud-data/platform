@@ -16,6 +16,7 @@ registry:
     "edu-jhuapl-helio2",
     "edu-jhuapl-helio3"
   ]
+  #names: [ "edu-jhuapl-helio1"]
 
 # Config block for user dashboard settings
 userDashboard:

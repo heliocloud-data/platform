@@ -1,40 +1,62 @@
 #!/usr/bin/env python3
 import os
-
+import yaml
 import aws_cdk as cdk
 
 from base_aws.base_aws_stack import BaseAwsStack
 from base_auth.authorization_stack import AuthStack
 from base_data.data_sets_stack import DataSetsStack
 from base_data.registry_stack import RegistryStack
-
 from daskhub.daskhub_stack import DaskhubStack
 from dashboard.dashboard_stack import DashboardStack
 from binderhub.binderhub_stack import BinderhubStack
-
 
 # Initialize the CDK app
 app = cdk.App()
 
 # Get the configuration file to use for determining bucket count & names
-config = app.node.try_get_context("config")
-if config is None:
+config_file = app.node.try_get_context("config")
+if config_file is None:
     raise Exception("No configuration file was specified. Re-run using flag '-c config=<name of config file>")
-else:
-    print("Using configuration file " + config)
 
-# First, setup base AWS environment
-BaseAwsStack(app, "BaseAwsStack")
+print("Using configuration file " + config_file)
+with open(config_file, 'r') as file:
+    config = yaml.safe_load(file)
 
-# Next comes auth & data
-AuthStack(app, "AuthStack")
-DataSetsStack(app, "DataSetsStack")
-RegistryStack(app, "RegistryStack")
+# Required:  Deploy the Base AWS Stack to make sure the AWS account environment is properly configured
+base_stack = BaseAwsStack(app, "BaseAwsStack",
+                          description="AWS resources necessary to deploy any HelioCloud instance")
 
-# Then,  all the "hubs"?  Dashboard?
-DaskhubStack(app, "DaskhubStack")
-DashboardStack(app, "DashboardStack")
-BinderhubStack(app, "BinderhubStack")
+# Determine optional components to deploy
+components = config['components']
+
+# Enable registry?
+if components.get('enableRegistry', False):
+    DataSetsStack(app, "DataSetsStack",
+                  description="HelioCloud public S3 buckets").add_dependency(base_stack)
+    RegistryStack(app, "RegistryStack",
+                  description="HelioCloud data loading & registration").add_dependency(base_stack)
+
+# Check for the other stacks to deploy
+daskhub = components.get('enableDaskHub', False)
+binderhub = components.get('enableBinderHub', False)
+dashboard = components.get('enableUserDashboard', False)
+if daskhub or binderhub or dashboard:
+
+    # Each of these stacks require the Auth stack be deployed first
+    auth_stack = AuthStack(app, "AuthStack",
+                           description="HelioCloud end-user authorization capabilities. Required for other components.")
+    auth_stack.add_dependency(base_stack)
+
+    # Initialize requested optional stacks
+    if dashboard:
+        DashboardStack(app, "DashboardStack",
+                       description="HelioCloud User Dashboard deployment").add_dependency(auth_stack)
+    if binderhub:
+        BinderhubStack(app, "BinderhubStack",
+                       description="HelioCloud Binderhub deployment").add_dependency(auth_stack)
+    if daskhub:
+        DaskhubStack(app, "DaskhubStack",
+                     description="HelioCloud Daskhub deployment").add_dependency(auth_stack)
 
 app.synth()
-

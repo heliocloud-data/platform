@@ -25,19 +25,19 @@ app = Flask(__name__)
 
 
 # cognito setup TAKE OUT
-app.config['JWT_TOKEN_LOCATION'] = ["cookies"]
-app.config['JWT_COOKIE_SECURE'] = True
-app.config['JWT_COOKIE_CSRF_PROTECT'] = False
-app.config['JWT_ALGORITHM'] = "RS256"
-app.config['JWT_IDENTITY_CLAIM'] = "sub"
-app.config['AWS_DEFAULT_REGION'] = region
-app.config['AWS_COGNITO_DOMAIN'] = aws_cognito_domain
-app.config['AWS_COGNITO_USER_POOL_ID'] = user_pool_id
-app.config['AWS_COGNITO_USER_POOL_CLIENT_ID'] = user_pool_client_id
-app.config['AWS_COGNITO_USER_POOL_CLIENT_SECRET'] = user_pool_client_secret
-app.config['AWS_COGNITO_REDIRECT_URL'] = redirect_url
-app.config["JWT_PUBLIC_KEY"] = RSAAlgorithm.from_jwk(get_cognito_public_keys())
-app.config['SECRET_KEY'] = flask_secret_key
+app.config_file['JWT_TOKEN_LOCATION'] = ["cookies"]
+app.config_file['JWT_COOKIE_SECURE'] = True
+app.config_file['JWT_COOKIE_CSRF_PROTECT'] = False
+app.config_file['JWT_ALGORITHM'] = "RS256"
+app.config_file['JWT_IDENTITY_CLAIM'] = "sub"
+app.config_file['AWS_DEFAULT_REGION'] = region
+app.config_file['AWS_COGNITO_DOMAIN'] = aws_cognito_domain
+app.config_file['AWS_COGNITO_USER_POOL_ID'] = user_pool_id
+app.config_file['AWS_COGNITO_USER_POOL_CLIENT_ID'] = user_pool_client_id
+app.config_file['AWS_COGNITO_USER_POOL_CLIENT_SECRET'] = user_pool_client_secret
+app.config_file['AWS_COGNITO_REDIRECT_URL'] = redirect_url
+app.config_file["JWT_PUBLIC_KEY"] = RSAAlgorithm.from_jwk(get_cognito_public_keys())
+app.config_file['SECRET_KEY'] = flask_secret_key
 
 
 CORS(app)

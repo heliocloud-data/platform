@@ -3,7 +3,7 @@
 [2 Global data registry](#2-dataregistry)<br/>
 [3 Catalog](#3-catalog)<br/>
 [4 File Registry](#4-fileregistry)<br/>
-[4 Info Metadata](#5-info)<br/>
+[5 Info Metadata](#5-info)<br/>
 <!-- \TOC -->
 
 Version 0.1.1 \| HelioCloud \|
@@ -280,7 +280,7 @@ The use of CSV or Parquet also enables AWS Athena searches within the index with
 Here is a short minimal CSV example index file.
 
 ```
-# startime, key, filesize, wavelength, carr_lon, carr_lat
+# startime, key, filesize
 '2010-05-08T12:05:30.000Z','s3://edu-apl-helio-public/euvml/stereo/a/195/20100508_120530_n4euA.fts','246000'
 '2010-05-08T12:06:15.000Z','s3://edu-apl-helio-public/euvml/stereo/a/195/20100508_120615_n4euA.fts','246000'
 '2010-05-08T12:10:30.000Z','s3://edu-apl-helio-public/euvml/stereo/a/195/20100508_121030_n4euA.fts','246000'
@@ -288,6 +288,18 @@ Here is a short minimal CSV example index file.
 
 Here is an example with additional metadata and a CSV header as well.
 
+```
+# startime, key, filesize, wavelength, carr_lon, carr_lat
+'2010-05-08T12:05:30.000Z','s3://edu-apl-helio-public/euvml/stereo/a/195/20100508_120530_n4euA.fts','246000','195','20.4','30.0'
+'2010-05-08T12:06:15.000Z','s3://edu-apl-helio-public/euvml/stereo/a/195/20100508_120615_n4euA.fts','246000','195','21.8','30.0'
+'2010-05-08T12:10:30.000Z','s3://edu-apl-helio-public/euvml/stereo/a/195/20100508_121030_n4euA.fts','246000','195','22.4','30.0'
+```
+Here is an example with additional metadata and a CSV header as the EUV-ML project would like.  Items in CAPS are directly from FITS keywords.
+```
+# starttime, S3key, filesize, spacecraft, instrument, WAVELNTH, CRLT_OBS, CRLN_OBS, CRPIX1, CRPIX2, RSUN, quality, generation_flag
+'2010-05-08T12:05:30.000Z','s3://edu-apl-helio-public/euvml/stereo/a/195/20100508_120530_n4euA.fts','246000','A','euvi','195,45.0, 23.1, 512, 510, 26.5, 1, 1
+'2010-05-08T12:06:15.000Z','s3://edu-apl-helio-public/euvml/stereo/a/195/20100508_120615_n4euA.fts','246000','A','euvi','195',45.0, 23.1, 512, 510, 26.5, 1, 1
+'2010-05-08T12:10:30.000Z','s3://edu-apl-helio-public/euvml/stereo/a/195/20100508_121030_n4euA.fts','246000','A','euvi','195',45.0, 23.1, 512, 510, 26.5, 1, 1
 ```
 # startime, key, filesize, wavelength, carr_lon, carr_lat
 '2010-05-08T12:05:30.000Z','s3://edu-apl-helio-public/euvml/stereo/a/195/20100508_120530_n4euA.fts','246000','195','20.4','30.0'
@@ -324,4 +336,3 @@ Here is an example for a sample optional Info json file.  This is used to indica
     ]
 }
 ```
-

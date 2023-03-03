@@ -16,6 +16,14 @@ registry:
     "edu-jhuapl-helio2",
     "edu-jhuapl-helio3"
   ]
+  # Optional: Defaults to False.
+  # Enabling makes (re)deployments of a HelioCloud easier during development & testing
+  destroyOnRemoval: True
+
+  # Optional: Defaults to True,
+  # Can be disabled here with the caveat that the AWS account hosting this HelioCloud instance will be responsible
+  # for ALL egress costs out of these PUBLIC S3 buckets (re: HIGH RISK).
+  requesterPays: True
 
 # Config block for user dashboard settings
 userDashboard:
@@ -25,6 +33,8 @@ daskhub:
 
 # Config block for the Binderhub
 binderhub:
+
+
 
 
 

@@ -31,15 +31,6 @@ binderhub:
 
 
 
-# Config block for user dashboard settings
-userDashboard:
-
-# Config block for the Daskhub
-daskhub:
-
-# Config block for the Binderhub
-binderhub:
-
 
 
 

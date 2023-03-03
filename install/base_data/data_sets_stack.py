@@ -22,21 +22,32 @@ class DataSetsStack(Stack):
         config_file = self.node.try_get_context("config")
         with open(config_file, 'r') as file:
             config = yaml.safe_load(file)
-        buckets = config['registry']['bucketNames']
 
-        # Create s3 buckets for data storage in this HelioCloud, using the names from the configuration and
-        # setting the bucket open for public reading.
-        # re: object_ownership - default is that the uploading account owns the object. We are being explicit here
-        # to ensure there is only a *single* owner of the content in the bucket:  this heliocloud instance
+        buckets = config['registry']['bucketNames']
+        destroy_on_removal = config['registry']['destroyOnRemoval']
+
+        # Option to destroy public s3 buckets on removal - helps with development (re)deployments of this stack
+        if destroy_on_removal is True:
+            rp = cdk.RemovalPolicy.DESTROY
+            ado = True
+        else:
+            rp = cdk.RemovalPolicy.RETAIN
+            ado = False
+
+        # Create public S3 buckets for data storage in this HelioCloud, using the names from the configuration
+        # re: object_ownership - default is that the uploading account owns the object, so we are being explicit
+        # here to ensure this HelioCloud instance owns all its bucket contents - no matter the upload actor/mechanism
         for data_bucket in buckets:
             bucket = s3.Bucket(self, data_bucket,
                                bucket_name=data_bucket,
                                public_read_access=True,
-                               removal_policy=cdk.RemovalPolicy.DESTROY,
-                               auto_delete_objects=True,
+                               removal_policy=rp,
+                               auto_delete_objects=ado,
                                object_ownership=s3.ObjectOwnership.BUCKET_OWNER_ENFORCED)
-            # Note: destroy on removal temporarily added for testing purposes
 
+            # AWS CDK doesn't allow directly setting Payer=Requester on an S3 bucket.  You have to leverage an
+            # AWSCustomResource instance to invoke an AWS Lambda to execute an AWS API call against the bucket itself,
+            # setting the property
             custom = cr.AwsCustomResource(self,
                                           data_bucket + "-add-request-payer",
                                           on_create=cr.AwsSdkCall(
@@ -55,19 +66,6 @@ class DataSetsStack(Stack):
                                               resources=cr.AwsCustomResourcePolicy.ANY_RESOURCE
                                           ))
             custom.node.add_dependency(bucket)
-            print("Adding requester pays")
-
-        # no cloud formation resources exist to configure requestor pays, so you have to make an API call
-        # PUT ?requestPayment
-        # HTTP / 1.1
-        # Host: [BucketName].s3.amazonaws.com
-        # Content - Length: 173
-        # Date: Wed, 01 Mar 2009 12:00:00 GMT
-        # Authorization: AWS[Signature]
-        # <RequestPaymentConfiguration xmlns = "http://s3.amazonaws.com/doc/2006-03-01/>
-        # <Payer>Requester</Payer>
-        # </RequestPaymentConfiguration>
 
         # TODO: Setup inventory service: https://pypi.org/project/aws-cdk.aws-s3/
-        # TODO: Setup for requestor pays: https://github.com/aws-cloudformation/cloudformation-coverage-roadmap/issues/123
         # TODO: Consider transfer acceleration?? https://pypi.org/project/aws-cdk.aws-s3/

@@ -16,7 +16,20 @@ registry:
     "edu-jhuapl-helio2",
     "edu-jhuapl-helio3"
   ]
-  #names: [ "edu-jhuapl-helio1"]
+  # Optional (for dev & test only)
+  destroyOnRemoval: True
+
+
+# Config block for user dashboard settings
+userDashboard:
+
+# Config block for the Daskhub
+daskhub:
+
+# Config block for the Binderhub
+binderhub:
+
+
 
 # Config block for user dashboard settings
 userDashboard:

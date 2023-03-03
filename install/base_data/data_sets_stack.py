@@ -18,16 +18,17 @@ class DataSetsStack(Stack):
     def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
-        # get the configuration file from the context
+        # Get configuration settings with rational defaults
         config_file = self.node.try_get_context("config")
         with open(config_file, 'r') as file:
             config = yaml.safe_load(file)
-
-        buckets = config['registry']['bucketNames']
-        destroy_on_removal = config['registry']['destroyOnRemoval']
+        registry = config['registry']
+        buckets = registry.get('bucketNames')
+        destroy_on_removal = registry.get('destroyOnRemoval', False)
+        requester_pays = registry.get('requesterPays', True)
 
         # Option to destroy public s3 buckets on removal - helps with development (re)deployments of this stack
-        if destroy_on_removal is True:
+        if destroy_on_removal:
             rp = cdk.RemovalPolicy.DESTROY
             ado = True
         else:
@@ -48,24 +49,25 @@ class DataSetsStack(Stack):
             # AWS CDK doesn't allow directly setting Payer=Requester on an S3 bucket.  You have to leverage an
             # AWSCustomResource instance to invoke an AWS Lambda to execute an AWS API call against the bucket itself,
             # setting the property
-            custom = cr.AwsCustomResource(self,
-                                          data_bucket + "-add-request-payer",
-                                          on_create=cr.AwsSdkCall(
-                                              service='S3',
-                                              action='putBucketRequestPayment',
-                                              parameters={
-                                                  "Bucket": bucket.bucket_name,
-                                                  "RequestPaymentConfiguration": {
-                                                      "Payer": "Requester"
-                                                  }
-                                              },
-                                              physical_resource_id=cr.PhysicalResourceId.of("id")
-                                          ),
-                                          install_latest_aws_sdk=True,
-                                          policy=cr.AwsCustomResourcePolicy.from_sdk_calls(
-                                              resources=cr.AwsCustomResourcePolicy.ANY_RESOURCE
-                                          ))
-            custom.node.add_dependency(bucket)
+            if requester_pays:
+                custom = cr.AwsCustomResource(self,
+                                              data_bucket + "-add-request-payer",
+                                              on_create=cr.AwsSdkCall(
+                                                  service='S3',
+                                                  action='putBucketRequestPayment',
+                                                  parameters={
+                                                      "Bucket": bucket.bucket_name,
+                                                      "RequestPaymentConfiguration": {
+                                                          "Payer": "Requester"
+                                                      }
+                                                  },
+                                                  physical_resource_id=cr.PhysicalResourceId.of("id")
+                                              ),
+                                              install_latest_aws_sdk=True,
+                                              policy=cr.AwsCustomResourcePolicy.from_sdk_calls(
+                                                  resources=cr.AwsCustomResourcePolicy.ANY_RESOURCE
+                                              ))
+                custom.node.add_dependency(bucket)
 
         # TODO: Setup inventory service: https://pypi.org/project/aws-cdk.aws-s3/
         # TODO: Consider transfer acceleration?? https://pypi.org/project/aws-cdk.aws-s3/

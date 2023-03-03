@@ -235,13 +235,13 @@ The index fileRegistry is a set of CSV or Parquet files named "loc"/"id"_YYYY.cs
 
 ## 4.1 Required Items
 
-* **starttime**: string, Restricted ISO 8601 date/time of start for that data.
+* **startdate**: string, Restricted ISO 8601 date/time of start for that data.
 * **key**: string, full filename or S3 object identifier sufficient to actually obtain the file
 * **filesize**: integer, file size in bytes
 
 ## 4.2 Optional Items
 
-* **endtime**: string, Restricted ISO 8601 date/time of end for that data.
+* **enddate**: string, Restricted ISO 8601 date/time of end for that data.
 * **checksum**: checksum for that file. If given, **checksum_algorithm** must also be listed
 * **checksum_algorithm**: checksum algorithm used if checksums are generated. Examples include SHA, others.
 
@@ -280,7 +280,7 @@ The use of CSV or Parquet also enables AWS Athena searches within the index with
 Here is a short minimal CSV example index file.
 
 ```
-# startime, key, filesize
+# startdate, key, filesize
 '2010-05-08T12:05:30.000Z','s3://edu-apl-helio-public/euvml/stereo/a/195/20100508_120530_n4euA.fts','246000'
 '2010-05-08T12:06:15.000Z','s3://edu-apl-helio-public/euvml/stereo/a/195/20100508_120615_n4euA.fts','246000'
 '2010-05-08T12:10:30.000Z','s3://edu-apl-helio-public/euvml/stereo/a/195/20100508_121030_n4euA.fts','246000'
@@ -289,14 +289,14 @@ Here is a short minimal CSV example index file.
 Here is an example with additional metadata and a CSV header as well.
 
 ```
-# startime, key, filesize, wavelength, carr_lon, carr_lat
+# startdate, key, filesize, wavelength, carr_lon, carr_lat
 '2010-05-08T12:05:30.000Z','s3://edu-apl-helio-public/euvml/stereo/a/195/20100508_120530_n4euA.fts','246000','195','20.4','30.0'
 '2010-05-08T12:06:15.000Z','s3://edu-apl-helio-public/euvml/stereo/a/195/20100508_120615_n4euA.fts','246000','195','21.8','30.0'
 '2010-05-08T12:10:30.000Z','s3://edu-apl-helio-public/euvml/stereo/a/195/20100508_121030_n4euA.fts','246000','195','22.4','30.0'
 ```
 Here is an example with additional metadata and a CSV header as the EUV-ML project would like.  Items in CAPS are directly from FITS keywords.
 ```
-# starttime, S3key, filesize, spacecraft, instrument, WAVELNTH, CRLT_OBS, CRLN_OBS, CRPIX1, CRPIX2, RSUN, quality, generation_flag
+# startdate, S3key, filesize, spacecraft, instrument, WAVELNTH, CRLT_OBS, CRLN_OBS, CRPIX1, CRPIX2, RSUN, quality, generation_flag
 '2010-05-08T12:05:30.000Z','s3://edu-apl-helio-public/euvml/stereo/a/195/20100508_120530_n4euA.fts','246000','A','euvi','195,45.0, 23.1, 512, 510, 26.5, 1, 1
 '2010-05-08T12:06:15.000Z','s3://edu-apl-helio-public/euvml/stereo/a/195/20100508_120615_n4euA.fts','246000','A','euvi','195',45.0, 23.1, 512, 510, 26.5, 1, 1
 '2010-05-08T12:10:30.000Z','s3://edu-apl-helio-public/euvml/stereo/a/195/20100508_121030_n4euA.fts','246000','A','euvi','195',45.0, 23.1, 512, 510, 26.5, 1, 1
@@ -328,11 +328,13 @@ Here is an example for a sample optional Info json file.  This is used to indica
     "CloudMe": "0.1",
     "parameters": [
 	{"name": "spacecraft", "type": "string"},
-        {"name": "wavelength", "type": "int", "units": "Angstroms"},
-	{"name": "crlt", "type": "double", "units": "degrees"},
-	{"name": "crln", "type": "double", "units": "degrees"},
-	{"name": "crrot", "type": "double", "units": "degrees"},
-	{"name": "pixelscale", "type": "double", "units": "arcsec"}
+    {"name": "wavelength", "type": "int", "units": "Angstroms"},
+	{"name": "crlt", "type": "double", "units": "degrees", desc: "Carrington latitude"},
+	{"name": "crln", "type": "double", "units": "degrees", desc: "Carrington longitude"},
+	{"name": "rsun", "type": "double", "units": "pixels", "desc": "Size of sun in pizels"},
+    {"name": "crpix1", "type": integer", "units": "pixels", "desc": "x coord of sun center"},
+    {"name": "crpix2", "type": integer", "units": "pixels", "desc": "x coord of sun center"},
+    {"name": "quality", "type": "integer", "desc": "data quality and level of interpolation"}
     ]
 }
 ```

@@ -37,7 +37,7 @@ Not all plotting toggles are enabled, because the newer object oriented graphics
 Use git to clone this repository into your computer.
 
 ```
-git clone https://git.smce.nasa.gov/heliocloud/heliocloud-services/develop/tools/jnpro
+git clone https://git.smce.nasa.gov/heliocloud/heliocloud-services.git
 ```
 
 ## Sample cases

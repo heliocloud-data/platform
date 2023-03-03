@@ -19,7 +19,6 @@ registry:
   # Optional (for dev & test only)
   destroyOnRemoval: True
 
-
 # Config block for user dashboard settings
 userDashboard:
 

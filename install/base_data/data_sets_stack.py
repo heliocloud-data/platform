@@ -44,7 +44,6 @@ class DataSetsStack(Stack):
                                removal_policy=rp,
                                auto_delete_objects=ado,
                                object_ownership=s3.ObjectOwnership.BUCKET_OWNER_ENFORCED)
-            # Note: destroy on removal temporarily added for testing purposes
 
             # AWS CDK doesn't allow directly setting Payer=Requester on an S3 bucket.  You have to leverage an
             # AWSCustomResource instance to invoke an AWS Lambda to execute an AWS API call against the bucket itself,

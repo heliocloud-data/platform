@@ -22,8 +22,6 @@ from access import list_access_key, create_access_key, delete_access_key, update
 # Create a new app
 app = Flask(__name__)
 
-
-
 # cognito setup TAKE OUT
 app.config['JWT_TOKEN_LOCATION'] = ["cookies"]
 app.config['JWT_COOKIE_SECURE'] = True

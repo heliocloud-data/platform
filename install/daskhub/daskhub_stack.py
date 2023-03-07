@@ -17,7 +17,7 @@ class DaskhubStack(Stack):
     CDK stack for installing DaskHub for a HelioCloud instance
     """
 
-    def __init__(self, scope: Construct, construct_id: str, **kwargs):
+    def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
         # get the configuration file from the context

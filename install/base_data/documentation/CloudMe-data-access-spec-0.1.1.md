@@ -107,7 +107,7 @@ Globally the catalog.json describes the endpoint with the following items. Note 
 For each dataset, the catalog entry requires:
 
 * **id** a unique ID for the dataset that follows the ID naming requirements
-* **loc** a pointer to the sub-bucket containing both the dataset and the required fileRegistry.
+* **loc** a pointer to the sub-bucket containing both the dataset and the required fileRegistry. It MUST end in a terminating '/'.
 * **startdate**: string, Restricted ISO 8601 date/time of first record of data in the entire dataset.
 * **enddate**: string, Restricted ISO 8601 date/time of end of the last record of data in the entire dataset.
 * **modificationDate**: string, Restricted ISO 8601 date/time of last time this dataset was updated
@@ -148,7 +148,7 @@ Here is an example catalog, for which only the first item has decided to fill ou
     "catalog":[
         {
             "id": "euvml",
-            "loc": "gov-nasa-helio-public/euvml",
+            "loc": "gov-nasa-helio-public/euvml/",
             "title": "EUV-ML dataset",
             "startdate": "1995-01-01T00:00Z",
             "enddate": "2022-01-01T00:00Z",
@@ -166,7 +166,7 @@ Here is an example catalog, for which only the first item has decided to fill ou
         },
         {
             "id": "mms_hmi",
-            "loc": "s3://gov-nasa-helio-public/mms/hmi",
+            "loc": "s3://gov-nasa-helio-public/mms/hmi/",
             "title": "MMS HMI data"
             "startdate": "2015-01-01T00:00Z",
             "enddate": "2022-01-01T00:00Z",
@@ -176,7 +176,7 @@ Here is an example catalog, for which only the first item has decided to fill ou
         },
         {
             "id": "mms_feeps",
-            "loc": "s3://gov-nasa-helio-public/mms/feeps",
+            "loc": "s3://gov-nasa-helio-public/mms/feeps/",
             "title": "MMS FEEPS data"
             "startdate": "2015-01-01T00:00Z",
             "enddate": "2022-01-01T00:00Z",

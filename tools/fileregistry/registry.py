@@ -1,5 +1,4 @@
 import boto3
-from boto3.session import Session
 from io import BytesIO
 import pandas as pd
 import os
@@ -15,34 +14,70 @@ class CatalogRegistry:
     def __init__(self, catalog_url=None):
         """
         Parameters:
-        catalog_url: either the environment variable by default or an explicitly passed in url
+        catalog_url: either the environment variable `ROOT_CATALOG_REGISTRY_URL` if it exists
+                     or the smce heliocloud global catalog by default, otherwise the explicitly passed in url
         """
-        # Set the catalog URL (env variable if not manually provided)
+        # Set the catalog URL (env variable or default if not manually provided)
         if catalog_url is None:
             catalog_url = os.getenv('ROOT_CATALOG_REGISTRY_URL')
             if catalog_url is None:
+                # TODO: Edit to real catalog
+                catalog_url = 'https://git.mysmce.com/heliocloud/heliocloud-data-uploads/-/blob/main/catalog.json'
+                # TODO: Remove ValueError
                 raise ValueError('No environment variable ROOT_CATALOG_REGISTRY_URL nor was an explicit catalog_url passed in')
         self.catalog_url = catalog_url
 
         # Load the content from json
-        self.catalog = requests.get(self.catalog_url).json()
+        response = requests.get(self.catalog_url)
+        if response.status_code == 200:
+            self.catalog = response.json()
+        else:
+            raise Exception('Get Request for Global Catalog Failed.')
+        
+        # Check global catalog format assumptions
+        if 'registry' not in self.catalog:
+            raise Exception('invalid catalog')
+        for reg_entry in self.catalog['registry']:
+            if 'endpoint' not in reg_entry or 'name' not in reg_entry or 'region' not in reg_entry:
+                raise Exception('invalid registry entry')
+        
 
     def get_catalog(self):
+        """
+        Get the global catalog with all metadata and registry entries
+
+        Returns:
+        The global catalog dict
+        """
         return self.catalog
         
     def get_registry(self):
+        """
+        Get the registry values in the global catalog
+
+        Returns:
+        A list of catalog dicts, which are each entry in the registry
+        """
         return self.catalog['registry']
     
     def get_entries(self):
+        """
+        Get the entry names and region of each entry in the registry
+        
+        Returns:
+        A list of tuples with the name and region from the global catalog registry
+        """
         # Get the name and region of each entry in the catalog
         return [(x['name'], x['region']) for x in self.catalog['registry']]
     
     def get_endpoint(self, name, region_prefix='', force_first=False):
         """
+        Get the s3 endpoint given the name and region
+        
         Parameters:
         name: Name of the endpoint
-        region_prefix (optional): Prefix for a region
-        force_first (optional, defaults to False): If True, returns the first entry regardless of name+region uniqueness
+        region_prefix (optional, str,): Prefix for a region
+        force_first (optional, defaults to False, bool): If True, returns the first entry regardless of name+region uniqueness
 
         Returns:
         The URI of the endpoint
@@ -66,14 +101,15 @@ class FileRegistry:
     the associated catalog in the bucket
     """
     
-    def __init__(self, bucket_name, cache_folder=None,
-                 aws_access_key_id=None, aws_secret_access_key=None):
+    def __init__(self, bucket_name, cache_folder=None, cache=True, **client_kwargs):
         """
         Parameters: 
         bucket_name (str): The name of the s3 bucket.
         cache_folder (str): Folder to store the file registry cache, defaults to bucket_name + '_cache'.
-        aws_access_key_id (str): AWS access key ID
-        aws_secret_access_key (str): AWS secret access key
+        cache (optional, defaults to True, bool): Determines if any files should be cached so that S3 pulling
+                                                  is not unnecessarily done. If a cache_folder is provided,
+                                                  this is forced to true.
+        client_kwargs: parameters for boto3.client: region_name, aws_acces_key_id, aws_secret_access_key, etc.
         """
         # Remove s3 uri info if provided
         if bucket_name.startswith('s3://'):
@@ -81,54 +117,83 @@ class FileRegistry:
         if bucket_name[-1] == '/':
             bucket_name = bucket_name[:-1]
     
-        # Store the values for future use  
+        # Store the bucket name for future use  
         self.bucket_name = bucket_name
         
-        # Create a 'session' object with provided credentials 
-        session = Session(aws_access_key_id=aws_access_key_id,
-                         aws_secret_access_key=aws_secret_access_key)
-        self.s3 = session.resource('s3')
-        
-        # Get the given bucket 
-        self.bucket = self.s3.Bucket(self.bucket_name)
+        # Create a client object with provided kwargs
+        self.s3_client = boto3.client('s3', **client_kwargs)
 
         # Get catalog bytes from S3 
-        catalog_bytes = BytesIO()
-        self.bucket.download_fileobj('catalog.json', catalog_bytes)
-
-        # Set the pointer back at the start  
-        catalog_bytes.seek(0)
+        # May through some errors, NoSuchBucket, ClientError (file may not exists or access denied)
+        # If have ListBucket perms, no such key error will be raised instead of client error
+        response = self.s3_client.get_object(Bucket=self.bucket_name, Key='catalog.json')
+        status = response.get('ResponseMetadata', {}).get('HTTPStatusCode')
+        if 'Body' in response and status == 200:
+            catalog_bytes = response['Body'].read()
+        else:
+            raise Exception('Failed to Get Catalog from Bucket.')
         
         # Load the content from json
-        self.catalog = json.load(catalog_bytes)
+        self.catalog = json.loads(catalog_bytes)
+        
+        # Check catalog format assumptions
+        if any([key not in self.catalog for key in ['status', 'catalog']]):
+            raise Exception('Invalid catalog. Missing either status or catalog key.')
+        for entry in self.catalog['catalog']:
+            if any([key not in entry for key in ['id', 'loc', 'title', 'startdate', 'enddate']]):
+                raise Exception('Invalid catalog entry. Missing a needed key.')
+            loc = entry['loc']
+            #if (not loc.startswith('s3://') and not loc.startswith(f'{bucket_name}/')) or loc[-1] != '/':
+            if not loc.startswith('s3://') or loc[-1] != '/':
+                raise Exception('Invalid loc in catalog entry.')
         
         # Set and create the folder for caching 
-        if cache_folder is None:
-            cache_folder = bucket_name + '_cache'
+        if cache_folder is None and cache:
+            cache_folder = self.bucket_name + '_cache'
         self.cache_folder = cache_folder
-        if not os.path.exists(self.cache_folder):
+        if self.cache_folder is not None and not os.path.exists(self.cache_folder):
             os.mkdir(self.cache_folder)
 
         # Copy the content of the catalog to this folder 
-        catalog_bytes.seek(0)
         with open(os.path.join(cache_folder, 'catalog.json'), 'wb') as file:
-            file.write(catalog_bytes.read())
+            file.write(catalog_bytes)
             
         # Check status and rasie exception
         if self.catalog['status'] == '1400/temporarily unavailable':
             raise Exception(self.catalog['status'])
 
     def get_catalog(self):
-        return self.catalog
-            
-    def request_file_registry(self, catalog_id, start_date=None, end_date=None):
         """
-        Function to request file registry from the s3 bucket. 
+        Gets the raw catalog downloaded from the bucket.
+
+        Returns:
+        The catalog dict
+        """
+        return self.catalog
+    
+    def get_entries(self):
+        """
+        Get the entry id and title of each entry in the catalog
+        
+        Returns:
+        A list of tuples with the id and title from the global catalog registry
+        """
+        # Get the name and region of each entry in the catalog
+        return [(x['id'], x['title']) for x in self.catalog['catalog']]
+            
+    def request_file_registry(self, catalog_id, start_date=None, end_date=None, overwrite=False):
+        """
+        Request the files in the file registry within the provided times from the s3 bucket. 
 
         Parameters: 
         catalog_id (str): The id of the catalog entry in the s3 bucket. 
         start_date (str): Start date for which file registry is needed (default None). ISO 8601 standard
         end_date (str): End date for which file registry is needed (default None). ISO 8601 standard.
+        overwrite (bool): Overwrite files already cached if within request,
+                          cache in initilization must have been true.
+                             
+        Returns:
+        A pandas Dataframe containing the requested file registry data
         """
         # Make dates conform with ISO 8601 standard
         if start_date[-1] != 'Z':
@@ -150,12 +215,17 @@ class FileRegistry:
             entry = entry[0]
 
         # Get some necessary variables 
-        eid, loc, catalog_start_date, catalog_end_date, ndxformat = entry['id'], entry['loc'], entry['startdate'], entry['enddate'], entry['indexformat']
+        eid, loc, catalog_start_date, catalog_end_date = entry['id'], entry['loc'], entry['startdate'], entry['enddate']
+        ndxformat = 'csv'  # entry['ndxformat']
 
-        # Create the path for storing cached files and folder if does not exist
-        path = os.path.join(self.cache_folder, catalog_id)
-        if not os.path.exists(path):
-            os.mkdir(path)
+        # If caching
+        if self.cache_folder is None:
+            path = None
+        else:
+            # Create the path for storing cached files and folder if does not exist
+            path = os.path.join(self.cache_folder, catalog_id)
+            if not os.path.exists(path):
+                os.mkdir(path)
 
         # Compute minimum and maximum year from start and end date respectively 
         catalog_year_start_date = datetime.strptime(catalog_start_date, '%Y-%m-%dT%H:%M:%SZ').year
@@ -171,59 +241,67 @@ class FileRegistry:
         if year_end_date < year_start_date:
             raise ValueError('start_date must be equal or less than end_date')
         
-        # Get Bucket info dependening on the type of address passed (Local, S3 or diffrent bucket)
-        if loc.startswith(f's3://{self.bucket_name}/'):
-            loc = loc[len(self.bucket_name)+6:]
-            bucket = self.bucket
-        elif loc.startswith(f'{self.bucket_name}/'):
-            loc = loc[len(self.bucket_name)+1:]
-            bucket = self.bucket
-        elif loc.startswith(f's3://'):
-            bucketname = loc[5:].split('/', 1)[0]
-            bucket = self.s3.Bucket(bucketname)
-            loc = loc[len(self.bucket_name)+6:]
-        else:
-            raise Exception(f'Invalid Catalog Loc: {loc}')
+        # Local or different: Could be same bucket or different bucket
+        # not enforcing being same bucket
+        bucket_name = loc[5:].split('/', 1)[0]
+        loc = loc[len(bucket_name)+6:]
 
         # Define empty array for storing data frames 
         frs = []
 
         # Loop through all the years 
         for year in range(year_start_date, year_end_date):
-            filename = f'{eid}_{year}.{ndxformat}'
-            filepath = os.path.join(path, filename)
+            #filename = f'{eid}_{year}.{ndxformat}'
+            filename = f'{year}.{ndxformat}'
 
+            if path is None:
+                filepath = None
+            else:
+                filepath = os.path.join(path, filename)
+            
             # If file does not exist download it from s3
             # And save it to the given path 
-            if not os.path.exists(filepath):
-                fr_bytes = BytesIO()
-                bucket.download_fileobj(os.path.join(loc, filename), fr_bytes)
-                fr_bytes.seek(0)
-                with open(filepath, 'wb') as file:
-                    file.write(fr_bytes.read())
+            if overwrite or filepath is None or not os.path.exists(filepath):
+                # May through some errors, NoSuchBucket, ClientError (file may not exists or access denied)
+                # If have ListBucket perms, no such key error will be raised instead of client error
+                response = self.s3_client.get_object(Bucket=bucket_name, Key=loc + filename)
+                status = response.get('ResponseMetadata', {}).get('HTTPStatusCode')
+                if 'Body' in response and status == 200:
+                    fr_bytes_file = BytesIO()
+                    fr_bytes_file.write(response['Body'].read())
+                    fr_bytes_file.seek(0)
+                else:
+                    raise Exception('Failed to get a file registry object')
+                
+                if filepath is not None:
+                    with open(filepath, 'wb') as file:
+                        file.write(fr_bytes_file.read())
+                    fr_bytes_file.seek(0)
 
-                fr_bytes.seek(0)
-
+                frs.append(pd.read_csv(fr_bytes_file))
+                    
                 # Depending on the format of index read the csv or parq file
-                if ndxformat == 'csv':
-                    frs.append(pd.read_csv(fr_bytes))
-                elif ndxformat == 'parquet':
-                    frs.append(pd.read_parquet(fr_bytes))
-                elif ndxformat == 'csv-zip':
-                    frs.append(pd.read_csv(fr_bytes, compression='zip'))
-                else:
-                    raise NotImplementedError(f'Invalid ndxformat: {ndxformat}')
+                #if ndxformat == 'csv':
+                #    frs.append(pd.read_csv(fr_bytes_file))
+                #elif ndxformat == 'parquet':
+                #    frs.append(pd.read_parquet(fr_bytes_file))
+                #elif ndxformat == 'csv-zip':
+                #    frs.append(pd.read_csv(fr_bytes_file, compression='zip'))
+                #else:
+                #    raise NotImplementedError(f'Invalid ndxformat: {ndxformat}')
 
-            # If file exists, read from given path 
+            # If file exists, read from given path
             else:
-                if ndxformat == 'csv':
-                    frs.append(pd.read_csv(filepath))
-                elif ndxformat == 'parquet':
-                    frs.append(pd.read_parquet(filepath))
-                elif ndxformat == 'csv-zip':
-                    frs.append(pd.read_csv(filepath, compression='zip'))
-                else:
-                    raise NotImplementedError(f'Invalid ndxformat: {ndxformat}')
+                frs.append(pd.read_csv(filepath))
+                
+                #if ndxformat == 'csv':
+                #    frs.append(pd.read_csv(filepath))
+                #elif ndxformat == 'parquet':
+                #    frs.append(pd.read_parquet(filepath))
+                #elif ndxformat == 'csv-zip':
+                #    frs.append(pd.read_csv(filepath, compression='zip'))
+                #else:
+                #    raise NotImplementedError(f'Invalid ndxformat: {ndxformat}')
 
         frs = pd.concat(frs)
                     

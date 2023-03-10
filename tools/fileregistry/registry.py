@@ -32,14 +32,14 @@ class CatalogRegistry:
         if response.status_code == 200:
             self.catalog = response.json()
         else:
-            raise Exception('Get Request for Global Catalog Failed.')
+            raise requests.ConnectionError(f'Get Request for Global Catalog Failed. Catalog url: {self.catalog_url}')
         
         # Check global catalog format assumptions
         if 'registry' not in self.catalog:
-            raise Exception('invalid catalog')
+            raise KeyError('Invalid catalog. Missing registry key.')
         for reg_entry in self.catalog['registry']:
             if 'endpoint' not in reg_entry or 'name' not in reg_entry or 'region' not in reg_entry:
-                raise Exception('invalid registry entry')
+                raise KeyError('Invalid registry entry in catalog. Missing endopount or name or region key.')
         
 
     def get_catalog(self):
@@ -95,6 +95,20 @@ class CatalogRegistry:
         return registries[0]['endpoint']
 
 
+class FailedS3Get(Exception):
+    """
+    A custom exception for any errors relating to s3 that are not already thrown by boto.
+    """
+    pass
+
+
+class UnavailableData(Exception):
+    """
+    A custom exception for when the catalog indicates the dataset is unavailable.
+    """
+    pass
+
+    
 class FileRegistry:
     """
     Use to work with a specific bucket (obtained from the global catalog) and
@@ -131,21 +145,21 @@ class FileRegistry:
         if 'Body' in response and status == 200:
             catalog_bytes = response['Body'].read()
         else:
-            raise Exception('Failed to Get Catalog from Bucket.')
+            raise FailedS3Get('Failed to Get Catalog from Bucket.')
         
         # Load the content from json
         self.catalog = json.loads(catalog_bytes)
         
         # Check catalog format assumptions
         if any([key not in self.catalog for key in ['status', 'catalog']]):
-            raise Exception('Invalid catalog. Missing either status or catalog key.')
+            raise KeyError('Invalid catalog. Missing either status or catalog key.')
         for entry in self.catalog['catalog']:
             if any([key not in entry for key in ['id', 'loc', 'title', 'startdate', 'enddate']]):
-                raise Exception('Invalid catalog entry. Missing a needed key.')
+                raise KeyError('Invalid catalog entry. Missing a needed key.')
             loc = entry['loc']
             #if (not loc.startswith('s3://') and not loc.startswith(f'{bucket_name}/')) or loc[-1] != '/':
             if not loc.startswith('s3://') or loc[-1] != '/':
-                raise Exception('Invalid loc in catalog entry.')
+                raise ValueError('Invalid loc in catalog entry.')
         
         # Set and create the folder for caching 
         if cache_folder is None and cache:
@@ -160,7 +174,7 @@ class FileRegistry:
             
         # Check status and rasie exception
         if self.catalog['status'] == '1400/temporarily unavailable':
-            raise Exception(self.catalog['status'])
+            raise UnavailableData(self.catalog['status'])
 
     def get_catalog(self):
         """
@@ -251,8 +265,7 @@ class FileRegistry:
 
         # Loop through all the years 
         for year in range(year_start_date, year_end_date):
-            #filename = f'{eid}_{year}.{ndxformat}'
-            filename = f'{year}.{ndxformat}'
+            filename = f'{eid}_{year}.{ndxformat}'
 
             if path is None:
                 filepath = None
@@ -271,7 +284,7 @@ class FileRegistry:
                     fr_bytes_file.write(response['Body'].read())
                     fr_bytes_file.seek(0)
                 else:
-                    raise Exception('Failed to get a file registry object')
+                    raise FailedS3Get('Failed to get a file registry object')
                 
                 if filepath is not None:
                     with open(filepath, 'wb') as file:

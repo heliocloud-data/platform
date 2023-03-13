@@ -24,7 +24,7 @@ class CatalogRegistry:
                 # TODO: Edit to real catalog
                 catalog_url = 'https://git.mysmce.com/heliocloud/heliocloud-data-uploads/-/blob/main/catalog.json'
                 # TODO: Remove ValueError
-                raise ValueError('No environment variable ROOT_CATALOG_REGISTRY_URL nor was an explicit catalog_url passed in')
+                raise ValueError('No environment variable ROOT_CATALOG_REGISTRY_URL nor was an explicit catalog_url passed in.')
         self.catalog_url = catalog_url
 
         # Load the content from json
@@ -32,14 +32,14 @@ class CatalogRegistry:
         if response.status_code == 200:
             self.catalog = response.json()
         else:
-            raise Exception('Get Request for Global Catalog Failed.')
+            raise requests.ConnectionError(f'Get Request for Global Catalog Failed. Catalog url: {self.catalog_url}')
         
         # Check global catalog format assumptions
         if 'registry' not in self.catalog:
-            raise Exception('invalid catalog')
+            raise KeyError('Invalid catalog. Missing registry key.')
         for reg_entry in self.catalog['registry']:
             if 'endpoint' not in reg_entry or 'name' not in reg_entry or 'region' not in reg_entry:
-                raise Exception('invalid registry entry')
+                raise KeyError(f'Invalid registry entry in catalog. Missing endpoint or name or region key. Registry entry: {reg_entry}')
         
 
     def get_catalog(self):
@@ -87,14 +87,28 @@ class CatalogRegistry:
         # Check to make sure all entries have unique names + prefixed region
         if not force_first and len(registries) > 1:
             if len(set(x['region'] for x in registries)) == 1:
-                raise ValueError('Entries do not all have unique names. You may enable force_first to choose first option')
+                raise ValueError('Entries do not all have unique names. You may enable force_first to choose first option.')
             else:
-                raise ValueError('Entries do not all have unique names but have different regions, please further specify region_prefix')
+                raise ValueError('Entries do not all have unique names but have different regions, please further specify region_prefix.')
         elif len(registries) == 0:
-            raise ValueError('No endpoint found with given name and region_prefix')
+            raise ValueError('No endpoint found with given name and region_prefix.')
         return registries[0]['endpoint']
 
 
+class FailedS3Get(Exception):
+    """
+    A custom exception for any errors relating to s3 that are not already thrown by boto.
+    """
+    pass
+
+
+class UnavailableData(Exception):
+    """
+    A custom exception for when the catalog indicates the dataset is unavailable.
+    """
+    pass
+
+    
 class FileRegistry:
     """
     Use to work with a specific bucket (obtained from the global catalog) and
@@ -131,21 +145,22 @@ class FileRegistry:
         if 'Body' in response and status == 200:
             catalog_bytes = response['Body'].read()
         else:
-            raise Exception('Failed to Get Catalog from Bucket.')
+            raise FailedS3Get(f'Failed to Get Catalog from Bucket. Status: {status}. Response: {response}')
         
         # Load the content from json
         self.catalog = json.loads(catalog_bytes)
         
         # Check catalog format assumptions
         if any([key not in self.catalog for key in ['status', 'catalog']]):
-            raise Exception('Invalid catalog. Missing either status or catalog key.')
+            raise KeyError(f'Invalid catalog. Missing either status or catalog key. Catalog: {self.catalog}')
         for entry in self.catalog['catalog']:
-            if any([key not in entry for key in ['id', 'loc', 'title', 'startdate', 'enddate']]):
-                raise Exception('Invalid catalog entry. Missing a needed key.')
+            missing_keys = [key for key in ['id', 'loc', 'title', 'startdate', 'enddate'] if key not in entry]
+            if len(missing_keys) > 0:
+                raise KeyError(f'Invalid catalog entry. Missing keys ({missing_keys}) in entry: {entry}')
             loc = entry['loc']
             #if (not loc.startswith('s3://') and not loc.startswith(f'{bucket_name}/')) or loc[-1] != '/':
             if not loc.startswith('s3://') or loc[-1] != '/':
-                raise Exception('Invalid loc in catalog entry.')
+                raise ValueError(f'Invalid loc in catalog entry. Loc: {loc}')
         
         # Set and create the folder for caching 
         if cache_folder is None and cache:
@@ -160,7 +175,7 @@ class FileRegistry:
             
         # Check status and rasie exception
         if self.catalog['status'] == '1400/temporarily unavailable':
-            raise Exception(self.catalog['status'])
+            raise UnavailableData(self.catalog['status'])
 
     def get_catalog(self):
         """
@@ -239,7 +254,7 @@ class FileRegistry:
 
         # Check if start date is less or equal than end date
         if year_end_date < year_start_date:
-            raise ValueError('start_date must be equal or less than end_date')
+            raise ValueError(f'start_date ({year_start_date}) must be equal or less than end_date ({year_end_date}).')
         
         # Local or different: Could be same bucket or different bucket
         # not enforcing being same bucket
@@ -251,8 +266,7 @@ class FileRegistry:
 
         # Loop through all the years 
         for year in range(year_start_date, year_end_date):
-            #filename = f'{eid}_{year}.{ndxformat}'
-            filename = f'{year}.{ndxformat}'
+            filename = f'{eid}_{year}.{ndxformat}'
 
             if path is None:
                 filepath = None
@@ -271,7 +285,7 @@ class FileRegistry:
                     fr_bytes_file.write(response['Body'].read())
                     fr_bytes_file.seek(0)
                 else:
-                    raise Exception('Failed to get a file registry object')
+                    raise FailedS3Get(f'Failed to get a file registry object. Status: {stats}. Response: {response}')
                 
                 if filepath is not None:
                     with open(filepath, 'wb') as file:

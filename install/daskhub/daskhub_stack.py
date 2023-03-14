@@ -25,6 +25,9 @@ class DaskhubStack(Stack):
         with open(config, "r") as file:
             configuration = yaml.safe_load(file)
 
+        registry = configuration['registry']
+        public_buckets = registry.get('bucketNames')
+
         #############################
         # Create EC2 Admin instance #
         #############################
@@ -79,6 +82,12 @@ class DaskhubStack(Stack):
         # TODO programmatically add additional policy statements
         # based on known HelioCloud public buckets (maybe use user script to pull names?)
         # Need to iteratively adjust though, maybe lambda
+        other_known_public_buckets = ['heliopublic']
+        public_bucket_arns = []
+        for public_bucket in public_buckets + other_known_public_buckets:
+            public_bucket_arns += [f"arn:aws:s3:::{public_bucket}",
+                                   f"arn:aws:s3:::{public_bucket}/*"]
+
         s3_custom_policy_document = iam.PolicyDocument(
             statements=[
                 iam.PolicyStatement(
@@ -104,8 +113,7 @@ class DaskhubStack(Stack):
                              "s3:ListBucketVersions",
                              "s3:ListBucket",
                              "s3:GetBucketLocation"],
-                    resources=["arn:aws:s3:::helioublic",
-                               "arn:aws:s3:::helioublic/*"]
+                    resources=public_bucket_arns
                 )
             ]
         )

@@ -67,7 +67,7 @@ class DaskhubStack(Stack):
                                 instance_type=ec2.InstanceType('t2.micro'),
                                 user_data=ec2_user_data,
                                 role=ec2_admin_role,
-                                vpc_subnets=ec2.SubnetSelection(subnets=ec2_vpc.public_subnets))
+                                vpc_subnets=ec2.SubnetSelection(subnets=ec2_vpc.private_subnets))
 
         ###############################################
         # Create S3 Bucket for shared Daskhub storage #

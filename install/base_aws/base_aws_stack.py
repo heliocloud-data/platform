@@ -4,6 +4,7 @@ import aws_cdk as cdk
 from aws_cdk import (
     Stack,
     aws_s3 as s3,
+    aws_ec2 as ec2,
     custom_resources as resources,
 )
 from constructs import Construct
@@ -24,3 +25,5 @@ class BaseAwsStack(Stack):
 
 
         # TODO:  What do we need to put in here?
+        # Create own VPC for HelioCloud
+        self.heliocloud_vpc = ec2.Vpc(self, "HelioCloudVPC")

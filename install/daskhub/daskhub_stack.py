@@ -17,7 +17,7 @@ class DaskhubStack(Stack):
     CDK stack for installing DaskHub for a HelioCloud instance
     """
 
-    def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
+    def __init__(self, scope: Construct, construct_id: str, base_stack, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
         # get the configuration file from the context
@@ -56,18 +56,15 @@ class DaskhubStack(Stack):
                                    f'sudo yum install -y {SSM_AGENT_RPM}',
                                    'restart amazon-ssm-agent')
 
-        # Create own VPC for admin instance
-        ec2_vpc = ec2.Vpc(self, "DaskHubEC2VPC")
-
         # TODO: add cloudwatch logs to SSM
         # Create admin instance and attach role
         instance = ec2.Instance(self, "DaskhubEC2AdminInstance",
-                                vpc=ec2_vpc,
+                                vpc=base_stack.heliocloud_vpc,
                                 machine_image=ec2.AmazonLinuxImage(),
                                 instance_type=ec2.InstanceType('t2.micro'),
                                 user_data=ec2_user_data,
                                 role=ec2_admin_role,
-                                vpc_subnets=ec2.SubnetSelection(subnets=ec2_vpc.private_subnets))
+                                vpc_subnets=ec2.SubnetSelection(subnets=base_stack.heliocloud_vpc.private_subnets))
 
         ###############################################
         # Create S3 Bucket for shared Daskhub storage #
@@ -139,6 +136,7 @@ class DaskhubStack(Stack):
 
         autoscaling_managed_policy = iam.ManagedPolicy(self, "K8AutoScalingManagedPolicy",
                                                        document=autoscaling_custom_policy_document)
+
 
         ##########################
         # CloudFormation Outputs #

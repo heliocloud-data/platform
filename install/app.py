@@ -17,7 +17,8 @@ app = cdk.App()
 # Get the configuration file to use for determining bucket count & names
 config_file = app.node.try_get_context("config")
 if config_file is None:
-    raise Exception("No configuration file was specified. Re-run using flag '-c config=<name of config file>")
+    raise Exception(
+        "No configuration file was specified. Re-run using flag '-c config=<name of config file>")
 
 print("Using configuration file " + config_file)
 with open(config_file, 'r') as file:
@@ -39,9 +40,8 @@ if components.get('enableRegistry', False):
 
 # Check for the other stacks to deploy
 daskhub = components.get('enableDaskHub', False)
-binderhub = components.get('enableBinderHub', False)
 dashboard = components.get('enableUserDashboard', False)
-if daskhub or binderhub or dashboard:
+if daskhub or dashboard:
 
     # Each of these stacks require the Auth stack be deployed first
     auth_stack = AuthStack(app, "HelioCloud-AuthStack",
@@ -52,11 +52,9 @@ if daskhub or binderhub or dashboard:
     if dashboard:
         DashboardStack(app, "HelioCloud-Dashboard",
                        description="HelioCloud User Dashboard deployment").add_dependency(auth_stack)
-    if binderhub:
-        BinderhubStack(app, "HelioCloud-BinderHub",
-                       description="HelioCloud Binderhub deployment").add_dependency(auth_stack)
+
     if daskhub:
         DaskhubStack(app, "HelioCloud-DaskHub",
-                     description="HelioCloud Daskhub deployment").add_dependency(auth_stack)
+                     description="HelioCloud Daskhub deployment", base_stack=base_stack).add_dependency(auth_stack)
 
 app.synth()

@@ -5,7 +5,6 @@ components:
   enableRegistry: True
   enableUserDashboard: True
   enableDaskHub: True
-  enableBinderHub: True
 
 # Details for the registry component
 # S3 data_sets to use for storing data sets
@@ -30,9 +29,6 @@ userDashboard:
 
 # Config block for the Daskhub
 daskhub:
-
-# Config block for the Binderhub
-binderhub:
 
 
 

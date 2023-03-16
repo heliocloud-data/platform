@@ -54,6 +54,8 @@ The global data registry can be accessed directly or mirrored by anyone.
 
 Once an S3 bucket (or equivalent) is registered in the HelioDataRegistry.json file, it does not have to be updated when new datasets are added, only when new buckets are made public.
 
+For this global registry, only S3 buckets, not subbuckets, are allowed. For example, 's3://helio-public/' is allowed, but 's3://helio-public/MMS/' is not.
+
 ## 2.1 Global Data Registry specification
 
 The registry is a JSON file containing the version of this specification, the date it was last modified, and the registry list of datasets.  Each dataset has two items: **endpoint** and **name**.  **endpoint**s must be unique; names do not enforce uniqueness.
@@ -108,8 +110,8 @@ For each dataset, the catalog entry requires:
 
 * **id** a unique ID for the dataset that follows the ID naming requirements
 * **loc** a pointer to the sub-bucket containing both the dataset and the required fileRegistry. It MUST end in a terminating '/'.
-* **startdate**: string, Restricted ISO 8601 date/time of first record of data in the entire dataset.
-* **enddate**: string, Restricted ISO 8601 date/time of end of the last record of data in the entire dataset.
+* **startDate**: string, Restricted ISO 8601 date/time of first record of data in the entire dataset.
+* **endDate**: string, Restricted ISO 8601 date/time of end of the last record of data in the entire dataset.
 * **modificationDate**: string, Restricted ISO 8601 date/time of last time this dataset was updated
 * **title** a short descriptive title sufficient to identify the dataset and its utility to users
 * **indexformat** Defines what format the actual fileRegistry is, one of 'csv', 'csv-zip' or 'parquet'
@@ -150,39 +152,39 @@ Here is an example catalog, for which only the first item has decided to fill ou
             "id": "euvml",
             "loc": "gov-nasa-helio-public/euvml/",
             "title": "EUV-ML dataset",
-            "startdate": "1995-01-01T00:00Z",
-            "enddate": "2022-01-01T00:00Z",
+            "startDate": "1995-01-01T00:00Z",
+            "endDate": "2022-01-01T00:00Z",
             "modificationDate": "2022-01-01T00:00Z",
-	    "indexformat": "csv",
-	    "fileformat": "fits",
+	        "indexformat": "csv",
+	        "fileformat": "fits",
 	        "ownership": {	
 	    	    "description": "Optional description for dataset",
-		    "resourceID": "optional identifier e.g. SPASE ID",
-		    "creationDate": "optional ISO 8601 date/time of the dataset creation",
-		    "citation": "optional how to cite this dataset, DOI or similar",
-		    "contact": "optional contact info, SPASE ID, email, or ORCID",
-		    "aboutURL": "optional website URL for info, team, etc"
+		        "resourceID": "optional identifier e.g. SPASE ID",
+		        "creationDate": "optional ISO 8601 date/time of the dataset creation",
+		        "citation": "optional how to cite this dataset, DOI or similar",
+		        "contact": "optional contact info, SPASE ID, email, or ORCID",
+		        "aboutURL": "optional website URL for info, team, etc"
     		}
         },
         {
             "id": "mms_hmi",
             "loc": "s3://gov-nasa-helio-public/mms/hmi/",
             "title": "MMS HMI data"
-            "startdate": "2015-01-01T00:00Z",
-            "enddate": "2022-01-01T00:00Z",
+            "startDate": "2015-01-01T00:00Z",
+            "endDate": "2022-01-01T00:00Z",
             "modificationDate": "2022-01-01T00:00Z",
-	    "indexformat": "csv-zip",
-	    "fileformat": "cdf"
+	        "indexformat": "csv-zip",
+	        "fileformat": "cdf"
         },
         {
             "id": "mms_feeps",
             "loc": "s3://gov-nasa-helio-public/mms/feeps/",
             "title": "MMS FEEPS data"
-            "startdate": "2015-01-01T00:00Z",
-            "enddate": "2022-01-01T00:00Z",
+            "startDate": "2015-01-01T00:00Z",
+            "endDate": "2022-01-01T00:00Z",
             "modificationDate": "2022-01-01T00:00Z",
-	    "listformat": "csv-zip",
-	    "fileformat": "cdf"
+	        "listformat": "csv-zip",
+	        "fileformat": "cdf"
         }
     ],
     "status": {
@@ -223,9 +225,7 @@ The first case matches the idea of a 'dataset' and MUST be provided for any prov
 
 ## 3.5 Concerns
 
-Concerns were voiced about clashes if multiple people attempt to edit the catalog.json for a bucket at the same time.  Either using an API or a version control tool such as Subversion/SVN or CVS will be mandated.
-
-Discuss.
+Concerns were voiced about clashes if multiple people attempt to edit the catalog.json for a bucket at the same time.  Our default HelioCloud will maintain the catalog.json contents in a serverless DynamoDB (which will handle transaction collisions and provide rollback), which then outputs the 'catalog.json' file that users and data requests use.
 
 # 4 File Registry
 
@@ -235,13 +235,13 @@ The index fileRegistry is a set of CSV or Parquet files named "loc"/"id"_YYYY.cs
 
 ## 4.1 Required Items
 
-* **startdate**: string, Restricted ISO 8601 date/time of start for that data.
+* **startDate**: string, Restricted ISO 8601 date/time of start for that data.
 * **key**: string, full filename or S3 object identifier sufficient to actually obtain the file
 * **filesize**: integer, file size in bytes
 
 ## 4.2 Optional Items
 
-* **enddate**: string, Restricted ISO 8601 date/time of end for that data.
+* **endDate**: string, Restricted ISO 8601 date/time of end for that data.
 * **checksum**: checksum for that file. If given, **checksum_algorithm** must also be listed
 * **checksum_algorithm**: checksum algorithm used if checksums are generated. Examples include SHA, others.
 
@@ -280,7 +280,7 @@ The use of CSV or Parquet also enables AWS Athena searches within the index with
 Here is a short minimal CSV example index file.
 
 ```
-# startdate, key, filesize
+# startDate, key, filesize
 '2010-05-08T12:05:30.000Z','s3://edu-apl-helio-public/euvml/stereo/a/195/20100508_120530_n4euA.fts','246000'
 '2010-05-08T12:06:15.000Z','s3://edu-apl-helio-public/euvml/stereo/a/195/20100508_120615_n4euA.fts','246000'
 '2010-05-08T12:10:30.000Z','s3://edu-apl-helio-public/euvml/stereo/a/195/20100508_121030_n4euA.fts','246000'
@@ -289,37 +289,42 @@ Here is a short minimal CSV example index file.
 Here is an example with additional metadata and a CSV header as well.
 
 ```
-# startdate, key, filesize, wavelength, carr_lon, carr_lat
+# startDate, key, filesize, wavelength, carr_lon, carr_lat
 '2010-05-08T12:05:30.000Z','s3://edu-apl-helio-public/euvml/stereo/a/195/20100508_120530_n4euA.fts','246000','195','20.4','30.0'
 '2010-05-08T12:06:15.000Z','s3://edu-apl-helio-public/euvml/stereo/a/195/20100508_120615_n4euA.fts','246000','195','21.8','30.0'
 '2010-05-08T12:10:30.000Z','s3://edu-apl-helio-public/euvml/stereo/a/195/20100508_121030_n4euA.fts','246000','195','22.4','30.0'
 ```
 Here is an example with additional metadata and a CSV header as the EUV-ML project would like.  Items in CAPS are directly from FITS keywords.
 ```
-# startdate, S3key, filesize, spacecraft, instrument, WAVELNTH, CRLT_OBS, CRLN_OBS, CRPIX1, CRPIX2, RSUN, quality, generation_flag
+# startDate, S3key, filesize, spacecraft, instrument, WAVELNTH, CRLT_OBS, CRLN_OBS, CRPIX1, CRPIX2, RSUN, quality, generation_flag
 '2010-05-08T12:05:30.000Z','s3://edu-apl-helio-public/euvml/stereo/a/195/20100508_120530_n4euA.fts','246000','A','euvi','195,45.0, 23.1, 512, 510, 26.5, 1, 1
 '2010-05-08T12:06:15.000Z','s3://edu-apl-helio-public/euvml/stereo/a/195/20100508_120615_n4euA.fts','246000','A','euvi','195',45.0, 23.1, 512, 510, 26.5, 1, 1
 '2010-05-08T12:10:30.000Z','s3://edu-apl-helio-public/euvml/stereo/a/195/20100508_121030_n4euA.fts','246000','A','euvi','195',45.0, 23.1, 512, 510, 26.5, 1, 1
 ```
-# startime, key, filesize, wavelength, carr_lon, carr_lat
-'2010-05-08T12:05:30.000Z','s3://edu-apl-helio-public/euvml/stereo/a/195/20100508_120530_n4euA.fts','246000','195','20.4','30.0'
-'2010-05-08T12:06:15.000Z','s3://edu-apl-helio-public/euvml/stereo/a/195/20100508_120615_n4euA.fts','246000','195','21.8','30.0'
-'2010-05-08T12:10:30.000Z','s3://edu-apl-helio-public/euvml/stereo/a/195/20100508_121030_n4euA.fts','246000','195','22.4','30.0'
+
+# 5 Time Specification and ISO 8601
+
+Time values are always strings, and the CloudMe Time format (taken from the HAPI Time format) is a subset of the ISO 8601 standard. The restriction on the ISO 8601 standard is that time must be represented as
+```
+yyyy-mm-ddThh:mm:ss.sssZ
 ```
 
-# 5 Info Metadata
+and the trailing Z is required. Strings with less precision are allowed as per ISO 8601. Any date or time elements missing from the string are assumed to take on their smallest possible value. For example, the string 2017-01-15T23:00:00.000Z could be given in truncated form as 2017-01-15T23:00Z.  A dataset must use only one format and length within that given dataset. The times values must not have any local time zone offset, and they must indicate this by including the trailing Z.
+
+
+# 6 Info Metadata
 
 Each dataset may also include an optional info json file that gives the time range, date last modified, ownership information, and optional additional metadata for that dataset.  The files are by default searchable and selectable by time window.  Additional search capability is not within scope of the file registry per se, but data providers can indicate metadata for adding a search layer.
 
 If an <id>.info file exists and lists additional parameters, the resulting file Registry index files must contain those parameters in the same order as expressed in this json file.
 
-## 5.1 Optional Items
+## 6.1 Optional Items
 
 * **parameters**: optional list of searchable parameters available in the actual file registry index files
 file.
 (* = available from S3 Inventory)
 
-## 5.1 Example
+## 6.2 Example
 
 Here is an example for a sample optional Info json file.  This is used to indicate additional searchable metadata that exists within the file Registry index files, and enables higher searchability in datasets.
 
@@ -329,11 +334,11 @@ Here is an example for a sample optional Info json file.  This is used to indica
     "parameters": [
 	{"name": "spacecraft", "type": "string"},
     {"name": "wavelength", "type": "int", "units": "Angstroms"},
-	{"name": "crlt", "type": "double", "units": "degrees", desc: "Carrington latitude"},
-	{"name": "crln", "type": "double", "units": "degrees", desc: "Carrington longitude"},
+	{"name": "crlt", "type": "double", "units": "degrees", "desc": "Carrington latitude"},
+	{"name": "crln", "type": "double", "units": "degrees", "desc": "Carrington longitude"},
 	{"name": "rsun", "type": "double", "units": "pixels", "desc": "Size of sun in pizels"},
-    {"name": "crpix1", "type": integer", "units": "pixels", "desc": "x coord of sun center"},
-    {"name": "crpix2", "type": integer", "units": "pixels", "desc": "x coord of sun center"},
+    {"name": "crpix1", "type": "integer", "units": "pixels", "desc": "x coord of sun center"},
+    {"name": "crpix2", "type": "integer", "units": "pixels", "desc": "x coord of sun center"},
     {"name": "quality", "type": "integer", "desc": "data quality and level of interpolation"}
     ]
 }

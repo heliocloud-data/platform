@@ -23,12 +23,12 @@ Fetch latest data files code:
 Move-over code: go from helio-data-staging to TOPS
 1) read 'move-over' list indicating which IDs have new/changed contents
 2) for each ID:
-     a) move files to appropriate s3destination
+     a) move files to appropriate s3destination (verify)
      b) take new fileRegistry and add to canonical fileRegistry
-     c) delete and deregister obsolete files from 'deleteme' list
-     d) update s3destination 'catalog.json' with any change in enddate, modificationdate, startdate
+     d) update DB:catalog.json with any change in datasets, enddate, modificationdate, startdate, etc
      e) optionally, S3 Inventory or other check that files were copied over successfully
-     f) clean out staging area once safely done
+     f) run Lambda to trigger generation of catalog.json from DB:catalog.json
+     g) clean out staging area once safely done
 
 Note that fileRegistries are named [id]_YYYY.csv and consist of a CSV header + lines:
    startdate,s3key,size,any additional items,,,

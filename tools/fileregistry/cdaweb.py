@@ -49,7 +49,8 @@ import os
 import json
 import shutil
 import urllib
-
+import boto3
+import s3fs
 
 """ General driver routines here, should work for most cases """
 
@@ -82,19 +83,25 @@ def make_subdirs_orig(mybase,fname):
             print("Making ",steps)
         
 
-def fetch_and_register(filelist, stripuri, s3destination, s3staging):
+def fetch_and_register(filelist, stripuri, s3destination, s3staging,
+                       extrameta=None):
     """ requires input filelist contain the following items:
     "data" array containing file description dictionary that includes
-        the URI to fetch and minimum metadata of 'startDate', 'Length',
-        and optional 'endDate'
+        the URI to fetch and minimum metadata of 'startDate', 'filesize',
+        optional defined keys 'endDate', 'checksum' and 'checksum_algorithm',
+        and optional undefined 'extrameta' keywords
     "key" field indicating the data dictionary field name for URI
     "startDate" field indicating the data dict field name for startDate
     "filesize" field indicating the data dict field name for filesize,
-    optional 'endDate' field if data dict contains endDates,
-       or None if no endDate exists
+    optional additional metadata or None if none exist
     """
     lastpath = "/" # used later to avoid os calls
-        
+
+    csvregistry = []
+
+    startkey = filelist['startDate']
+    filesizekey = filelist['filesize']
+    
     for item in filelist["data"]:
         url_to_fetch = item[filelist['key']]
         print("fetching ",url_to_fetch)
@@ -108,35 +115,134 @@ def fetch_and_register(filelist, stripuri, s3destination, s3staging):
             lastpath = head
         urllib.request.urlretrieve(url_to_fetch,stagingkey)
         
-        csvitem = item[filelist['startDate']] + ',' + s3key + ',' + str(item[filelist['filesize']])
+        csvitem = item[startkey] + ',' + s3key + ',' + str(item[filesizekey])
         if filelist['endDate'] != None:
             csvitem += ',' + item[filelist['endDate']]
+        if filelist['checksum'] != None:
+            csvitem += ',' + item[filelist['checksum']]
+        if filelist['checksum_algorithm'] != None:
+            csvitem += ',' + item[filelist['checksum_algorithm']]
+        if extrameta != None:
+            for extrakey in extrameta:
+                csvitem += ',' + item[extrakey]
+    
         print(csvitem)
+        csvregistry.append(csvitem)
+
+    return csvregistry
+
+def registryname(id,year):
+    if year.isdigit():
+        regname = id + '_' + str(year) + '.csv'
+    else:
+        regname = id + '_' + year + '.csv'
+    return regname
+
+def local_vs_s3_open(fname,mode):
+    if fname.startswith("s3://"):
+        s3 = s3fs.S3FileSystem(anon=True)
+        fopen = s3.open(fname,mode+'b')
+    else:
+        fopen = open(fname,mode)
+    return fopen
+
+def write_annual_registry(id,s3staging,csvregistry,extrameta=None):
+    """ creates files <id>_YYYY.csv with designated entries
+    in the temporary directory s3staging+id/ which will later be moved
+    (by the separate staging-to-production code)
+    to the location as defined in catalog.csv as the field 'loc'
+    """
+    keyset=['startDate','key','filesize']
+    if extrameta != None: keyset += extrameta
+
+    currentyear="1000" # junk year to compare against
+    
+    for line in csvregistry:
+        year=line[0:4]
+        if year != currentyear:
+            try:
+                fout.close()
+            except:
+                pass
+            currentyear = year
+            registryloc = s3staging+id
+            os.makedirs(registryloc,exist_ok=True)
+            fname = s3staging+id+'/'+registryname(id,currentyear)
+            print("Creating registry ",fname)
+            fout = local_vs_s3_open(fname,"w")
+            header = '#' + ','.join(keyset)
+            fout.write(header+"\n")
+        fout.write(line+"\n")
+    fout.close()
+
+
+def create_catalog_stub(dataid,s3staging):
+    """ Generates a catalog_stub.json file, suitable for
+    adding to the s3destination catalog.json after merging.
+    Location is s3staging+dataid+'/'+catalog_stub.json
+
+    We use read-add-write rather than append because S3 lacks append-ability
+    """
+    fstub = s3staging+dataid+'/catalog_stub.json'
+    if os.path.exists(fstub):
+        fin=local_vs_s3_open(fstub,"r")
+        catData = json.load(fin)
+        fin.close()
+    else:
+        # new catalog
+        catData = {"catalog":[]}
+
+    entry = {"tbd": "tbd"}
+
+
+
+
+
+
+    
+    catData['catalog'].append(entry)
+    
+
+
+
+
+
+
+
+
+
+    fout=local_vs_s3_open(fstub,"w")
+    json.dump(catData,fout,indent=4,ensure_ascii=False)
+    fout.close()
+
     
 
 """ CDAWeb-specific routines here """
 
 
 def get_cdaweb_filelist(dataid,time1,time2):
-            
+
     headers = {"Accept": "application/json"}
 
     url = 'https://cdaweb.gsfc.nasa.gov/WS/cdasr/1/dataviews/sp_phys/datasets/' + dataid + '/orig_data/' + time1 + ',' + time2
     res = requests.get(url, headers=headers)
     if res.status_code == 200:
         j = res.json()
-        # need to provide the local keys for 'key', 'startDate', 'endDate', and 'length' plus the actual 'data'
-        return {"key": "Name", "startDate": "StartTime", "endDate": "EndTime", "filesize": "Length", "data": j['FileDescription']}
+        # need to provide the local keys for 'key', 'startDate' and 'filesize' plus any extra keys plus the actual 'data'
+        return {"key": "Name", "startDate": "StartTime", "endDate": "EndTime", "checksum": None, "checksum_algorithm": None, "filesize": "Length", "data": j['FileDescription']}
     else:
         print("Timeout trying to fetch ",dataid)
         return None
 
 
-        
+
 def get_cdaweb_IDs(fname,webfetch=True):
     url = 'https://cdaweb.gsfc.nasa.gov/WS/cdasr/1/dataviews/sp_phys/datasets/'
     # first fetch URL, if not read prior stored file
     # curl -s -H "Accept: application/json" https://cdaweb.gsfc.nasa.gov/WS/cdasr/1/dataviews/sp_phys/datasets/ | cat >datasets_all.json
+
+    # tbd: update with local_vs_s3_open(fname,mode) (no 'a' in S3?)
+    
     headers = {"Accept": "application/json"}
     if webfetch:
         res = requests.get(url, headers=headers)
@@ -168,15 +274,78 @@ def demo():
     time2="20220505T000000Z"
     stripuri = 'https://cdaweb.gsfc.nasa.gov/sp_phys/data/'
 
+    # option list of extra metadata that the CSV will contain
+    extrameta = None
+    
     allIDs = get_cdaweb_IDs(datasets_fname,False)
     print("There are ",len(allIDs)," CDAWeb IDs")
     for dataid in allIDs:
         if dataid == "PSP_COHO1HR_MERGED_MAG_PLASMA":  # HACK FOR TESTING!!!
             flist = get_cdaweb_filelist(dataid,time1,time2)
-            fetch_and_register(flist, stripuri, s3destination, s3staging)
+            csvregistry = fetch_and_register(flist, stripuri, s3destination, s3staging,extrameta=extrameta)
+            # prescribed keys, if any
+
+            # THIS IS TERRIBLE CODE
+            optkeys = []
+            if flist['endDate'] != None: optkeys.append('endDate')
+            if flist['checksum'] != None: optkeys.append('checksum')
+            if flist['checksum_algorithm'] != None: optkeys.append('checksum_algorithm')
+            if extrameta != None:
+                extrameta = optkeys + extrameta
+            elif len(optkeys) > 0:
+                extrameta = optkeys
+
+                
+            registryloc=write_annual_registry(dataid,s3staging,csvregistry,extrameta=extrameta)
+            ready_to_migrate(dataid,s3staging,registryloc)
 
 
 
+            
+
+            
+def ready_to_migrate(dataid,s3staging,registryloc,movelog='move-over.json'):
+    """
+    once an item is properly staged, this lists it in a file
+    so the subsequent migration to the s3 destination knows what to
+    process.
+    Format of each entry is:
+    dataid, current s3staging base, location of staging <id>_YYYY.csv files
+
+    Actual migration involves
+     a) move files to appropriate s3destination
+     b) take new fileRegistry and add to canonical fileRegistry
+     c) update db:catalog.json with any change in enddate, modificationdate, startdate
+     d) optionally, S3 Inventory or other check that files were copied over successfully
+     e) write destination catalog.json from DB:catalog.json
+     f) clean out staging area once safely done
+     g) delete and deregister obsolete files from 'deleteme' list
+    """
+
+    create_catalog_stub(dataid,s3staging)
+
+    entry = {"dataid": dataid,
+             "s3staging": s3staging,
+             "registryloc": registryloc}
+
+    if os.path.exists(movelog):
+        print("Updating movelog with ",dataid)
+        fin = local_vs_s3_open(movelog,'r')
+        movelist=json.load(fin)
+        fin.close()
+    else:
+        print("Creating movelog with ",dataid)
+        movelist={'movelist':[]}
+
+    movelist['movelist'].append(entry)
+    
+    fout=local_vs_s3_open(movelog,"w")
+    json.dump(movelist,fout,indent=4,ensure_ascii=False)
+    fout.close()
+        
+        
+def migrate_staging_to_s3():
+    pass
 
 
-
+demo()

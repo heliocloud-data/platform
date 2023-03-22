@@ -11,24 +11,28 @@ Update process: fetch latest data files, then move to destination and update reg
 Fetch latest data files code:
 1) get catalog of all CDAWeb IDs
     either local file, fetch of full list, or similar
-2) for each ID, get all items (later: get items after a certain date)
-    a) for each item
+2) diff against DB:catalog.json to get added or dropped datasets
+3) for each ID, get deltas (all items if a new set)
+    a) iterate by year
+    b) for each item
          if item already exists in canonical fileRegistry, do not fetch or do anything
          otherwise, fetch item, and register to staging fileRegistry
-    b) get GAP file for id
-         for each 'old/new' pair, verify new is fetched, and write name of 'old' to 'deleteme' list
     c) add this id to the 'move-over' list for the next step (unless no changes were done)
     d) optionally, S3 inventory and/or checksum and/or file existence checks on fetched items?
+4) for each ID, get GAP file for id
+       for each 'old/new' pair, verify new is fetched, and write name of 'old' to 'deleteme' list
+5) run 'move-over' code for that ID once ID is entirely done
 
 Move-over code: go from helio-data-staging to TOPS
 1) read 'move-over' list indicating which IDs have new/changed contents
 2) for each ID:
-     a) move files to appropriate s3destination (verify)
+     a) move files to appropriate s3destination
      b) take new fileRegistry and add to canonical fileRegistry
-     d) update DB:catalog.json with any change in datasets, enddate, modificationdate, startdate, etc
-     e) optionally, S3 Inventory or other check that files were copied over successfully
-     f) run Lambda to trigger generation of catalog.json from DB:catalog.json
-     g) clean out staging area once safely done
+     c) update db:catalog.json with any change in enddate, modificationdate, startdate
+     d) optionally, S3 Inventory or other check that files were copied over successfully
+     e) write destination catalog.json from DB:catalog.json
+     f) clean out staging area once safely done
+     g) delete and deregister obsolete files from 'deleteme' list
 
 Note that fileRegistries are named [id]_YYYY.csv and consist of a CSV header + lines:
    startdate,s3key,size,any additional items,,,
@@ -47,15 +51,17 @@ import shutil
 import urllib
 
 
+""" General driver routines here, should work for most cases """
+
 def get_lastModified(item):
     # fetch last modified date for that ID
     # for now, just hard-coded
     lasttime="20230101T000000Z"
     return lasttime
 
-def getHAPIIDs(lasttime):
+def getHAPIIDs(lasttime, catalogurl):
     # no longer needed, we fetch from CDAWeb itself now
-    catalogurl = "https://cdaweb.gsfc.nasa.gov/hapi/catalog"
+    # catalogurl = "https://cdaweb.gsfc.nasa.gov/hapi/catalog"
     res = requests.get(catalogurl)
     j = res.json()
     if res.status_code == 200:
@@ -76,6 +82,40 @@ def make_subdirs_orig(mybase,fname):
             print("Making ",steps)
         
 
+def fetch_and_register(filelist, stripuri, s3destination, s3staging):
+    """ requires input filelist contain the following items:
+    "data" array containing file description dictionary that includes
+        the URI to fetch and minimum metadata of 'startDate', 'Length',
+        and optional 'endDate'
+    "key" field indicating the data dictionary field name for URI
+    "startDate" field indicating the data dict field name for startDate
+    "filesize" field indicating the data dict field name for filesize,
+    optional 'endDate' field if data dict contains endDates,
+       or None if no endDate exists
+    """
+    lastpath = "/" # used later to avoid os calls
+        
+    for item in filelist["data"]:
+        url_to_fetch = item[filelist['key']]
+        print("fetching ",url_to_fetch)
+        s3stub = re.sub('https://cdaweb.gsfc.nasa.gov/sp_phys/data/','',url_to_fetch)
+        stagingkey = s3staging + s3stub
+        s3key = s3destination + s3stub
+        # make any necessary subdirectories in staging
+        (head,tail) = os.path.split(stagingkey)
+        if head != lastpath:
+            os.makedirs(head,exist_ok=True)
+            lastpath = head
+        urllib.request.urlretrieve(url_to_fetch,stagingkey)
+        
+        csvitem = item[filelist['startDate']] + ',' + s3key + ',' + str(item[filelist['filesize']])
+        if filelist['endDate'] != None:
+            csvitem += ',' + item[filelist['endDate']]
+        print(csvitem)
+    
+
+""" CDAWeb-specific routines here """
+
 
 def get_cdaweb_filelist(dataid,time1,time2):
             
@@ -92,27 +132,7 @@ def get_cdaweb_filelist(dataid,time1,time2):
         return None
 
 
-def fetch_and_register(filelist, stripuri, s3destination, s3staging):
-        lastpath = "/" # used later to avoid os calls
         
-        for item in filelist["data"]:
-            url_to_fetch = item[filelist['key']]
-            print("fetching ",url_to_fetch)
-            s3stub = re.sub('https://cdaweb.gsfc.nasa.gov/sp_phys/data/','',url_to_fetch)
-            stagingkey = s3staging + s3stub
-            s3key = s3destination + s3stub
-            # make any necessary subdirectories in staging
-            (head,tail) = os.path.split(stagingkey)
-            if head != lastpath:
-                os.makedirs(head,exist_ok=True)
-                lastpath = head
-            urllib.request.urlretrieve(url_to_fetch,stagingkey)
-        
-            csvitem = item[filelist['startDate']] + ',' + s3key + ',' + str(item[filelist['filesize']]) + ',' + item[filelist['endDate']]
-            
-            print(csvitem)
-    
-
 def get_cdaweb_IDs(fname,webfetch=True):
     url = 'https://cdaweb.gsfc.nasa.gov/WS/cdasr/1/dataviews/sp_phys/datasets/'
     # first fetch URL, if not read prior stored file
@@ -139,20 +159,22 @@ def get_cdaweb_IDs(fname,webfetch=True):
         ids.sort()
     return ids
 
-#dataid = 'AC_H0_MFI'
-s3destination = "s3://helio-data-staging/cdaweb/"
-s3staging = "./"  # for now, later s3://helio-data-staging/"
-datasets_fname="datasets_all.json" # local copy of periodically-fetched CDAWeb canonical list of ids
-time1="20220101T000000Z"
-time2="20220505T000000Z"
-stripuri = 'https://cdaweb.gsfc.nasa.gov/sp_phys/data/'
+def demo():
+    #dataid = 'AC_H0_MFI'
+    s3destination = "s3://helio-data-staging/cdaweb/"
+    s3staging = "./"  # for now, later s3://helio-data-staging/"
+    datasets_fname="datasets_all.json" # local copy of periodically-fetched CDAWeb canonical list of ids
+    time1="20220101T000000Z"
+    time2="20220505T000000Z"
+    stripuri = 'https://cdaweb.gsfc.nasa.gov/sp_phys/data/'
 
-allIDs = get_cdaweb_IDs(datasets_fname,False)
-print("There are ",len(allIDs)," CDAWeb IDs")
-for dataid in allIDs:
-    if dataid == "PSP_COHO1HR_MERGED_MAG_PLASMA":  # HACK FOR TESTING!!!
-        flist = get_cdaweb_filelist(dataid,time1,time2)
-        fetch_and_register(flist, stripuri, s3destination, s3staging)
+    allIDs = get_cdaweb_IDs(datasets_fname,False)
+    print("There are ",len(allIDs)," CDAWeb IDs")
+    for dataid in allIDs:
+        if dataid == "PSP_COHO1HR_MERGED_MAG_PLASMA":  # HACK FOR TESTING!!!
+            flist = get_cdaweb_filelist(dataid,time1,time2)
+            fetch_and_register(flist, stripuri, s3destination, s3staging)
+
 
 
 

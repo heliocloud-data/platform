@@ -1,14 +1,15 @@
 # File Registry Tool
-
-This tool is used when wanting to get the file registry files from a specific ID entry in a catalog within a bucket. This tool is not for productive searching through the global catalog (bucket registry) or the bucket-specific catalogs (data registry).
+This tool is designed for retrieving file registry files from a specific ID entry in a catalog within a bucket. It also includes search functionality for searching through all data registries found in the bucket registry list.
 
 ## Use Case
+Suppose there is a mission on S3 that follows the HelioCloud 'CloudMe' Specification, and you want to obtain specific files from this mission.
 
-There is a mission that is on S3 following the HelioCloud 'CloudMe' Specification and we want to obtain specific files of this mission.
-
-To begin, we would install this tool if it is not already installed. We then would import the tool into a script or shell. Once imported we would likely want to search the global catalog to find the specific bucket/catalog that contains references to the file registry files.
+### Initial Setup and Global Catalog
+First, install the tool if it has not been already installed. Then, import the tool into a script or shell. You will likely want to search the global catalog to find the specific bucket/catalog containing the file registry files.
 
 ```python
+from heliocloud import CatalogRegistry, FileRegistry, EntireCatalogSearch
+
 # Create CatalogRegistry object which will by default pull from the Heliocloud global catalog
 # or if an environment variable has been set for another global catalog, it will pull from there
 cr = CatalogRegistry()
@@ -23,7 +24,8 @@ print(cr.get_catalog())
 print(cr.get_entries())
 ```
 
-We now have hopefully found which bucket contains the data registry that is of interest. So, we will want move on to searching the bucket-specific catalog (data registry) for the ID that represents the mission we want to get some data for. 
+### Finding and Requesting the File Registry
+At this point, you should have found the bucket containing the data registry of interest. Next, you will want to search the bucket-specific catalog (data registry) for the ID representing the mission you want to obtain data for.
 
 ```python
 # With the bucket name we have obtained (possibly by using cr.get_endpoint(name, region_prefix=''))
@@ -48,30 +50,21 @@ end_date = None  # A ISO 8601 standard time or None if want all the file registr
 file_registry = fr.request_file_registry(fr_id, start_date=start_date, end_date=end_date, overwrite=False)
 ```
 
-We now have a pandas DataFrame with startdate, key, and filesize for all the files of the mission within our specified start and end dates. From here one can use the key to stream some of the data through EC2, a Lambda, or other processing methods.
+### Streaming Data from the File Registry
+You now have a pandas DataFrame with startdate, key, and filesize for all the files of the mission within your specified start and end dates. From here, you can use the key to stream some of the data through EC2, a Lambda, or other processing methods.
 
-This tool does not offer specific methods for downloading the actual data, but using boto s3 client or other methods are possible. To outline a simple example of getting the data if it were a FITS file, look at the code below:
+This tool also offers a simple function for streaming the data once the file registry is obtained:
 
 ```python
-import boto3
-from astropy.io import fits
+FileRegistry.stream(file_registry, lambda bfile, startdate, filesize: print(len(bo.read()), filesize))
+```
 
-# assuming the key in each file registry entry follows the format of a full s3 uri
-for key in file_registry['key']:
-    # remove s3://
-    key = key[5:]
+### Searching the Entire Catalog
+As an alternative to manually searching, you can use the EntireCatalogSearch class to find a catalog entry:
 
-    # get bucket name and relative key
-    bucket_name, key = key.split('/', 1)
-
-    response = s3_client.get_object(Bucket=bucket_name, Key=key)
-    status = response.get('ResponseMetadata', {}).get('HTTPStatusCode')
-    if 'Body' in response and status == 200:
-        file = response['Body'].read()
-        hdul = fits.open(file)
-
-        # do something with open fits file
-        print(hdul[0].header)
-    else:
-        print(f'Error geting: {bucket_name} {key}')
+```python
+search = registry.EntireCatalogSearch()
+top_search_result = search.search_by_keywords(['vector', 'mission', 'useful'])[0]
+# Prnts out the top result with all the catalog info, including id, loc, startdate, etc.
+print(top_search_result)
 ```

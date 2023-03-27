@@ -6,7 +6,7 @@ unzip awscliv2.zip
 sudo /tmp/aws/install
 rm -rf /tmp/aws/
 rm -f /tmp/awscliv2.zip
-cd ~
+cd /home/ssm-user
 
 sudo curl --location -o /usr/local/bin/kubectl https://s3.us-west-2.amazonaws.com/amazon-eks/1.22.6/2022-03-09/bin/linux/amd64/kubectl
 sudo chmod +x /usr/local/bin/kubectl
@@ -19,16 +19,11 @@ bash get_helm.sh -v v3.9.4
 
 for command in kubectl jq envsubst aws eksctl helm; do which $command &>/dev/null && echo "OK - $command" || echo "****NOT FOUND IN PATH**** - $command"; done
 
-echo "complete -C '/usr/local/bin/aws_completer' aws" >> ~/.bashrc
-. ~/.bashrc
+echo "complete -C '/usr/local/bin/aws_completer' aws" >> /home/ssm-user/.bashrc
+. /home/ssm-user/.bashrc
 
-eksctl completion bash >> ~/.bash_completion
-kubectl completion bash >>  ~/.bash_completion
+eksctl completion bash >> /home/ssm-user/.bash_completion
+kubectl completion bash >>  /home/ssm-user/.bash_completion
 
 . /etc/profile.d/bash_completion.sh
-. ~/.bash_completion
-
-AWS_REGION=$(curl -s curl http://169.254.169.254/latest/meta-data/placement/region)
-
-aws configure set output json
-aws configure set region $AWS_REGION
+. /home/ssm-user/.bash_completion

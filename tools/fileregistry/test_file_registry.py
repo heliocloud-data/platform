@@ -17,8 +17,8 @@ def test_catalog():
                 'id': 'test_dataset',
                 'loc': 's3://test-bucket/test_dataset/',
                 'title': 'Test Dataset',
-                'startdate': '2020-01-01T00:00:00Z',
-                'enddate': '2021-12-31T23:59:59Z'
+                'startDate': '2020-01-01T00:00:00Z',
+                'stopDate': '2021-12-31T23:59:59Z'
             }
         ]
     }

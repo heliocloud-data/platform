@@ -7,6 +7,8 @@ from math import ceil
 import json
 import requests
 import logging
+import dateutil
+import re
 from typing import List, Dict, Tuple, Union, Optional, Callable
 
 
@@ -130,8 +132,7 @@ class FileRegistry:
         # Remove s3 uri info if provided
         if bucket_name.startswith('s3://'):
             bucket_name = bucket_name[5:]
-        if bucket_name[-1] == '/':
-            bucket_name = bucket_name[:-1]
+        bucket_name = bucket_name.rstrip('/')
     
         # Store the bucket name for future use  
         self.bucket_name = bucket_name
@@ -225,33 +226,37 @@ class FileRegistry:
             raise ValueError(f'Invalid catalog with multiple entries with the same ID. ID: {entry_id}')
         return entries[0]
             
-    def request_file_registry(self, catalog_id: str, start_date: Optional[str] = None, end_date: Optional[str] = None, overwrite: bool = False) -> pd.DataFrame:
+    def request_file_registry(self, catalog_id: str, start_date: Optional[str] = None, stop_date: Optional[str] = None, overwrite: bool = False) -> pd.DataFrame:
         """
         Request the files in the file registry within the provided times from the s3 bucket. 
 
         Parameters: 
             catalog_id (str): The id of the catalog entry in the s3 bucket. 
             start_date (str): Start date for which file registry is needed (default None). ISO 8601 standard.
-            end_date (str): End date for which file registry is needed (default None). ISO 8601 standard.
-            overwrite (bool): Overwrite files already cached if within request,
+            stop_date (str): End date for which file registry is needed (default None). ISO 8601 standard.
+            overwrite (bool): Overwrite files already cached if within request
                               cache in initilization must have been true.
                              
         Returns:
             A pandas Dataframe containing the requested file registry data.
         """
-        # Make dates conform with ISO 8601 standard
+        # Make dates conform with Restricted ISO 8601 standard
         if start_date[-1] != 'Z':
             start_date += 'Z'
-        if end_date[-1] != 'Z':
-            end_date += 'Z'
-            
+        if stop_date[-1] != 'Z':
+            stop_date += 'Z'
         # Convert dates to datetime object
-        start_date = datetime.strptime(start_date, '%Y-%m-%dT%H:%M:%SZ')
-        end_date = datetime.strptime(end_date, '%Y-%m-%dT%H:%M:%SZ')
+        if not re.match(r'^\d{4}-\d{2}-\d{2}T\d{2}.*', start_date):
+            raise ValueError('start_date must follow the format XXXX-XX-XXTXXZ with at least the year, month, day, and hour specified.')
+        if not re.match(r'^\d{4}-\d{2}-\d{2}T\d{2}.*', stop_date):
+            raise ValueError('stop_date must follow the format XXXX-XX-XXTXXZ with at least the year, month, day, and hour specified.')
+        # dateutil.parser.parse
+        start_date = dateutil.parser.parse(start_date[:-1])
+        stop_date = dateutil.parser.parse(stop_date[:-1])
         
         # Check if start date is less or equal than end date
-        if end_date < start_date:
-            raise ValueError(f'start_date ({start_date}) must be equal or less than end_date ({end_date}).')
+        if stop_date < start_date:
+            raise ValueError(f'start_date ({start_date}) must be equal or less than stop_date ({stop_date}).')
 
         # Get the entry with given catalog id from the list of catalogs 
         entry = [catalog_entry for catalog_entry in self.catalog['catalog'] if catalog_entry['id'] == catalog_id]
@@ -265,7 +270,7 @@ class FileRegistry:
             entry = entry[0]
 
         # Get some necessary variables 
-        eid, loc, catalog_start_date, catalog_end_date = entry['id'], entry['loc'], entry['startDate'], entry['stopDate']
+        eid, loc, catalog_start_date, catalog_stop_date = entry['id'], entry['loc'], entry['startDate'], entry['stopDate']
         ndxformat = 'csv'  # entry['ndxformat']
 
         # If caching
@@ -278,23 +283,17 @@ class FileRegistry:
                 os.mkdir(path)
 
         # Compute minimum and maximum year from start and end date respectively
-        # Date should always include seconds, but if dropped, consistently among start and end, no error
-        # Also, handles if start and end have decimal values after seconds
-        if len(catalog_start_date) == 17:
-            date_format = '%Y-%m-%dT%H:%MZ'
-        elif '.' in catalog_start_date:
-            date_format = '%Y-%m-%dT%H:%M:%S.%fZ'
-        else:
-            date_format = '%Y-%m-%dT%H:%M:%SZ'
         
-        catalog_year_start_date = datetime.strptime(catalog_start_date, date_format).year
+        # assuming Z ends date
+        catalog_year_start_date = dateutil.parser.parse(catalog_start_date[:-1]).year
         year_start_date = catalog_year_start_date if start_date is None else max(catalog_year_start_date, start_date.year)
 
         def ceil_year(date):
             return ceil(date.year + (date - datetime(date.year, 1, 1)).total_seconds() * 3.17098e-8)
 
-        catalog_year_end_date = ceil_year(datetime.strptime(catalog_end_date, date_format))
-        year_end_date = catalog_year_end_date if end_date is None else min(catalog_year_end_date, ceil_year(end_date))
+        # assuming Z ends date
+        catalog_year_stop_date = ceil_year(dateutil.parser.parse(catalog_stop_date[:-1]))
+        year_stop_date = catalog_year_stop_date if stop_date is None else min(catalog_year_stop_date, ceil_year(stop_date))
         
         # Local or different: Could be same bucket or different bucket
         # not enforcing being same bucket
@@ -305,7 +304,7 @@ class FileRegistry:
         frs = []
 
         # Loop through all the years 
-        for year in range(year_start_date, year_end_date):
+        for year in range(year_start_date, year_stop_date):
             filename = f'{eid}_{year}.{ndxformat}'
 
             if path is None:
@@ -362,7 +361,7 @@ class FileRegistry:
         
         # Filter file registry dataframe to exact requested dates
         frs['startDate'] = pd.to_datetime(frs['startDate'], format='%Y-%m-%dT%H:%M:%SZ')
-        frs = frs[(start_date <= frs['startDate']) & (frs['startDate'] < end_date)]
+        frs = frs[(start_date <= frs['startDate']) & (frs['startDate'] < stop_date)]
 
         return frs
     

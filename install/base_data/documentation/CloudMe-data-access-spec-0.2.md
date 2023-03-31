@@ -150,7 +150,7 @@ Here is an example catalog, for which only the first item has decided to fill ou
 
 ```javascript
 {
-    "Cloudy": "0.1",
+    "Cloudy": "0.2",
     "endpoint": "s3://gov-nasa-helio-public/",
     "name": "GSFC HelioCloud",
     "contact": "Dr. Contact, dr_contact@example.com",
@@ -339,7 +339,7 @@ Here is an example for a sample optional Info json file.  This is used to indica
 
 ```javascript
 {
-    "CloudMe": "0.1",
+    "CloudMe": "0.2",
     "parameters": [
 	{"name": "spacecraft", "type": "string"},
     {"name": "wavelength", "type": "int", "units": "Angstroms"},

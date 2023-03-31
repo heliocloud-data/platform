@@ -24,11 +24,18 @@ registry:
   # for ALL egress costs out of these PUBLIC S3 buckets (re: HIGH RISK).
   requesterPays: True
 
+# Config block for the auth
+auth:
+  # Cognito domain name prefix must be unique for all of AWS region
+  domain_prefix: "apl-helio"
+
 # Config block for user dashboard settings
 userDashboard:
 
 # Config block for the Daskhub
 daskhub:
+  
+
 
 
 

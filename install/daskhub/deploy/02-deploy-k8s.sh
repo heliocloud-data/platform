@@ -1,12 +1,16 @@
 #!/bin/bash
 
+AWS_REGION=$(curl -s curl http://169.254.169.254/latest/meta-data/placement/region)
+
+aws configure set output json
+aws configure set region $AWS_REGION
+
 NAMESPACE='daskhub'
 EKS_NAME='eks-helio'
-KMS_NAME='helio-kms'
 
 # Get region (should be in configure file after running 01-tools.sh)
 # and availability zone
-AWS_REGION=`aws configure get region`
+#AWS_REGION=`aws configure get region`
 AWS_AZ_PRIMARY=`aws ec2 describe-availability-zones --region $AWS_REGION --query "AvailabilityZones[0].ZoneName" --output text`
 AWS_AZ_SECONDARY=`aws ec2 describe-availability-zones --region $AWS_REGION --query "AvailabilityZones[1].ZoneName" --output text`
 
@@ -16,22 +20,12 @@ INSTANCE_ID=$(wget -q -O - http://169.254.169.254/latest/meta-data/instance-id)
 CLOUDFORMATION_ARN=$(aws ec2 describe-instances --region $AWS_REGION --instance-id $INSTANCE_ID --query "Reservations[0].Instances[0].Tags[?Key=='aws:cloudformation:stack-id'].Value | [0]" --output text)
 CLOUDFORMATION_NAME=$(echo $CLOUDFORMATION_ARN | sed 's/^.*stack\///' | cut -d'/' -f1)
 
-CLOUDFORMATION_RESOURCES=$(aws cloudformation describe-stack-resources --stack-name $CLOUDFORMATION_NAME)
-
-# Create Key Management System alias if it doesn't exist
-aws kms create-alias --alias-name alias/$KMS_NAME --target-key-id $(aws kms create-key --query KeyMetadata.Arn --output text)
-
-KMS_ARN=`aws kms describe-key --key-id alias/$KMS_NAME --query KeyMetadata.Arn --output text`
-echo ------------------------------
-echo Created KMS key: $KMS_ARN
-
-
-HELIO_S3_POLICY_ARN=$(aws cloudformation describe-stack-resources --stack-name $CLOUDFORMATION_NAME --logical-resource-id HelioS3Policy --query StackResources[0].PhysicalResourceId --output text)
-K8S_ASG_POLICY_ARN=$(aws cloudformation describe-stack-resources --stack-name $CLOUDFORMATION_NAME --logical-resource-id K8AutoScalingPolicy --query StackResources[0].PhysicalResourceId --output text)
-
-TEMP=$(aws sts get-caller-identity --query Arn --output text)
-IAM_ROLE_NAME=$(echo $TEMP | sed 's/\/i-.*//' | rev | cut -d'/' -f1 | rev)
-ADMIN_ROLE_ARN=$(aws iam get-role --role-name $IAM_ROLE_NAME --query 'Role.Arn' --output text)
+#CLOUDFORMATION_RESOURCES=$(aws cloudformation describe-stacks --stack-name $CLOUDFORMATION_NAME)
+KMS_ARN=$(aws cloudformation describe-stacks --stack-name $CLOUDFORMATION_NAME --query 'Stacks[0].Outputs[?OutputKey==`KMSArn`].OutputValue' --output text)
+K8S_ASG_POLICY_ARN=$(aws cloudformation describe-stacks --stack-name $CLOUDFORMATION_NAME --query 'Stacks[0].Outputs[?OutputKey==`ASGArn`].OutputValue' --output text)
+HELIO_S3_POLICY_ARN=$(aws cloudformation describe-stacks --stack-name $CLOUDFORMATION_NAME --query 'Stacks[0].Outputs[?OutputKey==`CustomS3Arn`].OutputValue' --output text)
+ADMIN_ROLE_ARN=$(aws cloudformation describe-stacks --stack-name $CLOUDFORMATION_NAME --query 'Stacks[0].Outputs[?OutputKey==`AdminRoleArn`].OutputValue' --output text)
+EFS_ID=$(aws cloudformation describe-stacks --stack-name $CLOUDFORMATION_NAME --query 'Stacks[0].Outputs[?OutputKey==`EFSId`].OutputValue' --output text)
 
 echo ------------------------------
 echo Checking cluster status...
@@ -93,17 +87,8 @@ if [[ " ${final_cluster_query[*]} " =~ " ${EKS_NAME} " ]]; then
     echo Creating EFS with mounted target...
     # Creates Elastic File System (EFS) - creation token ensures that there is only
     # one EFS created in case this file is executed multiple times
-    aws efs create-file-system \
-        --creation-token $EKS_NAME \
-        --performance-mode generalPurpose \
-        --throughput-mode bursting \
-        --encrypted \
-        --backup \
-        --availability-zone-name $AWS_AZ_PRIMARY \
-        --tags Key=Name,Value=$EKS_NAME
 
     # Get EFS, subnet, and SG ids. Network has to be associated with EKS DNS
-    EFS_ID=`aws efs  describe-file-systems --creation-token $EKS_NAME --query "FileSystems[0].FileSystemId" --output text`
     SUBNET_IDS=`aws eks describe-cluster --name $EKS_NAME --region $AWS_REGION --query cluster.resourcesVpcConfig.subnetIds --output text`
     SG_ID=`aws eks describe-cluster --name $EKS_NAME --region $AWS_REGION --query cluster.resourcesVpcConfig.clusterSecurityGroupId --output text`
 
@@ -156,3 +141,18 @@ else
     echo ------------------------------
     echo ERROR: Cluster - $EKS_NAME - was not created, skipped all subsequent steps, debug required!
 fi
+
+# Setup Daskhub configuration files (copy templates and add API keys to secrets)
+API_KEY1=$(openssl rand -hex 32)
+API_KEY2=$(openssl rand -hex 32)
+
+cp dh-secrets.yaml.template dh-secrets.yaml
+
+sed -i "s|<INSERT_API_KEY1>|$API_KEY1|g" dh-secrets.yaml
+sed -i "s|<INSERT_API_KEY2>|$API_KEY2|g" dh-secrets.yaml
+
+cp dh-config.yaml.template dh-config.yaml
+cp dh-auth.yaml.template dh-auth.yaml
+
+# Add helm repo
+helm repo add dask https://helm.dask.org/

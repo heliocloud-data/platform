@@ -5,9 +5,6 @@ These are instructions about how to install the HelioCloud version of DaskHub in
 - [Installing Daskhub](#installing-daskhub)
   - [Requirements](#requirements)
   - [Initial infrastructure](#initial-infrastructure)
-    - [Method 1: CloudFormation Template](#method-1-cloudformation-template)
-    - [Method 2: AWS Console](#method-2-aws-console)
-  - [Tooling](#tooling)
   - [Kubernetes Installation](#kubernetes-installation)
     - [Cluster (EKS) and Supporting Service (EFS, S3) Configuration and Deployment](#cluster-eks-and-supporting-service-efs-s3-configuration-and-deployment)
     - [DaskHub Deployment](#daskhub-deployment)
@@ -18,7 +15,7 @@ These are instructions about how to install the HelioCloud version of DaskHub in
 - [Updating Daskhub](#updating-daskhub)
   - [Updating Kubernetes Cluster](#updating-kubernetes-cluster)
 - [Deleting Daskhub](#deleting-daskhub)
-  - [Tearing down HelioCloud](#tearing-down-heliocloud)
+  - [Tearing down HelioCloud Daskhub infrastructure](#tearing-down-heliocloud-daskhub-infrastructure)
 - [Notes](#notes)
   - [OAuth Auto Login](#oauth-auto-login)
 
@@ -94,160 +91,27 @@ Must have access to AWS environment with permissions that allow you to create/mo
    </blockquote></details>
 This is a very open role and not necessarily what you should set for your default user.  However, in order to run these instructions must have IAM roles that allow creation/deletion of both IAM roles and policies.
 
+Also require that can deploy CDK projects (TODO describe how to do that) and we recommend but do not require that you have the SSM client setup (TODO describe how to do that)
+
 
 
 ## Initial infrastructure
 
 Choose a region within AWS to deploy infrastructure (suggestion is `us-east-1` as the data for initial HelioClouds are here and there will be no egress of data).
 
-We will first setup an admin machine (an EC2 instance). This admin machine is where we run the Kubernetes install and interact with the Daskhub so it needs to have appropriate permissions (e.g. EKS). This machine directs the install and does not do heavy lifting so a small instance is sufficient (t2.micro).
+We will setup an admin machine (an EC2 instance) and other infrastructure via AWS CDK (we assume this has been done in accordance with the HelioCloud install). This admin machine is where we run the Kubernetes install and interact with the Daskhub and does not do heavy lifting so a small instance is sufficient (t2.micro). 
 
-There are 2 methods to set up the initial infrastructure: (1) CloudFormation template and (2) AWS console/CLI guide.  We suggest using our CloudFormation template for most users.  This method is intended to be used on a clean system that does not have any of the HelioCloud AWS resources already spun up and for those who do not need any significant configuration alterations.  We include alternative infrastructure setup instructions to use the AWS console. These are useful if you have some AWS resources partially setup (updated CloudFormation script does not rely on named roles).  Everything described using the AWS Console can also be done on the command line with AWS CLI, we do not include instructions on the AWS CLI for this portion of the guide but they can be found in the [AWS documentation](https://aws.amazon.com/cli/).
-
-### Method 1: CloudFormation Template
-0. [Create KeyPair](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/create-key-pairs.html) or ensure that there is a KeyPair that you have the *.pem file for (this ensures you can log into the EC2 instance we are going to create and finish installation steps for).
-
-1. Use AWS console or AWS CLI to generate a CloudFormation stack
-    - This will create all the necessary AWS resources for our initial setup (EC2, S3, IAM roles and policies, VPC), we describe the steps in the AWS Console but can just use link if signed into AWS (list the US regions but can use for any region using the generic link or just changing the region once launched into the Console)
-    -   | Region      | Launch Link |
-        | ----------- | ----------- |
-        | us-east-1      | [![alt text](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png "Title")](https://console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/new?stackName=heliocloud-daskhub&templateURL=https://s3.amazonaws.com/helio-public/cloudformation_templates/cloudformation-ec2.yaml)       |
-        | us-east-2      | [![alt text](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png "Title")](https://console.aws.amazon.com/cloudformation/home?region=us-east-2#/stacks/new?stackName=heliocloud-daskhub&templateURL=https://s3.amazonaws.com/helio-public/cloudformation_templates/cloudformation-ec2.yaml)       |
-        | us-west-1      | [![alt text](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png "Title")](https://console.aws.amazon.com/cloudformation/home?region=us-west-1#/stacks/new?stackName=heliocloud-daskhub&templateURL=https://s3.amazonaws.com/helio-public/cloudformation_templates/cloudformation-ec2.yaml)       |
-        | us-west-2      | [![alt text](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png "Title")](https://console.aws.amazon.com/cloudformation/home?region=us-west-2#/stacks/new?stackName=heliocloud-daskhub&templateURL=https://s3.amazonaws.com/helio-public/cloudformation_templates/cloudformation-ec2.yaml)       |                
-        |generic (uses region you are logged into on AWS Console - can alter in Console)   | <details><summary>Generic launch link</summary><blockquote>[![alt text](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png "Title")](https://console.aws.amazon.com/cloudformation/home?#/stacks/new?stackName=heliocloud-daskhub&templateURL=https://s3.amazonaws.com/helio-public/cloudformation_templates/cloudformation-ec2.yaml) </blockquote></details>|
-    - Search for CloudFormation in the AWS toolbar
-    - Select "Create stack" > "With new resources(standard)"
-    - Specify "Upload a template file" and upload the file in this repo - "deploy/cloudformation-ec2.yaml" OR can get file stored in the publicly available bucket: https://s3.amazonaws.com/helio-public/cloudformation_templates/cloudformation-ec2.yaml
-    - On the next page enter a stack name and select a KeyName (KeyPair), the rest of the parameters have default values, modify if necessary
-    - Click through rest of pages and accept the disclaimer
-    - This stack may take 5 minutes to complete, if it fails you can troubleshoot in the console or delete the stack and try Method 2
-
-
-### Method 2: AWS Console
-This section is collapsed because it is not the preferred method.  This method is only recommended if Method 1 fails or partial AWS resources for HelioCloud have already been created.
-
-<details><summary>Instructions</summary><blockquote>
-
-1. Use AWS console to create S3 bucket
-    - Search for S3 in the AWS toolbar
-    - Select "Create bucket"
-    - Enter a name (choose anything not already used)
-    - Use the rest of the defaults and create bucket
-    - Navigate to the S3 Properties and copy Amazon Resource Name (ARN) for next step
-
-2. Use AWS console to create IAM policy named "helio-dh-policy"
-    - Search for IAM in the AWS toolbar
-    - Select policies
-    - Select "Create policy"
-    - Select JSON
-    - Paste in the following json:
-        ~~~~~
-        {
-          "Version": "2012-10-17",
-          "Statement": [
-              {
-                  "Sid": "VisualEditor0",
-                  "Effect": "Allow",
-                  "Action": [
-                      "s3:PutObject",
-                      "s3:GetObject",
-                      "s3:ListBucketMultipartUploads",
-                      "s3:AbortMultipartUpload",
-                      "s3:ListBucketVersions",
-                      "s3:CreateBucket",
-                      "s3:ListBucket",
-                      "s3:DeleteObject",
-                      "s3:GetBucketLocation",
-                      "s3:ListMultipartUploadParts"
-                  ],
-                  "Resource": [
-                      "<INSERT_S3_BUCKET_ARN>",
-                      "<INSERT_S3_BUCKET_ARN>/*"
-                  ]
-              },
-              {
-                  "Sid": "VisualEditor1",
-                  "Effect": "Allow",
-                  "Action": "s3:ListAllMyBuckets",
-                  "Resource": "*"
-              }
-          ]
-        }
-        ~~~~~
-        - Replace `<INSERT_S3_BUCKET_ARN>` from previous step in json
-        - Skip tag, select next, enter name "helio-dh-policy" and "Create policy"
-
-3. Use AWS console to create IAM policy named "k8s-asg-policy"
-    - Search for IAM in the AWS toolbar
-    - Select policies
-    - Select "Create policy"
-    - Select JSON
-    - Paste in the following json:
-        ~~~~~
-        {
-            "Version": "2012-10-17",
-            "Statement": [
-                {
-                    "Action": [
-                        "autoscaling:DescribeAutoScalingGroups",
-                        "autoscaling:DescribeAutoScalingInstances",
-                        "autoscaling:DescribeLaunchConfigurations",
-                        "autoscaling:DescribeTags",
-                        "autoscaling:SetDesiredCapacity",
-                        "autoscaling:TerminateInstanceInAutoScalingGroup",
-                        "ec2:DescribeLaunchTemplateVersions"
-                    ],
-                    "Resource": "*",
-                    "Effect": "Allow"
-                }
-            ]
-        }
-        ~~~~~
-        - Skip tag, select next, enter name "k8s-asg-policy" and "Create policy"      
-
-4. Use AWS console to create IAM role named "Daskhub_admin"
-    - Search for IAM in the AWS toolbar
-    - Select roles
-    - Select "Create role"
-    - Use default AWS service
-    - Select EC2 use case
-    - Add the following policies to the role:
-        - AdminstratorAccess
-        - CloudWatchAgentAdminPolicy
-        - CloudWatchAgentServerPolicy
-        - AmazonSSMMangagedInstanceCore
-    - Name: Daskhub_admin
-
-
-5. Use AWS console to create an EC2 instance (virtual computer)
-    - Search for EC2 in the AWS toolbar
-    - Enter a name (choose anything not already used)
-    - Select Linux AMI (can use default free level version, our default is “Amazon Linux 2 Kernel 5.10 AMI 2.0.20220719.0 x86_64 HVM gp2”))
-    - Select instance type (we use default of t2.micro)
-    - Select key pair or create one (you need access to the pem file from this key pair in order to SSH into the EC2 instance and complete rest of installation)
-    - Rest of security groups and SSH traffic configurations can be left to default values
-
-6. Use AWS console to attach "Daskhub_admin" to newly created EC2 instance
-    - Search for EC2 in the AWS toolbar
-    - Select newly create EC2 instance (with the name you chose)
-    - Go to "Actions" > "Security" > "Modify IAM Role"
-    - Find IAM role (Daskhub_admin) in drop down and click update
-</blockquote></details>
-
-
-## Tooling
-2. SSH into EC2 instance either through command line or using AWS Console EC2 Instance Connect
-   - <details><summary>Through SSH</summary><blockquote>
+1. Deploy Daskhub through CDK (instructions [here](https://git.mysmce.com/heliocloud/heliocloud-services/-/tree/develop/install))
+2. SSM into EC2 instance either through command line or using AWS Console EC2 Instance Connect
+   - <details><summary>Through SSM</summary><blockquote>
   
         ~~~~
-        ssh -i "<INSERT_PEM_FILENAME>" ec2-user@<INSERT_EC2_DNS_ADDRESS>
+        aws ssm start-session --target <INSERT_EC2_INSTANCE>
         ~~~~
     
-      - In order to SSH you must point to the local copy of your pem file specified in the EC2 setup
-      (must `chmod 400 <INSERT_PEM_FILENAME>` to have the correct permissions)
-      - Can find `<INSERT_EC2_DNS_ADDRESS>` by looking under the EC2 AWS console under "Public IPv4 DNS" (only available if instance is running) or if you use CloudFormation, it is under the stack's output under PublicDNS
-        - ![finding EC2 DNS ADDRESS](instruction_images/get_ssh_address_cloudformation.png)
+      - In order to SSM you must have both the [AWS CLI](https://aws.amazon.com/cli/) and the [Session Manager plugin](https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-install-plugin.html) installed 
+      - Can find `<INSERT_EC2_INSTANCE>` by looking at output from CDK terminal (labeled as `HelioCloud-Daskhub.InstanceID`) or in the AWS Console under CloudFormation, it is under the stack's output under PublicDNS
+        - ![finding EC2 DNS ADDRESS](instruction_images/get_instance_id_cloudformation.png)
       </blockquote></details>
    - <details><summary>Through Instance Connect</summary><blockquote>
   
@@ -258,99 +122,91 @@ This section is collapsed because it is not the preferred method.  This method i
       - Start connection to be connected through SSH in browser
         ![connect screen](instruction_images/ec2_connect_screen.png)
       </blockquote></details>
-
-3. Get installation scripts on EC2 machine
-    - Clone installation repo `git clone https://git.mysmce.com/heliocloud/helio-daskhub-test.git`
-        - Move into git repo `cd helio-daskhub-test`
-        - While instructions under development must checkout working branch `git checkout origin/cloudformation_k8sconfig`
-
-
-4. Install tools on EC2 machine
-    - Move into installation repo `cd ~/helio-daskhub-test/deploy`
-    - Execute `01-tools.sh`
-      - This installs relevant command line tools (AWS CLI, kubectl - way to manage Kubernetes, eksctl - way to manage AWS clusters, helm - package manager for Kubernetes)
-      - Also configures region for AWS CLI
+3. Once connected to the EC2 instance, run the following commands `cd` and `sudo chown -R ssm-user:ssm-user /home/ssm-user`
+      - This gives permissions to your login user role to modify the user folder
 
 ## Kubernetes Installation
 
 ### Cluster (EKS) and Supporting Service (EFS, S3) Configuration and Deployment
 
-5. Setup and deploy Kubernetes (K8s) on EC2 machine
-    - Must have installed tools on EC2 machine per above instructions and be in the deploy folder of the repo
+4. Setup and deploy Kubernetes (K8s) on EC2 machine and copy Daskhub config templates
+    - Must have followed the permissions steps above and be in the `/home/ssm-user` folder (this should be defaulted to when you call `cd` or `cd ~`)
     - Can alter nodeGroups and managaedNodeGroups in `cluster-config.yaml.template` to suit your cluster (default has master and nodes where uses have spot nodes and users have 3 types of nodes - high compute user, high GPU user, and high compute burst)
-    - Execute `02-deploy-k8s.sh`
+    - Execute `02-deploy-k8s.sh` by running `./02-deploy-k8s.sh`
         - May fail if region deploying in does not have those instance types, can modify the `cluster-config.yaml.template` file to remove or replace instance types that are available in region and rerun script 
         - Can alter the following variables (`NAMESPACE` - the kubernetes namespace to deploy application to - and `EKS_NAME` - the name of the AWS Elastic Kubernetes Service we are deploying) at top of file if they already exist or don't reflect your name choice
         - Can ensure persistent volumes are created by running `kubectl get pv` and `kubectl get pvc --namespace daskhub`
         - Can ensure autoscaling set by running `kubectl get deployments --namespace kube-system`
+    - This script also generates copies of 3 Daskhub configuration files
+        - `dh-config.yaml` - this file contains the specifications of our exact Daskhub build and we will modify the template file as we perform updates.  This file assumes you have built K8s as above specifically the EFS and serviceaccount naming conventions (if this is not the case alter these sections)
+        - `dh-secrets.yaml` - this file contains randomly generated API keys for JupyterHub and DaskHub, if you have specific API keys replace those instead
+        - `dh-auth.yaml` - this file contains authentication components of the Daskhub.  This is optional but highly recommended (do this as soon as possible!).  Must replace all values that contain `<INSERT_******>`  and see comments for any other changes. NOTE: you can set this up right away if you've set up AWS Cognito (see [AWS Cognito section](#aws-cognito)) and have an external domain, if not you will have to update the Daskhub after deploying without authentication
 
 ### DaskHub Deployment
 
 https://saturncloud.io/blog/jupyterhub_security/
 
-**Daskhub (and JupyterHub) can be set-up so that there is no authentication.  We do NOT recommend this as this will leave a public facing entrypoint to your AWS instance where malicious users can access your Daskhub**.  The current checked in DaskHub configuration leaves the authentication sections commented out.  Users can standup DaskHubs using this configuration file for testing but we recommend tearing it down immediately after debugging is complete.
+**Daskhub (and JupyterHub) can be set-up so that there is no authentication.  We do NOT recommend this as this will leave a public facing entrypoint to your AWS instance where malicious users can access your Daskhub**.  The current DaskHub configuration does not force authentication.  Users can standup DaskHubs using this configuration file for testing but we recommend tearing it down immediately after debugging is complete.
 
 See [AWS Cognito section](#aws-cognito) to set-up authentication through AWS. Also see https://saturncloud.io/blog/jupyterhub_security/ for detailed information about setting up DNS routing for DaskHub.
 
-6. Alter Daskhub configuration file
-    - Execute `03-daskhub-configs.sh` to copy and populate configuration file from our template
-        - This generates copies of 3 configuration files
-            - `dh-config.yaml` - this file contains the specifications of our exact Daskhub build and we will modify the template file as we perform updates.  This file assumes you have built K8s as above specifically the EFS and serviceaccount naming conventions (if this is not the case alter these sections)
-            - `dh-secrets.yaml` - this file contains randomly generated API keys for JupyterHub and DaskHub, if you have specific API keys replace those instead
-            - `dh-auth.yaml` - this file contains authentication components of the Daskhub.  This is optional but highly recommended (do this as soon as possible!).  Must replace all values that contain `<INSERT_******>`  and see comments for any other changes. NOTE: you can set this up right away if you've set up AWS Cognito (see [AWS Cognito section](#aws-cognito)) and have an external domain, if not you will have to update the Daskhub after deploying without authentication
-                - Template shows how to configure authentication through AWS Cognito see [here] (https://z2jh.jupyter.org/en/latest/administrator/authentication.html) for alternative authentication options
-                - Edit the following commented out sections of "dh-config.yaml" 
-                -  The `jupyterhub.hub.GenericOAuthenticator.client_id` and `jupyterhub.hub.GenericOAuthenticator.client_secret` can be found in AWS Cognito App clients
-                    - ![cognito domain](instruction_images/app_client.png) 
-                -   `oauth_callback_url` needs to be `https://<INSERT_HOST_NAME>/hub/oauth_callback` for the callback URL using your own hosted domain. Change `jupyterhub.hub.GenericOAuthenticator.scope` to match AWS Cognito App client settings
-                    - ![cognito domain](instruction_images/app_client_settings.png) 
-                -  The `jupyterhub.hub.GenericOAuthenticator.authorize_url`, `jupyterhub.hub.GenericOAuthenticator.token_url`, and `jupyterhub.hub.GenericOAuthenticator.userdata_url` need to be changed so the front part of the url aligns with what is specified in AWS Cognito Domain name.  
+5. Alter Daskhub configuration files
+    -  Only need to adjust `dh-config.yaml` if you did not follow the standard deployment instructions
+    -  Only need to adjust `dh-secrets.yaml` if you want specific API keys for Daskhub
+    -  Must alter `dh-auth.yaml` if you want Daskhub to have an authenticated sign-in (HIGHLY RECOMMENDED)
+       -  Template shows how to configure authentication through AWS Cognito see [here] (https://z2jh.jupyter.org/en/latest/administrator/authentication.html) for alternative authentication options
+               - Edit the following commented out sections of "dh-config.yaml" 
+               -  The `jupyterhub.hub.GenericOAuthenticator.client_id` and `jupyterhub.hub.GenericOAuthenticator.client_secret` can be found in AWS Cognito App clients
+                   - ![cognito domain](instruction_images/app_client.png) 
+               -   `oauth_callback_url` needs to be `https://<INSERT_HOST_NAME>/hub/oauth_callback` for the callback URL using your own hosted domain. Change `jupyterhub.hub.GenericOAuthenticator.scope` to match AWS Cognito App client settings
+                   - ![cognito domain](instruction_images/app_client_settings.png) 
+               -  The `jupyterhub.hub.GenericOAuthenticator.authorize_url`, `jupyterhub.hub.GenericOAuthenticator.token_url`, and `jupyterhub.hub.GenericOAuthenticator.userdata_url` need to be changed so the front part of the url aligns with what is specified in AWS Cognito Domain name.  
 
-                    - ![cognito domain](instruction_images/cognito_domain.png)
+                   - ![cognito domain](instruction_images/cognito_domain.png)
 
-                - For more details about HTTPS see [details](https://zero-to-jupyterhub.readthedocs.io/en/latest/administrator/security.html#set-up-automatic-https)
-                - Example of populated `dh-auth.yaml`:
-                ``` yaml
-                jupyterhub:
-                    hub:
-                        config:
-                        Authenticator:
-                            auto_login: true
-                        GenericOAuthenticator:
-                            admin_users:
-                            - admin1@institution.org
-                            - admin2@test.com
-                            login_service: "AWS Cognito"
-                            client_id: 111111111
-                            client_secret: 123456789101112
-                            oauth_callback_url: https://hub.mydomain.org/hub/oauth_callback
-                            authorize_url: https://domain-test.auth.us-east-1.amazoncognito.com/oauth2/authorize
-                            token_url: https://domain-test.auth.us-east-1.amazoncognito.com/oauth2/token
-                            userdata_url: https://domain-test.auth.us-east-1.amazoncognito.com/oauth2/userInfo
-                            scope:
-                            - openid
-                            - phone
-                            - profile
-                            - email
-                        JupyterHub:
-                            authenticator_class: generic-oauth
-                    proxy:
-                        https:
-                        enabled: true
-                        hosts:
-                            - hub.mydomain.org
-                        letsencrypt:
-                            contactEmail: admin2@test.com
-                ```
+               - For more details about HTTPS see [details](https://zero-to-jupyterhub.readthedocs.io/en/latest/administrator/security.html#set-up-automatic-https)
+               - Example of populated `dh-auth.yaml`:
+               ``` yaml
+               jupyterhub:
+                   hub:
+                       config:
+                       Authenticator:
+                           auto_login: true
+                       GenericOAuthenticator:
+                           admin_users:
+                           - admin1@institution.org
+                           - admin2@test.com
+                           login_service: "AWS Cognito"
+                           client_id: 111111111
+                           client_secret: 123456789101112
+                           oauth_callback_url: https://hub.mydomain.org/hub/oauth_callback
+                           authorize_url: https://domain-test.auth.us-east-1.amazoncognito.com/oauth2/authorize
+                           token_url: https://domain-test.auth.us-east-1.amazoncognito.com/oauth2/token
+                           userdata_url: https://domain-test.auth.us-east-1.amazoncognito.com/oauth2/userInfo
+                           scope:
+                           - openid
+                           - phone
+                           - profile
+                           - email
+                       JupyterHub:
+                           authenticator_class: generic-oauth
+                   proxy:
+                       https:
+                       enabled: true
+                       hosts:
+                           - hub.mydomain.org
+                       letsencrypt:
+                           contactEmail: admin2@test.com
+               ```  
 
-7. Install and deploy the Daskhub helm chart
+
+6. Deploy the Daskhub helm chart
     - This will use Helm (a K8s package manager) to get Daskhub running on our cluster
-    - Run `helm repo add dask https://helm.dask.org/`
     - Run `helm upgrade daskhub dask/daskhub --namespace=daskhub --values=dh-config.yaml --values=dh-secrets.yaml --version=2022.8.2 --install `
       - If you have all AWS Cognito setup,an external domain, and have altered `dh-auth.yaml` accordingly (see priot step) then you can instead run `helm upgrade daskhub dask/daskhub --namespace=daskhub --values=dh-config.yaml --values=dh-secrets.yaml --values=dh-auth.yaml --version=2022.8.2 --install` 
       - If you receive an error on this execute see this [link](https://stackoverflow.com/questions/72126048/circleci-message-error-exec-plugin-invalid-apiversion-client-authentication)
 
-8. Get Daskhub LoadBalancer url
+7. Get Daskhub LoadBalancer url
     - Get URL to access Daskhub
     - Run `kubectl --namespace=daskhub get svc proxy-public`
       - May need to wait until pods are full spun up, can check if they are in a ready state with `kubectl --namespace=daskhub get pod`
@@ -364,7 +220,7 @@ Optional but recommended (our Daskhub configuration files are written to assume 
 
 If your institution already has an existing Cognito User Pool that matches the users you want to give Daskhub access you can skip to step 10
 
-9. Use AWS Console to set up Cognito User Pool to manage credentials for log in/log out
+8. Use AWS Console to set up Cognito User Pool to manage credentials for log in/log out
     - Search for Cognito in the AWS toolbar
     - Create a user pool
     - Enter a name
@@ -376,13 +232,13 @@ If your institution already has an existing Cognito User Pool that matches the u
             - Enter a name (this will be for the Daskhub application)
     - Finish
 
-10. Set up domain name for Amazon Cognito to use in Daskhub configuration
+9. Set up domain name for Amazon Cognito to use in Daskhub configuration
     - Navigate to our newly created Cognito user pool (or existing)
     - Go to App integration > Domain name
     - Enter a domain prefix (this can be a unique name related to your institution)
     - Finish
 
-11. Set up App Client under Cognito User Pool 
+10. Set up App Client under Cognito User Pool 
     - Navigate to our newly created Cognito user pool (or existing)
     - Go to App integration > App client settings
     - Check "Cognito User Pool" under Enable Identity Provider
@@ -402,18 +258,18 @@ If you want to be able to access the daskhub from a human readable URL can get o
 
 See https://saturncloud.io/blog/jupyterhub_security/ for detailed information about setting up DNS routing for DaskHub.
 
-12.	To use Route 53 navigate to it in AWS Console
+11.	To use Route 53 navigate to it in AWS Console
 	- Create a hosted zone using your domain (if you purchase through AWS it automatically sets up a hosted zone)
         - If you have an existing domain you must port it through
     - Create a new alias record with the copied URL from step 8 (Kubernetes load balancer proxy-public).  
         - Use CNAME (this means the record will map to another hostname, in this case this is the `proxy-public EXTERNAL-IP` generated by Daskhub - the LoadBalancer url)
         - This name will be the site that users navigate to get to the spun up daskhub
 
-13.	May need to update DaskHub with this new DNS.
+12.	May need to update DaskHub with this new DNS.
     - Replace new alias name in `dh-auth.yaml` in the `https.hosts` (from `example.com` to your actual domain name) and `GenericOAuthenticator.oauth_callback_url` (to your actual domain name plus `/hub/oauth_callback` this part is a built-in linkage in jupyterhub)
     - To update Daskhub run `helm upgrade daskhub dask/daskhub --namespace=daskhub --values=dh-config.yaml --values=dh-secrets.yaml --values=dh-auth.yaml --version=2022.8.2 --install` again
 
-14.	If using AWS Cognito update App client
+13.	If using AWS Cognito update App client
     - Navigate to your Cognito user pool
     - Go to App integration > App client settings
     - Check "Cognito User Pool" under Enable Identity Provider
@@ -562,7 +418,8 @@ https://phoenixnap.com/kb/helm-delete-deployment-namespace
 If used the instructions above can call `helm uninstall daskhub --namespace daskhub` to remove daskhub
 
 
-## Tearing down HelioCloud
+## Tearing down HelioCloud Daskhub infrastructure
+TODO edit this now
 1. [Delete Daskhub](#deleting-daskhub)
 2. Delete the EFS either through the AWS console or AWS CLI
     - Search EFS in the AWS Console

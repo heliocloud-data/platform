@@ -6,6 +6,9 @@ from datetime import datetime
 from math import ceil
 import json
 import requests
+import logging
+import dateutil
+import re
 from typing import List, Dict, Tuple, Union, Optional, Callable
 
 
@@ -129,8 +132,7 @@ class FileRegistry:
         # Remove s3 uri info if provided
         if bucket_name.startswith('s3://'):
             bucket_name = bucket_name[5:]
-        if bucket_name[-1] == '/':
-            bucket_name = bucket_name[:-1]
+        bucket_name = bucket_name.rstrip('/')
     
         # Store the bucket name for future use  
         self.bucket_name = bucket_name
@@ -163,14 +165,20 @@ class FileRegistry:
             
         # Check catalog entries format assumptions
         for entry in self.catalog['catalog']:
-            missing_keys = [key for key in ['id', 'loc', 'title', 'startdate', 'enddate'] if key not in entry]
+            if 'startdate' in entry:
+                entry['startDate'] = entry.pop('startdate')
+            if 'stopdate' in entry:
+                entry['stopDate'] = entry.pop('stopdate')
+            if 'modificationdate' in entry:
+                entry['modificationDate'] = entry.pop('modificationdate')
+            missing_keys = [key for key in ['id', 'loc', 'title', 'startDate', 'stopDate'] if key not in entry]
             if len(missing_keys) > 0:
                 raise KeyError(f'Invalid catalog entry. Missing keys ({missing_keys}) in entry: {entry}')
             loc = entry['loc']
             #if (not loc.startswith('s3://') and not loc.startswith(f'{bucket_name}/')) or loc[-1] != '/':
             if not (loc.startswith('s3://') and loc[-1] == '/'):
                 raise ValueError(f'Invalid loc in catalog entry. Loc: {loc}')
-            # could check if startdate is less than enddate here
+            # could check if startDate is less than stopDate here
         
         # Set and create the folder for caching
         self.cache_folder = None
@@ -218,33 +226,37 @@ class FileRegistry:
             raise ValueError(f'Invalid catalog with multiple entries with the same ID. ID: {entry_id}')
         return entries[0]
             
-    def request_file_registry(self, catalog_id: str, start_date: Optional[str] = None, end_date: Optional[str] = None, overwrite: bool = False) -> pd.DataFrame:
+    def request_file_registry(self, catalog_id: str, start_date: Optional[str] = None, stop_date: Optional[str] = None, overwrite: bool = False) -> pd.DataFrame:
         """
         Request the files in the file registry within the provided times from the s3 bucket. 
 
         Parameters: 
             catalog_id (str): The id of the catalog entry in the s3 bucket. 
             start_date (str): Start date for which file registry is needed (default None). ISO 8601 standard.
-            end_date (str): End date for which file registry is needed (default None). ISO 8601 standard.
-            overwrite (bool): Overwrite files already cached if within request,
+            stop_date (str): End date for which file registry is needed (default None). ISO 8601 standard.
+            overwrite (bool): Overwrite files already cached if within request
                               cache in initilization must have been true.
                              
         Returns:
             A pandas Dataframe containing the requested file registry data.
         """
-        # Make dates conform with ISO 8601 standard
+        # Make dates conform with Restricted ISO 8601 standard
         if start_date[-1] != 'Z':
             start_date += 'Z'
-        if end_date[-1] != 'Z':
-            end_date += 'Z'
-            
+        if stop_date[-1] != 'Z':
+            stop_date += 'Z'
         # Convert dates to datetime object
-        start_date = datetime.strptime(start_date, '%Y-%m-%dT%H:%M:%SZ')
-        end_date = datetime.strptime(end_date, '%Y-%m-%dT%H:%M:%SZ')
+        if not re.match(r'^\d{4}-\d{2}-\d{2}T\d{2}.*', start_date):
+            raise ValueError('start_date must follow the format XXXX-XX-XXTXXZ with at least the year, month, day, and hour specified.')
+        if not re.match(r'^\d{4}-\d{2}-\d{2}T\d{2}.*', stop_date):
+            raise ValueError('stop_date must follow the format XXXX-XX-XXTXXZ with at least the year, month, day, and hour specified.')
+        # dateutil.parser.parse
+        start_date = dateutil.parser.parse(start_date[:-1])
+        stop_date = dateutil.parser.parse(stop_date[:-1])
         
         # Check if start date is less or equal than end date
-        if end_date < start_date:
-            raise ValueError(f'start_date ({start_date}) must be equal or less than end_date ({end_date}).')
+        if stop_date < start_date:
+            raise ValueError(f'start_date ({start_date}) must be equal or less than stop_date ({stop_date}).')
 
         # Get the entry with given catalog id from the list of catalogs 
         entry = [catalog_entry for catalog_entry in self.catalog['catalog'] if catalog_entry['id'] == catalog_id]
@@ -258,7 +270,7 @@ class FileRegistry:
             entry = entry[0]
 
         # Get some necessary variables 
-        eid, loc, catalog_start_date, catalog_end_date = entry['id'], entry['loc'], entry['startdate'], entry['enddate']
+        eid, loc, catalog_start_date, catalog_stop_date = entry['id'], entry['loc'], entry['startDate'], entry['stopDate']
         ndxformat = 'csv'  # entry['ndxformat']
 
         # If caching
@@ -271,17 +283,17 @@ class FileRegistry:
                 os.mkdir(path)
 
         # Compute minimum and maximum year from start and end date respectively
-        # Date should always include seconds, but if dropped, consistently among start and end, no error
-        date_format = '%Y-%m-%dT%H:%MZ' if len(catalog_start_date) == 17 else '%Y-%m-%dT%H:%M:%SZ'
         
-        catalog_year_start_date = datetime.strptime(catalog_start_date, date_format).year
+        # assuming Z ends date
+        catalog_year_start_date = dateutil.parser.parse(catalog_start_date[:-1]).year
         year_start_date = catalog_year_start_date if start_date is None else max(catalog_year_start_date, start_date.year)
 
         def ceil_year(date):
             return ceil(date.year + (date - datetime(date.year, 1, 1)).total_seconds() * 3.17098e-8)
 
-        catalog_year_end_date = ceil_year(datetime.strptime(catalog_end_date, date_format))
-        year_end_date = catalog_year_end_date if end_date is None else min(catalog_year_end_date, ceil_year(end_date))
+        # assuming Z ends date
+        catalog_year_stop_date = ceil_year(dateutil.parser.parse(catalog_stop_date[:-1]))
+        year_stop_date = catalog_year_stop_date if stop_date is None else min(catalog_year_stop_date, ceil_year(stop_date))
         
         # Local or different: Could be same bucket or different bucket
         # not enforcing being same bucket
@@ -292,7 +304,7 @@ class FileRegistry:
         frs = []
 
         # Loop through all the years 
-        for year in range(year_start_date, year_end_date):
+        for year in range(year_start_date, year_stop_date):
             filename = f'{eid}_{year}.{ndxformat}'
 
             if path is None:
@@ -324,9 +336,13 @@ class FileRegistry:
             else:
                 fr = pd.read_csv(filepath)
             
+            # Handle # if used for the header
+            if fr.columns.values[0][:2] == '# ':
+                fr.columns.values[0] = fr.columns.values[0][2:] 
+            
             # Make column names consistent since not enforcing this spec (as of now)
             fr.rename(columns={'startdate': 'startDate',
-                               'enddate': 'endDate',
+                               'stopdate': 'stopDate',
                                'modificationdate': 'modificationDate'}, inplace=True)
             
             # assume first column is startDate, second is key, and third is filesize
@@ -345,7 +361,7 @@ class FileRegistry:
         
         # Filter file registry dataframe to exact requested dates
         frs['startDate'] = pd.to_datetime(frs['startDate'], format='%Y-%m-%dT%H:%M:%SZ')
-        frs = frs[(start_date <= frs['startDate']) & (frs['startDate'] < end_date)]
+        frs = frs[(start_date <= frs['startDate']) & (frs['startDate'] < stop_date)]
 
         return frs
     
@@ -399,14 +415,23 @@ class EntireCatalogSearch:
 
         # Combine the global catalog with local catalogs from each entry
         self.combined_catalog = []
-        for entry in self.global_catalog.get_registry():
+        failed_entries = []
+        entries = self.global_catalog.get_registry()
+        for entry in entries:
             endpoint = self.global_catalog.get_endpoint(entry['name'], entry['region'])
             try:
                 file_registry = FileRegistry(endpoint, cache=False, **client_kwargs)
                 local_catalog = file_registry.get_catalog()
                 self.combined_catalog.append(local_catalog)
             except Exception as e:
-                print(f"Failed to fetch local catalog for entry {entry['name']} ({entry['region']}): {e}\n")
+                logging.debug(f"Failed to fetch local catalog for entry {entry['name']} ({entry['region']}): {e}\n")
+                failed_entries.append((entry['name'], entry['region']))
+        if len(failed_entries) > 0:
+            msg = f"Failed Local Catalog Fetches ({len(failed_entries)}/{len(entries)}): \n[\n"
+            for entry in failed_entries:
+                msg += f"    {entry[0]} ({entry[1]})\n"
+            msg += ']'
+            logging.warning(msg)
 
     def search_by_id(self, catalog_id_substr: str):
         """
@@ -463,6 +488,8 @@ class EntireCatalogSearch:
                     count += entry['id'].lower().count(keyword)
                     count += entry['loc'].lower().count(keyword)
                     count += entry['title'].lower().count(keyword)
+                    if 'tags' in entry:
+                        count += sum([keyword in tag.lower() for tag in entry['tags']])
                 if count > 0:
                     entry_counts.append((entry, count))
 

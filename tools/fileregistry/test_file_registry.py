@@ -17,8 +17,8 @@ def test_catalog():
                 'id': 'test_dataset',
                 'loc': 's3://test-bucket/test_dataset/',
                 'title': 'Test Dataset',
-                'startdate': '2020-01-01T00:00:00Z',
-                'enddate': '2021-12-31T23:59:59Z'
+                'startDate': '2020-01-01T00:00:00Z',
+                'stopDate': '2021-12-31T23:59:59Z'
             }
         ]
     }
@@ -129,7 +129,7 @@ def test_file_registry_request_file_registry(mock_boto3_client, mock_s3_client):
     result = fr.request_file_registry(
         catalog_id='test_dataset',
         start_date='2020-01-01T00:00:00Z',
-        end_date='2021-12-31T23:59:59Z'
+        stop_date='2021-12-31T23:59:59Z'
     )
 
     assert isinstance(result, pd.DataFrame)
@@ -143,7 +143,7 @@ def test_file_registry_request_file_registry_invalid_dates(mock_boto3_client):
         fr.request_file_registry(
             catalog_id='test_dataset',
             start_date='2022-01-01T00:00:00Z',
-            end_date='2021-12-31T23:59:59Z'
+            stop_date='2021-12-31T23:59:59Z'
         )
 
 
@@ -154,5 +154,5 @@ def test_file_registry_request_file_registry_unknown_catalog_id(mock_boto3_clien
         fr.request_file_registry(
             catalog_id='unknown',
             start_date='2020-01-01T00:00:00Z',
-            end_date='2021-12-31T23:59:59Z'
+            stop_date='2021-12-31T23:59:59Z'
         )

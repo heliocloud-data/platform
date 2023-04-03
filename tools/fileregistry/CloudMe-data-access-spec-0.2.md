@@ -6,7 +6,7 @@
 [5 Info Metadata](#5-info)<br/>
 <!-- \TOC -->
 
-Version 0.2.0 \| HelioCloud \|
+Version 0.2.1 \| HelioCloud \|
 
 # 1 The HelioCloud 'CloudMe' Specification
 
@@ -93,7 +93,7 @@ Here is a sample 'HelioDataRegistry.json' for three buckets at two sites.
 }
 ```
 
-# 3. Catalog of FIle Registries (per bucket catalog.json)
+# 3. Catalog of File Registries (per bucket catalog.json)
 
 The catalog.json file has an entry for each dataset stored within the given S3 bucket. **endpoint** and **name** are identical to the item in the global data registry.
 
@@ -109,7 +109,7 @@ Globally the catalog.json describes the endpoint with the following items. Note 
 For each dataset, the catalog entry requires:
 
 * **id** a unique ID for the dataset that follows the ID naming requirements
-* **loc** a pointer to the sub-bucket containing both the dataset and the required fileRegistry. It MUST end in a terminating '/'.
+* **loc** a fully qualified pointer to the object directory containing both the dataset and the required fileRegistry. It MUST start with s3:// or "https://" (or equivalent) end in a terminating '/'.
 * **startDate**: string, Restricted ISO 8601 date/time of first record of data in the entire dataset.
 * **stopDate**: string, Restricted ISO 8601 date/time of end of the last 
 record of data in the entire dataset.
@@ -127,9 +127,9 @@ record of data in the entire dataset.
 
 For file formats, there is a prescibed list. As new file formats are introduced, we will update this specification to give a single unique identifier for it.  The reason for the prescribed list is to avoid ambiguity or the need for users to parse (for example, avoidingg figuring out '.fts', 'fits', '.FTS', etc)  Repositories with multiple files types can specify them as a comma-separated list with no spaces, e.g. 'fits,csv' for a dataset that contains both images and event lists. currently allows 'fits,csv,cdf,netcdf3,netcdf, hdf5,datamap,other'.
 
-The catalog.json file has to be updated when new data is added to a 
-dataset, by updating the **stopDate** item. Also, the catalog.json file 
-is updated when a new dataset is put into that S3 bucket.
+The catalog.json file has to be updated when new data is added to a dataset, by updating the **stopDate** item. Also, the catalog.json file is updated when a new dataset is put into that S3 bucket.
+
+Note, currently this specification is defined around "s3://" architecture with some support for "https://" endpoints; future versions may support other protocols.
 
 ## 3.1 ID naming requirements
 
@@ -164,15 +164,15 @@ Here is an example catalog, for which only the first item has decided to fill ou
             "startDate": "1995-01-01T00:00.00Z",
             "stopDate": "2022-01-01T00:00.00Z",
             "modificationDate": "2022-01-01T00:00.00Z",
-	    "indexformat": "csv",
-	    "fileformat": "fits",
-	    "description": "Optional description for dataset",
-	    "resourceURL": "optional identifier e.g. SPASE ID",
-	    "creationDate": "optional ISO 8601 date/time of the dataset creation",
-	    "citation": "optional how to cite this dataset, DOI or similar",
-	    "contact": "optional contact name",
+	        "indexformat": "csv",
+	        "fileformat": "fits",
+	        "description": "Optional description for dataset",
+	        "resourceURL": "optional identifier e.g. SPASE ID",
+	        "creationDate": "optional ISO 8601 date/time of the dataset creation",
+	        "citation": "optional how to cite this dataset, DOI or similar",
+	        "contact": "optional contact name",
             "contactID": "optional contact SPASE ID, DOI or ORCID",
- 	    "aboutURL": "optional website URL for info, team, etc"
+ 	        "aboutURL": "optional website URL for info, team, etc"
         },
         {
             "id": "mms_hmi",
@@ -181,8 +181,8 @@ Here is an example catalog, for which only the first item has decided to fill ou
             "startDate": "2015-01-01T00:00.00Z",
             "stopDate": "2022-01-01T00:00.00Z",
             "modificationDate": "2022-01-01T00:00.00Z",
-	    "indexformat": "csv-zip",
-	    "fileformat": "cdf"
+	        "indexformat": "csv-zip",
+	        "fileformat": "cdf"
         },
         {
             "id": "mms_feeps",
@@ -191,8 +191,8 @@ Here is an example catalog, for which only the first item has decided to fill ou
             "startDate": "2015-01-01T00:00.00Z",
             "stopDate": "2022-01-01T00:00.00Z",
             "modificationDate": "2022-01-01T00:00.00Z",
-	    "listformat": "csv-zip",
-	    "fileformat": "cdf"
+	        "listformat": "csv-zip",
+	        "fileformat": "cdf"
         }
     ],
     "status": {
@@ -204,7 +204,7 @@ Here is an example catalog, for which only the first item has decided to fill ou
 
 ## 3.4 Debate
 
-Still being debated is: given S3 data 'directory' structure mimics the original non-S3 file structure, must the fileregistery CSV files reside at the same top levels?
+It is possible to design a collection of datasets, wherein the data in the actual file registry <ID>_<YYYY>.csv files can span sub-buckets. The use of absolute file paths is mandated.
 
 ```
 Example data itself is in:
@@ -226,7 +226,7 @@ Case 1: Matching
 ```
 Case 2: Not Matching
     file registry loc:
-         s3://example/mms/feeps/mms_feeps.CSV (contents point to 4 subbuckets)
+         s3://example/mms_all/feeps/mms_feeps.CSV (contents point to 4 subbuckets)
 ```
 
 The first case matches the idea of a 'dataset' and MUST be provided for any provided dataset.  The second matches the idea of a 'collection' and is supported but not required (i.e. additional extra fileregistry endpoints do not have to match the underlying data structure).
@@ -314,6 +314,7 @@ Here is an example with additional metadata and a CSV header as the EUV-ML proje
 # 5 Time Specification and ISO 8601
 
 Time values are always strings, and the CloudMe Time format (taken from the HAPI Time format) is a subset of the ISO 8601 standard. The restriction on the ISO 8601 standard is that time must be represented as
+
 ```
 yyyy-mm-ddThh:mm:ss.sssZ
 ```

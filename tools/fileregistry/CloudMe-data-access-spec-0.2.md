@@ -159,7 +159,7 @@ Here is an example catalog, for which only the first item has decided to fill ou
     "catalog":[
         {
             "id": "euvml",
-            "loc": "gov-nasa-helio-public/euvml/",
+            "loc": "s3://gov-nasa-helio-public/euvml/",
             "title": "EUV-ML dataset",
             "startDate": "1995-01-01T00:00.00Z",
             "stopDate": "2022-01-01T00:00.00Z",

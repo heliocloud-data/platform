@@ -6,7 +6,7 @@
 [5 Info Metadata](#5-info)<br/>
 <!-- \TOC -->
 
-Version 0.2.1 \| HelioCloud \|
+Version 0.2.2 \| HelioCloud \|
 
 # 1 The HelioCloud 'CloudMe' Specification
 
@@ -62,6 +62,8 @@ The registry is a JSON file containing the version of this specification, the da
 
 * **endpoint** - An accessble S3 (or equivalent) bucket link
 * **name** - A descriptive name for the dataset.
+* **provider** - default 'aws', indicates which cloud provider. Included for future federation.
+* **region** - The AWS or equivalent region the bucket resides in
 
 The **name** should be brief and one-line; length is not enforced by the specification but may be truncated when registration to keep things readable.
 
@@ -77,16 +79,19 @@ Here is a sample 'HelioDataRegistry.json' for three buckets at two sites.
         {
             "endpoint": "s3://gov-nasa-hdrl-data1/",
             "name": "GSFC HelioCloud Set 1",
+            "provider": "aws",
             "region": "us-east-1"
         },
         {
             "endpoint": "s3://gov-nasa-hdrl-data2/",
             "name": "GSFC HelioCloud Set 2",
+            "provider": "aws",
             "region": "us-east-1"
         },
         {
             "endpoint": "s3://edu-apl-helio-public/",
             "name": "APL HelioCLoud",
+            "provider": "aws",
             "region": "us-west-1"
         }
     ]
@@ -101,6 +106,8 @@ Globally the catalog.json describes the endpoint with the following items. Note 
 
 * **endpoint** - same as was provided to GlobalDataRegistry.json, an accessble S3 (or equivalent) bucket link
 * **name** - same as was provided to GlobalDataRegistry.json, a descriptive name for the dataset.
+* **region** - same as was provided to GlobalDataRegistry.json, which AWS region
+* **egressPolicy** - one of 'no-egress', 'user-pays', 'egress-allowed', or 'none'
 * **status** - A return code, typically "1200/OK". Site owners can temporarily set this to other values
 * **contact** - Who to contact for issues with this bucket, e.g. "Dr. Contact, dr_contact@example.com"
 * **description** - Optional description of this collection
@@ -115,8 +122,8 @@ For each dataset, the catalog entry requires:
 record of data in the entire dataset.
 * **modificationDate**: string, Restricted ISO 8601 date/time of last time this dataset was updated
 * **title** a short descriptive title sufficient to identify the dataset and its utility to users
-* **indexformat** Defines what format the actual fileRegistry is, one of 'csv', 'csv-zip' or 'parquet'
-* **fileformat** the file format of the actual data. Must be from the prescribed list of files. 
+* **indexFormat** Defines what format the actual fileRegistry is, one of 'csv', 'csv-zip' or 'parquet'
+* **fileFormat** the file format of the actual data. Must be from the prescribed list of files. 
 * **description** optional description for dataset".
 * **resourceURL** optional identifier e.g. SPASE ID".
 * **creationDate** optional ISO 8601 date/time of the dataset creation".
@@ -141,8 +148,8 @@ The **id** field will match the fileRegistry files but does not have to match th
 
 The default status code for a catalog.json item is "1200/OK" indicating the data is available.  Status codes are informative and do not enforce any limits. They exist to communicate to users and client programs if a dataset is temporarily down or has other constraints.
 Other status codes defined so far include:
-* '1400/temporarily unavailable': providers can set this if they temporarily are doing maintenance or need to stop access due to costs
-* '1600/user pays': indicates the dataset is available but that users will pay for access
+* "code": "1200", "message": "OK": system is up and running
+* "code": "1400", "message": "temporarily unavailable": providers can set this if they temporarily are doing maintenance or need to stop access due to costs
 
 ## 3.3 Example
 
@@ -153,6 +160,8 @@ Here is an example catalog, for which only the first item has decided to fill ou
     "Cloudy": "0.2",
     "endpoint": "s3://gov-nasa-helio-public/",
     "name": "GSFC HelioCloud",
+    "region": "us-east-1",
+    "egressPolicy": "no-egress",
     "contact": "Dr. Contact, dr_contact@example.com",
     "description": "Optional description of this collection",
     "citation": "Optional how to cite, preferably a DOI for the server",
@@ -164,15 +173,15 @@ Here is an example catalog, for which only the first item has decided to fill ou
             "startDate": "1995-01-01T00:00.00Z",
             "stopDate": "2022-01-01T00:00.00Z",
             "modificationDate": "2022-01-01T00:00.00Z",
-	        "indexformat": "csv",
-	        "fileformat": "fits",
-	        "description": "Optional description for dataset",
-	        "resourceURL": "optional identifier e.g. SPASE ID",
-	        "creationDate": "optional ISO 8601 date/time of the dataset creation",
-	        "citation": "optional how to cite this dataset, DOI or similar",
-	        "contact": "optional contact name",
+            "indexFormat": "csv",
+            "fileFormat": "fits",
+            "description": "Optional description for dataset",
+            "resourceURL": "optional identifier e.g. SPASE ID",
+            "creationDate": "optional ISO 8601 date/time of the dataset creation",
+            "citation": "optional how to cite this dataset, DOI or similar",
+            "contact": "optional contact name",
             "contactID": "optional contact SPASE ID, DOI or ORCID",
- 	        "aboutURL": "optional website URL for info, team, etc"
+            "aboutURL": "optional website URL for info, team, etc"
         },
         {
             "id": "mms_hmi",
@@ -181,8 +190,8 @@ Here is an example catalog, for which only the first item has decided to fill ou
             "startDate": "2015-01-01T00:00.00Z",
             "stopDate": "2022-01-01T00:00.00Z",
             "modificationDate": "2022-01-01T00:00.00Z",
-	        "indexformat": "csv-zip",
-	        "fileformat": "cdf"
+            "indexFormat": "csv-zip",
+            "fileFormat": "cdf"
         },
         {
             "id": "mms_feeps",
@@ -191,8 +200,8 @@ Here is an example catalog, for which only the first item has decided to fill ou
             "startDate": "2015-01-01T00:00.00Z",
             "stopDate": "2022-01-01T00:00.00Z",
             "modificationDate": "2022-01-01T00:00.00Z",
-	        "listformat": "csv-zip",
-	        "fileformat": "cdf"
+            "indexFormat": "csv-zip",
+            "fileFormat": "cdf"
         }
     ],
     "status": {
@@ -342,14 +351,14 @@ Here is an example for a sample optional Info json file.  This is used to indica
 {
     "CloudMe": "0.2",
     "parameters": [
-	{"name": "spacecraft", "type": "string"},
-    {"name": "wavelength", "type": "int", "units": "Angstroms"},
-	{"name": "crlt", "type": "double", "units": "degrees", "desc": "Carrington latitude"},
-	{"name": "crln", "type": "double", "units": "degrees", "desc": "Carrington longitude"},
-	{"name": "rsun", "type": "double", "units": "pixels", "desc": "Size of sun in pizels"},
-    {"name": "crpix1", "type": "integer", "units": "pixels", "desc": "x coord of sun center"},
-    {"name": "crpix2", "type": "integer", "units": "pixels", "desc": "x coord of sun center"},
-    {"name": "quality", "type": "integer", "desc": "data quality and level of interpolation"}
+        {"name": "spacecraft", "type": "string"},
+        {"name": "wavelength", "type": "int", "units": "Angstroms"},
+        {"name": "crlt", "type": "double", "units": "degrees", "desc": "Carrington latitude"},
+        {"name": "crln", "type": "double", "units": "degrees", "desc": "Carrington longitude"},
+        {"name": "rsun", "type": "double", "units": "pixels", "desc": "Size of sun in pizels"},
+        {"name": "crpix1", "type": "integer", "units": "pixels", "desc": "x coord of sun center"},
+        {"name": "crpix2", "type": "integer", "units": "pixels", "desc": "x coord of sun center"},
+        {"name": "quality", "type": "integer", "desc": "data quality and level of interpolation"}
     ]
 }
 ```

@@ -21,6 +21,7 @@ class UnavailableData(Exception):
 class Validator:
     def __init__(self, catalog_url: Optional[str] = None, **client_kwargs) -> None:
         self.combined_catalog = []
+        self.global_catalog = None
         self.s3_client = boto3.client('s3', **client_kwargs)
         self._fetch_and_combine_catalogs(catalog_url)
 
@@ -71,7 +72,7 @@ class Validator:
 
             except Exception as e:
                 # Key Error if missing name or region (invalid catalog)
-                logging.debug(f"Failed to fetch local catalog for entry {entry['name']} ({entry['region']}): {e}\n")
+                logging.warning(f"Failed to fetch local catalog for entry {entry['name']} ({entry['region']}): {e}\n")
                 failed_entries.append((entry['name'], entry['region']))
 
         if len(failed_entries) > 0:
@@ -81,25 +82,51 @@ class Validator:
             msg += ']'
             logging.error(msg)
 
-    def validate_uniqueness(self) -> None:
+    def validate_global_uniqueness(self) -> None:
         """
-        Validates the uniqueness of name and region combinations in the combined catalog.
+        Validates the uniqueness of name and region combinations the the global catalog entries.
         """
+        success = True
         unique_identifiers = set()
+        dups = 0
+        
+        for catalog_entry in self.global_catalog['registry']:
+            identifier = f"{catalog_entry['name']} ({catalog_entry['region']})"
+            if identifier in unique_identifiers:
+                logging.warning(f'{identifier} is not a unique entry.')
+                dups += 1
+            else:
+                unique_identifiers.add(identifier)
+
+        if dups == 0:
+            logging.info('Catalog name + region uniqueness passed.')
+        else:
+            logging.warning(f'Catalog name + region uniqueness failed. Duplicates: {dups}')
+            success = False
+        return success
+        
+    def validate_local_uniqueness(self) -> None:
+        """
+        Validates the uniqueness of ID across all catalogs.
+        """
+        success = True
+        unique_identifiers = {}
         dups = 0
         for catalog in self.combined_catalog:
             for entry in catalog['catalog']:
-                identifier = f"{entry['name']} ({entry['region']})"
+                identifier = entry['id']
                 if identifier in unique_identifiers:
-                    logging.debug(f'{identifier} is not a unique entry.')
+                    logging.warning(f"{identifier} is not a unique entry. Conflicts in {unique_identifiers[identifier]} and {catalog['name']}")
                     dups += 1
                 else:
-                    unique_identifiers.add(identifier)
+                    unique_identifiers[identifier] = catalog['name']
+
         if dups == 0:
-            logging.info('All catalog name + region uniqueness passed.')
+            logging.info('Local catalog IDs are unique across all catalogs. Passed.')
         else:
-            logging.warning(f'All catalog name + region uniqueness failed. Duplicates: {dups}')
-        
+            logging.warning(f'Local catalog IDs are not unique across all catalogs. Failed. Duplicates: {dups}')
+            success = False
+        return success
                 
     def validate_local_catalog_schema(self, local_catalog: Dict[str, Any]) -> None:
         """
@@ -108,11 +135,13 @@ class Validator:
         Parameters:
             local_catalog: The local catalog to be validated.
         """
+        success = True
         schema = {
             'type': 'object',
             'properties': {
                 'Cloudy': {'type': 'string'},
-                'endpoint': {'type': 'string', 'format': 'uri'},
+                'endpoint': {'type': 'string',
+                             'pattern': 's3://\S+/'},
                 'name': {'type': 'string'},
                 'contact': {'type': 'string'},
                 'description': {'type': 'string'},
@@ -123,16 +152,16 @@ class Validator:
                         'type': 'object',
                         'properties': {
                             'id': {'type': 'string', 'pattern': '^[a-zA-Z0-9-_]+$'},
-                            'loc': {'type': 'string'},
+                            'loc': {'type': 'string', 'pattern': 's3://\S+/.*'},  # support https?
                             'title': {'type': 'string'},
-                            'startDate': {'type': 'string', 'format': 'date-time'},
-                            'stopDate': {'type': 'string', 'format': 'date-time'},
-                            'modificationDate': {'type': 'string', 'format': 'date-time'},
+                            'startDate': {'type': 'string', 'pattern': '\d{4}-\d{2}-\d{2}T\d{2}(:\d{2}(:\d{2}(\.\d+)?)?)?Z'},
+                            'stopDate': {'type': 'string', 'pattern': '\d{4}-\d{2}-\d{2}T\d{2}(:\d{2}(:\d{2}(\.\d+)?)?)?Z'},
+                            'modificationDate': {'type': 'string', 'pattern': '\d{4}-\d{2}-\d{2}T\d{2}(:\d{2}(:\d{2}(\.\d+)?)?)?Z'},
                             'indexformat': {'type': 'string', 'enum': ['csv', 'csv-zip', 'parquet']},
                             'fileformat': {'type': 'string'},
                             'description': {'type': 'string'},
                             'resourceURL': {'type': 'string'},
-                            'creationDate': {'type': 'string', 'format': 'date-time'},
+                            'creationDate': {'type': 'string', 'pattern': '\d{4}-\d{2}-\d{2}T\d{2}(:\d{2}(:\d{2}(\.\d+)?)?)?Z'},
                             'citation': {'type': 'string'},
                             'contact': {'type': 'string'},
                             'contactID': {'type': 'string'},
@@ -161,31 +190,35 @@ class Validator:
             logging.info('Local catalog schema validation passed.')
         except jsonschema.exceptions.ValidationError as e:
             logging.error(f'Local catalog schema validation failed: {e.message}')
+            success = False
+        return success
 
     def validate_all_local_catalog_schemas(self) -> None:
         """
         Validates the schema of all local catalogs in the combined catalog.
         """
+        success = True
         for index, local_catalog in enumerate(self.combined_catalog):
             logging.info(f"Validating local catalog {index} {local_catalog['name']}:")
-            self.validate_local_catalog_schema(local_catalog)
-            logging.info()
+            success = success and self.validate_local_catalog_schema(local_catalog)
+        return success
             
     def validate_global_catalog_schema(self) -> None:
         """
         Validates the schema of the global catalog.
         """
+        success = True
         schema = {
             'type': 'object',
             'properties': {
                 'CloudMe': {'type': 'string'},
-                'modificationDate': {'type': 'string', 'format': 'date-time'},
+                'modificationDate': {'type': 'string', 'pattern': '\d{4}-\d{2}-\d{2}T\d{2}(:\d{2}(:\d{2}(\.\d+)?)?)?Z'},
                 'registry': {
                     'type': 'array',
                     'items': {
                         'type': 'object',
                         'properties': {
-                            'endpoint': {'type': 'string', 'format': 'uri'},
+                            'endpoint': {'type': 'string', 'pattern': 's3://\S+/'},
                             'name': {'type': 'string'},
                             'region': {'type': 'string'},
                         },
@@ -203,6 +236,8 @@ class Validator:
             logging.info('Global catalog schema validation passed.')
         except jsonschema.exceptions.ValidationError as e:
             logging.error(f'Global catalog schema validation failed: {e.message}')
+            success = False
+        return success
 
     def validate_local_catalog_file_registries(self, local_catalog: Dict[str, Any]) -> None:
         """
@@ -211,6 +246,7 @@ class Validator:
         Parameters:
             local_catalog: The local catalog containing file registries to be validated.
         """
+        success = True
         failed_reg_files = 0
         for entry in local_catalog['catalog']:
             try:
@@ -236,27 +272,38 @@ class Validator:
                         raise FailedS3Get(f'Failed to get a file registry object. Status: {status}. Response: {response}')
             except Exception as e:
                 failed_reg_files += 1
-                logging.debug(f"Failed to fetch local file registry files for entry {entry['name']} ({entry['region']}): {e}\n")
+                logging.warning(f"Failed to fetch local file registry files for entry {entry['id']}: {e}\n")
         if failed_reg_files == 0:
             logging.info('Loading Local Catalog File Registries Passed.')
         else:
             logging.error(f"Loading Local Catalog File Registries Failed. Failures: {failed_reg_files}")
+            success = False
+        return success
 
     def validate_all_local_catalog_file_registries(self) -> None:
         """
         Validates the file registries for all local catalogs in the combined catalog.
         """
+        success = True
         for index, local_catalog in enumerate(self.combined_catalog):
             logging.info(f"Validating local catalog file registries {index} {local_catalog['name']}:")
-            self.validate_local_catalog_file_registries(local_catalog)
-            logging.info()
+            success = success and self.validate_local_catalog_file_registries(local_catalog)
+        return success
                 
     def validate(self) -> None:
         """
         Performs a complete validation of the catalogs.
         Validates the global catalog schema, local catalog schemas, uniqueness of entries, and local catalog file registries.
         """
-        self.validate_global_catalog_schema()
-        self.validate_all_local_catalog_schemas()
-        self.validate_uniqueness()
-        self.validate_all_local_catalog_file_registries()
+        success = self.validate_global_catalog_schema()
+        success = success and self.validate_all_local_catalog_schemas()
+        success = success and self.validate_global_uniqueness()
+        sucesss = success and self.validate_local_uniqueness()
+        success = success and self.validate_all_local_catalog_file_registries()
+        return success
+
+    def get_global_catalog(self) -> Dict[str, Any]:
+        return self.global_catalog
+    
+    def get_local_catalogs(self) -> Dict[str, Any]:
+        return self.combined_catalog

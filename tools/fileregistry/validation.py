@@ -143,6 +143,8 @@ class Validator:
                 'endpoint': {'type': 'string',
                              'pattern': 's3://\S+/'},
                 'name': {'type': 'string'},
+                'region': {'type': 'string'},
+                'egressPolicy': {'type': 'string'},
                 'contact': {'type': 'string'},
                 'description': {'type': 'string'},
                 'citation': {'type': 'string'},
@@ -157,8 +159,8 @@ class Validator:
                             'startDate': {'type': 'string', 'pattern': '\d{4}-\d{2}-\d{2}T\d{2}(:\d{2}(:\d{2}(\.\d+)?)?)?Z'},
                             'stopDate': {'type': 'string', 'pattern': '\d{4}-\d{2}-\d{2}T\d{2}(:\d{2}(:\d{2}(\.\d+)?)?)?Z'},
                             'modificationDate': {'type': 'string', 'pattern': '\d{4}-\d{2}-\d{2}T\d{2}(:\d{2}(:\d{2}(\.\d+)?)?)?Z'},
-                            'indexformat': {'type': 'string', 'enum': ['csv', 'csv-zip', 'parquet']},
-                            'fileformat': {'type': 'string'},
+                            'indexFormat': {'type': 'string', 'enum': ['csv', 'csv-zip', 'parquet']},
+                            'fileFormat': {'type': 'string'},
                             'description': {'type': 'string'},
                             'resourceURL': {'type': 'string'},
                             'creationDate': {'type': 'string', 'pattern': '\d{4}-\d{2}-\d{2}T\d{2}(:\d{2}(:\d{2}(\.\d+)?)?)?Z'},
@@ -167,7 +169,7 @@ class Validator:
                             'contactID': {'type': 'string'},
                             'aboutURL': {'type': 'string'},
                         },
-                        'required': ['id', 'loc', 'title', 'startDate', 'stopDate', 'modificationDate', 'indexformat', 'fileformat'],
+                        'required': ['id', 'loc', 'title', 'startDate', 'stopDate', 'modificationDate', 'indexFormat', 'fileFormat'],
                         'additionalProperties': False,
                     },
                 },
@@ -181,7 +183,7 @@ class Validator:
                     'additionalProperties': False,
                 },
             },
-            'required': ['Cloudy', 'endpoint', 'name', 'catalog', 'status'],
+            'required': ['Cloudy', 'endpoint', 'name', 'region', 'egressPolicy', 'catalog', 'status'],
             'additionalProperties': False,
         }
 
@@ -220,9 +222,10 @@ class Validator:
                         'properties': {
                             'endpoint': {'type': 'string', 'pattern': 's3://\S+/'},
                             'name': {'type': 'string'},
+                            'provider': {'type': 'string'},
                             'region': {'type': 'string'},
                         },
-                        'required': ['endpoint', 'name', 'region'],
+                        'required': ['endpoint', 'name', 'region'],  # make provider required?
                         'additionalProperties': False,
                     },
                 },
@@ -296,10 +299,10 @@ class Validator:
         Validates the global catalog schema, local catalog schemas, uniqueness of entries, and local catalog file registries.
         """
         success = self.validate_global_catalog_schema()
-        success = success and self.validate_all_local_catalog_schemas()
-        success = success and self.validate_global_uniqueness()
-        sucesss = success and self.validate_local_uniqueness()
-        success = success and self.validate_all_local_catalog_file_registries()
+        success = self.validate_all_local_catalog_schemas() and success
+        success = self.validate_global_uniqueness() and success
+        sucesss = self.validate_local_uniqueness() and success
+        success = self.validate_all_local_catalog_file_registries() and success
         return success
 
     def get_global_catalog(self) -> Dict[str, Any]:

@@ -160,7 +160,7 @@ class FileRegistry:
             raise KeyError(f'Invalid catalog. Missing either status or catalog key. Catalog: {self.catalog}')
 
         # Check status and rasie exception
-        if self.catalog['status'] == '1400/temporarily unavailable':
+        if self.catalog['status']['code'] == 1400:
             raise UnavailableData(self.catalog['status'])
             
         # Check catalog entries format assumptions
@@ -246,9 +246,9 @@ class FileRegistry:
         if stop_date[-1] != 'Z':
             stop_date += 'Z'
         # Convert dates to datetime object
-        if not re.match(r'^\d{4}-\d{2}-\d{2}T\d{2}.*', start_date):
+        if not re.fullmatch(r'\d{4}-\d{2}-\d{2}T\d{2}(:\d{2}(:\d{2}(\.\d+)?)?)?Z', start_date):
             raise ValueError('start_date must follow the format XXXX-XX-XXTXXZ with at least the year, month, day, and hour specified.')
-        if not re.match(r'^\d{4}-\d{2}-\d{2}T\d{2}.*', stop_date):
+        if not re.fullmatch(r'\d{4}-\d{2}-\d{2}T\d{2}(:\d{2}(:\d{2}(\.\d+)?)?)?Z', stop_date):
             raise ValueError('stop_date must follow the format XXXX-XX-XXTXXZ with at least the year, month, day, and hour specified.')
         # dateutil.parser.parse
         start_date = dateutil.parser.parse(start_date[:-1])
@@ -368,7 +368,7 @@ class FileRegistry:
     @staticmethod
     def stream(file_registry: pd.DataFrame,
                process_func: Callable[[BytesIO, str, int], None], 
-               ignore_faileds3get: bool =False) -> None:
+               ignore_faileds3get: bool = False) -> None:
         """
         Downloads files from S3 and passes them to a processing function.
 
@@ -381,6 +381,7 @@ class FileRegistry:
         """
         s3_client = boto3.client('s3')
 
+        fr_bytes_file = None
         for _, row in file_registry.iterrows():
             # Get the S3 URL from the key in the dataframe
             s3_url = row['key']
@@ -398,6 +399,26 @@ class FileRegistry:
             # Pass the BytesIO object, start date, and file size to the processing function
             # startDate may be a date object so making a string just in case for consistency
             process_func(fr_bytes_file, str(row['startDate']), row['filesize'])
+            
+    @staticmethod
+    def stream_uri(file_registry: pd.DataFrame,
+                   process_func: Callable[[str, str, int], None]) -> None:
+        """
+        Sends S3 URLs to a processing function.
+
+        Parameters:
+            file_registry (pd.DataFrame): A pandas DataFrame containing the file registry information.
+            process_func (Callable): A function that takes a string representing the S3 URL, a string
+                                     representing the start date of the file, and an integer representing
+                                     the file size as arguments.
+        """
+        for _, row in file_registry.iterrows():
+            # Get the S3 URL from the key in the dataframe
+            s3_url = row['key']
+
+            # Pass the S3 URL, start date, and file size to the processing function
+            # startDate may be a date object so making a string just in case for consistency
+            process_func(s3_url, str(row['startDate']), row['filesize'])
 
 
 class EntireCatalogSearch:
@@ -424,7 +445,7 @@ class EntireCatalogSearch:
                 local_catalog = file_registry.get_catalog()
                 self.combined_catalog.append(local_catalog)
             except Exception as e:
-                logging.debug(f"Failed to fetch local catalog for entry {entry['name']} ({entry['region']}): {e}\n")
+                logging.debug(f"Failed to fetch local catalog for entry {entry['name']} (Region: {entry['region']}; Endpoint: {entry['endpoint']}): {e}\n")
                 failed_entries.append((entry['name'], entry['region']))
         if len(failed_entries) > 0:
             msg = f"Failed Local Catalog Fetches ({len(failed_entries)}/{len(entries)}): \n[\n"

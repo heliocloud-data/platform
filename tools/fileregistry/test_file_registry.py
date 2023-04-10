@@ -11,7 +11,7 @@ from registry import FileRegistry, FailedS3Get, UnavailableData
 @pytest.fixture
 def test_catalog():
     return {
-        'status': '1400/available',
+        'status': {'code': 1200, 'message': 'OK'},
         'catalog': [
             {
                 'id': 'test_dataset',
@@ -55,7 +55,7 @@ def test_file_registry_init(mock_boto3_client, test_catalog):
 def test_file_registry_init_unavailable_data(mock_s3_client, mock_boto3_client):
     mock_s3_client.get_object.return_value = {
         'ResponseMetadata': {'HTTPStatusCode': 200},
-        'Body': MagicMock(read=lambda: json.dumps({'status': '1400/temporarily unavailable', 'catalog': {}}).encode('utf-8'))
+        'Body': MagicMock(read=lambda: json.dumps({'status': {'code': 1400, 'message': 'temporarily unavailable'}, 'catalog': {}}).encode('utf-8'))
     }
 
     with pytest.raises(UnavailableData):

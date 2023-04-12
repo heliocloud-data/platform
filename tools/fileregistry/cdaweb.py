@@ -55,7 +55,7 @@ import boto3
 import s3fs
 import datetime
 from dateutil import parser
-
+from multiprocessing.pool import ThreadPool
 
 """ CDAWeb-specific routines here """
 
@@ -148,7 +148,7 @@ class S3info:
         self.extrameta=extrameta
         
 
-def demo(test=True):
+def demo(test=True,multicore=False):
 
     """ can be easily parallelized to 1 dataset per thread.
         To throttle bandwidth further, an extra loop could be added
@@ -157,10 +157,13 @@ def demo(test=True):
         uses a single movelog file, and we are not using file locking.
     """
     
+    # CDAWeb-specific data call
+    localcopy_cdaweblist="datasets_all.json"
+    allIDs, allIDs_meta = get_CDAWEB_IDs(localcopy_cdaweblist,False)
+
+    # Set dataset staging-specific items
     s3staging = "./"  # for now, later s3://helio-data-staging/"
     #s3staging = "s3://antunak1/"
-
-    # Set dataset-specific items
     s3destination = "s3://helio-data-staging/cdaweb/"
     movelogdir = s3staging + "movelogs/"
     stripuri = 'https://cdaweb.gsfc.nasa.gov/sp_phys/data/'
@@ -169,43 +172,61 @@ def demo(test=True):
     sinfo=s3s.bundleme(s3staging,s3destination,movelogdir,stripuri,
                        extrameta)
 
-    # CDAWeb-specific data call
-    localcopy_cdaweblist="datasets_all.json"
-    allIDs, allIDs_meta = get_CDAWEB_IDs(localcopy_cdaweblist,False)
-    
     if test: s3s.logme("Total CDAWeb IDs: ",len(allIDs),'log')
     allIDs = s3s.remove_processed(movelogdir,allIDs)
     if test: s3s.logme("Unprocessed CDAWeb IDs: ",len(allIDs),'log')
 
     if test:
-        # using time1, time2 = None, None is only for prod
-        time1,time2="2021-12-31T22:00:00Z","2022-01-05T00:00:00Z"
         allIDs = [myall for myall in allIDs if myall.startswith("AC_H2")]
         s3s.logme("Test set is ",allIDs,'status')
-        #exit()
+    
+    if multicore:
+        with ThreadPool(processes=4) as pool:
+            pool.map(fetchCDAWebsinglet,allIDs)
+    else:
+        for dataid in allIDs:
+            fetchCDAWebsinglet(dataid)
+        
+def fetchCDAWebsinglet(dataid):
+
+    test=1
+
+    if test:
+        # using time1, time2 = None, None is only for prod
+        time1,time2="2021-12-31T22:00:00Z","2022-01-05T00:00:00Z"
     else:
         # for production runs
-        time1=None
-        time2=None
-    
-    for dataid in allIDs:
-        # Generic setup
-        catmeta = s3s.getmeta(dataid,allIDs_meta)
-        if time1 == None: time1=catmeta['startDate']
-        if time2 == None: time2=catmeta['stopDate']
-        if test: s3s.logme("Getting",dataid+" "+time1+" - "+time2,'status')
+        time1,time2=None,None
+        
+    localcopy_cdaweblist="datasets_all.json"
+    allIDs, allIDs_meta = get_CDAWEB_IDs(localcopy_cdaweblist,False)
+    # Set dataset staging-specific items
+    s3staging = "./"  # for now, later s3://helio-data-staging/"
+    s3staging = "s3://antunak1/"
+    s3destination = "s3://helio-data-staging/cdaweb/"
+    movelogdir = s3staging + "movelogs/"
+    stripuri = 'https://cdaweb.gsfc.nasa.gov/sp_phys/data/'
+    extrameta = None # optional extra metadata to include in CSV
 
-        # CDAWeb-specific fetch (rewrite for each new source/dataset)
-        flist = get_CDAWEB_filelist(dataid,time1,time2)
-        if flist != None:
-            # Generic for any fetch
-            os.makedirs(movelogdir,exist_ok=True)
-            regloc,csvreg = s3s.fetch_and_register(flist, sinfo)
-            # prioritize prescribed keys, if any (debate: is this needed?)
-            extrameta = s3s.gatherkeys(sinfo,flist)
-            s3s.write_registries(dataid,regloc,csvreg,sinfo["extrameta"])
-            s3s.ready_migrate(dataid,sinfo,regloc,time1,time2,
-                              catmeta=catmeta)
+    sinfo=s3s.bundleme(s3staging,s3destination,movelogdir,stripuri,
+                       extrameta)
+    # Generic setup
+    catmeta = s3s.getmeta(dataid,allIDs_meta)
+    if time1 == None: time1=catmeta['startDate']
+    if time2 == None: time2=catmeta['stopDate']
+    if test: s3s.logme("Getting",dataid+" "+time1+" - "+time2,'status')
+
+    # CDAWeb-specific fetch (rewrite for each new source/dataset)
+    flist = get_CDAWEB_filelist(dataid,time1,time2)
+        
+    # Generic for any fetch
+    if flist != None:
+        os.makedirs(movelogdir,exist_ok=True)
+        regloc,csvreg = s3s.fetch_and_register(flist, sinfo)
+        # prioritize prescribed keys, if any (debate: is this needed?)
+        extrameta = s3s.gatherkeys(sinfo,flist)
+        s3s.write_registries(dataid,regloc,csvreg,sinfo["extrameta"])
+        s3s.ready_migrate(dataid,sinfo,regloc,time1,time2,catmeta=catmeta)
 
 
-demo(test=True)
+demo(test=True,multicore=True)

@@ -17,9 +17,9 @@ jupyterhub:
         oauth_callback_url: https://<INSERT_HOST_NAME>/hub/oauth_callback # Ex. https://example.com/hub/oauth_callback
         # Must have the same end part of the link as these are specific to JupyterHub (e.g. "/oauth2/authorize")
         # Must just replace the AWS Cognito domain (in the examples you replace "example" and the region)
-        authorize_url: https://<INSERT_AWS_COGNITO_DOMAIN>.auth.<INSERT_AWS_REGION>.amazoncognito.com/oauth2/authorize<INSERT_AWS_COGNITO_AUTHORIZE_URL> # Ex. https://example.auth.us-east-1.amazoncognito.com/oauth2/authorize
+        authorize_url: https://<INSERT_AWS_COGNITO_DOMAIN>.auth.<INSERT_AWS_REGION>.amazoncognito.com/oauth2/authorize # Ex. https://example.auth.us-east-1.amazoncognito.com/oauth2/authorize
         token_url: https://<INSERT_AWS_COGNITO_DOMAIN>.auth.<INSERT_AWS_REGION>.amazoncognito.com/oauth2/token # Ex. https://example.auth.us-east-1.amazoncognito.com/oauth2/token
-        userdata_url: https://<INSERT_AWS_COGNITO_DOMAIN>.auth.<INSERT_AWS_REGION>.amazoncognito.com/oauth2/userInfo# Ex. https://example.auth.us-east-1.amazoncognito.com/oauth2/userInfo
+        userdata_url: https://<INSERT_AWS_COGNITO_DOMAIN>.auth.<INSERT_AWS_REGION>.amazoncognito.com/oauth2/userInfo # Ex. https://example.auth.us-east-1.amazoncognito.com/oauth2/userInfo
         # Can alter this to fit your scope
         scope:
           - openid

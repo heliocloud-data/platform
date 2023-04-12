@@ -28,7 +28,7 @@ Move-over code: go from helio-data-staging to TOPS
 2) for each ID:
      a) move files to appropriate s3destination
      b) take new fileRegistry and add to canonical fileRegistry
-     c) update db:catalog.json with any change in enddate, modificationdate, startdate
+     c) update db:catalog.json with any change in stopDate, modificationdate, startdate
      d) optionally, S3 Inventory or other check that files were copied over successfully
      e) write destination catalog.json from DB:catalog.json
      f) clean out staging area once safely done
@@ -39,10 +39,12 @@ Note that fileRegistries are named [id]_YYYY.csv and consist of a CSV header + l
 They reside in the sub-bucket for that [id]
 Also, the 'catalog.json' list of holdings is in the root directory of s3destination
 
+Tried using 's3fs' for more elegant writes, but it kept hanging on .close()
+so switched to straightforward but less direct boto3 .upload_file()
+
+
 """
-
-
-
+import s3staging as s3s
 import requests
 import re
 import os
@@ -51,198 +53,41 @@ import shutil
 import urllib
 import boto3
 import s3fs
-
-""" General driver routines here, should work for most cases """
-
-def get_lastModified(item):
-    # fetch last modified date for that ID
-    # for now, just hard-coded
-    lasttime="20230101T000000Z"
-    return lasttime
-
-def getHAPIIDs(lasttime, catalogurl):
-    # no longer needed, we fetch from CDAWeb itself now
-    # catalogurl = "https://cdaweb.gsfc.nasa.gov/hapi/catalog"
-    res = requests.get(catalogurl)
-    j = res.json()
-    if res.status_code == 200:
-        return [item["id"] for item in j['catalog'] if get_lastModified(item) > lasttime]
-    else:
-        return None
-    
-    
-def make_subdirs_orig(mybase,fname):
-    # used to use make_subdirs(s3staging,s3stub), obsoleted with better path calls
-    #fpath = '/'.join((fname.split('/'))[:-1])
-    steps = re.sub('/$','',mybase) # rare case of not needing ending /
-    localpath = (fname.split('/'))[:-1]
-    for subdir in localpath:
-        steps += '/' + subdir
-        if not os.path.isdir(steps):
-            os.mkdir(steps)
-            print("Making ",steps)
-        
-
-def fetch_and_register(filelist, stripuri, s3destination, s3staging,
-                       extrameta=None):
-    """ requires input filelist contain the following items:
-    "data" array containing file description dictionary that includes
-        the URI to fetch and minimum metadata of 'startDate', 'filesize',
-        optional defined keys 'endDate', 'checksum' and 'checksum_algorithm',
-        and optional undefined 'extrameta' keywords
-    "key" field indicating the data dictionary field name for URI
-    "startDate" field indicating the data dict field name for startDate
-    "filesize" field indicating the data dict field name for filesize,
-    optional additional metadata or None if none exist
-    """
-    lastpath = "/" # used later to avoid os calls
-
-    csvregistry = []
-
-    startkey = filelist['startDate']
-    filesizekey = filelist['filesize']
-    
-    for item in filelist["data"]:
-        url_to_fetch = item[filelist['key']]
-        print("fetching ",url_to_fetch)
-        s3stub = re.sub('https://cdaweb.gsfc.nasa.gov/sp_phys/data/','',url_to_fetch)
-        stagingkey = s3staging + s3stub
-        s3key = s3destination + s3stub
-        # make any necessary subdirectories in staging
-        (head,tail) = os.path.split(stagingkey)
-        if head != lastpath:
-            os.makedirs(head,exist_ok=True)
-            lastpath = head
-        urllib.request.urlretrieve(url_to_fetch,stagingkey)
-        
-        csvitem = item[startkey] + ',' + s3key + ',' + str(item[filesizekey])
-        if filelist['endDate'] != None:
-            csvitem += ',' + item[filelist['endDate']]
-        if filelist['checksum'] != None:
-            csvitem += ',' + item[filelist['checksum']]
-        if filelist['checksum_algorithm'] != None:
-            csvitem += ',' + item[filelist['checksum_algorithm']]
-        if extrameta != None:
-            for extrakey in extrameta:
-                csvitem += ',' + item[extrakey]
-    
-        print(csvitem)
-        csvregistry.append(csvitem)
-
-    return csvregistry
-
-def registryname(id,year):
-    if year.isdigit():
-        regname = id + '_' + str(year) + '.csv'
-    else:
-        regname = id + '_' + year + '.csv'
-    return regname
-
-def local_vs_s3_open(fname,mode):
-    if fname.startswith("s3://"):
-        s3 = s3fs.S3FileSystem(anon=True)
-        fopen = s3.open(fname,mode+'b')
-    else:
-        fopen = open(fname,mode)
-    return fopen
-
-def write_annual_registry(id,s3staging,csvregistry,extrameta=None):
-    """ creates files <id>_YYYY.csv with designated entries
-    in the temporary directory s3staging+id/ which will later be moved
-    (by the separate staging-to-production code)
-    to the location as defined in catalog.csv as the field 'loc'
-    """
-    keyset=['startDate','key','filesize']
-    if extrameta != None: keyset += extrameta
-
-    currentyear="1000" # junk year to compare against
-    
-    for line in csvregistry:
-        year=line[0:4]
-        if year != currentyear:
-            try:
-                fout.close()
-            except:
-                pass
-            currentyear = year
-            registryloc = s3staging+id
-            os.makedirs(registryloc,exist_ok=True)
-            fname = s3staging+id+'/'+registryname(id,currentyear)
-            print("Creating registry ",fname)
-            fout = local_vs_s3_open(fname,"w")
-            header = '#' + ','.join(keyset)
-            fout.write(header+"\n")
-        fout.write(line+"\n")
-    fout.close()
-
-
-def create_catalog_stub(dataid,s3staging):
-    """ Generates a catalog_stub.json file, suitable for
-    adding to the s3destination catalog.json after merging.
-    Location is s3staging+dataid+'/'+catalog_stub.json
-
-    We use read-add-write rather than append because S3 lacks append-ability
-    """
-    fstub = s3staging+dataid+'/catalog_stub.json'
-    if os.path.exists(fstub):
-        fin=local_vs_s3_open(fstub,"r")
-        catData = json.load(fin)
-        fin.close()
-    else:
-        # new catalog
-        catData = {"catalog":[]}
-
-    entry = {"tbd": "tbd"}
-
-
-
-
-
-
-    
-    catData['catalog'].append(entry)
-    
-
-
-
-
-
-
-
-
-
-    fout=local_vs_s3_open(fstub,"w")
-    json.dump(catData,fout,indent=4,ensure_ascii=False)
-    fout.close()
-
-    
+import datetime
+from dateutil import parser
+from multiprocessing.pool import ThreadPool
 
 """ CDAWeb-specific routines here """
 
+def get_CDAWEB_filelist(dataid,time1,time2):
 
-def get_cdaweb_filelist(dataid,time1,time2):
-
+    ttime1 = s3s.iso2nodash(time1) # weird reformatting for cdaweb url
+    ttime2 = s3s.iso2nodash(time2) # weird reformatting for cdaweb url
+    
     headers = {"Accept": "application/json"}
 
-    url = 'https://cdaweb.gsfc.nasa.gov/WS/cdasr/1/dataviews/sp_phys/datasets/' + dataid + '/orig_data/' + time1 + ',' + time2
+    url = 'https://cdaweb.gsfc.nasa.gov/WS/cdasr/1/dataviews/sp_phys/datasets/' + dataid + '/orig_data/' + ttime1 + ',' + ttime2
     res = requests.get(url, headers=headers)
     if res.status_code == 200:
         j = res.json()
         # need to provide the local keys for 'key', 'startDate' and 'filesize' plus any extra keys plus the actual 'data'
-        return {"key": "Name", "startDate": "StartTime", "endDate": "EndTime", "checksum": None, "checksum_algorithm": None, "filesize": "Length", "data": j['FileDescription']}
+        #hapiurl = 'https://cdaweb.gsfc.nasa.gov/hapi/info?id='+dataid
+        retset={"key": "Name", "startDate": "StartTime", "stopDate": "EndTime", "checksum": None, "checksum_algorithm": None, "filesize": "Length"}
+        try:
+            retset["data"]=j['FileDescription']
+        except:
+            s3s.logme("no files for ",dataid+" at "+url,'error')
+            retset=None
     else:
-        print("Timeout trying to fetch ",dataid)
-        return None
+        s3s.logme("timeout trying to fetch ",dataid,'error')
+        retset=None
+    return retset
 
-
-
-def get_cdaweb_IDs(fname,webfetch=True):
+def get_CDAWEB_IDs(fname,webfetch=True):
     url = 'https://cdaweb.gsfc.nasa.gov/WS/cdasr/1/dataviews/sp_phys/datasets/'
     # first fetch URL, if not read prior stored file
     # curl -s -H "Accept: application/json" https://cdaweb.gsfc.nasa.gov/WS/cdasr/1/dataviews/sp_phys/datasets/ | cat >datasets_all.json
 
-    # tbd: update with local_vs_s3_open(fname,mode) (no 'a' in S3?)
-    
     headers = {"Accept": "application/json"}
     if webfetch:
         res = requests.get(url, headers=headers)
@@ -250,102 +95,138 @@ def get_cdaweb_IDs(fname,webfetch=True):
             try:
                 j = res.json()
                 if len(j) > 0:
-                    with open(fname,'w',encoding='utf-8') as fout:
-                        json.dump(j,fout,indent=4,ensure_ascii=False)
+                    s3s.datadump(fname,j,jsonflag=True)
             except:
-                print("Invalid or incomplete json in request, using earlier copy.")
+                s3s.logme("Invalid or incomplete json in request, using earlier copy.",fname,'error')
         else:
-            print("URL for datasets failed, return code ",res.status_code)
+            s3s.logme("URL for datasets failed, return code ",res.status_code,'error')
     else:
-        print("Using local copy of IDs (no web fetch)")
-        
-    with open(fname,'r') as fin:
-        j=json.load(fin)
-        ids = [item['Id'] for item in j['DatasetDescription']]
-        ids.sort()
-    return ids
+        s3s.logme("Using local copy of IDs (no web fetch)",fname,'status')
 
-def demo():
-    #dataid = 'AC_H0_MFI'
-    s3destination = "s3://helio-data-staging/cdaweb/"
+    ids_meta = {}
+    j=s3s.dataingest(fname,jsonflag=True)
+    ids = [item['Id'] for item in j['DatasetDescription']]
+    for item in j['DatasetDescription']:
+        ids_meta[item['Id']] = cdaweb_json_to_cloudme_meta(item)
+    ids.sort()
+
+    return ids, ids_meta
+
+def cdaweb_json_to_cloudme_meta(jdata):
+    """ sample metadata in each json entry (not all guaranteed to exist):
+    Id, Observatory, Instrument, ObservatoryGroup, InstrumentType,
+    Label, TimeInterval {Start, End}, PiName, PiAffiliation,
+    Notes (a url to notes), SpaseResourceID, DatasetLink {Title, Text, URL}
+    
+    Mapping to useful CloudMe metadata:
+    Label -> title
+    PiName -> contact
+    SpaseResourceID -> contactID
+    Notes -> aboutURL
+    all items in DatasetLink concaternated -> description?
+    """    
+    mymeta = {}
+    mymetamap = {"id":"Id","title":"Label","resourceURL":"Notes",
+                 "contact":"PiName","contactID":"SpaseResourceID",
+                 "aboutURL":"Notes","TimeInterval":"TimeInterval"}
+
+    for k,v in mymetamap.items():
+        if v in jdata:
+            if k == 'TimeInterval':
+                mymeta['startDate'] = jdata[v]['Start']
+                mymeta['stopDate'] = jdata[v]['End']
+            else:
+                mymeta[k]=jdata[v]
+    return mymeta
+                 
+class S3info:
+    def __init__(self,s3staging,s3destination,movelogdir,stripuri,extrameta):
+        self.s3staging=s3staging
+        self.s3destination=s3destination
+        self.movelogdir=movelogdir
+        self.stripuri=stripuri
+        self.extrameta=extrameta
+        
+
+def demo(test=True,multicore=False):
+
+    """ can be easily parallelized to 1 dataset per thread.
+        To throttle bandwidth further, an extra loop could be added
+        per thread to grab 1 year at a time; however, this would
+        have to be within the thread not parallel as a single dataid
+        uses a single movelog file, and we are not using file locking.
+    """
+    
+    # CDAWeb-specific data call
+    localcopy_cdaweblist="datasets_all.json"
+    allIDs, allIDs_meta = get_CDAWEB_IDs(localcopy_cdaweblist,False)
+
+    # Set dataset staging-specific items
     s3staging = "./"  # for now, later s3://helio-data-staging/"
-    datasets_fname="datasets_all.json" # local copy of periodically-fetched CDAWeb canonical list of ids
-    time1="20220101T000000Z"
-    time2="20220505T000000Z"
+    #s3staging = "s3://antunak1/"
+    s3destination = "s3://helio-data-staging/cdaweb/"
+    movelogdir = s3staging + "movelogs/"
     stripuri = 'https://cdaweb.gsfc.nasa.gov/sp_phys/data/'
+    extrameta = None # optional extra metadata to include in CSV
 
-    # option list of extra metadata that the CSV will contain
-    extrameta = None
+    sinfo=s3s.bundleme(s3staging,s3destination,movelogdir,stripuri,
+                       extrameta)
+
+    if test: s3s.logme("Total CDAWeb IDs: ",len(allIDs),'log')
+    allIDs = s3s.remove_processed(movelogdir,allIDs)
+    if test: s3s.logme("Unprocessed CDAWeb IDs: ",len(allIDs),'log')
+
+    if test:
+        allIDs = [myall for myall in allIDs if myall.startswith("AC_H2")]
+        s3s.logme("Test set is ",allIDs,'status')
     
-    allIDs = get_cdaweb_IDs(datasets_fname,False)
-    print("There are ",len(allIDs)," CDAWeb IDs")
-    for dataid in allIDs:
-        if dataid == "PSP_COHO1HR_MERGED_MAG_PLASMA":  # HACK FOR TESTING!!!
-            flist = get_cdaweb_filelist(dataid,time1,time2)
-            csvregistry = fetch_and_register(flist, stripuri, s3destination, s3staging,extrameta=extrameta)
-            # prescribed keys, if any
-
-            # THIS IS TERRIBLE CODE
-            optkeys = []
-            if flist['endDate'] != None: optkeys.append('endDate')
-            if flist['checksum'] != None: optkeys.append('checksum')
-            if flist['checksum_algorithm'] != None: optkeys.append('checksum_algorithm')
-            if extrameta != None:
-                extrameta = optkeys + extrameta
-            elif len(optkeys) > 0:
-                extrameta = optkeys
-
-                
-            registryloc=write_annual_registry(dataid,s3staging,csvregistry,extrameta=extrameta)
-            ready_to_migrate(dataid,s3staging,registryloc)
-
-
-
-            
-
-            
-def ready_to_migrate(dataid,s3staging,registryloc,movelog='move-over.json'):
-    """
-    once an item is properly staged, this lists it in a file
-    so the subsequent migration to the s3 destination knows what to
-    process.
-    Format of each entry is:
-    dataid, current s3staging base, location of staging <id>_YYYY.csv files
-
-    Actual migration involves
-     a) move files to appropriate s3destination
-     b) take new fileRegistry and add to canonical fileRegistry
-     c) update db:catalog.json with any change in enddate, modificationdate, startdate
-     d) optionally, S3 Inventory or other check that files were copied over successfully
-     e) write destination catalog.json from DB:catalog.json
-     f) clean out staging area once safely done
-     g) delete and deregister obsolete files from 'deleteme' list
-    """
-
-    create_catalog_stub(dataid,s3staging)
-
-    entry = {"dataid": dataid,
-             "s3staging": s3staging,
-             "registryloc": registryloc}
-
-    if os.path.exists(movelog):
-        print("Updating movelog with ",dataid)
-        fin = local_vs_s3_open(movelog,'r')
-        movelist=json.load(fin)
-        fin.close()
+    if multicore:
+        with ThreadPool(processes=4) as pool:
+            pool.map(fetchCDAWebsinglet,allIDs)
     else:
-        print("Creating movelog with ",dataid)
-        movelist={'movelist':[]}
-
-    movelist['movelist'].append(entry)
-    
-    fout=local_vs_s3_open(movelog,"w")
-    json.dump(movelist,fout,indent=4,ensure_ascii=False)
-    fout.close()
+        for dataid in allIDs:
+            fetchCDAWebsinglet(dataid)
         
+def fetchCDAWebsinglet(dataid):
+
+    test=1
+
+    if test:
+        # using time1, time2 = None, None is only for prod
+        time1,time2="2021-12-31T22:00:00Z","2022-01-05T00:00:00Z"
+    else:
+        # for production runs
+        time1,time2=None,None
         
-def migrate_staging_to_s3():
-    pass
+    localcopy_cdaweblist="datasets_all.json"
+    allIDs, allIDs_meta = get_CDAWEB_IDs(localcopy_cdaweblist,False)
+    # Set dataset staging-specific items
+    s3staging = "./"  # for now, later s3://helio-data-staging/"
+    s3staging = "s3://antunak1/"
+    s3destination = "s3://helio-data-staging/cdaweb/"
+    movelogdir = s3staging + "movelogs/"
+    stripuri = 'https://cdaweb.gsfc.nasa.gov/sp_phys/data/'
+    extrameta = None # optional extra metadata to include in CSV
+
+    sinfo=s3s.bundleme(s3staging,s3destination,movelogdir,stripuri,
+                       extrameta)
+    # Generic setup
+    catmeta = s3s.getmeta(dataid,allIDs_meta)
+    if time1 == None: time1=catmeta['startDate']
+    if time2 == None: time2=catmeta['stopDate']
+    if test: s3s.logme("Getting",dataid+" "+time1+" - "+time2,'status')
+
+    # CDAWeb-specific fetch (rewrite for each new source/dataset)
+    flist = get_CDAWEB_filelist(dataid,time1,time2)
+        
+    # Generic for any fetch
+    if flist != None:
+        os.makedirs(movelogdir,exist_ok=True)
+        regloc,csvreg = s3s.fetch_and_register(flist, sinfo)
+        # prioritize prescribed keys, if any (debate: is this needed?)
+        extrameta = s3s.gatherkeys(sinfo,flist)
+        s3s.write_registries(dataid,regloc,csvreg,sinfo["extrameta"])
+        s3s.ready_migrate(dataid,sinfo,regloc,time1,time2,catmeta=catmeta)
 
 
-demo()
+demo(test=True,multicore=True)

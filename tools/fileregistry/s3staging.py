@@ -69,6 +69,9 @@ def bundleme(s3staging,s3destination,movelogdir,stripuri,extrameta):
     return sinfo
 
 def logme(message,data="",type='status'):
+    """ Can be set to log different items to different places.
+    For now, is just print statements with a leading keyword
+    """
     if type == 'error':
         print("Error:",message,data)
     elif type == 'log':
@@ -146,6 +149,7 @@ def fetch_and_register(filelist, sinfo):
         # make any necessary subdirectories in staging
         (head,tail) = os.path.split(stagingkey)
         try:
+            registryloc = re.sub(r'\d{4}$','',registryloc) # remove any year stub
             registryloc = os.path.commonprefix([registryloc, head])
         except:
             registryloc = head
@@ -175,8 +179,7 @@ def fetch_and_register(filelist, sinfo):
         logme(csvitem)
         csvregistry.append(csvitem)
 
-    # clean registryloc to remove any year stub
-    registryloc = re.sub(r'\d{4}$','',registryloc)
+    #registryloc = re.sub(r'\d{4}$','',registryloc) # remove any year stub
     if not re.search(r'/$',registryloc):
         registryloc += '/' # all locs end in a '/'
     logme('final destination was: ',registryloc,'log')

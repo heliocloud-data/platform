@@ -316,7 +316,6 @@ def dataingest(fname: str, jsonflag: bool = False) -> Union[str, dict]:
         if jsonflag:
             tempdata=json.loads(tempdata)
     else:
-        print("****",fname)
         with open(fname,"r") as fin:
             if jsonflag:
                 tempdata=json.load(fin)
@@ -350,7 +349,6 @@ def datadump(fname: str, tempdata: Union[str, dict], jsonflag: bool = False) -> 
     else:
         with open(fname,"w") as fout:
             if jsonflag:
-                print("***tempdata***",tempdata)
                 json.dump(tempdata,fout,indent=4,ensure_ascii=False)
             else:
                 fout.write(tempdata) # local write

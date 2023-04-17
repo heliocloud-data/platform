@@ -187,6 +187,9 @@ def demo(test=True,multicore=False):
         webfetch=False # for speed, use cached copy
     else:
         webfetch=True # for legit, get freshest cdaweb dataIDs list
+
+    s3s.init_logger(logname="log.txt")
+    
     sinfo,allIDs,allIDs_meta=load_cdaweb_params(webfetch=webfetch)
     
     if test: s3s.logme("Total CDAWeb IDs: ",len(allIDs),'log')
@@ -229,11 +232,11 @@ def fetchCDAWebsinglet(dataid):
     # Generic for any fetch
     if flist != None:
         os.makedirs(sinfo["movelogdir"],exist_ok=True)
-        csvreg,sinfo = s3s.fetch_and_register(flist, sinfo)
+        csvreg,sinfo = s3s.fetch_and_register(flist, sinfo, logstring=dataid)
         # prioritize prescribed keys, if any (debate: is this needed?)
         extrameta = s3s.gatherkeys(sinfo,flist)
         s3s.write_registries(dataid,sinfo,csvreg)
         s3s.ready_migrate(dataid,sinfo,time1,time2,catmeta=catmeta)
 
 
-demo(test=True,multicore=False)
+demo(test=True,multicore=True) #False)

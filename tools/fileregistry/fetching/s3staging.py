@@ -57,6 +57,7 @@ import datetime
 from dateutil import parser
 import magic
 from typing import Dict, List, Tuple, Any, IO, Optional, Union
+import logging
 
 """ General driver routines here, should work for most cases """
 
@@ -83,6 +84,15 @@ def bundleme(s3staging: str, s3destination: str, movelogdir: str, stripuri: str,
            }
     return sinfo
 
+def init_logger(logname=None):
+    if logname:
+        logging.basicConfig(filename=logname,
+                            level=logging.DEBUG,
+                            format="%(levelname)s %(message)s %(asctime)s")
+    else:
+        logging.basicConfig(level=logging.DEBUG,
+                            format="%(levelname)s %(message)s %(asctime)s")
+        
 def logme(message: str, data: str = "", type: str = "status") -> None:
     """
     Logs a message to the console with a specified type.
@@ -92,11 +102,11 @@ def logme(message: str, data: str = "", type: str = "status") -> None:
     :param type: The type of log message (either "status", "error", or "log").
     """
     if type == "error":
-        print("Error:",message,data)
+        logging.error(f"Error: {message} {data}")
     elif type == "log":
-        print("Log:",message,data)
+        logging.info(f"Log: {message} {data}")
     else: # just an onscreen status
-        print("Status:",message,data)
+        logging.debug(f"Status: {message} {data}")
 
 def getHAPIIDs(lasttime: str, catalogurl: str) -> Optional[List[str]]:
     """
@@ -174,7 +184,7 @@ def s3url_to_bucketkey(s3url: str) -> Tuple[str, str]:
     myfilekey = s[1] if len(s) > 1 else "" # Want None if no key?
     return mybucket, myfilekey
         
-def fetch_and_register(filelist: Dict[str, Any], sinfo: Dict[str, Any]) -> Tuple[str, List[str]]:
+def fetch_and_register(filelist: Dict[str, Any], sinfo: Dict[str, Any], logstring: str = "") -> Tuple[str, List[str]]:
     """
     Fetches files from URLs specified in a list of file descriptions, uploads them to an S3 staging bucket,
     and generates a list of strings for the CSV registry of the uploaded files.
@@ -195,7 +205,8 @@ def fetch_and_register(filelist: Dict[str, Any], sinfo: Dict[str, Any]) -> Tuple
     :returns: A tuple containing the final destination directory for the uploaded files and the strings for the CSV registry of the uploaded files.
     """
     lastpath = "/" # used later to avoid os calls
-
+    logtime1 = datetime.datetime.now()
+    logfsize = 0
     csvregistry = []
 
     startkey = filelist["startDate"]
@@ -234,6 +245,7 @@ def fetch_and_register(filelist: Dict[str, Any], sinfo: Dict[str, Any]) -> Tuple
                 sinfo["fileFormat"] = filetype(stagingkey)
             
         csvitem = item[startkey] + "," + s3key + "," + str(item[filesizekey])
+        logfsize += item[filesizekey]
         if filelist["stopDate"] != None:
             csvitem += "," + item[filelist["stopDate"]]
         if filelist["checksum"] != None:
@@ -253,7 +265,10 @@ def fetch_and_register(filelist: Dict[str, Any], sinfo: Dict[str, Any]) -> Tuple
     logme("final destination was: ",registryloc,"log")
 
     sinfo["registryloc"] = registryloc
-    
+
+    logstr = f"{logstring} size {logfsize} bytes in {datetime.datetime.now()-logtime1} time"
+    logme("Performance:",logstr,"log")
+
     return csvregistry,sinfo
 
 def registryname(id,year):

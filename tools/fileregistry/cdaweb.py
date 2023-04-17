@@ -88,6 +88,9 @@ def get_CDAWEB_IDs(fname,dataid=None,webfetch=True):
     # first fetch URL, if not read prior stored file
     # curl -s -H "Accept: application/json" https://cdaweb.gsfc.nasa.gov/WS/cdasr/1/dataviews/sp_phys/datasets/ | cat >datasets_all.json
 
+    if not webfetch and not os.path.exists(fname):
+        webfetch = True
+
     headers = {"Accept": "application/json"}
     if webfetch:
         res = requests.get(url, headers=headers)

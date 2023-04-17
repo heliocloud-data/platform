@@ -26,6 +26,81 @@ Deploying just a single stack (the Data set buckets from base_data):
 cdk deploy DataSetsStack -c config=config/dev.yaml
 ```
 
+## Requirements
+
+Must have access to AWS environment with permissions that allow you to create/modify/delete IAM roles and AWS resources (verify that you have these permissions before beginning).  Our development roles are set such that our policy is:
+
+- <details><summary>IAM Policy</summary><blockquote>
+  
+    ~~~
+    {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Effect": "Allow",
+                "NotAction": [
+                    "iam:*",
+                    "organizations:*",
+                    "account:*"
+                ],
+                "Resource": "*"
+            },
+            {
+                "Effect": "Allow",
+                "Action": [
+                    "iam:List*",
+                    "iam:Get*",
+                    "iam:Tag*",
+                    "iam:Attach*",
+                    "iam:Detach*",
+                    "iam:Put*"
+                ],
+                "Resource": "*"
+            },
+            {
+                "Effect": "Allow",
+                "Action": [
+                    "iam:CreateServiceLinkedRole",
+                    "iam:DeleteServiceLinkedRole",
+                    "iam:ListInstanceProfilesForRole",
+                    "organizations:DescribeOrganization",
+                    "account:ListRegions"
+                ],
+                "Resource": "*"
+            },
+            {
+                "Effect": "Allow",
+                "Action": [
+                    "iam:CreatePolicy",
+                    "iam:CreatePolicyVersion",
+                    "iam:CreateRole",
+                    "iam:DeleteRole",
+                    "iam:CreateInstanceProfile",
+                    "iam:AddRoleToInstanceProfile",
+                    "iam:PassRole",
+                    "iam:RemoveRoleFromInstanceProfile",
+                    "iam:DeleteAccountPasswordPolicy",
+                    "iam:DeleteGroupPolicy",
+                    "iam:DeletePolicy",
+                    "iam:DeletePolicyVersion",
+                    "iam:DeleteRolePermissionsBoundary",
+                    "iam:DeleteRolePolicy",
+                    "iam:DeleteUserPermissionsBoundary",
+                    "iam:DeleteUserPolicy",
+                    "iam:DeleteInstanceProfile",
+                    "iam:UpdateAssumeRolePolicy"
+                ],
+                "Resource": "*"
+            }
+        ]
+    }
+    ~~~
+   </blockquote></details>
+This is a very open role and not necessarily what you should set for your default user.  However, in order to run these instructions must have IAM roles that allow creation/deletion of both IAM roles and policies.
+
+### Region
+
+Choose a region within AWS to deploy infrastructure (suggestion is `us-east-1` as the data for initial HelioClouds are here and there will be no egress of data).
 
 # Development Instructions
 

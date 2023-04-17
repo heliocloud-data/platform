@@ -129,6 +129,9 @@ class DaskhubStack(Stack):
         ##############################################
         # Authentication and Authorization (Cognito) #
         ##############################################
+        # TODO make these configurable (with defaults), note changes to this 
+        # need to be reflected in the "deploy/dh-auth.yaml.template" file
+        # or things could break
         daskhub_client = base_auth.userpool.add_client("heliocloud-daskhub",
                                                        generate_secret=True,
                                                        o_auth=cognito.OAuthSettings(

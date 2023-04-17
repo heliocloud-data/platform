@@ -19,86 +19,14 @@ These are instructions about how to install the HelioCloud version of DaskHub in
 
 # Installing Daskhub
 ## Requirements
-Must have access to AWS environment with permissions that allow you to create/modify/delete IAM roles and AWS resources (verify that you have these permissions before beginning).  Our development roles are set such that our policy is:
-
-- <details><summary>IAM Policy</summary><blockquote>
-  
-    ~~~
-    {
-        "Version": "2012-10-17",
-        "Statement": [
-            {
-                "Effect": "Allow",
-                "NotAction": [
-                    "iam:*",
-                    "organizations:*",
-                    "account:*"
-                ],
-                "Resource": "*"
-            },
-            {
-                "Effect": "Allow",
-                "Action": [
-                    "iam:List*",
-                    "iam:Get*",
-                    "iam:Tag*",
-                    "iam:Attach*",
-                    "iam:Detach*",
-                    "iam:Put*"
-                ],
-                "Resource": "*"
-            },
-            {
-                "Effect": "Allow",
-                "Action": [
-                    "iam:CreateServiceLinkedRole",
-                    "iam:DeleteServiceLinkedRole",
-                    "iam:ListInstanceProfilesForRole",
-                    "organizations:DescribeOrganization",
-                    "account:ListRegions"
-                ],
-                "Resource": "*"
-            },
-            {
-                "Effect": "Allow",
-                "Action": [
-                    "iam:CreatePolicy",
-                    "iam:CreatePolicyVersion",
-                    "iam:CreateRole",
-                    "iam:DeleteRole",
-                    "iam:CreateInstanceProfile",
-                    "iam:AddRoleToInstanceProfile",
-                    "iam:PassRole",
-                    "iam:RemoveRoleFromInstanceProfile",
-                    "iam:DeleteAccountPasswordPolicy",
-                    "iam:DeleteGroupPolicy",
-                    "iam:DeletePolicy",
-                    "iam:DeletePolicyVersion",
-                    "iam:DeleteRolePermissionsBoundary",
-                    "iam:DeleteRolePolicy",
-                    "iam:DeleteUserPermissionsBoundary",
-                    "iam:DeleteUserPolicy",
-                    "iam:DeleteInstanceProfile",
-                    "iam:UpdateAssumeRolePolicy"
-                ],
-                "Resource": "*"
-            }
-        ]
-    }
-    ~~~
-   </blockquote></details>
-This is a very open role and not necessarily what you should set for your default user.  However, in order to run these instructions must have IAM roles that allow creation/deletion of both IAM roles and policies.
-
-Also require that can deploy AWS CDK projects and we recommend but do not require that you have the SSM client setup.
+Require that can deploy AWS CDK projects and we recommend but do not require that you have the SSM client setup.
 
 
 ## Initial infrastructure
 
-Choose a region within AWS to deploy infrastructure (suggestion is `us-east-1` as the data for initial HelioClouds are here and there will be no egress of data).
+We will setup an admin machine (an EC2 instance) and other infrastructure via AWS CDK (we assume this has been done in accordance with the HelioCloud install). This admin machine is where we run the Kubernetes install and interact with the Daskhub. 
 
-We will setup an admin machine (an EC2 instance) and other infrastructure via AWS CDK (we assume this has been done in accordance with the HelioCloud install). This admin machine is where we run the Kubernetes install and interact with the Daskhub and does not do heavy lifting so a small instance is sufficient (t2.micro). 
-
-1. Deploy Daskhub through CDK (instructions [here](https://git.mysmce.com/heliocloud/heliocloud-services/-/tree/develop/install))
+1. Deploy Daskhub through CDK (instructions [here](../README.md))
 2. SSM into EC2 instance either through command line or using AWS Console EC2 Instance Connect
    - <details><summary>Through SSM</summary><blockquote>
   

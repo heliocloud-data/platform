@@ -26,6 +26,7 @@ class DashboardStack(Stack):
         ##############################################
         # Authentication and Authorization (Cognito) #
         ##############################################
+        # TODO make these configurable (with defaults), note changes to this 
         portal_client = base_auth.userpool.add_client("heliocloud-portal",
                                              generate_secret=True,
                                              o_auth=cognito.OAuthSettings(

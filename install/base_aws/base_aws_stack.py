@@ -44,7 +44,8 @@ class BaseAwsStack(Stack):
         # TODO programmatically add additional policy statements
         # based on known HelioCloud public buckets (maybe use user script to pull names?)
         # Need to iteratively adjust though, maybe lambda
-        other_known_public_buckets = ['helio-public']
+        other_known_public_buckets = ['helio-public',
+                                      'gov-nasa-hdrl-data1']
         public_bucket_arns = []
         for public_bucket in public_buckets + other_known_public_buckets:
             public_bucket_arns += [f"arn:aws:s3:::{public_bucket}",
@@ -80,5 +81,11 @@ class BaseAwsStack(Stack):
             ]
         )
 
+        # Create S3 IAM policy that will be used on multiple modules
+        # within HelioCloud. Particularly useful is the public bucket
+        # IAM policies that can be modified to give users access to other
+        # HelioCloud instances without having to modify IAM roles
+        # Currently slated to be used as the base user role for DaskHub
+        # and attached to EC2 roles for the User Portal
         self.s3_managed_policy = iam.ManagedPolicy(self, "S3ManagedPolicy",
                                               document=s3_custom_policy_document)

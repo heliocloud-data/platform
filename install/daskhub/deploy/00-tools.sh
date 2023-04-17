@@ -8,6 +8,10 @@ rm -rf /tmp/aws/
 rm -f /tmp/awscliv2.zip
 cd /home/ssm-user
 
+echo "complete -C '/usr/local/bin/aws_completer' aws" >> /home/ssm-user/.bashrc
+echo "PATH=$PATH:/usr/local/bin" >> /home/ssm-user/.bashrc
+. /home/ssm-user/.bashrc
+
 sudo curl --location -o /usr/local/bin/kubectl https://s3.us-west-2.amazonaws.com/amazon-eks/1.22.6/2022-03-09/bin/linux/amd64/kubectl
 sudo chmod +x /usr/local/bin/kubectl
 
@@ -18,9 +22,6 @@ curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 > get
 bash get_helm.sh -v v3.9.4
 
 for command in kubectl jq envsubst aws eksctl helm; do which $command &>/dev/null && echo "OK - $command" || echo "****NOT FOUND IN PATH**** - $command"; done
-
-echo "complete -C '/usr/local/bin/aws_completer' aws" >> /home/ssm-user/.bashrc
-. /home/ssm-user/.bashrc
 
 eksctl completion bash >> /home/ssm-user/.bash_completion
 kubectl completion bash >>  /home/ssm-user/.bash_completion

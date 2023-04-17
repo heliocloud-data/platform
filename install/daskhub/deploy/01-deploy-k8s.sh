@@ -1,16 +1,23 @@
 #!/bin/bash
 
-AWS_REGION=$(curl -s curl http://169.254.169.254/latest/meta-data/placement/region)
+AWS_REGION=$(aws ec2 describe-availability-zones --output text --query 'AvailabilityZones[0].[RegionName]')
 
 aws configure set output json
 aws configure set region $AWS_REGION
 
-NAMESPACE='daskhub'
-EKS_NAME='eks-helio'
+source ./app.config
+
+# Can run step 1 independently from step 2 if necessary
+# may want to do this if Kubernetes cluster is fully set up
+# but need to modify Daskhub configs, would just comment out
+# entire step 1 section
+
+#######################
+# 1. Setup Kubernetes #
+#######################
 
 # Get region (should be in configure file after running 01-tools.sh)
 # and availability zone
-#AWS_REGION=`aws configure get region`
 AWS_AZ_PRIMARY=`aws ec2 describe-availability-zones --region $AWS_REGION --query "AvailabilityZones[0].ZoneName" --output text`
 AWS_AZ_SECONDARY=`aws ec2 describe-availability-zones --region $AWS_REGION --query "AvailabilityZones[1].ZoneName" --output text`
 
@@ -20,7 +27,6 @@ INSTANCE_ID=$(wget -q -O - http://169.254.169.254/latest/meta-data/instance-id)
 CLOUDFORMATION_ARN=$(aws ec2 describe-instances --region $AWS_REGION --instance-id $INSTANCE_ID --query "Reservations[0].Instances[0].Tags[?Key=='aws:cloudformation:stack-id'].Value | [0]" --output text)
 CLOUDFORMATION_NAME=$(echo $CLOUDFORMATION_ARN | sed 's/^.*stack\///' | cut -d'/' -f1)
 
-#CLOUDFORMATION_RESOURCES=$(aws cloudformation describe-stacks --stack-name $CLOUDFORMATION_NAME)
 KMS_ARN=$(aws cloudformation describe-stacks --stack-name $CLOUDFORMATION_NAME --query 'Stacks[0].Outputs[?OutputKey==`KMSArn`].OutputValue' --output text)
 K8S_ASG_POLICY_ARN=$(aws cloudformation describe-stacks --stack-name $CLOUDFORMATION_NAME --query 'Stacks[0].Outputs[?OutputKey==`ASGArn`].OutputValue' --output text)
 HELIO_S3_POLICY_ARN=$(aws cloudformation describe-stacks --stack-name $CLOUDFORMATION_NAME --query 'Stacks[0].Outputs[?OutputKey==`CustomS3Arn`].OutputValue' --output text)
@@ -92,7 +98,27 @@ if [[ " ${final_cluster_query[*]} " =~ " ${EKS_NAME} " ]]; then
     SUBNET_IDS=`aws eks describe-cluster --name $EKS_NAME --region $AWS_REGION --query cluster.resourcesVpcConfig.subnetIds --output text`
     SG_ID=`aws eks describe-cluster --name $EKS_NAME --region $AWS_REGION --query cluster.resourcesVpcConfig.clusterSecurityGroupId --output text`
 
+    EKS_VPC=`aws eks describe-cluster --name $EKS_NAME --query cluster.resourcesVpcConfig.vpcId --output text`
     SUBNET_ID=`aws ec2 describe-subnets --subnet-ids $SUBNET_IDS --filters "Name=availability-zone,Values=$AWS_AZ_PRIMARY" --query "Subnets[0].SubnetId" --output text`
+
+    # Find EFS mounted targets not within the EKS VPC (this causes issues, can remove once VPC consistent across HelioCloud instance)
+    mounted_targets_to_delete=$(aws efs describe-mount-targets --file-system-id $EFS_ID --query 'MountTargets[?VpcId!=`$EKS_VPC`].MountTargetId' --output text)
+    IFS=' ' read -a arr <<< "$mounted_targets_to_delete"
+    sorted_unique_mounted_targets=($(echo "${arr[@]}" | tr ' ' '\n' | sort -u  | tr '\n' ' '))
+
+    for i in "${sorted_unique_mounted_targets[@]}"
+    do
+        echo Removing EFS mounted target $i that is not within VPC
+        aws efs delete-mount-target --region $AWS_REGION --mount-target-id $i
+    done
+
+    # Make sure deleted mounted targets have enough time to be deleted from system
+    while [[ -n "$mounted_targets_to_delete" ]]
+    do
+        sleep 20s
+        mounted_targets_to_delete=$(aws efs describe-mount-targets --file-system-id $EFS_ID --query 'MountTargets[?VpcId!=`$EKS_VPC`].MountTargetId' --output text)
+    done
+
 
     # Attaches mount target to newly created EFS
     aws efs create-mount-target \
@@ -119,13 +145,13 @@ if [[ " ${final_cluster_query[*]} " =~ " ${EKS_NAME} " ]]; then
         cluster-autoscaler.kubernetes.io/safe-to-evict="false"
 
     ##### Below this specific to namespace #####
-    kubectl create namespace $NAMESPACE
+    kubectl create namespace $KUBERNETES_NAMESPACE
 
     echo ------------------------------ 
     echo Attaching same service role of default namespace to desired namespace
     eksctl create iamserviceaccount \
         --name helio-dh-role \
-        --namespace $NAMESPACE \
+        --namespace $KUBERNETES_NAMESPACE \
         --cluster $EKS_NAME \
         --attach-policy-arn $HELIO_S3_POLICY_ARN \
         --approve \
@@ -135,24 +161,9 @@ if [[ " ${final_cluster_query[*]} " =~ " ${EKS_NAME} " ]]; then
     echo ------------------------------
     echo Attaching persistent volume to cluster...
     # Creates Elastic File System on K8s
-    kubectl -n $NAMESPACE apply -f efs-pvc.yaml
-    kubectl -n $NAMESPACE apply -f efs-pv.yaml
+    kubectl -n $KUBERNETES_NAMESPACE apply -f efs-pvc.yaml
+    kubectl -n $KUBERNETES_NAMESPACE apply -f efs-pv.yaml
 else
     echo ------------------------------
     echo ERROR: Cluster - $EKS_NAME - was not created, skipped all subsequent steps, debug required!
 fi
-
-# Setup Daskhub configuration files (copy templates and add API keys to secrets)
-API_KEY1=$(openssl rand -hex 32)
-API_KEY2=$(openssl rand -hex 32)
-
-cp dh-secrets.yaml.template dh-secrets.yaml
-
-sed -i "s|<INSERT_API_KEY1>|$API_KEY1|g" dh-secrets.yaml
-sed -i "s|<INSERT_API_KEY2>|$API_KEY2|g" dh-secrets.yaml
-
-cp dh-config.yaml.template dh-config.yaml
-cp dh-auth.yaml.template dh-auth.yaml
-
-# Add helm repo
-helm repo add dask https://helm.dask.org/

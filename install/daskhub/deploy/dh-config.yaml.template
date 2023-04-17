@@ -138,14 +138,14 @@ jupyterhub:
         mem_limit: 16G
         cpu_guarantee: 3
         cpu_limit: 4
-        environment: {'NVIDIA_DRIVER_CAPABILITIES': 'compute,utility'}
+        extra_env: {'NVIDIA_DRIVER_CAPABILITIES': 'compute,utility'}
         node_selector:
           nvidia.com/gpu: "true"
         tolerations: [{'key': 'nvidia.com/gpu','operator': 'Equal','value': 'true','effect': 'NoSchedule'},{'key': 'hub.jupyter.org/dedicated','operator': 'Equal','value': 'user','effect': 'NoSchedule'}]
         extra_resource_limits: {"nvidia.com/gpu": "1"}
     image:
-      name: public.ecr.aws/q3h7b4o8/helio-notebook-py
-      tag: "v0.14_9"
+      name: public.ecr.aws/q3h7b4o8/helio-notebook-pyhc
+      tag: "v0.13_13"
     cpu:
       guarantee: 1
       limit: 4
@@ -226,7 +226,7 @@ dask-gateway:
               "worker_extra_pod_labels": extra_labels,
           }
         c.Backend.cluster_options = Options(
-          String("image", default="public.ecr.aws/q3h7b4o8/helio-notebook-py:v0.14_9", label="Image"),
+          String("image", default="public.ecr.aws/q3h7b4o8/helio-notebook-pyhc:v0.13_13", label="Image"),
           Integer("worker_cores", default=1, min=1, max=4, label="Worker Cores"),
           Float("worker_memory", default=1, min=1, max=8, label="Worker Memory (GiB)"),
           handler=option_handler,

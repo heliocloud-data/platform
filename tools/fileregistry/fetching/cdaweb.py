@@ -83,10 +83,13 @@ def get_CDAWEB_filelist(dataid,time1,time2):
         retset=None
     return retset
 
-def get_CDAWEB_IDs(fname,webfetch=True):
+def get_CDAWEB_IDs(fname,dataid=None,webfetch=True):
     url = 'https://cdaweb.gsfc.nasa.gov/WS/cdasr/1/dataviews/sp_phys/datasets/'
     # first fetch URL, if not read prior stored file
     # curl -s -H "Accept: application/json" https://cdaweb.gsfc.nasa.gov/WS/cdasr/1/dataviews/sp_phys/datasets/ | cat >datasets_all.json
+
+    if not webfetch and not os.path.exists(fname):
+        webfetch = True
 
     headers = {"Accept": "application/json"}
     if webfetch:
@@ -105,11 +108,16 @@ def get_CDAWEB_IDs(fname,webfetch=True):
 
     ids_meta = {}
     j=s3s.dataingest(fname,jsonflag=True)
-    ids = [item['Id'] for item in j['DatasetDescription']]
+    if dataid == None:
+        ids = [item['Id'] for item in j['DatasetDescription']]
+    else:
+        ids = [dataid]
     for item in j['DatasetDescription']:
-        ids_meta[item['Id']] = cdaweb_json_to_cloudme_meta(item)
+        if dataid == None or dataid == item['Id']:
+            ids_meta[item['Id']] = cdaweb_json_to_cloudme_meta(item)
+            
     ids.sort()
-
+    
     return ids, ids_meta
 
 def cdaweb_json_to_cloudme_meta(jdata):
@@ -148,21 +156,14 @@ class S3info:
         self.extrameta=extrameta
         
 
-def demo(test=True,multicore=False):
-
-    """ can be easily parallelized to 1 dataset per thread.
-        To throttle bandwidth further, an extra loop could be added
-        per thread to grab 1 year at a time; however, this would
-        have to be within the thread not parallel as a single dataid
-        uses a single movelog file, and we are not using file locking.
-    """
-    
+def load_cdaweb_params(dataid=None,webfetch=False):
     # CDAWeb-specific data call
+    # use webfetch=True to grab and make local cached copy, False to use local cached copy
     localcopy_cdaweblist="datasets_all.json"
-    allIDs, allIDs_meta = get_CDAWEB_IDs(localcopy_cdaweblist,False)
+    allIDs, allIDs_meta = get_CDAWEB_IDs(localcopy_cdaweblist,dataid=dataid,webfetch=webfetch)
 
     # Set dataset staging-specific items
-    s3staging = "./"  # for now, later s3://helio-data-staging/"
+    s3staging = "./cdaweb/"  # for now, later s3://helio-data-staging/"
     #s3staging = "s3://antunak1/"
     s3destination = "s3://helio-data-staging/cdaweb/"
     movelogdir = s3staging + "movelogs/"
@@ -171,9 +172,25 @@ def demo(test=True,multicore=False):
 
     sinfo=s3s.bundleme(s3staging,s3destination,movelogdir,stripuri,
                        extrameta)
+    
+    return sinfo, allIDs, allIDs_meta
 
+def demo(test=True,multicore=False):
+
+    """ can be easily parallelized to 1 dataset per thread.
+        To throttle bandwidth further, an extra loop could be added
+        per thread to grab 1 year at a time; however, this would
+        have to be within the thread not parallel as a single dataid
+        uses a single movelog file, and we are not using file locking.
+    """
+    if test:
+        webfetch=False # for speed, use cached copy
+    else:
+        webfetch=True # for legit, get freshest cdaweb dataIDs list
+    sinfo,allIDs,allIDs_meta=load_cdaweb_params(webfetch=webfetch)
+    
     if test: s3s.logme("Total CDAWeb IDs: ",len(allIDs),'log')
-    allIDs = s3s.remove_processed(movelogdir,allIDs)
+    allIDs = s3s.remove_processed(sinfo["movelogdir"],allIDs)
     if test: s3s.logme("Unprocessed CDAWeb IDs: ",len(allIDs),'log')
 
     if test:
@@ -198,20 +215,10 @@ def fetchCDAWebsinglet(dataid):
         # for production runs
         time1,time2=None,None
         
-    localcopy_cdaweblist="datasets_all.json"
-    allIDs, allIDs_meta = get_CDAWEB_IDs(localcopy_cdaweblist,False)
-    # Set dataset staging-specific items
-    s3staging = "./"  # for now, later s3://helio-data-staging/"
-    s3staging = "s3://antunak1/"
-    s3destination = "s3://helio-data-staging/cdaweb/"
-    movelogdir = s3staging + "movelogs/"
-    stripuri = 'https://cdaweb.gsfc.nasa.gov/sp_phys/data/'
-    extrameta = None # optional extra metadata to include in CSV
+    sinfo,allIDs,allIDs_meta=load_cdaweb_params(dataid=dataid,webfetch=False)
 
-    sinfo=s3s.bundleme(s3staging,s3destination,movelogdir,stripuri,
-                       extrameta)
     # Generic setup
-    catmeta = s3s.getmeta(dataid,allIDs_meta)
+    catmeta = s3s.getmeta(dataid,sinfo,allIDs_meta)
     if time1 == None: time1=catmeta['startDate']
     if time2 == None: time2=catmeta['stopDate']
     if test: s3s.logme("Getting",dataid+" "+time1+" - "+time2,'status')
@@ -221,12 +228,12 @@ def fetchCDAWebsinglet(dataid):
         
     # Generic for any fetch
     if flist != None:
-        os.makedirs(movelogdir,exist_ok=True)
-        regloc,csvreg = s3s.fetch_and_register(flist, sinfo)
+        os.makedirs(sinfo["movelogdir"],exist_ok=True)
+        csvreg,sinfo = s3s.fetch_and_register(flist, sinfo)
         # prioritize prescribed keys, if any (debate: is this needed?)
         extrameta = s3s.gatherkeys(sinfo,flist)
-        s3s.write_registries(dataid,regloc,csvreg,sinfo["extrameta"])
-        s3s.ready_migrate(dataid,sinfo,regloc,time1,time2,catmeta=catmeta)
+        s3s.write_registries(dataid,sinfo,csvreg)
+        s3s.ready_migrate(dataid,sinfo,time1,time2,catmeta=catmeta)
 
 
-demo(test=True,multicore=True)
+demo(test=True,multicore=False)

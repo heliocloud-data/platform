@@ -15,12 +15,16 @@ Fetch latest data files code:
 3) for each ID, get deltas (all items if a new set)
     a) iterate by year
     b) for each item
-         if item already exists in canonical fileRegistry, do not fetch or do anything
+         if item already exists in canonical fileRegistry,
+               do not fetch or do anything
          otherwise, fetch item, and register to staging fileRegistry
-    c) add this id to the 'move-over' list for the next step (unless no changes were done)
-    d) optionally, S3 inventory and/or checksum and/or file existence checks on fetched items?
+    c) add this id to the 'move-over' list for the next step
+       (unless no changes were done)
+    d) optionally, S3 inventory and/or checksum and/or
+       file existence checks on fetched items?
 4) for each ID, get GAP file for id
-       for each 'old/new' pair, verify new is fetched, and write name of 'old' to 'deleteme' list
+       for each 'old/new' pair, verify new is fetched,
+       and write name of 'old' to 'deleteme' list
 5) run 'move-over' code for that ID once ID is entirely done
 
 Move-over code: go from helio-data-staging to TOPS
@@ -28,16 +32,20 @@ Move-over code: go from helio-data-staging to TOPS
 2) for each ID:
      a) move files to appropriate s3destination
      b) take new fileRegistry and add to canonical fileRegistry
-     c) update db:catalog.json with any change in stopDate, modificationdate, startdate
-     d) optionally, S3 Inventory or other check that files were copied over successfully
+     c) update db:catalog.json with any change in
+        stopDate, modificationdate, startdate
+     d) optionally, S3 Inventory or other check that
+        files were copied over successfully
      e) write destination catalog.json from DB:catalog.json
      f) clean out staging area once safely done
      g) delete and deregister obsolete files from 'deleteme' list
 
-Note that fileRegistries are named [id]_YYYY.csv and consist of a CSV header + lines:
+Note that fileRegistries are named [id]_YYYY.csv and
+consist of a CSV header + lines:
    startdate,s3key,size,any additional items,,,
 They reside in the sub-bucket for that [id]
-Also, the 'catalog.json' list of holdings is in the root directory of s3destination
+Also, the 'catalog.json' list of holdings is in
+the root directory of s3destination
 
 Tried using 's3fs' for more elegant writes, but it kept hanging on .close()
 so switched to straightforward but less direct boto3 .upload_file()
@@ -66,25 +74,32 @@ def get_CDAWEB_filelist(dataid,time1,time2):
     
     headers = {"Accept": "application/json"}
 
-    url = 'https://cdaweb.gsfc.nasa.gov/WS/cdasr/1/dataviews/sp_phys/datasets/' + dataid + '/orig_data/' + ttime1 + ',' + ttime2
+    url = "https://cdaweb.gsfc.nasa.gov/WS/cdasr/1/dataviews/sp_phys/datasets/"
+    url += dataid + "/orig_data/" + ttime1 + "," + ttime2
     res = requests.get(url, headers=headers)
     if res.status_code == 200:
         j = res.json()
-        # need to provide the local keys for 'key', 'startDate' and 'filesize' plus any extra keys plus the actual 'data'
-        #hapiurl = 'https://cdaweb.gsfc.nasa.gov/hapi/info?id='+dataid
-        retset={"key": "Name", "startDate": "StartTime", "stopDate": "EndTime", "checksum": None, "checksum_algorithm": None, "filesize": "Length"}
+        # need to provide the local keys for 'key', 'startDate' and 'filesize'
+        # plus any extra keys plus the actual 'data'
+        #hapiurl = "https://cdaweb.gsfc.nasa.gov/hapi/info?id="+dataid
+        retset={"key": "Name",
+                "startDate": "StartTime",
+                "stopDate": "EndTime",
+                "checksum": None,
+                "checksum_algorithm": None,
+                "filesize": "Length"}
         try:
-            retset["data"]=j['FileDescription']
+            retset["data"]=j["FileDescription"]
         except:
-            s3s.logme("no files for ",dataid+" at "+url,'error')
+            s3s.logme(dataid+" no files at",url,"error")
             retset=None
     else:
-        s3s.logme("timeout trying to fetch ",dataid,'error')
+        s3s.logme("timeout trying to fetch ",dataid,"error")
         retset=None
     return retset
 
 def get_CDAWEB_IDs(fname,dataid=None,webfetch=True):
-    url = 'https://cdaweb.gsfc.nasa.gov/WS/cdasr/1/dataviews/sp_phys/datasets/'
+    url = "https://cdaweb.gsfc.nasa.gov/WS/cdasr/1/dataviews/sp_phys/datasets/"
     # first fetch URL, if not read prior stored file
     # curl -s -H "Accept: application/json" https://cdaweb.gsfc.nasa.gov/WS/cdasr/1/dataviews/sp_phys/datasets/ | cat >datasets_all.json
 
@@ -100,21 +115,21 @@ def get_CDAWEB_IDs(fname,dataid=None,webfetch=True):
                 if len(j) > 0:
                     s3s.datadump(fname,j,jsonflag=True)
             except:
-                s3s.logme("Invalid or incomplete json in request, using earlier copy.",fname,'error')
+                s3s.logme("Invalid or incomplete json in request, using earlier copy.",fname,"error")
         else:
-            s3s.logme("URL for datasets failed, return code ",res.status_code,'error')
+            s3s.logme("URL for datasets failed, return code ",res.status_code,"error")
     else:
-        s3s.logme("Using local copy of IDs (no web fetch)",fname,'status')
+        s3s.logme("Using local copy of IDs (no web fetch)",fname,"log")
 
     ids_meta = {}
     j=s3s.dataingest(fname,jsonflag=True)
     if dataid == None:
-        ids = [item['Id'] for item in j['DatasetDescription']]
+        ids = [item["Id"] for item in j["DatasetDescription"]]
     else:
         ids = [dataid]
-    for item in j['DatasetDescription']:
-        if dataid == None or dataid == item['Id']:
-            ids_meta[item['Id']] = cdaweb_json_to_cloudme_meta(item)
+    for item in j["DatasetDescription"]:
+        if dataid == None or dataid == item["Id"]:
+            ids_meta[item["Id"]] = cdaweb_json_to_cloudme_meta(item)
             
     ids.sort()
     
@@ -140,9 +155,9 @@ def cdaweb_json_to_cloudme_meta(jdata):
 
     for k,v in mymetamap.items():
         if v in jdata:
-            if k == 'TimeInterval':
-                mymeta['startDate'] = jdata[v]['Start']
-                mymeta['stopDate'] = jdata[v]['End']
+            if k == "TimeInterval":
+                mymeta["startDate"] = jdata[v]["Start"]
+                mymeta["stopDate"] = jdata[v]["End"]
             else:
                 mymeta[k]=jdata[v]
     return mymeta
@@ -156,75 +171,19 @@ class S3info:
         self.extrameta=extrameta
         
 
-def load_cdaweb_params(dataid=None,webfetch=False):
-    # CDAWeb-specific data call
-    # use webfetch=True to grab and make local cached copy, False to use local cached copy
-    localcopy_cdaweblist="datasets_all.json"
-    allIDs, allIDs_meta = get_CDAWEB_IDs(localcopy_cdaweblist,dataid=dataid,webfetch=webfetch)
-
-    # Set dataset staging-specific items
-    s3staging = "./cdaweb/"  # for now, later s3://helio-data-staging/"
-    #s3staging = "s3://antunak1/"
-    s3destination = "s3://helio-data-staging/cdaweb/"
-    movelogdir = s3staging + "movelogs/"
-    stripuri = 'https://cdaweb.gsfc.nasa.gov/sp_phys/data/'
-    extrameta = None # optional extra metadata to include in CSV
-
-    sinfo=s3s.bundleme(s3staging,s3destination,movelogdir,stripuri,
-                       extrameta)
+def test_fetchCDAWebsinglet(dataid):
+    time1,time2="2021-12-31T22:00:00Z","2022-01-05T00:00:00Z"
+    fetchCDAWebsinglet(dataid,time1=time1,time2=time2)
     
-    return sinfo, allIDs, allIDs_meta
+def fetchCDAWebsinglet(dataid,time1=None,time2=None):
 
-def demo(test=True,multicore=False):
-
-    """ can be easily parallelized to 1 dataset per thread.
-        To throttle bandwidth further, an extra loop could be added
-        per thread to grab 1 year at a time; however, this would
-        have to be within the thread not parallel as a single dataid
-        uses a single movelog file, and we are not using file locking.
-    """
-    if test:
-        webfetch=False # for speed, use cached copy
-    else:
-        webfetch=True # for legit, get freshest cdaweb dataIDs list
-
-    s3s.init_logger(logname="log.txt")
-    
-    sinfo,allIDs,allIDs_meta=load_cdaweb_params(webfetch=webfetch)
-    
-    if test: s3s.logme("Total CDAWeb IDs: ",len(allIDs),'log')
-    allIDs = s3s.remove_processed(sinfo["movelogdir"],allIDs)
-    if test: s3s.logme("Unprocessed CDAWeb IDs: ",len(allIDs),'log')
-
-    if test:
-        allIDs = [myall for myall in allIDs if myall.startswith("AC_H2")]
-        s3s.logme("Test set is ",allIDs,'status')
-    
-    if multicore:
-        with ThreadPool(processes=4) as pool:
-            pool.map(fetchCDAWebsinglet,allIDs)
-    else:
-        for dataid in allIDs:
-            fetchCDAWebsinglet(dataid)
-        
-def fetchCDAWebsinglet(dataid):
-
-    test=1
-
-    if test:
-        # using time1, time2 = None, None is only for prod
-        time1,time2="2021-12-31T22:00:00Z","2022-01-05T00:00:00Z"
-    else:
-        # for production runs
-        time1,time2=None,None
-        
     sinfo,allIDs,allIDs_meta=load_cdaweb_params(dataid=dataid,webfetch=False)
 
     # Generic setup
     catmeta = s3s.getmeta(dataid,sinfo,allIDs_meta)
-    if time1 == None: time1=catmeta['startDate']
-    if time2 == None: time2=catmeta['stopDate']
-    if test: s3s.logme("Getting",dataid+" "+time1+" - "+time2,'status')
+    if time1 == None: time1=catmeta["startDate"]
+    if time2 == None: time2=catmeta["stopDate"]
+    s3s.logme(dataid+" Getting timerange",time1+" - "+time2+" at","status")
 
     # CDAWeb-specific fetch (rewrite for each new source/dataset)
     flist = get_CDAWEB_filelist(dataid,time1,time2)
@@ -239,4 +198,105 @@ def fetchCDAWebsinglet(dataid):
         s3s.ready_migrate(dataid,sinfo,time1,time2,catmeta=catmeta)
 
 
-demo(test=True,multicore=True) #False)
+def cdaweb_prod(threads=1,logfile=None,loglevel=None,
+                refreshIDs=False,limit=None,test=True):
+    """
+    threads
+    logfile
+    loglevel
+    refreshIDs
+    limit = fetch no more than 'limit' IDs, default None = get all cdaweb
+    test = pulls only a subset of IDs over a truncated time range
+    """
+    
+    """ can be easily parallelized to 1 dataset per thread.
+        To throttle bandwidth further, an extra loop could be added
+        per thread to grab 1 year at a time; however, this would
+        have to be within the thread not parallel as a single dataid
+        uses a single movelog file, and we are not using file locking.
+    """
+    if refreshIDs:
+        webfetch=True # for legit, get freshest cdaweb dataIDs list
+    else:
+        webfetch=False # for speed, use cached copy
+        
+    # loglevel = [None/info, debug, error]
+    s3s.init_logger(logfile=logfile,loglevel=loglevel)
+    logstr1 = f"logfile {logfile}, loglevel {loglevel}, threads {threads},"
+    logstr2 = f"limit {limit}, refreshIDs {refreshIDs}, test {test},"
+    s3s.logme(logstr1,logstr2,"log")
+    
+    sinfo,allIDs,allIDs_meta=load_cdaweb_params(webfetch=webfetch)
+    
+    if test:
+        allIDs = [myall for myall in allIDs if myall.startswith("AC_H2")]
+        s3s.logme("Test set is ",allIDs,"log")
+
+    tally1 = len(allIDs)
+    allIDs = s3s.remove_processed(sinfo["movelogdir"],allIDs)
+    tally2 = len(allIDs)
+    s3s.logme(f"CDAWeb IDS: total {tally1}, unprocessed {tally2}","","log")
+
+    if limit:
+        allIDs=allIDs[:limit]
+    
+    if threads > 1:
+        with ThreadPool(processes=threads) as pool:
+            if test:
+                pool.map(test_fetchCDAWebsinglet,allIDs)
+            else:
+                pool.map(fetchCDAWebsinglet,allIDs)
+    else:
+        for dataid in allIDs:
+            if test:
+                test_fetchCDAWebsinglet(dataid)
+            else:
+                fetchCDAWebsinglet(dataid)
+
+    s3s.mastermovelog(sinfo["movelogdir"],allIDs)
+        
+def load_cdaweb_params(dataid=None,webfetch=False):
+    """ CDAWeb-specific data call
+    use webfetch=True to grab and make local cached copy,
+        webfetch=False to use local cached copy
+    """
+    localcopy_cdaweblist="datasets_all.json"
+    allIDs, allIDs_meta = get_CDAWEB_IDs(localcopy_cdaweblist,
+                                         dataid=dataid,
+                                         webfetch=webfetch)
+
+    # Set dataset staging-specific items
+    s3staging = "./cdaweb/"  # for now, later s3://helio-data-staging/"
+    #s3staging = "s3://antunak1/"
+    s3destination = "s3://helio-data-staging/cdaweb/"
+    movelogdir = s3staging + "movelogs/"
+    stripuri = "https://cdaweb.gsfc.nasa.gov/sp_phys/data/"
+    extrameta = None # optional extra metadata to include in CSV
+
+    sinfo=s3s.bundleme(s3staging,s3destination,movelogdir,stripuri,
+                       extrameta)
+    
+    return sinfo, allIDs, allIDs_meta
+
+"""
+Note a bug with using 'limit' is CDAWeb fetches that error out
+stil count towards that limit, so if you have a limit=8 and 8 dataIDs
+error out, every time you re-run you will still be calling those same
+errored ones.
+"""
+
+# lname="cdaweb_log.txt", or None to log to screen
+lname=None 
+# stat='error'/only log errors, 'info'/best, or 'debug'/verbose
+loglevel="debug" # info"
+# test=True is quick test on a subset, False=everything for production
+test=True # False #True
+# refreshIDs=False is use local copy, True=possibly iffy webfetch
+refreshIDs=False
+# tcount is tunable, 1 = single thread, >1 = multiprocessing
+tcount=8
+# limit=N, fetch only N IDs, default None aka get all cdaweb
+limit=2
+
+cdaweb_prod(threads=tcount,logfile=lname,loglevel=loglevel,
+            refreshIDs=refreshIDs,limit=limit,test=test)

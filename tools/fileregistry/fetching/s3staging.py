@@ -8,6 +8,9 @@ Terms:
 
 Update process: fetch latest data files, then move to destination and update registries
 
+ADDED: optionally creates a {movelogdir}mastercache_movelog.json file at the close of a run,
+making it easier to assimilate items and also check which runs have been completed.
+
 Fetch latest data files code:
 1) get catalog of all CDAWeb IDs
     either local file, fetch of full list, or similar
@@ -57,6 +60,8 @@ import datetime
 from dateutil import parser
 import magic
 from typing import Dict, List, Tuple, Any, IO, Optional, Union
+import logging
+import multiprocessing_logging
 
 """ General driver routines here, should work for most cases """
 
@@ -83,6 +88,24 @@ def bundleme(s3staging: str, s3destination: str, movelogdir: str, stripuri: str,
            }
     return sinfo
 
+def init_logger(logfile=None,loglevel=None):
+    if loglevel.lower() == "debug" or loglevel.lower() == "status":
+        loglevel=logging.DEBUG # everything gets logged
+    elif loglevel.lower() == "error":
+        loglevel=logging.ERROR # absolute min, only error
+    else:
+        loglevel=logging.INFO # default is INFO+ERROR msgs
+
+    if logfile:
+        logging.basicConfig(filename=logfile,
+                            level=loglevel,
+                            format="%(levelname)s %(message)s %(asctime)s")
+    else:
+        logging.basicConfig(level=loglevel,
+                            format="%(levelname)s %(message)s %(asctime)s")
+    multiprocessing_logging.install_mp_handler() # put after basicConfig
+
+        
 def logme(message: str, data: str = "", type: str = "status") -> None:
     """
     Logs a message to the console with a specified type.
@@ -92,11 +115,11 @@ def logme(message: str, data: str = "", type: str = "status") -> None:
     :param type: The type of log message (either "status", "error", or "log").
     """
     if type == "error":
-        print("Error:",message,data)
-    elif type == "log":
-        print("Log:",message,data)
+        logging.error(f"Error: {message} {data}")
+    elif type == "log" or type == "info":
+        logging.info(f"Log: {message} {data}")
     else: # just an onscreen status
-        print("Status:",message,data)
+        logging.debug(f"Status: {message} {data}")
 
 def getHAPIIDs(lasttime: str, catalogurl: str) -> Optional[List[str]]:
     """
@@ -174,7 +197,7 @@ def s3url_to_bucketkey(s3url: str) -> Tuple[str, str]:
     myfilekey = s[1] if len(s) > 1 else "" # Want None if no key?
     return mybucket, myfilekey
         
-def fetch_and_register(filelist: Dict[str, Any], sinfo: Dict[str, Any]) -> Tuple[str, List[str]]:
+def fetch_and_register(filelist: Dict[str, Any], sinfo: Dict[str, Any], logstring: str = "") -> Tuple[str, List[str]]:
     """
     Fetches files from URLs specified in a list of file descriptions, uploads them to an S3 staging bucket,
     and generates a list of strings for the CSV registry of the uploaded files.
@@ -195,7 +218,8 @@ def fetch_and_register(filelist: Dict[str, Any], sinfo: Dict[str, Any]) -> Tuple
     :returns: A tuple containing the final destination directory for the uploaded files and the strings for the CSV registry of the uploaded files.
     """
     lastpath = "/" # used later to avoid os calls
-
+    logtime1 = datetime.datetime.now()
+    logfsize = 0
     csvregistry = []
 
     startkey = filelist["startDate"]
@@ -234,6 +258,7 @@ def fetch_and_register(filelist: Dict[str, Any], sinfo: Dict[str, Any]) -> Tuple
                 sinfo["fileFormat"] = filetype(stagingkey)
             
         csvitem = item[startkey] + "," + s3key + "," + str(item[filesizekey])
+        logfsize += item[filesizekey]
         if filelist["stopDate"] != None:
             csvitem += "," + item[filelist["stopDate"]]
         if filelist["checksum"] != None:
@@ -250,10 +275,13 @@ def fetch_and_register(filelist: Dict[str, Any], sinfo: Dict[str, Any]) -> Tuple
     #registryloc = re.sub(r"\d{4}$","",registryloc) # remove any year stub
     if not re.search(r"/$",registryloc):
         registryloc += "/" # all locs end in a "/"
-    logme("final destination was: ",registryloc,"log")
+    logme(logstring + " final destination was: ",registryloc+" ,","log")
 
     sinfo["registryloc"] = registryloc
-    
+
+    logstr = f"{logfsize}:{datetime.datetime.now().timestamp()-logtime1.timestamp()} ,"
+    logme(logstring + " Performance (bytes:seconds:timestamp):",logstr,"log")
+
     return csvregistry,sinfo
 
 def registryname(id,year):
@@ -360,7 +388,7 @@ def uniquejson(jobj: Dict[str, Any], masterkey: str, uniquekey: str) -> Dict[str
     :param jobj: The JSON object to be processed.
     :param masterkey: The key in the JSON object that contains the list of items.
     :param uniquekey: The key in the list of items that contains the unique identifier.
-    
+       or None if all keys must match
     :returns: A new JSON object with duplicate items removed. Also, edits jobj inplace (bug?).
     """
     movie = jobj[masterkey]
@@ -457,7 +485,7 @@ def write_registries(id: str, sinfo: Dict[str, Any],
                 pass
             currentyear = year
             fname = sinfo["registryloc"]+registryname(id,currentyear)
-            logme("Creating registry ",fname,"log")
+            logme("Creating registry ",fname,"status")
             header = "#" + ",".join(keyset) + "\n"
             tempdata = header
         line += "\n"
@@ -535,7 +563,7 @@ def create_catalog_stub(dataid,sinfo,catmeta,startDate,stopDate,
     catData = replaceIsotime(catData,"stopDate",stopDate)
 
     datadump(fstub,catData,jsonflag=True)
-    logme("Wrote catalog stub ",fstub,"log")
+    logme("Wrote catalog stub ",fstub,"status")
 
 
 def blank_catalog(dataid):
@@ -588,13 +616,27 @@ def remove_processed(movelogdir: str, allIDs: List[str]) -> List[str]:
     :param allIDs: A list of all the IDs.
 
     :return: A list of IDs that are ready to process
+
+    Checks first for the optional "movelog_mastercache.json" of all previously
+    processed IDs; anything not in there, it checks if a per-dataset movelog
+    exists.
     """
     if exists_anywhere(movelogdir):
-        for dataid in allIDs:
-            movelog = f"{movelogdir}/movelog_{dataid}.json"
-            if exists_anywhere(movelog):
-                allIDs.remove(dataid)
-            
+        delist=[]
+
+        mcache=name_movelog(movelogdir)
+        #fin=open("mastercache_movelog.json"
+        try:
+            tj = dataingest(mcache,jsonflag=True)
+            delist = [item["dataid"] for item in tj["movelist"]]
+        except:
+            for dataid in allIDs:
+                movelog=name_movelog(movelogdir,dataid)
+                if exists_anywhere(movelog):
+                    delist.append(dataid)
+                    
+        allIDs = [id for id in allIDs if id not in delist]
+
     return allIDs
 
 
@@ -605,9 +647,9 @@ def getmeta(dataid,sinfo,allIDs_meta):
         # try HAPI
         try:
             hapiurl = "https://cdaweb.gsfc.nasa.gov/hapi/info?id="+dataid
-            catmeta = s3s.hapi_info_to_catdata(dataid,hapiurl)
+            catmeta = hapi_info_to_catdata(dataid,hapiurl)
         except:
-            catmeta = s3s.blank_catalog(dataid)
+            catmeta = blank_catalog(dataid)
 
     catmeta["loc"]=None
     catmeta["fileFormat"]=None
@@ -615,7 +657,37 @@ def getmeta(dataid,sinfo,allIDs_meta):
     
     return catmeta
 
+def name_movelog(movelogdir,dataid="mastercache"):
+    # default if no ID is the global aggregate movelog
+    return f"{movelogdir}movelog_{dataid}.json"
 
+
+def mastermovelog(movelogdir,allIDs):
+    """
+    Assembles all the individual movelogs into a single file.
+    """
+    
+    mcache=name_movelog(movelogdir)
+
+    try:
+        tj = dataingest(mcache,jsonflag=True)
+    except:
+        pass
+
+    flist=[name_movelog(movelogdir,id) for id in allIDs]
+    for fname in flist:
+        if exists_anywhere(fname):
+            tempdata=dataingest(fname,jsonflag=True)
+            try:
+                tj["movelist"].extend(tempdata["movelist"])
+            except:
+                tj=tempdata
+    try:
+        tj=uniquejson(tj,"movelist","dataid")
+        datadump(mcache,tj,jsonflag=True)
+    except:
+        pass
+    
 def ready_migrate(dataid,sinfo,startDate,stopDate,catmeta={}):
     """
     once an item is properly staged, this lists it in a file
@@ -647,13 +719,12 @@ def ready_migrate(dataid,sinfo,startDate,stopDate,catmeta={}):
              "registryloc": sinfo["registryloc"],
              "catalog_stub": sinfo["registryloc"]+"catalog_stub.json"}
 
-    movelog = sinfo["movelogdir"] + "movelog_" + dataid + ".json"
-
+    movelog = name_movelog(sinfo["movelogdir"],dataid)
     if exists_anywhere(movelog):
-        logme("Updating movelog ",movelog+" with "+dataid,"log")
+        logme("Updating movelog ",movelog+" with "+dataid,"status")
         movelist = dataingest(movelog,jsonflag=True)
     else:
-        logme("Creating movelog ",movelog+" with "+dataid,"log")
+        logme("Creating movelog ",movelog+" with "+dataid,"status")
         movelist={"movelist":[]}
 
     movelist["movelist"].append(entry)

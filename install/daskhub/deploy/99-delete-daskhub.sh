@@ -20,11 +20,20 @@ done
 echo ------------------------------
 echo Daskhub helm chart uninstalled...
 
+# Get instance id associated with EC2 instance currently logged into
+INSTANCE_ID=$(wget -q -O - http://169.254.169.254/latest/meta-data/instance-id)
+
+CLOUDFORMATION_ARN=$(aws ec2 describe-instances --region $AWS_REGION --instance-id $INSTANCE_ID --query "Reservations[0].Instances[0].Tags[?Key=='aws:cloudformation:stack-id'].Value | [0]" --output text)
+CLOUDFORMATION_NAME=$(echo $CLOUDFORMATION_ARN | sed 's/^.*stack\///' | cut -d'/' -f1)
+
 EFS_ID=$(aws cloudformation describe-stacks --stack-name $CLOUDFORMATION_NAME --query 'Stacks[0].Outputs[?OutputKey==`EFSId`].OutputValue' --output text)
 EKS_VPC=`aws eks describe-cluster --name $EKS_NAME --query cluster.resourcesVpcConfig.vpcId --output text`
+EFS_VPC=\"${EFS_VPC}\"
 
+echo ------------------------------
+echo Finding EFS mounted targets within VPC
 # Find EFS mounted targets within the EKS VPC (cannot delete cluster if there is a remaining connection)
-mounted_targets_to_delete=$(aws efs describe-mount-targets --file-system-id $EFS_ID --query 'MountTargets[?VpcId==`$EKS_VPC`].MountTargetId' --output text)
+mounted_targets_to_delete=$(aws efs describe-mount-targets --file-system-id $EFS_ID --query "MountTargets[?VpcId == '$EKS_VPC'].MountTargetId" --output text)
 IFS=' ' read -a arr <<< "$mounted_targets_to_delete"
 sorted_unique_mounted_targets=($(echo "${arr[@]}" | tr ' ' '\n' | sort -u  | tr '\n' ' '))
 

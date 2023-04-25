@@ -67,7 +67,7 @@ We will setup an admin machine (an EC2 instance) and other infrastructure via AW
 
 ### DaskHub Helm Deployment
 
-**Daskhub (and JupyterHub) can be set-up so that there is no authentication.  We do NOT recommend this as this will leave a public facing entrypoint to your AWS instance where malicious users can access your Daskhub**.  The current HelioCloud DaskHub configuration is set-up for authentication (but can be run without).  If users standup DaskHubs without authentication (ex. for testing), we recommend tearing it down immediately after debugging is complete.
+**Daskhub (and JupyterHub) can be set-up so that there is no authentication.  We do NOT recommend this as this will leave a public facing entrypoint to your AWS instance where malicious users can access your Daskhub**.  The current HelioCloud DaskHub configuration is set-up for authentication (but can be run without).  If users standup DaskHubs without authentication (ex. for testing), we recommend tearing it down immediately after debugging is complete or then deploying with authentication right after.
 
 This deployment assumes that Daskhub uses AWS Cognito for Authentication and Authorization that is initialized in step 1.  Other methods of Authentication and Authorization can be used but we do not detail them here. We also assume that the user wants domain routing to a DNS address purchased and available in AWS Route 53.  This is so the DaskHub can be accessed from a human readable URL.  We assume the user wants the DaskHub to sit on a subdomain of the DNS address that is configured in step 3.
 
@@ -75,7 +75,7 @@ See more details on [DNS routing](https://saturncloud.io/blog/jupyterhub_securit
 
 
 5. Execute `02-deploy-daskhub.sh` by running `./02-deploy-daskhub.sh`
-    - This script  generates copies and fills in configurable values of 3 Daskhub configuration files (can alter manually if have alternate configurations):
+    - This script  generates copies and fills in configurable values of 3 Daskhub configuration files (can alter manually if have alternate configurations, but NOTE if you change the .yaml files they will be overwritten when these are copied from the .yaml.template files):
         <details>
         <summary>dh-config.yaml </summary>
 
@@ -99,13 +99,13 @@ See more details on [DNS routing](https://saturncloud.io/blog/jupyterhub_securit
 
         </details>
     - This will use Helm (a K8s package manager) to get Daskhub running on our cluster
-    - Default first deploys without Authentication and Authorization then gets the URL for our DNS routing and reruns with Authentication and Authorization specified in `dh-auth.yaml`, can alter `02-deploy-daskhub.sh` according to comments to run without authentication
+    - Default deploys with Authentication and Authorization then gets the URL for our DNS routing and reruns with Authentication and Authorization specified in `dh-auth.yaml`, can alter `02-deploy-daskhub.sh` according to comments to run without authentication
     - If you receive an error on executing the helm chart see this [link](https://stackoverflow.com/questions/72126048/circleci-message-error-exec-plugin-invalid-apiversion-client-authentication)
 
 
-Congratulations! At this point you should have a working HelioCloud DaskHub environment.
-Go to the Daskhub Frontend URL you just configured and try logging in.
-- If this does not work after waiting a moment for the changes to propagate through try running: `helm upgrade daskhub dask/daskhub --namespace=<NAMESPACE> --values=dh-config.yaml --values=dh-secrets.yaml --version=2022.8.2 --install` and checking that the daskhub is working without auth then run `helm upgrade daskhub dask/daskhub --namespace=<NAMESPACE> --values=dh-config.yaml --values=dh-secrets.yaml --values=dh-auth.yaml --version=2022.8.2 --install` and try the link again.  Sometimes it takes a few deploys.
+Congratulations! At this point you should have a working HelioCloud DaskHub environment. 
+Go to the Daskhub Frontend URL you just configured and try logging in. (NOTE: sometimes it can take up to 5 minutes for the DNS to propagate).  If you try to load too early on Google Chrome it seems to not try to resync for several minutes (try alternate browser)
+- If this does not work after waiting up to 5 minutes for the changes to propagate through try running: `helm upgrade daskhub dask/daskhub --namespace=<NAMESPACE> --values=dh-config.yaml --values=dh-secrets.yaml --version=2022.8.2 --install` and checking that the daskhub is working without auth by running `kubectl --namespace=<NAMESPACE> get svc proxy-public` and go to the `EXTERNAL-IP` url to make sure it loads (this allows you to spin up a Jupyterhub without authentication and you can type anything into the username and password) then run `helm upgrade daskhub dask/daskhub --namespace=<NAMESPACE> --values=dh-config.yaml --values=dh-secrets.yaml --values=dh-auth.yaml --version=2022.8.2 --install` and try the link again.  Sometimes it takes a few deploys.
 
 
 ## Debugging

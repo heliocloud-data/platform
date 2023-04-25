@@ -27,7 +27,6 @@ class BaseAwsStack(Stack):
         registry = configuration['registry']
         public_buckets = registry.get('bucketNames')
 
-        # TODO:  What do we need to put in here?
         # Create own VPC for HelioCloud
         self.heliocloud_vpc = ec2.Vpc(self, "HelioCloudVPC")
 

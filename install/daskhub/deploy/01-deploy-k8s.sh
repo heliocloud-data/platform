@@ -102,7 +102,7 @@ if [[ " ${final_cluster_query[*]} " =~ " ${EKS_NAME} " ]]; then
     SUBNET_ID=`aws ec2 describe-subnets --subnet-ids $SUBNET_IDS --filters "Name=availability-zone,Values=$AWS_AZ_PRIMARY" --query "Subnets[0].SubnetId" --output text`
 
     # Find EFS mounted targets not within the EKS VPC (this causes issues, can remove once VPC consistent across HelioCloud instance)
-    mounted_targets_to_delete=$(aws efs describe-mount-targets --file-system-id $EFS_ID --query 'MountTargets[?VpcId!=`$EKS_VPC`].MountTargetId' --output text)
+    mounted_targets_to_delete=$(aws efs describe-mount-targets --file-system-id $EFS_ID --query "MountTargets[?VpcId != '$EKS_VPC'].MountTargetId" --output text)
     IFS=' ' read -a arr <<< "$mounted_targets_to_delete"
     sorted_unique_mounted_targets=($(echo "${arr[@]}" | tr ' ' '\n' | sort -u  | tr '\n' ' '))
 
@@ -116,7 +116,7 @@ if [[ " ${final_cluster_query[*]} " =~ " ${EKS_NAME} " ]]; then
     while [[ -n "$mounted_targets_to_delete" ]]
     do
         sleep 20s
-        mounted_targets_to_delete=$(aws efs describe-mount-targets --file-system-id $EFS_ID --query 'MountTargets[?VpcId!=`$EKS_VPC`].MountTargetId' --output text)
+        mounted_targets_to_delete=$(aws efs describe-mount-targets --file-system-id $EFS_ID --query "MountTargets[?VpcId != '$EKS_VPC'].MountTargetId" --output text)
     done
 
 

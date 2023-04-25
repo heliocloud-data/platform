@@ -55,16 +55,18 @@ echo Adding Dask helm repo...
 helm repo add dask https://helm.dask.org/
 
 # Changes the Cognito user pool app client URLs to match what is being put in the daskhub configs
-# Must respecify client configurations because if value not set, will use default values (do not want this)
+# Must re-specify client configurations because if value not set, will use default values (do not want this)
 echo ------------------------------
 echo Amending cognito user pool app client urls...
-aws cognito-idp update-user-pool-client --user-pool-id $COGNITO_USER_POOL_ID --client-id $COGNITO_CLIENT_ID --callback-urls https://$ROUTE53_DASKHUB_PREFIX.$ROUTE53_HOSTED_ZONE/hub/oauth_callback --logout-urls https://$ROUTE53_DASKHUB_PREFIX.$ROUTE53_HOSTED_ZONE/logout --allowed-o-auth-flows "code" --allowed-o-auth-scopes "phone" "email" "openid" "profile" "aws.cognito.signin.user.admin" --supported-identity-providers "COGNITO" --allowed-o-auth-flows-user-pool-client
+NO_OUTPUT=$(aws cognito-idp update-user-pool-client --user-pool-id $COGNITO_USER_POOL_ID --client-id $COGNITO_CLIENT_ID --callback-urls https://$ROUTE53_DASKHUB_PREFIX.$ROUTE53_HOSTED_ZONE/hub/oauth_callback --logout-urls https://$ROUTE53_DASKHUB_PREFIX.$ROUTE53_HOSTED_ZONE/logout --allowed-o-auth-flows "code" --allowed-o-auth-scopes "phone" "email" "openid" "profile" "aws.cognito.signin.user.admin" --supported-identity-providers "COGNITO" --allowed-o-auth-flows-user-pool-client)
 
 
-# Deploy without auth (temporarily)
+# Deploy with auth (can deploy without)
 echo ------------------------------
-echo Deploying Daskhub helm chart without auth - temporarily...
-helm upgrade daskhub dask/daskhub --namespace=$KUBERNETES_NAMESPACE --values=dh-config.yaml --values=dh-secrets.yaml --version=2022.8.2 --install
+echo Deploying Daskhub helm chart with auth
+helm upgrade daskhub dask/daskhub --namespace=$KUBERNETES_NAMESPACE --values=dh-config.yaml --values=dh-secrets.yaml --values=dh-auth.yaml --version=2022.8.2 --install
+#### To deploy without Authentication & Authorization comment out line above and use this one instead without of the lines below it
+#helm upgrade daskhub dask/daskhub --namespace=$KUBERNETES_NAMESPACE --values=dh-config.yaml --values=dh-secrets.yaml --version=2022.8.2 --install
 
 LOADBALANCER_URL=$(kubectl --namespace=$KUBERNETES_NAMESPACE get svc proxy-public --output jsonpath='{.status.loadBalancer.ingress[0].hostname}')
 
@@ -74,24 +76,31 @@ while [[ $LOADBALANCER_URL != *.com ]]
 do
     sleep 20s
     LOADBALANCER_URL=$(kubectl --namespace=$KUBERNETES_NAMESPACE get svc proxy-public --output jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+    echo $LOADBALANCER_URL
 done
 
-# Copy and alter Route 53 record file
-echo ------------------------------
-echo Creating Route53 record...
-cp route53_record.json.template route53_record.json
-sed -i "s|<INSERT_DASKHUB_DNS_NAME>|$ROUTE53_DASKHUB_PREFIX.$ROUTE53_HOSTED_ZONE|g" route53_record.json
-sed -i "s|<INSERT_LOADBALANCER_URL>|$LOADBALANCER_URL|g" route53_record.json
+FINAL_LOADBALANCER_URL=$(kubectl --namespace=$KUBERNETES_NAMESPACE get svc proxy-public --output jsonpath='{.status.loadBalancer.ingress[0].hostname}')
 
-# Send an upsert to add/update subdomain DNS link to Route 53
-echo ------------------------------
-echo Upserting Route53 record...
-ROUTE53_HOSTED_ZONE_ID=$(aws route53 list-hosted-zones-by-name | jq --arg name "$ROUTE53_HOSTED_ZONE." -r '.HostedZones | .[] | select(.Name=="\($name)") | .Id')
-aws route53 change-resource-record-sets --hosted-zone-id $ROUTE53_HOSTED_ZONE_ID --change-batch file://route53_record.json
 
-# Redeploy with auth (recommended but can be commented out if do not want this option)
-echo Deploying Daskhub helm chart with auth...
-helm upgrade daskhub dask/daskhub --namespace=$KUBERNETES_NAMESPACE --values=dh-config.yaml --values=dh-secrets.yaml --values=dh-auth.yaml --version=2022.8.2 --install
+if [[ $LOADBALANCER_URL != $FINAL_LOADBALANCER_URL ]]; then
+    echo These following values should match, othwerwise there is a problem
+    echo $LOADBALANCER_URL
+    echo $FINAL_LOADBALANCER_URL
+    echo Exit, something wrong has occurred, may be a timing issue and should retry script
+else
+    # Copy and alter Route 53 record file
+    echo ------------------------------
+    echo Creating Route53 record...
+    cp route53_record.json.template route53_record.json
+    sed -i "s|<INSERT_DASKHUB_DNS_NAME>|$ROUTE53_DASKHUB_PREFIX.$ROUTE53_HOSTED_ZONE|g" route53_record.json
+    sed -i "s|<INSERT_LOADBALANCER_URL>|$LOADBALANCER_URL|g" route53_record.json
 
-echo ------------------------------
-echo Complete!
+    # Send an upsert to add/update subdomain DNS link to Route 53
+    echo ------------------------------
+    echo Upserting Route53 record...
+    ROUTE53_HOSTED_ZONE_ID=$(aws route53 list-hosted-zones-by-name | jq --arg name "$ROUTE53_HOSTED_ZONE." -r '.HostedZones | .[] | select(.Name=="\($name)") | .Id')
+    aws route53 change-resource-record-sets --hosted-zone-id $ROUTE53_HOSTED_ZONE_ID --change-batch file://route53_record.json
+
+    echo ------------------------------
+    echo Complete! --- may take a few minutes to propoagate
+fi

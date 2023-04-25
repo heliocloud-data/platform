@@ -1,6 +1,6 @@
 {
   "id" : "MMS",
-  "loc": "file://test/base_data/resources/ingest/dataset_bucket",
+  "loc": "file://test-heliocloud-datasets/MMS/",
   "title" : "MMS data",
   "ownership" : {
     "description" : "Data from the Magnetospheric Multiscale Mission run by NASA ",

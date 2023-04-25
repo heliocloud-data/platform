@@ -1,0 +1,30 @@
+# Configuration file to use be used during a HelioCloud installation
+
+# Components to enable in the installation
+components:
+  enableRegistry: True
+  enableUserDashboard: False
+  enableDaskHub: False
+  enableBinderHub: False
+
+# Details for the registry component
+# S3 data_sets to use for storing data sets
+# These will be configured as publicly visible, requestor pays, delete protected
+registry:
+  bucketNames: [
+    "edu-jhuapl-helio-cjeschke-dev"
+  ]
+
+# Config block for user dashboard settings
+userDashboard:
+
+# Config block for the Daskhub
+daskhub:
+
+# Config block for the Binderhub
+binderhub:
+
+
+
+
+

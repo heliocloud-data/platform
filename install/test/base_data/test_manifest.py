@@ -28,7 +28,9 @@ class TestManifest(unittest.TestCase):
         self.assertEqual(manifest_df.columns[0], 'time')
 
     def test_manifest_s3(self):
-        bucket_name = 'heliocloud-publicdataregist-stagingbucket9644c37c-1j7sf73evvpnk'
-        manifest_key = 'mms_2015_upload/manifest.csv'
-        s3resource = boto3.resource('s3')
-        manifest_df = get_manifest_from_s3(s3resource=s3resource, upload_bucket=bucket_name, manifest_key=manifest_key)
+        bucket_name = 'heliocloud-dev-resources'
+        manifest_key = 'test/manifest.csv'
+        s3client = boto3.client('s3')
+        manifest_df = get_manifest_from_s3(s3client=s3client, bucket_name=bucket_name, manifest_key=manifest_key)
+        self.assertEqual(manifest_df.shape[0], 704)
+        s3client.close()

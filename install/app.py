@@ -2,6 +2,7 @@
 import os
 import yaml
 import aws_cdk as cdk
+import aws_cdk.aws_lambda as cdk_lambda
 
 from base_aws.base_aws_stack import BaseAwsStack
 from base_auth.authorization_stack import AuthStack

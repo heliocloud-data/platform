@@ -1,7 +1,0 @@
-1) Want to preserve the whole file tree.
-2) Example:  s3://helio-public/MMS/ goes to gov-nasa-hdrl-data1/MMS
-3) Upload path should look like:
-             s3://helio-upload-bucket/<JOB NAME>/....<path we want the data to nest under>
-
-             s3://helio-upload-bucket/<JOB_NAME>/manifest.csv  <--- manifest file
-

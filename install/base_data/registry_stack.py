@@ -26,7 +26,7 @@ class RegistryStack(Stack):
         with open(config_file, 'r') as file:
             config = yaml.safe_load(file)
         registry = config['registry']
-        buckets = registry.get('bucketNames')
+        bucket_names = registry.get('bucketNames')
         destroy_on_removal = registry.get('destroyOnRemoval', False)
         requester_pays = registry.get('requesterPays', True)
 
@@ -42,7 +42,8 @@ class RegistryStack(Stack):
         # re: object_ownership - We are explicit here to ensure there is only a *single* owner of the content in each
         # bucket - the HelioCloud instance
         self.buckets = list[s3.Bucket]()
-        for bucket in buckets:
+        # TODO:  Troubleshoot setting up public read access.  AWS not permitting it?
+        for bucket in bucket_names:
             new_bucket = s3.Bucket(self, bucket,
                                    bucket_name=bucket,
                                    public_read_access=True,
@@ -75,24 +76,34 @@ class RegistryStack(Stack):
                 custom.node.add_dependency(bucket)
 
         # Create a read policy for the buckets, for use by other HelioCloud components
-        statement = iam.PolicyStatement(
-            actions=["s3:GetBucket", "s3:ListBucket", "s3:GetObject"],
-            resources=[bucket.bucket_arn for bucket in self.buckets]
+        self.read_policy = iam.ManagedPolicy(
+            self,
+            id="HelioCloud-Registry-DataSetBuckets-Read",
+            managed_policy_name="HelioCloud-Registry-DataSetBuckets-Read",
+            statements=[
+                iam.PolicyStatement(
+                    actions=["s3:ListBucket"],
+                    resources=[bucket.bucket_arn for bucket in self.buckets]
+                ),
+                iam.PolicyStatement(
+                    actions=['s3:GetObject'],
+                    resources=[bucket.bucket_arn + "/*" for bucket in self.buckets]
+                )
+            ]
         )
-        self.read_policy = iam.ManagedPolicy(self,
-                                             id="HelioCloud-Registry-DataSetBuckets-Read",
-                                             managed_policy_name="HelioCloud-Registry-DataSetBuckets-Read",
-                                             statements=[statement])
 
         # Create a write policy for the buckets, for use by other HelioCloud components
-        statement = iam.PolicyStatement(
-            actions=["s3:PutObject", "s3:DeleteObject"],
-            resources=[bucket.bucket_arn for bucket in self.buckets]
+        self.write_policy = iam.ManagedPolicy(
+            self,
+            id="HelioCloud-Registry-DataSetBuckets-Write",
+            managed_policy_name="HelioCloud-Registry-DataSetBuckets-Write",
+            statements=[
+                iam.PolicyStatement(
+                    actions=["s3:PutObject", "s3:DeleteObject"],
+                    resources=[bucket.bucket_arn + "/*" for bucket in self.buckets]
+                )
+            ]
         )
-        self.write_policy = iam.ManagedPolicy(self,
-                                              id="HelioCloud-Registry-DataSetBuckets-Write",
-                                              managed_policy_name="HelioCloud-Registry-DataSetBuckets-Write",
-                                              statements=[statement])
 
         # Install the Catalog Generator lambda
         self.cataloger = lambda_.Function(self,

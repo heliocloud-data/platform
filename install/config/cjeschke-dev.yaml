@@ -14,6 +14,8 @@ registry:
   bucketNames: [
     "edu-jhuapl-helio-cjeschke-dev"
   ]
+  uploadBucketName : "edu-jhuapl-helio-upload-cjeschke-dev"
+  deleteOnDestroy: True
 
 # Config block for user dashboard settings
 userDashboard:

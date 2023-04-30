@@ -55,9 +55,13 @@ if daskhub or dashboard:
                        base_auth=auth_stack).add_dependency(auth_stack)
 
     if daskhub:
-        DaskhubStack(app, "HelioCloud-DaskHub",
-                     description="HelioCloud Daskhub deployment", 
+        
+        daskhub_stack = DaskhubStack(app, "HelioCloud-DaskHub",
+                     description="HelioCloud Daskhub deployment",
                      base_aws=base_aws_stack,
                      base_auth=auth_stack).add_dependency(auth_stack)
+        # cdk.Tags.of(daskhub_stack).add("StackType", "daskhub")
+
+# cdk.Tags.of(app).add("app", "heliocloud")
 
 app.synth()

@@ -62,11 +62,19 @@ fi
 echo ------------------------------
 echo Checking cluster status after deleting...
 init_cluster_query=$(aws eks list-clusters | jq -r '.clusters[]')
+iterator=0
 while [[ " ${init_cluster_query[*]} " =~ " ${EKS_NAME} " ]]
 do
+    if [[ $iterator -gt 60 ]]; then
+      echo Breaking due to exceeding time, check if cluster actually deleted
+      break
+    fi
+
     sleep 30s
     echo Still exists, waiting another 30 seconds
     init_cluster_query=$(aws eks list-clusters | jq -r '.clusters[]')
+    iterator=$((iterator + 1))
+    echo $iterator
 done
 
 echo ------------------------------

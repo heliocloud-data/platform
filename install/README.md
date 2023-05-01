@@ -1,5 +1,18 @@
 # HelioCloud Services Installation Project
 
+- [HelioCloud Services Installation Project](#heliocloud-services-installation-project)
+  - [Requirements](#requirements)
+    - [IAM Role](#iam-role)
+    - [CDK](#cdk)
+    - [Region](#region)
+- [Development Instructions](#development-instructions)
+  - [Setup Python Environment](#setup-python-environment)
+  - [CDK Commands](#cdk-commands)
+  - [Code Structure](#code-structure)
+- [Component Deployments](#component-deployments)
+  - [DaskHub](#daskhub)
+
+
 This is a CDK project developed in Python to automate the deployment of a HelioCloud instance into an AWS account. It 
 is organized as follows:
 
@@ -13,8 +26,7 @@ is organized as follows:
 `app.py` is the the CDK driver application for orchestrating the entire installation via the stacks defined above and a 
 user supplied configuration file (see `config/dev.yaml` for an example). 
 
-You can deploy the entire installation or portions of it by invoking `cdk deploy` with the config file of choice and
-selection of stack(s) you wish to deploy. 
+You can deploy the entire installation or portions of it by invoking `cdk deploy` with the config file of choice and selection of stack(s) you wish to deploy. 
 
 Deploying an entire HelioCloud:
 ```commandline
@@ -26,8 +38,11 @@ Deploying just a single stack (the Data set buckets from base_data):
 cdk deploy DataSetsStack -c config=config/dev.yaml
 ```
 
+The modules must be enabled in the config `components` section and any necessary configs for that module should be changed in the config file for that component.
+
 ## Requirements
 
+### IAM Role
 Must have access to AWS environment with permissions that allow you to create/modify/delete IAM roles and AWS resources (verify that you have these permissions before beginning).  Our development roles are set such that our policy is:
 
 - <details><summary>IAM Policy</summary><blockquote>
@@ -98,6 +113,9 @@ Must have access to AWS environment with permissions that allow you to create/mo
    </blockquote></details>
 This is a very open role and not necessarily what you should set for your default user.  However, in order to run these instructions must have IAM roles that allow creation/deletion of both IAM roles and policies.
 
+### CDK
+Must install and setup CDK (see [AWS install instructions](https://aws.amazon.com/getting-started/guides/setup-cdk/module-two/), note the requirement for `npm` and `Node.js`).  Must have AWS credentials set either with environment variables or `aws configure` to push anything to AWS account.
+
 ### Region
 
 Choose a region within AWS to deploy infrastructure (suggestion is `us-east-1` as the data for initial HelioClouds are here and there will be no egress of data).
@@ -163,3 +181,10 @@ The `cdk.json` file tells the CDK Toolkit how to execute your app.
 Per the introduction above, this project is divided into individual CDK Stacks for each major component of a HelioCloud
 installation - data, auth, daskhub, etc.  As such, extending the HelioCloud installation means adding your Stack implementation to a sub-folder 
 of the `install` directory under which this project exists, then updating `app.py` to call your additional CDK Stack(s).
+
+
+# Component Deployments
+
+## DaskHub
+
+DaskHub has the initial infrastructure instantiated with this CDK project but currently requires the user to perform additional steps after logging into an admin EC2 instance.  Enable the component in the config file, ensure that the `auth.domain_prefix` is set, and run the cdk deploy for the HelioCloud install then follow the rest of the DaskHub installation instructions [here](daskhub/README.md).

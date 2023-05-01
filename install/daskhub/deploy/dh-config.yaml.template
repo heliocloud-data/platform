@@ -13,11 +13,13 @@ rbac:
 
 jupyterhub:
   debug:
-    enabled: false
+    enabled: true
   cull:
     enabled: true
-    timeout: 3600
+    timeout: 1801
     every: 300
+  # JupyterHub configuration goes here.
+  # See https://github.com/jupyterhub/zero-to-jupyterhub-k8s/blob/master/jupyterhub/values.yaml
   hub:
     image:
       name: jupyterhub/k8s-hub
@@ -109,43 +111,80 @@ jupyterhub:
         - -c
         - (chmod 0775 /efs; chown 1000:100 /efs)
     profileList:
-    - display_name: "Small Server"
-      description: "Small notebook server. 1GB RAM/1 CPU reserved. Up to 4GB RAM/4 CPU as needed."
+    - display_name: "Server"
+      description: "Regular notebook server. 8 GB RAM/2 CPU."
       default: true
       kubespawner_override:
-        mem_guarantee: 1G
-        mem_limit: 4G
-        cpu_guarantee: 1
-        cpu_limit: 4
-    - display_name: "Large Server"
-      description: "Large notebook server. 2GB RAM/2 CPU reserved. Up to 8GB RAM/4 CPU as needed."
-      kubespawner_override:
-        mem_guarantee: 2G
+        mem_guarantee: 4G
         mem_limit: 8G
-        cpu_guarantee: 2
-        cpu_limit: 4
-    - display_name: "Extra Large Server"
-      description: "Extra Large notebook server. 16GB RAM/4 CPU reserved."
+        cpu_guarantee: 1
+        cpu_limit: 2
+    - display_name: "Large Server"
+      description: "Large notebook server. 16GB RAM/4 CPU."
       kubespawner_override:
         mem_guarantee: 13G
         mem_limit: 16G
         cpu_guarantee: 3
         cpu_limit: 4
+    - display_name: "X-Large Server"
+      description: "Large notebook server. 32 GB RAM/8 CPU."
+      kubespawner_override:
+        mem_guarantee: 26G
+        mem_limit: 32G
+        cpu_guarantee: 6
+        cpu_limit: 8
+    - display_name: "The Big Big Server"
+      description: "Use resources like you mean it. 64GB RAM/16 CPU reserved."
+      kubespawner_override:
+        mem_guarantee: 48G
+        mem_limit: 64G
+        cpu_guarantee: 12
+        cpu_limit: 16
+        #node_selector:
+        #    large_memory: "true"
+        #tolerations: [{'key': 'large_memory', 'operator': 'Equal', 'value': 'true','effect': 'NoSchedule'}]
     - display_name: "GPU Server"
-      description: "Notebook server with access to an NVidia T4 GPU. 16GB RAM/4 CPU reserved."
+      description: "Notebook server with access to an NVidia T4 GPU. Up to 16GB RAM/4 CPU."
       kubespawner_override:
         mem_guarantee: 13G
         mem_limit: 16G
         cpu_guarantee: 3
         cpu_limit: 4
+        image: <ML_DOCKER_LOCATION>:<ML_DOCKER_VERSION>
+        extra_env: {'NVIDIA_DRIVER_CAPABILITIES': 'compute,utility'}
+        node_selector:
+          nvidia.com/gpu: "true"
+        tolerations: [{'key': 'nvidia.com/gpu','operator': 'Equal','value': 'true','effect': 'NoSchedule'},{'key': 'hub.jupyter.org/dedicated','operator': 'Equal','value': 'user','effect': 'NoSchedule'}]
+        extra_resource_limits: {"nvidia.com/gpu": "1"}
+    - display_name: "GPU Server - Large"
+      description: "Notebook server with access to an NVidia T4 GPU. Up to 32GB RAM/8 CPU."
+      kubespawner_override:
+        mem_guarantee: 26G
+        mem_limit: 32G
+        cpu_guarantee: 6
+        cpu_limit: 8
+        image: <ML_DOCKER_LOCATION>:<ML_DOCKER_VERSION>
+        extra_env: {'NVIDIA_DRIVER_CAPABILITIES': 'compute,utility'}
+        node_selector:
+          nvidia.com/gpu: "true"
+        tolerations: [{'key': 'nvidia.com/gpu','operator': 'Equal','value': 'true','effect': 'NoSchedule'},{'key': 'hub.jupyter.org/dedicated','operator': 'Equal','value': 'user','effect': 'NoSchedule'}]
+        extra_resource_limits: {"nvidia.com/gpu": "1"}
+    - display_name: "GPU Server - X-Large"
+      description: "Notebook server with access to an NVidia T4 GPU. Up to 64GB RAM/16 CPU."
+      kubespawner_override:
+        mem_guarantee: 46G
+        mem_limit: 64G
+        cpu_guarantee: 12
+        cpu_limit: 16
+        image: <ML_DOCKER_LOCATION>:<ML_DOCKER_VERSION>
         extra_env: {'NVIDIA_DRIVER_CAPABILITIES': 'compute,utility'}
         node_selector:
           nvidia.com/gpu: "true"
         tolerations: [{'key': 'nvidia.com/gpu','operator': 'Equal','value': 'true','effect': 'NoSchedule'},{'key': 'hub.jupyter.org/dedicated','operator': 'Equal','value': 'user','effect': 'NoSchedule'}]
         extra_resource_limits: {"nvidia.com/gpu": "1"}
     image:
-      name: public.ecr.aws/q3h7b4o8/helio-notebook-pyhc
-      tag: "v0.13_13"
+      name: <GENERIC_DOCKER_LOCATION>
+      tag: "<GENERIC_DOCKER_VERSION>"
     cpu:
       guarantee: 1
       limit: 4
@@ -226,7 +265,7 @@ dask-gateway:
               "worker_extra_pod_labels": extra_labels,
           }
         c.Backend.cluster_options = Options(
-          String("image", default="public.ecr.aws/q3h7b4o8/helio-notebook-pyhc:v0.13_13", label="Image"),
+          String("image", default="<GENERIC_DOCKER_LOCATION>:<GENERIC_DOCKER_VERSION>", label="Image"),
           Integer("worker_cores", default=1, min=1, max=4, label="Worker Cores"),
           Float("worker_memory", default=1, min=1, max=8, label="Worker Memory (GiB)"),
           handler=option_handler,

@@ -56,6 +56,7 @@ We will setup an admin machine (an EC2 instance) and other infrastructure via AW
 3. Move to home directory (either with `cd` or `cd ~`) and alter configuration file `app.config`
     - Assumes that Daskhub will be deployed to a DNS that is linked in AWS Route 53. Can deploy if this is not the case but these instructions do not support alternative methods
     - Can alter the following variables (`NAMESPACE` - the kubernetes namespace to deploy application to - and `EKS_NAME` - the name of the AWS Elastic Kubernetes Service we are deploying) at top of file if they already exist or don't reflect your name choice
+    - Can alter the HelioCloud docker container to use (assumes location is available publicly)
 
 4. Setup and deploy Kubernetes (K8s) on EC2 machine
     - Can alter nodeGroups and managaedNodeGroups in `cluster-config.yaml.template` to suit your cluster (default has master and nodes where uses have spot nodes and users have 3 types of nodes - high compute user, high GPU user, and high compute burst)
@@ -81,6 +82,7 @@ See more details on [DNS routing](https://saturncloud.io/blog/jupyterhub_securit
 
         - this file contains the specifications of our exact Daskhub build and we will modify the template file as we perform updates.  This file assumes you have built K8s as above specifically the EFS and serviceaccount naming conventions (if this is not the case alter these sections)
         -  Only need to adjust `dh-config.yaml` if you did not follow the standard deployment instructions
+        -  If need to alter the docker container make sure to do it in the `app.config`
 
         </details>
 

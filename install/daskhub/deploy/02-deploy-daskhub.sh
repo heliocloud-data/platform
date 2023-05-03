@@ -21,6 +21,13 @@ cp dh-secrets.yaml.template dh-secrets.yaml
 cp dh-config.yaml.template dh-config.yaml
 cp dh-auth.yaml.template dh-auth.yaml
 
+echo ------------------------------
+echo Putting Docker container location in dh-config.yaml...
+sed -i "s|<GENERIC_DOCKER_LOCATION>|$GENERIC_DOCKER_LOCATION|g" dh-config.yaml
+sed -i "s|<GENERIC_DOCKER_VERSION>|$GENERIC_DOCKER_VERSION|g" dh-config.yaml
+sed -i "s|<ML_DOCKER_LOCATION>|$ML_DOCKER_LOCATION|g" dh-config.yaml
+sed -i "s|<ML_DOCKER_VERSION>|$ML_DOCKER_VERSION|g" dh-config.yaml
+
 # Generate API keys for daskhub secrets
 API_KEY1=$(openssl rand -hex 32)
 API_KEY2=$(openssl rand -hex 32)

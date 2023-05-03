@@ -1,7 +1,8 @@
 import boto3
 import pandas as pd
 
-from ingest.exceptions import IngesterException
+# Local imports
+from .exceptions import IngesterException
 
 
 def get_manifest_from_s3(s3client: boto3.client, bucket_name: str, manifest_key: str) -> pd.DataFrame:

@@ -16,27 +16,10 @@ import boto3
 
 from enum import Enum
 
-from base_data.model.dataset import DataSet
-from base_data.ingest.exceptions import IngesterException
-from base_data.registry.repositories import DataSetRepository
-
-
-def get_bucket_name(path: str) -> str:
-    """
-    Gets the name of the bucket. Assumes names start with one of:
-    - file://
-    - s3://
-    """
-    return path.split("/")[2]
-
-
-def get_bucket_subfolder(path: str) -> str:
-    """
-    Gets the sub folder within the bucket (everything after the bucket name). Assumes paths starting with:
-    - file://
-    - s3://
-    """
-    return "/".join(path.split("/", )[3:], )
+from .utils import get_bucket_name, get_bucket_subfolder
+from .exceptions import IngesterException
+from ..registry.repositories import DataSetRepository
+from ..model.dataset import DataSet
 
 
 class UploadType(Enum):

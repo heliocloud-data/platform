@@ -1,16 +1,13 @@
 #!/usr/bin/env python3
-import os
-import yaml
 import aws_cdk as cdk
-import aws_cdk.aws_lambda as cdk_lambda
+import yaml
 
-from base_aws.base_aws_stack import BaseAwsStack
 from base_auth.authorization_stack import AuthStack
-from base_data.data_sets_stack import DataSetsStack
+from base_aws.base_aws_stack import BaseAwsStack
+from base_data.ingester_stack import IngesterStack
 from base_data.registry_stack import RegistryStack
-from daskhub.daskhub_stack import DaskhubStack
 from dashboard.dashboard_stack import DashboardStack
-from binderhub.binderhub_stack import BinderhubStack
+from daskhub.daskhub_stack import DaskhubStack
 
 # Initialize the CDK app
 app = cdk.App()
@@ -27,17 +24,21 @@ with open(config_file, 'r') as file:
 
 # Required:  Deploy the Base AWS Stack to make sure the AWS account environment is properly configured
 base_aws_stack = BaseAwsStack(app, "HelioCloud-BaseAwsStack",
-                          description="AWS resources necessary to deploy any HelioCloud instance")
+                              description="AWS resources necessary to deploy any HelioCloud instance")
 
 # Determine optional components to deploy
 components = config['components']
 
-# Enable registry?
+# Install the Registry if enabled
 if components.get('enableRegistry', False):
-    DataSetsStack(app, "HelioCloud-PublicDataStorage",
-                  description="HelioCloud public S3 buckets").add_dependency(base_aws_stack)
-    RegistryStack(app, "HelioCloud-PublicDataRegistry",
-                  description="HelioCloud data loading & registration").add_dependency(base_aws_stack)
+    registry_stack = RegistryStack(app, "HelioCloud-RegistryStack", description="HelioCloud data set management.")
+    registry_stack.add_dependency(base_aws_stack)
+
+    ingester_stack = IngesterStack(app, "HelioCloud-IngesterStack",
+                                   description="HelioCloud data loading and registration.",
+                                   registry_stack=registry_stack)
+    ingester_stack.add_dependency(base_aws_stack)
+    ingester_stack.add_dependency(registry_stack)
 
 # Check for the other stacks to deploy
 daskhub = components.get('enableDaskHub', False)
@@ -56,8 +57,7 @@ if daskhub or dashboard:
                        base_auth=auth_stack).add_dependency(auth_stack)
 
     if daskhub:
-        
-        daskhub_stack = DaskhubStack(app, "HelioCloud-DaskHub",
+        DaskhubStack(app, "HelioCloud-DaskHub",
                      description="HelioCloud Daskhub deployment",
                      base_aws=base_aws_stack,
                      base_auth=auth_stack).add_dependency(auth_stack)

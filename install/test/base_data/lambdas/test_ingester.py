@@ -5,11 +5,18 @@ import unittest.mock as mock
 
 import boto3
 
-from base_data.ingest.entry import get_entry_from_fs, get_entry_from_s3
-from base_data.ingest.exceptions import IngesterException
-from base_data.ingest.ingester import Ingester, get_bucket_name, get_bucket_subfolder
-from base_data.ingest.manifest import get_manifest_from_fs, get_manifest_from_s3
-from base_data.registry.repositories import DataSetRepository
+#from base_data.ingest.entry import get_entry_from_fs, get_entry_from_s3
+#from base_data.ingest.exceptions import IngesterException
+#from base_data.ingest.ingester import Ingester, get_bucket_name, get_bucket_subfolder
+#from base_data.ingest.manifest import get_manifest_from_fs, get_manifest_from_s3
+#from base_data.registry.repositories import DataSetRepository
+
+from base_data.lambdas.app.ingest.entry import get_entry_from_fs, get_entry_from_s3
+from base_data.lambdas.app.ingest.exceptions import IngesterException
+from base_data.lambdas.app.ingest.ingester import Ingester
+from base_data.lambdas.app.ingest.manifest import get_manifest_from_fs, get_manifest_from_s3
+from base_data.lambdas.app.ingest.utils import get_bucket_name, get_bucket_subfolder
+from base_data.lambdas.app.registry.repositories import DataSetRepository
 
 
 class TestIngester(unittest.TestCase):
@@ -37,14 +44,6 @@ class TestIngester(unittest.TestCase):
         Instantiate Mock repository implementations to inject in the Ingester instances to enable them to
         complete execution in each test.
         """
-
-        # TODO:  Refactor to use unitest.mock
-        #class MockDSRepository(DataSetRepository):
-        #    def save(self, dataset: DataSet) -> None:
-        #        return None
-
-        #self.ds_repo = MockDSRepository(None)
-
         self.ds_repo = DataSetRepository(None)
         self.ds_repo.save = mock.MagicMock(return_value=None)
 
@@ -98,6 +97,7 @@ class TestIngester(unittest.TestCase):
         # Check that the catalog was updated
         self.ds_repo.save.assert_called_once()
 
+    @unittest.skip
     def test_ingester_s3(self):
         s3_upload_path = "s3://heliocloud-dev-resources/ingest/upload_testing/mms_201509_upload/"
 

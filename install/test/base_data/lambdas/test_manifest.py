@@ -1,8 +1,8 @@
 import unittest
 import boto3
 
-from base_data.ingest.exceptions import IngesterException
-from base_data.ingest.manifest import get_manifest_from_fs, get_manifest_from_s3
+from base_data.lambdas.app.ingest.exceptions import IngesterException
+from base_data.lambdas.app.ingest.manifest import get_manifest_from_fs, get_manifest_from_s3
 
 
 class TestManifest(unittest.TestCase):

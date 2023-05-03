@@ -1,10 +1,10 @@
 import boto3
-import ingest.utils as utils
 
-from ingest.entry import get_entry_from_s3
-from ingest.manifest import get_manifest_from_s3
-from ingest.ingester import Ingester
-from registry.repositories import DataSetRepository
+from .ingest import utils as utils
+from .ingest.entry import get_entry_from_s3
+from .ingest.manifest import get_manifest_from_s3
+from .ingest.ingester import Ingester
+from .registry.repositories import DataSetRepository
 
 
 def handler(event, context):
@@ -36,9 +36,10 @@ def handler(event, context):
     entry_key = subfolder + entry_file_name
     entry_dataset = get_entry_from_s3(s3client=s3client, bucket_name=bucket_name, entry_key=entry_key)
 
-    # feed them into an ingester instance
+    # Instantiate an Ingester instance and execute it
     ingester = Ingester(upload_path=upload_path, manifest_df=manifest_df, entry_dataset=entry_dataset,
                         dataset_repository=DataSetRepository(), s3client=s3client)
+    ingester.execute()
 
     # Clean up
     s3client.close()
@@ -46,5 +47,5 @@ def handler(event, context):
     # On Success
     return {
         'statusCode': 200,
-        'status': f"Ingester instantiated"
+        'status': f"Ingest complete!"
     }

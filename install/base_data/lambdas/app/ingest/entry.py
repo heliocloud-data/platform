@@ -1,8 +1,8 @@
 import boto3
 import json
 
-from base_data.ingest.exceptions import IngesterException
-from base_data.model.dataset import DataSet, dataset_from_dict
+from .exceptions import IngesterException
+from ..model.dataset import DataSet, dataset_from_dict
 
 
 def get_entry_from_s3(s3client: boto3.client, bucket_name: str, entry_key: str) -> DataSet:

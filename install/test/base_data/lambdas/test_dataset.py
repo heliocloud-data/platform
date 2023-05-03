@@ -1,10 +1,9 @@
 import unittest
-
 from datetime import datetime
-from base_data.model.dataset import VALID_FILE_FORMATS
-from base_data.model.dataset import DataSet, Ownership
 
-import base_data.model.dataset as ds
+
+from base_data.lambdas.app.model.dataset import VALID_FILE_FORMATS
+from base_data.lambdas.app.model.dataset import DataSet, Ownership, dataset_from_dict
 
 
 class TestDataSet(unittest.TestCase):
@@ -61,7 +60,7 @@ class TestDataSet(unittest.TestCase):
                 'about_url': 'https://www.jhuapl.edu'
             }
         }
-        dataset = ds.dataset_from_dict(data)
+        dataset = dataset_from_dict(data)
         self.assertEqual(dataset.entry_id, '1234')
         self.assertEqual(dataset.ownership.description, 'MMS Data')
 

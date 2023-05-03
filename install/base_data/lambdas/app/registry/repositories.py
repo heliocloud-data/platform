@@ -1,5 +1,4 @@
-from base_data.model.registered_file import RegisteredFile
-from base_data.model.dataset import DataSet
+from ..model.dataset import DataSet
 
 
 class DataSetRepository(object):
@@ -7,7 +6,7 @@ class DataSetRepository(object):
     For persisting dataset records in the catalog database.
     """
 
-    def __init__(self, db_handle):
+    def __init__(self, db_handle=None):
         """
         TODO: Implement to support AWS DocumentDB
         """

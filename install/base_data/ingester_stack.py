@@ -1,4 +1,3 @@
-
 import yaml
 import aws_cdk as cdk
 from aws_cdk import (
@@ -26,15 +25,15 @@ class IngesterStack(Stack):
         config_file = self.node.try_get_context("config")
         with open(config_file, 'r') as file:
             config = yaml.safe_load(file)
-        buckets = config['registry']['uploadBucketName']
+        registry_config = config['registry']
+        upload_bucket_name = registry_config.get('uploadBucketName')
 
         # Provision an upload bucket for the ingest capability, along with a policy to support read/write
-        upload_bucket_name = config['registry']['uploadBucketName']
-        bucket = s3.Bucket(self,
-                           "StagingBucket",
-                           bucket_name=upload_bucket_name,
-                           removal_policy=RemovalPolicy.DESTROY,
-                           auto_delete_objects=True)
+        upload_bucket = s3.Bucket(self,
+                                  id=upload_bucket_name,
+                                  bucket_name=upload_bucket_name,
+                                  removal_policy=RemovalPolicy.DESTROY,
+                                  auto_delete_objects=True)
 
         # Create the Ingester lambda, noting that:
         # (1) It must be supported by an AWS Layer containing the Pandas libraries
@@ -55,18 +54,11 @@ class IngesterStack(Stack):
                                         )
                                     ],
                                     memory_size=1024,
-                                    timeout=cdk.Duration.minutes(15),
-                                    initial_policy=[
-                                        iam.PolicyStatement(
-                                            actions=['s3:ListBucket'],
-                                            resources=[bucket.bucket_arn]
-                                        ),
-                                        iam.PolicyStatement(
-                                            actions=['s3:*Object'],
-                                            resources=[bucket.bucket_arn + "/*"]
-                                        )
-                                    ])
+                                    timeout=cdk.Duration.minutes(15))
 
-        # (3) The Ingester must also be able to read/write to the registry buckets
-        ingester.role.add_managed_policy(registry_stack.read_policy)
-        ingester.role.add_managed_policy(registry_stack.write_policy)
+        # Ingester needs read/write on the upload bucket
+        upload_bucket.grant_read_write(ingester.role)
+
+        # Ingester needs read/write on registry buckets
+        for registry_bucket in registry_stack.buckets:
+            registry_bucket.grant_read_write(ingester)

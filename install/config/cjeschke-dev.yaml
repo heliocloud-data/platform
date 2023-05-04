@@ -12,10 +12,12 @@ components:
 # These will be configured as publicly visible, requestor pays, delete protected
 registry:
   bucketNames: [
-    "edu-jhuapl-helio-cjeschke-dev"
+    "cjeschke-dev-datasets"
   ]
-  uploadBucketName : "edu-jhuapl-helio-upload-cjeschke-dev"
-  deleteOnDestroy: True
+  destroyOnRemoval: True
+  requesterPays: True
+  uploadBucketName : "cjeschke-dev-uploads"
+
 
 # Config block for user dashboard settings
 userDashboard:

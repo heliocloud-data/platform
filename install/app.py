@@ -32,12 +32,12 @@ components = config['components']
 # Install the Registry if enabled
 if components.get('enableRegistry', False):
     registry_stack = RegistryStack(app, "HelioCloud-RegistryStack", description="HelioCloud data set management.")
-    registry_stack.add_dependency(base_aws_stack)
+    #registry_stack.add_dependency(base_aws_stack)
 
     ingester_stack = IngesterStack(app, "HelioCloud-IngesterStack",
                                    description="HelioCloud data loading and registration.",
                                    registry_stack=registry_stack)
-    ingester_stack.add_dependency(base_aws_stack)
+    #ingester_stack.add_dependency(base_aws_stack)
     ingester_stack.add_dependency(registry_stack)
 
 # Check for the other stacks to deploy

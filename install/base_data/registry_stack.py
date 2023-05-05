@@ -86,9 +86,10 @@ class RegistryStack(Stack):
                                           runtime=lambda_.Runtime.PYTHON_3_9,
                                           handler="app.catalog_handler.handler",
                                           code=lambda_.Code.from_asset("base_data/lambdas"))
+
         # Cataloger needs read/write on registry buckets
         for bucket in self.buckets:
-            bucket.grant_read_write(self.cataloger.role)
+            bucket.grant_read_write(self.cataloger)
 
     @property
     def buckets(self) -> list[s3.Bucket]:

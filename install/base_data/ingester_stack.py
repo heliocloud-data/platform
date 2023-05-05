@@ -57,7 +57,7 @@ class IngesterStack(Stack):
                                     timeout=cdk.Duration.minutes(15))
 
         # Ingester needs read/write on the upload bucket
-        upload_bucket.grant_read_write(ingester.role)
+        upload_bucket.grant_read_write(ingester)
 
         # Ingester needs read/write on registry buckets
         for registry_bucket in registry_stack.buckets:

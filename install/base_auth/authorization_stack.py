@@ -28,12 +28,12 @@ class AuthStack(Stack):
 
         # TODO add ability to setup MFA
         self.userpool = cognito.UserPool(self, "Pool",
-                                    account_recovery=cognito.AccountRecovery.EMAIL_ONLY,
-                                    sign_in_case_sensitive=False,
-                                    standard_attributes=cognito.StandardAttributes(
-                                        email=cognito.StandardAttribute(required=True, mutable=True)),
-                                    removal_policy=RemovalPolicy.RETAIN,
-                                    auto_verify=cognito.AutoVerifiedAttrs(email=True),
-                                    self_sign_up_enabled=False)
+                                         account_recovery=cognito.AccountRecovery.EMAIL_ONLY,
+                                         sign_in_case_sensitive=False,
+                                         standard_attributes=cognito.StandardAttributes(
+                                             email=cognito.StandardAttribute(required=True, mutable=True)),
+                                         removal_policy=RemovalPolicy.RETAIN,
+                                         auto_verify=cognito.AutoVerifiedAttrs(email=True),
+                                         self_sign_up_enabled=False)
         self.userpool.add_domain('CognitoDomain',
-                            cognito_domain=cognito.CognitoDomainOptions(domain_prefix=domain_prefix))
+                                 cognito_domain=cognito.CognitoDomainOptions(domain_prefix=domain_prefix))

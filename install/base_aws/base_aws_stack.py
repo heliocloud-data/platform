@@ -1,6 +1,4 @@
-import aws_cdk.custom_resources
 import yaml
-import aws_cdk as cdk
 from aws_cdk import (
     Stack,
     aws_s3 as s3,

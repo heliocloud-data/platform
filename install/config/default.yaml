@@ -1,4 +1,6 @@
-# Configuration file to use be used during a HelioCloud installation
+# Default configuration values to use for a HelioCloud deployment
+# The HelioCloud CDK installer will use these values as a basis, applying any overrides
+# specific by the runtime configuration file provided by the user
 
 # Components to enable in the installation
 components:
@@ -10,11 +12,10 @@ components:
 # S3 data_sets to use for storing data sets
 # These will be configured as publicly visible, requestor pays, delete protected
 registry:
-  bucketNames: [
-    "edu-jhuapl-helio1",
-    "edu-jhuapl-helio2",
-    "edu-jhuapl-helio3"
-  ]
+  # Required: Must have a list of S3 bucket names to use to store registered data sets.
+  # This should be provided via an override config.
+  bucketNames: []
+
   # Optional: Defaults to False.
   # Enabling makes (re)deployments of a HelioCloud easier during development & testing
   destroyOnRemoval: True

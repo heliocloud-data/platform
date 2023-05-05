@@ -12,15 +12,21 @@ from daskhub.daskhub_stack import DaskhubStack
 # Initialize the CDK app
 app = cdk.App()
 
-# Get the configuration file to use for determining bucket count & names
-config_file = app.node.try_get_context("config")
-if config_file is None:
+# First, load default configuration
+default_config = "config/default.yaml"
+with open(default_config, 'r') as file:
+    config = yaml.safe_load(file)
+
+# Next, load the config provided on the command line
+runtime_config = app.node.try_get_context("config")
+if runtime_config is None:
     raise Exception(
         "No configuration file was specified. Re-run using flag '-c config=<name of config file>")
 
-print("Using configuration file " + config_file)
-with open(config_file, 'r') as file:
-    config = yaml.safe_load(file)
+print("Using configuration file " + runtime_config)
+with open(runtime_config, 'r') as file:
+    config.update(yaml.safe_load(file))
+
 
 # Required:  Deploy the Base AWS Stack to make sure the AWS account environment is properly configured
 base_aws_stack = BaseAwsStack(app, "HelioCloud-BaseAwsStack",

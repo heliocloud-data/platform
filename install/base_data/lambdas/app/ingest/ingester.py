@@ -267,7 +267,6 @@ class Ingester(object):
         # First we need to know the years of data involved
         def get_year(start_date: datetime.datetime):
             return start_date.year
-
         self.installed_files_df['year'] = self.installed_files_df['startDate'].apply(get_year)
         years = self.installed_files_df['year'].unique()
 

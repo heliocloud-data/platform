@@ -1,6 +1,3 @@
-# Generates a Bucket Catalog per the specification at:
-# https://git.smce.nasa.gov/heliocloud/heliocloud-services/-/blob/develop/install/base_data/documentation/CloudMe-data-access-spec-0.1.1.md#5-info
-
 from dataclasses import dataclass
 from datetime import datetime
 
@@ -31,7 +28,12 @@ class Ownership:
 
 @dataclass
 class DataSet:
-    """Required fields"""
+    """
+    Model object describing a DataSet (a collection of related files & metadata) being stored in a HelioCloud
+    instance's registry (public S3 buckets).
+    """
+
+    # Required fields
     entry_id: str
     loc: str
     title: str

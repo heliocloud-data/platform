@@ -2,6 +2,18 @@
 # The HelioCloud CDK installer will use these values as a basis, applying any overrides
 # specific by the runtime configuration file provided by the user
 
+
+# Specify the VPC into which all HelioCloud resources will be deployed. Options are:
+#   default - Use the default VPC for the AWS account. This will be resolved automatically.
+#   existing - Use an existing VPC in the AWS account. The vpc_id must be provided for the lookup.
+#   new - A new VPC will be created for your HelioCloud instance using a set of sensible defaults intended
+#         to meet HelioCloud resource requirements.
+vpc:
+  # Default to the default VPC of this AWS account
+  type: default
+  # If using EXISTING, place your VPC ID here. Otherwise, this field is ignored.
+  vpc_id: # example: vpc-0f10b7d51cd94cf4c #
+
 # Components to enable in the installation
 components:
   enableRegistry: True
@@ -14,7 +26,9 @@ components:
 registry:
   # Required: Must have a list of S3 bucket names to use to store registered data sets.
   # This should be provided via an override config.
-  bucketNames: []
+  bucketNames: [
+                # example: s3://edu.myinstitution.myorganization
+               ]
 
   # Optional: Defaults to False.
   # Enabling makes (re)deployments of a HelioCloud easier during development & testing

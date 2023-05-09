@@ -1,15 +1,17 @@
-# Configuration file to use be used during a HelioCloud installation
+# Overrides for cjeschke's dev environment
 
-# Components to enable in the installation
+# Existing cjeschke-dev VPC
+vpc:
+  type: existing
+  vpc_id: vpc-0d3c0a227894442bb
+
+# Only run the registry for now
 components:
   enableRegistry: True
   enableUserDashboard: False
   enableDaskHub: False
-  enableBinderHub: False
 
-# Details for the registry component
-# S3 data_sets to use for storing data sets
-# These will be configured as publicly visible, requestor pays, delete protected
+# Simple bucket names
 registry:
   bucketNames: [
     "cjeschke-dev-datasets"
@@ -17,18 +19,6 @@ registry:
   destroyOnRemoval: True
   requesterPays: True
   uploadBucketName : "cjeschke-dev-uploads"
-
-
-# Config block for user dashboard settings
-userDashboard:
-
-# Config block for the Daskhub
-daskhub:
-
-# Config block for the Binderhub
-binderhub:
-
-
 
 
 

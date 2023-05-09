@@ -17,13 +17,8 @@ class DaskhubStack(Stack):
     CDK stack for installing DaskHub for a HelioCloud instance
     """
 
-    def __init__(self, scope: Construct, construct_id: str, base_aws: Stack, base_auth: Stack, **kwargs) -> None:
+    def __init__(self, scope: Construct, construct_id: str, config: dict, base_aws: Stack, base_auth: Stack, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
-
-        # get the configuration file from the context
-        config = self.node.try_get_context("config")
-        with open(config, "r") as file:
-            configuration = yaml.safe_load(file)
 
         #############################
         # Create EC2 Admin instance #
@@ -149,7 +144,7 @@ class DaskhubStack(Stack):
                                                            cognito.UserPoolClientIdentityProvider.COGNITO],
                                                        prevent_user_existence_errors=True)
         daskhub_client_id = daskhub_client.user_pool_client_id
-        auth = configuration['auth']
+        auth = config['auth']
         domain_prefix = auth.get('domain_prefix', '')
 
         ##########################

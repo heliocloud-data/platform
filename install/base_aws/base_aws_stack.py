@@ -1,4 +1,3 @@
-import yaml
 from aws_cdk import (
     Stack,
     aws_s3 as s3,
@@ -14,19 +13,15 @@ class BaseAwsStack(Stack):
     Stack for setting up a HelioCloud's base AWS requirements: IAM roles, process accounts, etc.
     """
 
-    def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
+    def __init__(self, scope: Construct, construct_id: str, config: dict, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
-        # get the configuration file from the context
-        config = self.node.try_get_context("config")
-        with open(config, 'r') as file:
-            configuration = yaml.safe_load(file)
+        # Local reference to configuration
+        self.__config = config
+        self.__build_vpc()
 
-        registry = configuration['registry']
+        registry = self.__config.get('registry')
         public_buckets = registry.get('bucketNames')
-
-        # Create own VPC for HelioCloud
-        self.heliocloud_vpc = ec2.Vpc(self, "HelioCloudVPC")
 
         self.kms = kms.Key(self, "HelioCloudKMS")
         self.kms.add_alias('heliocloud')
@@ -85,4 +80,31 @@ class BaseAwsStack(Stack):
         # Currently slated to be used as the base user role for DaskHub
         # and attached to EC2 roles for the User Portal
         self.s3_managed_policy = iam.ManagedPolicy(self, "S3ManagedPolicy",
-                                              document=s3_custom_policy_document)
+                                                   document=s3_custom_policy_document)
+
+    def __build_vpc(self) -> None:
+        """
+        Build / Lookup the VPC that will be used for this HelioCloud installation
+        """
+        # Determine VPC configuration required
+        vpc_config = self.__config.get("vpc")
+
+        # Determine type and take action
+        vpc_type = vpc_config.get("type")
+        if vpc_type == "default":
+            self.__heliocloud_vpc = ec2.Vpc.from_lookup(self, id="default", is_default=True)
+            print(f"Using the default vpc: {self.__heliocloud_vpc.vpc_id}.")
+        elif vpc_type == "existing":
+            vpc_id = vpc_config.get("vpc_id")
+            self.__heliocloud_vpc = ec2.Vpc.from_lookup(self, id="HelioCloud-VPC", vpc_id=vpc_id)
+            print(f"Using existing vpc: {self.__heliocloud_vpc.vpc_id}.")
+        elif vpc_type == "new":
+            # TODO:  Review required settings
+            self.__heliocloud_vpc = ec2.Vpc(self, "HelioCloudVPC")
+            print(f"Using newly created vpc: {self.__heliocloud_vpc.vpc_id}.")
+        else:
+            raise Exception(f"Unrecognized vpc type: {vpc_type}")
+
+    @property
+    def heliocloud_vpc(self) -> ec2.Vpc:
+        return self.__heliocloud_vpc

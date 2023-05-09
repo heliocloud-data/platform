@@ -18,13 +18,10 @@ class IngesterStack(Stack):
     CDK stack for setting up the data set registry within a HelioCloud deployment.
     """
 
-    def __init__(self, scope: Construct, construct_id: str, registry_stack: RegistryStack, **kwargs) -> None:
+    def __init__(self, scope: Construct, construct_id: str, config: dict, registry_stack: RegistryStack,
+                 **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
-        # get the configuration file from the context
-        config_file = self.node.try_get_context("config")
-        with open(config_file, 'r') as file:
-            config = yaml.safe_load(file)
         registry_config = config['registry']
         upload_bucket_name = registry_config.get('uploadBucketName')
 

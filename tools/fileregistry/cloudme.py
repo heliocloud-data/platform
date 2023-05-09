@@ -73,7 +73,20 @@ class CatalogRegistry:
         """
         # Get the name and region of each entry in the catalog
         return [(x['name'], x['region']) for x in self.catalog['registry']]
-    
+
+    def get_entries(self,id):
+        """
+        Get all data for a given id
+        
+        Returns:
+            A dictionary for that entry
+        """
+        # Get the name and region of each entry in the catalog
+        myjson = [x for x in self.catalog['catalog'] if x['id'] == id]
+        if myjson is not None:
+            myjson = myjson[0]
+        return myjson
+        
     def get_endpoint(self, name: str, region_prefix: str = '', force_first: bool = False) -> str:
         """
         Get the s3 endpoint given the name and region.
@@ -165,20 +178,20 @@ class FileRegistry:
             
         # Check catalog entries format assumptions
         for entry in self.catalog['catalog']:
-            if 'startdate' in entry:
-                entry['startDate'] = entry.pop('startdate')
-            if 'stopdate' in entry:
-                entry['stopDate'] = entry.pop('stopdate')
-            if 'modificationdate' in entry:
-                entry['modificationDate'] = entry.pop('modificationdate')
-            missing_keys = [key for key in ['id', 'loc', 'title', 'startDate', 'stopDate'] if key not in entry]
+            if 'start' in entry:
+                entry['start'] = entry.pop('start')
+            if 'stop' in entry:
+                entry['stop'] = entry.pop('stop')
+            if 'modification' in entry:
+                entry['modification'] = entry.pop('modification')
+            missing_keys = [key for key in ['id', 'index', 'title', 'start', 'stop'] if key not in entry]
             if len(missing_keys) > 0:
                 raise KeyError(f'Invalid catalog entry. Missing keys ({missing_keys}) in entry: {entry}')
-            loc = entry['loc']
+            loc = entry['index']
             #if (not loc.startswith('s3://') and not loc.startswith(f'{bucket_name}/')) or loc[-1] != '/':
             if not (loc.startswith('s3://') and loc[-1] == '/'):
-                raise ValueError(f'Invalid loc in catalog entry. Loc: {loc}')
-            # could check if startDate is less than stopDate here
+                raise ValueError(f'Invalid index in catalog entry. index: {loc}')
+            # could check if start is less than stop here
         
         # Set and create the folder for caching
         self.cache_folder = None
@@ -204,13 +217,23 @@ class FileRegistry:
     
     def get_entries(self) -> List[Tuple[str, str]]:
         """
-        Get the entry id and title of each entry in the catalog.
+        Get just the entry id and title of each entry in the catalog.
         
         Returns:
             A list of tuples with the id and title from the global catalog registry.
         """
         # Get the name and region of each entry in the catalog
         return [(x['id'], x['title']) for x in self.catalog['catalog']]
+    
+    def get_entry_json(self,id) -> List[Tuple[str, str]]:
+        """
+        Get all the items of each entry in the catalog.
+        
+        Returns:
+            The json items from the catalog
+        """
+        # Get the name and region of each entry in the catalog
+        return self.catalog['catalog'][id]
     
     def get_entry(self, entry_id: str) -> Dict:
         """
@@ -270,7 +293,7 @@ class FileRegistry:
             entry = entry[0]
 
         # Get some necessary variables 
-        eid, loc, catalog_start_date, catalog_stop_date = entry['id'], entry['loc'], entry['startDate'], entry['stopDate']
+        eid, loc, catalog_start_date, catalog_stop_date = entry['id'], entry['index'], entry['start'], entry['stop']
         ndxformat = 'csv'  # entry['ndxformat']
 
         # If caching
@@ -341,17 +364,17 @@ class FileRegistry:
                 fr.columns.values[0] = fr.columns.values[0][2:] 
             
             # Make column names consistent since not enforcing this spec (as of now)
-            fr.rename(columns={'startdate': 'startDate',
-                               'stopdate': 'stopDate',
-                               'modificationdate': 'modificationDate'}, inplace=True)
+            fr.rename(columns={'start': 'start',
+                               'stop': 'stop',
+                               'modification': 'modification'}, inplace=True)
             
-            # assume first column is startDate, second is key, and third is filesize
+            # assume first column is start, second is key, and third is filesize
             # only assuming if not found in column names
             # no error will be thrown if one of these missing, but per spec they are required
-            if 'startDate' not in fr.columns.values:
-                fr.columns.values[0] = 'startDate'
-            if 'key' not in fr.columns.values:
-                fr.columns.values[1] = 'key'
+            if 'start' not in fr.columns.values:
+                fr.columns.values[0] = 'start'
+            if 'datakey' not in fr.columns.values:
+                fr.columns.values[1] = 'datakey'
             if 'filesize' not in fr.columns.values:
                 fr.columns.values[2] = 'filesize'
 
@@ -360,8 +383,8 @@ class FileRegistry:
         frs = pd.concat(frs)
         
         # Filter file registry dataframe to exact requested dates
-        frs['startDate'] = pd.to_datetime(frs['startDate'], format='%Y-%m-%dT%H:%M:%SZ')
-        frs = frs[(start_date <= frs['startDate']) & (frs['startDate'] < stop_date)]
+        frs['start'] = pd.to_datetime(frs['start'], format='%Y-%m-%dT%H:%M:%SZ')
+        frs = frs[(start_date <= frs['start']) & (frs['start'] < stop_date)]
 
         return frs
     
@@ -384,7 +407,7 @@ class FileRegistry:
         fr_bytes_file = None
         for _, row in file_registry.iterrows():
             # Get the S3 URL from the key in the dataframe
-            s3_url = row['key']
+            s3_url = row['datakey']
 
             # Download the S3 file and read it into a BytesIO object
             response = s3_client.get_object(Bucket=s3_url.split('/')[2], Key='/'.join(s3_url.split('/')[3:]))
@@ -397,8 +420,8 @@ class FileRegistry:
                 raise FailedS3Get(f'Failed to get a file registry object. Status: {stats}. Response: {response}')            
 
             # Pass the BytesIO object, start date, and file size to the processing function
-            # startDate may be a date object so making a string just in case for consistency
-            process_func(fr_bytes_file, str(row['startDate']), row['filesize'])
+            # start may be a date object so making a string just in case for consistency
+            process_func(fr_bytes_file, str(row['start']), row['filesize'])
             
     @staticmethod
     def stream_uri(file_registry: pd.DataFrame,
@@ -414,11 +437,11 @@ class FileRegistry:
         """
         for _, row in file_registry.iterrows():
             # Get the S3 URL from the key in the dataframe
-            s3_url = row['key']
+            s3_url = row['datakey']
 
             # Pass the S3 URL, start date, and file size to the processing function
-            # startDate may be a date object so making a string just in case for consistency
-            process_func(s3_url, str(row['startDate']), row['filesize'])
+            # start may be a date object so making a string just in case for consistency
+            process_func(s3_url, str(row['start']), row['filesize'])
 
 
 class EntireCatalogSearch:
@@ -507,7 +530,7 @@ class EntireCatalogSearch:
                 for keyword in keywords:
                     keyword = keyword.lower()
                     count += entry['id'].lower().count(keyword)
-                    count += entry['loc'].lower().count(keyword)
+                    count += entry['index'].lower().count(keyword)
                     count += entry['title'].lower().count(keyword)
                     if 'tags' in entry:
                         count += sum([keyword in tag.lower() for tag in entry['tags']])

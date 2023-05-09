@@ -1,13 +1,10 @@
-import yaml
 import aws_cdk as cdk
 from aws_cdk import (
-    aws_iam as iam,
     aws_lambda as lambda_,
     aws_s3 as s3,
     RemovalPolicy,
-    Stack,
+    Stack
 )
-
 from constructs import Construct
 
 from .registry_stack import RegistryStack

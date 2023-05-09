@@ -1,9 +1,5 @@
-import aws_cdk.aws_docdb
-import yaml
 import aws_cdk as cdk
 from aws_cdk import (
-    aws_docdb as docdb,
-    aws_ec2 as ec2,
     aws_s3 as s3,
     aws_lambda as lambda_,
     custom_resources as resources,
@@ -36,9 +32,6 @@ class RegistryStack(Stack):
 
         # Build the buckets
         self.__build_registry_buckets()
-
-        # Build catalog database
-        self.__build_catalog_db()
 
         # Build the Cataloger lambda
         self.__build_cataloger()
@@ -99,39 +92,6 @@ class RegistryStack(Stack):
                                                      ))
                 custom.node.add_dependency(bucket)
 
-    def __build_catalog_db(self):
-        """
-        Builds and installs an instance of AWS Document DB to function as the backing store for the
-        Catalog.
-        """
-        # Document DB supports a subset of instance classes
-        # As of this development, the T4G is the Latest Generation of Burstable Performance Instance Class
-        # and has the cheapest ($$) cost profile. It is supported in Medium size.
-
-        self.__catalog_db = docdb.DatabaseCluster(
-            self,
-            id="CatalogDB",
-            db_cluster_name="CatalogDB",
-            instances=1,
-            master_user=docdb.Login(
-                username="catalog_master"
-            ),
-            instance_type=ec2.InstanceType.of(ec2.InstanceClass.T4G, ec2.InstanceSize.MEDIUM),
-            vpc=self.__base_aws_stack.heliocloud_vpc,
-            vpc_subnets=ec2.SubnetSelection(
-                subnet_type=ec2.SubnetType.PUBLIC
-            ),
-            parameter_group=docdb.ClusterParameterGroup(self, "CatalogDBClusterParameters",
-                                                        family="docdb4.0",
-                                                        parameters={
-                                                            "audit_logs": "all"
-                                                        }
-                                                        ),
-            export_audit_logs_to_cloud_watch=True,
-            removal_policy=cdk.RemovalPolicy.DESTROY  # destroy for now..
-        )
-        print(f"Building the catalog db {self.__catalog_db}")
-
     def __build_cataloger(self):
         """
         Builds and installs the Cataloger lambda, responsible for generating the Catalog files
@@ -156,13 +116,6 @@ class RegistryStack(Stack):
         S3 buckets created by this stack for storing data sets
         """
         return self.__buckets
-
-    @property
-    def catalog_db(self) -> docdb.DatabaseCluster:
-        """
-        Catalog database (an AWS Document DB instance)
-        """
-        return self.__catalog_db
 
     @property
     def cataloger(self) -> lambda_.Function:

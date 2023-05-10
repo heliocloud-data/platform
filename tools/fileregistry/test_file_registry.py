@@ -5,7 +5,7 @@ import pandas as pd
 import pytest
 from unittest.mock import MagicMock
 from io import BytesIO
-from registry import FileRegistry, FailedS3Get, UnavailableData
+from cloudme import FileRegistry, FailedS3Get, UnavailableData
 
 
 @pytest.fixture
@@ -15,10 +15,10 @@ def test_catalog():
         'catalog': [
             {
                 'id': 'test_dataset',
-                'loc': 's3://test-bucket/test_dataset/',
+                'index': 's3://test-bucket/test_dataset/',
                 'title': 'Test Dataset',
-                'startDate': '2020-01-01T00:00:00Z',
-                'stopDate': '2021-12-31T23:59:59Z'
+                'start': '2020-01-01T00:00:00Z',
+                'stop': '2021-12-31T23:59:59Z'
             }
         ]
     }
@@ -76,9 +76,20 @@ def test_file_registry_get_catalog(mock_boto3_client, test_catalog):
     assert fr.get_catalog() == test_catalog
 
 
-def test_file_registry_get_entries(mock_boto3_client):
+def test_file_registry_get_entries_id_title(mock_boto3_client):
     fr = FileRegistry('test-bucket', cache=False)
-    assert fr.get_entries() == [('test_dataset', 'Test Dataset')]
+    assert fr.get_entries_id_title() == [('test_dataset', 'Test Dataset')]
+
+
+def test_file_registry_get_entries_dict(mock_boto3_client):
+    fr = FileRegistry('test-bucket', cache=False)
+    assert fr.get_entries_dict() == [{
+        'id': 'test_dataset',
+        'index': 's3://test-bucket/test_dataset/',
+        'title': 'Test Dataset',
+        'start': '2020-01-01T00:00:00Z',
+        'stop': '2021-12-31T23:59:59Z'
+    }]
 
 
 def test_file_registry_get_entry(mock_boto3_client, test_catalog):
@@ -95,7 +106,7 @@ def test_file_registry_request_file_registry(mock_boto3_client, mock_s3_client):
 
     # Create the test FR data
     test_data = {
-        'startdate': [
+        'start': [
             '2020-01-01T00:00:00Z',
             '2020-01-02T00:00:00Z',
             '2020-12-31T23:59:59Z',
@@ -133,7 +144,7 @@ def test_file_registry_request_file_registry(mock_boto3_client, mock_s3_client):
     )
 
     assert isinstance(result, pd.DataFrame)
-    assert 'startDate' in result.columns
+    assert 'start' in result.columns
 
 
 def test_file_registry_request_file_registry_invalid_dates(mock_boto3_client):

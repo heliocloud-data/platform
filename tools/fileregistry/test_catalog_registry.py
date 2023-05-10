@@ -1,5 +1,5 @@
 import pytest
-from registry import CatalogRegistry
+from cloudme import CatalogRegistry
 
 
 @pytest.fixture
@@ -55,8 +55,8 @@ def test_get_registry(catalog_registry):
         assert isinstance(item, dict)
 
 
-def test_get_entries(catalog_registry):
-    entries = catalog_registry.get_entries()
+def test_get_entries_name_region(catalog_registry):
+    entries = catalog_registry.get_entries_name_region()
     assert isinstance(entries, list)
     assert len(entries) > 0
     for entry in entries:

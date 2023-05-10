@@ -27,9 +27,9 @@ Must be able to deploy AWS CDK projects and we recommend but do not require that
 We will setup an admin machine (an EC2 instance) and other infrastructure via AWS CDK (we assume this has been done in accordance with the HelioCloud framework install). This admin machine is where we run the Kubernetes install and interact with the Daskhub. 
 
 1. Deploy Daskhub through CDK (instructions [here](../README.md))
-   - Ensure that the DaskHub is being deployed with the configuration file (see [the sample configuration file for details](../instance/default.yaml))
-     - Must set `components.enableDaskHub` to `True` in the HelioCloud install configuration as well as any necessary parameters in the `daskhub` block 
-2. SSM into EC2 instance either through command line or using AWS Console EC2 Instance Connect
+   - Ensure that the DaskHub is being deployed with the configuration file (see [the sample configuration file for details](../instance/example.yaml))
+     - Must set `enabled.daskhub` to `True` in the HelioCloud instance configuration YAML as well as any necessary parameters in the `daskhub` block
+6. SSM into EC2 instance either through command line or using AWS Console EC2 Instance Connect
    - <details><summary>Through SSM</summary><blockquote>
   
         ~~~~

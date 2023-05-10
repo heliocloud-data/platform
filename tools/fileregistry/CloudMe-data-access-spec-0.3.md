@@ -6,7 +6,7 @@
 [5 Info Metadata](#5-info)<br/>
 <!-- \TOC -->
 
-Version 0.2.2 \| HelioCloud \|
+Version 0.3.1 \| HelioCloud \|
 
 # 1 The HelioCloud 'CloudMe' Specification
 
@@ -73,7 +73,7 @@ Here is a sample 'HelioDataRegistry.json' for three buckets at two sites.
 
 ```javascript
 {
-    "CloudMe": "0.2",
+    "CloudMe": "0.3",
     "modificationDate": "2022-01-01T00:00.00Z",
     "registry": [
         {
@@ -107,34 +107,39 @@ Globally the catalog.json describes the endpoint with the following items. Note 
 * **endpoint** - same as was provided to GlobalDataRegistry.json, an accessble S3 (or equivalent) bucket link
 * **name** - same as was provided to GlobalDataRegistry.json, a descriptive name for the dataset.
 * **region** - same as was provided to GlobalDataRegistry.json, which AWS region
-* **egressPolicy** - one of 'no-egress', 'user-pays', 'egress-allowed', or 'none'
+* **egress** - one of 'no-egress', 'user-pays', 'egress-allowed', or 'none'
 * **status** - A return code, typically "1200/OK". Site owners can temporarily set this to other values
 * **contact** - Who to contact for issues with this bucket, e.g. "Dr. Contact, dr_contact@example.com"
+
 * **description** - Optional description of this collection
 * **citation** - Optional how to cite, preferably a DOI for the server
+* **comment** - A catch-all comment field for data provider and developer use. It should not contain information required to parse the data items.
 
 For each dataset, the catalog entry requires:
 
 * **id** a unique ID for the dataset that follows the ID naming requirements
-* **loc** a fully qualified pointer to the object directory containing both the dataset and the required fileRegistry. It MUST start with s3:// or "https://" (or equivalent) end in a terminating '/'.
-* **startDate**: string, Restricted ISO 8601 date/time of first record of data in the entire dataset.
-* **stopDate**: string, Restricted ISO 8601 date/time of end of the last 
-record of data in the entire dataset.
-* **modificationDate**: string, Restricted ISO 8601 date/time of last time this dataset was updated
+* **index** a fully qualified pointer to the object directory containing both the dataset and the required fileRegistry. It MUST start with s3:// or "https://" (or equivalent) end in a terminating '/'.
+* **start**: string, Restricted ISO 8601 date/time of first record of data in the entire dataset OR the word 'static' for items such as model shapes that lack a time field.
+* **stop**: string, Restricted ISO 8601 date/time of end of the last 
+record of data in the entire dataset OR the word 'static' for items such as model shapes that lack a time field.
+* **modification**: string, Restricted ISO 8601 date/time of last time this dataset was updated
 * **title** a short descriptive title sufficient to identify the dataset and its utility to users
-* **indexFormat** Defines what format the actual fileRegistry is, one of 'csv', 'csv-zip' or 'parquet'
-* **fileFormat** the file format of the actual data. Must be from the prescribed list of files. 
+* **indextype** Defines what format the actual fileRegistry is, one of 'csv', 'csv-zip' or 'parquet'
+* **filetype** the file format of the actual data. Must be from the prescribed list of files. 
+
 * **description** optional description for dataset".
-* **resourceURL** optional identifier e.g. SPASE ID".
-* **creationDate** optional ISO 8601 date/time of the dataset creation".
+* **resource** optional identifier e.g. SPASE ID, dataset description URL, DOI, json link of model parameters, or similar ancillary information".
+* **creation** optional ISO 8601 date/time of the dataset creation".
+* **expiration** optional ISO 8601 date/time after which the dataset will be expired, migrated, or not maintained".
+* **verified** optional ISO 8601 date/time for when the dataset was last tested by verifier programs".
 * **citation** optional how to cite this dataset, DOI or similar".
 * **contact** optional contact name".
-* **contactID** optional contact SPASE ID, DOI or ORCID".
-* **aboutURL** optional website URL for info, team, etc.
+* **about** optional website URL for info, team, etc.
+* **multiyear** optional True/False field (default: False) for use when dataitems span multiple years (see 3.2 below)
 
-For file formats, there is a prescibed list. As new file formats are introduced, we will update this specification to give a single unique identifier for it.  The reason for the prescribed list is to avoid ambiguity or the need for users to parse (for example, avoidingg figuring out '.fts', 'fits', '.FTS', etc)  Repositories with multiple files types can specify them as a comma-separated list with no spaces, e.g. 'fits,csv' for a dataset that contains both images and event lists. currently allows 'fits,csv,cdf,netcdf3,netcdf, hdf5,datamap,other'.
+For file formats, there is a prescibed list. As new file formats are introduced, we will update this specification to give a single unique identifier for it.  The reason for the prescribed list is to avoid ambiguity or the need for users to parse (for example, avoiding figuring out '.fts', 'fits', '.FTS', etc)  Repositories with multiple files types can specify them as a comma-separated list with no spaces, e.g. 'fits,csv' for a dataset that contains both images and event lists. Currently defined types are 'fits,csv,cdf,netcdf3,netcdf4,hdf5,datamap,txt,binary,other'.
 
-The catalog.json file has to be updated when new data is added to a dataset, by updating the **stopDate** item. Also, the catalog.json file is updated when a new dataset is put into that S3 bucket.
+The catalog.json file has to be updated when new data is added to a dataset, by updating the **stop** item. Also, the catalog.json file is updated when a new dataset is put into that S3 bucket.
 
 Note, currently this specification is defined around "s3://" architecture with some support for "https://" endpoints; future versions may support other protocols.
 
@@ -143,6 +148,13 @@ Note, currently this specification is defined around "s3://" architecture with s
 The **id** field can only contain alphanumeric characters, dashes, or underscores. No spaces or other characters are allowed.
 
 The **id** field will match the fileRegistry files but does not have to match the sub-bucket names.  The fileRegistry includes the **id**_YYYY.csv file indices and the optional **id**.json metadata file.
+
+## 3.2 Data items spanning multiple years
+
+Some data or model outputs span multiple years. An output product that covers 3 years, for example (2011-2013) would be index in "id"_2011.csv (based on the start date of the data).  A time-based search that is looking for 2012 coverage would therefore not be able to find it, as no "id"_2012.csv file exists or is needed.  To accommodate these edge cases, the **multiyear** field should be set to True, which will allow subsequent search layers to be aware that long-duration files exist in this dataset.
+
+This field should not be set for the typical case where a datafile extends slightly into the next year, but only when a datafile exists to provide data for a calendar year and that datafile would not be findable based purely on its given start date.
+
 
 ## 3.2 Status codes
 
@@ -161,47 +173,56 @@ Here is an example catalog, for which only the first item has decided to fill ou
     "endpoint": "s3://gov-nasa-helio-public/",
     "name": "GSFC HelioCloud",
     "region": "us-east-1",
-    "egressPolicy": "no-egress",
+    "egress": "no-egress",
     "contact": "Dr. Contact, dr_contact@example.com",
     "description": "Optional description of this collection",
     "citation": "Optional how to cite, preferably a DOI for the server",
     "catalog":[
         {
             "id": "euvml",
-            "loc": "s3://gov-nasa-helio-public/euvml/",
+            "index": "s3://gov-nasa-helio-public/euvml/",
             "title": "EUV-ML dataset",
-            "startDate": "1995-01-01T00:00.00Z",
-            "stopDate": "2022-01-01T00:00.00Z",
-            "modificationDate": "2022-01-01T00:00.00Z",
-            "indexFormat": "csv",
-            "fileFormat": "fits",
+            "start": "1995-01-01T00:00.00Z",
+            "stop": "2022-01-01T00:00.00Z",
+            "modification": "2022-01-01T00:00.00Z",
+            "indextype": "csv",
+            "filetype": "fits",
             "description": "Optional description for dataset",
-            "resourceURL": "optional identifier e.g. SPASE ID",
-            "creationDate": "optional ISO 8601 date/time of the dataset creation",
+            "resource": "optional SPASE ID, DOI, URL, or json modelset",
+            "creation": "optional ISO 8601 date/time of the dataset creation",
             "citation": "optional how to cite this dataset, DOI or similar",
             "contact": "optional contact name",
-            "contactID": "optional contact SPASE ID, DOI or ORCID",
-            "aboutURL": "optional website URL for info, team, etc"
+            "about": "optional website URL for info, team, etc"
         },
         {
             "id": "mms_hmi",
-            "loc": "s3://gov-nasa-helio-public/mms/hmi/",
+            "index": "s3://gov-nasa-helio-public/mms/hmi/",
             "title": "MMS HMI data"
-            "startDate": "2015-01-01T00:00.00Z",
-            "stopDate": "2022-01-01T00:00.00Z",
-            "modificationDate": "2022-01-01T00:00.00Z",
-            "indexFormat": "csv-zip",
-            "fileFormat": "cdf"
+            "start": "2015-01-01T00:00.00Z",
+            "stop": "2022-01-01T00:00.00Z",
+            "modification": "2022-01-01T00:00.00Z",
+            "indextype": "csv-zip",
+            "filetype": "cdf"
         },
         {
             "id": "mms_feeps",
-            "loc": "s3://gov-nasa-helio-public/mms/feeps/",
+            "index": "s3://gov-nasa-helio-public/mms/feeps/",
             "title": "MMS FEEPS data"
-            "startDate": "2015-01-01T00:00.00Z",
-            "stopDate": "2022-01-01T00:00.00Z",
-            "modificationDate": "2022-01-01T00:00.00Z",
-            "indexFormat": "csv-zip",
-            "fileFormat": "cdf"
+            "start": "2015-01-01T00:00.00Z",
+            "stop": "2022-01-01T00:00.00Z",
+            "modification": "2022-01-01T00:00.00Z",
+            "indextype": "csv-zip",
+            "filetype": "cdf"
+        },
+        {
+            "id": "fluxrope",
+            "index": "s3://heliotest/models/",
+            "title": "Instatiation of 3D fluxropes"
+            "start": "static",
+            "stop": "static",
+            "modification": "2022-01-01T00:00.00Z",
+            "indextype": "csv-zip",
+            "filetype": "cdf"
         }
     ],
     "status": {
@@ -211,9 +232,11 @@ Here is an example catalog, for which only the first item has decided to fill ou
 }
 ```
 
-## 3.4 Debate
+## 3.4 Indexes should reside in same bucket as data
 
-It is possible to design a collection of datasets, wherein the data in the actual file registry <ID>_<YYYY>.csv files can span sub-buckets. The use of absolute file paths is mandated.
+Index CSV files must be in the same bucket as the data, but do not have to be in the same sub-bucket or directory as their data.  The catalog points to the index files, and the index files use absolute paths to point to the data items.
+
+This also enables design a collection of datasets, wherein the data in the actual file registry <ID>_<YYYY>.csv files can span sub-buckets. The use of absolute file paths is mandated.
 
 ```
 Example data itself is in:
@@ -225,7 +248,7 @@ Example data itself is in:
 
 ```
 Case 1: Matching
-    file registry locs:
+    file registry locations:
     	 s3://example/mms1/feeps/mms1_feeps.CSV
     	 s3://example/mms2/feeps/mms2_feeps.CSV
     	 s3://example/mms3/feeps/mms3_feeps.CSV
@@ -234,7 +257,7 @@ Case 1: Matching
 
 ```
 Case 2: Not Matching
-    file registry loc:
+    file registry locations:
          s3://example/mms_all/feeps/mms_feeps.CSV (contents point to 4 subbuckets)
 ```
 
@@ -246,19 +269,19 @@ Concerns were voiced about clashes if multiple people attempt to edit the catalo
 
 # 4 File Registry
 
-The file registry consists of one index for each year of the dataset in either csv, zipped csv, or parquet format.  The file must be in time sequence and the first three items must be the **startdate**, **key**, and **filesize** fields in that order.
+The file registry consists of one index for each year of the dataset in either csv, zipped csv, or parquet format.  The file must be in time sequence and the first three items must be the **start**, **datakey**, and **filesize** fields in that order.
 
-The index fileRegistry is a set of CSV or Parquet files named "loc"/"id"_YYYY.csv, "loc"/"id"_YYYY.csv.zip or "loc"/"id"_YYYY.parquet.
+The index fileRegistry is a set of CSV or Parquet files named "index"/"id"_YYYY.csv, "index"/"id"_YYYY.csv.zip or "index"/"id"_YYYY.parquet.  For the case of static non-time sequence outputs, the index fileRegistry are named "index"/"id"_static.csv (or .csv.zip or .parquet).
 
 ## 4.1 Required Items
 
-* **startDate**: string, Restricted ISO 8601 date/time of start for that data.
-* **key**: string, full filename or S3 object identifier sufficient to actually obtain the file
+* **start**: string, Restricted ISO 8601 date/time of start for that data OR the word 'static' for items such as model shapes that lack a time field
+* **datakey**: string, full filename or S3 object identifier sufficient to actually obtain the file
 * **filesize**: integer, file size in bytes
 
 ## 4.2 Optional Items
 
-* **stopDate**: string, Restricted ISO 8601 date/time of end for that 
+* **stop**: string, Restricted ISO 8601 date/time of end for that 
 data.
 * **checksum**: checksum for that file. If given, **checksum_algorithm** must also be listed
 * **checksum_algorithm**: checksum algorithm used if checksums are generated. Examples include SHA, others.
@@ -267,7 +290,7 @@ data.
 
 The default expected search capability is [time range) (start time within desired range).
 
-Anything past **filesize** is fully optional; the minimal API expects only a start time, key aka filehandle, and file size IN THAT ORDER in the actual file index.  It is up to individual client programs to do anything past that.
+Anything past **filesize** is fully optional; the minimal API expects only a start time, datakey aka filehandle, and file size IN THAT ORDER in the actual file index.  It is up to individual client programs to do anything past that.
 
 Any metadata included in this per-file index must be defined in the <id>.info json file to allow parseability.
 
@@ -275,6 +298,7 @@ The csv or zipped csv files may or may not include a one-line header that is pre
 
 Any optional parameters from the above list or the info JSON must be in the same order specified in the JSON.
 
+For 'static' items, since the 'start' field will be the same constant value 'static' for all items, optional parameters to distinguish the items are suggested.
 
 ## 4.4 Accessing
 
@@ -287,7 +311,7 @@ Users have 3 options with the fileRegistry CSV file:
 
 Unlike a database, yearly index files are both fetchable and parseable. They have a lower cost profile than the equivalent database, reasonably fast access, and allow for client and search programs independent of a specific database implementation.
 
-Using yearly files rather than a single file or a database is to maintain an inexpensive, stateless, easily updated file index.  In AWS, the "S3 Inventory" command can generate a list of filenames and keys, or filenames and keys since the last time inventory was run. Being able to add to the file registry index files incrementally is easier served if they are chunked into yearly files.
+Using yearly files rather than a single file or a database is to maintain an inexpensive, stateless, easily updated file index.  In AWS, the "S3 Inventory" command can generate a list of filenames and datakeys, or filenames and datakeys since the last time inventory was run. Being able to add to the file registry index files incrementally is easier served if they are chunked into yearly files.
 
 In addition, many use cases for long time baseline datasets will not need to access the entire multi-decadal span of the data, so parsing into years reduces the downloads needed to obtain the indices.
 
@@ -298,7 +322,7 @@ The use of CSV or Parquet also enables AWS Athena searches within the index with
 Here is a short minimal CSV example index file.
 
 ```
-# startDate, key, filesize
+# start, datakey, filesize
 '2010-05-08T12:05:30.000Z','s3://edu-apl-helio-public/euvml/stereo/a/195/20100508_120530_n4euA.fts','246000'
 '2010-05-08T12:06:15.000Z','s3://edu-apl-helio-public/euvml/stereo/a/195/20100508_120615_n4euA.fts','246000'
 '2010-05-08T12:10:30.000Z','s3://edu-apl-helio-public/euvml/stereo/a/195/20100508_121030_n4euA.fts','246000'
@@ -307,14 +331,14 @@ Here is a short minimal CSV example index file.
 Here is an example with additional metadata and a CSV header as well.
 
 ```
-# startDate, key, filesize, wavelength, carr_lon, carr_lat
+# start, datakey, filesize, wavelength, carr_lon, carr_lat
 '2010-05-08T12:05:30.000Z','s3://edu-apl-helio-public/euvml/stereo/a/195/20100508_120530_n4euA.fts','246000','195','20.4','30.0'
 '2010-05-08T12:06:15.000Z','s3://edu-apl-helio-public/euvml/stereo/a/195/20100508_120615_n4euA.fts','246000','195','21.8','30.0'
 '2010-05-08T12:10:30.000Z','s3://edu-apl-helio-public/euvml/stereo/a/195/20100508_121030_n4euA.fts','246000','195','22.4','30.0'
 ```
 Here is an example with additional metadata and a CSV header as the EUV-ML project would like.  Items in CAPS are directly from FITS keywords.
 ```
-# startDate, S3key, filesize, spacecraft, instrument, WAVELNTH, CRLT_OBS, CRLN_OBS, CRPIX1, CRPIX2, RSUN, quality, generation_flag
+# start, datakey, filesize, spacecraft, instrument, WAVELNTH, CRLT_OBS, CRLN_OBS, CRPIX1, CRPIX2, RSUN, quality, generation_flag
 '2010-05-08T12:05:30.000Z','s3://edu-apl-helio-public/euvml/stereo/a/195/20100508_120530_n4euA.fts','246000','A','euvi','195,45.0, 23.1, 512, 510, 26.5, 1, 1
 '2010-05-08T12:06:15.000Z','s3://edu-apl-helio-public/euvml/stereo/a/195/20100508_120615_n4euA.fts','246000','A','euvi','195',45.0, 23.1, 512, 510, 26.5, 1, 1
 '2010-05-08T12:10:30.000Z','s3://edu-apl-helio-public/euvml/stereo/a/195/20100508_121030_n4euA.fts','246000','A','euvi','195',45.0, 23.1, 512, 510, 26.5, 1, 1
@@ -361,4 +385,29 @@ Here is an example for a sample optional Info json file.  This is used to indica
         {"name": "quality", "type": "integer", "desc": "data quality and level of interpolation"}
     ]
 }
+```
+
+## 7.0 Changes from 0.2 to 0.3
+
+Changed
+```
+startDate -> start
+stopDate -> stop
+modificationDate -> modification
+egressPolicy -> egress
+contactURL -> URI
+aboutURL -> about
+indexFormat -> indextype
+fileFormat -> filetype
+
+key -> datakey
+loc -> index
+
+Removed 'resourceURL' as redundant
+
+Added 'expiration' and 'verified' fields
+Added 'comment' field
+Added 'static' as a time option for start/stop for use with items that are not time-tagged, such as model outputs.
+
+Added multiyear flag to handle (mostly model) case where a single datafile will span multiple years.  Clarification that for data items that extend over multiple years in a single file, the 'start' field indicates which index to access ("index"/"id"_YYYY.csv) and the use of the "stop" field within the index is highly recommended to describe each data item.
 ```

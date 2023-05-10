@@ -4,6 +4,7 @@ from aws_cdk import (
     aws_ec2 as ec2,
     aws_kms as kms,
     aws_iam as iam,
+    RemovalPolicy
 )
 from constructs import Construct
 
@@ -20,22 +21,23 @@ class BaseAwsStack(Stack):
         self.__config = config
         self.__build_vpc()
 
-        registry = self.__config.get('registry')
-        public_buckets = registry.get('bucketNames')
-
+        # Single KMS key is generated for encryption needs by subsequent modules
         self.kms = kms.Key(self, "HelioCloudKMS")
-        self.kms.add_alias('heliocloud')
 
         ###############################################
         # Create S3 Bucket for shared user storage #
         ###############################################
         # TODO potentially make this configurable along with component in s3 policy document
         # TODO figure out retention plan, persists after stack deleted
-        user_shared_bucket = s3.Bucket(self, "UserSharedBucket")
+        destroy_on_removal = config.get("userSharedBucket").get("destroyOnRemoval")
+        user_shared_bucket = s3.Bucket(self, "UserSharedBucket",
+                                       removal_policy=RemovalPolicy.DESTROY if destroy_on_removal else RemovalPolicy.RETAIN)
 
         # TODO programmatically add additional policy statements
         # based on known HelioCloud public buckets (maybe use user script to pull names?)
         # Need to iteratively adjust though, maybe lambda
+        registry = self.__config.get('registry')
+        public_buckets = registry.get('bucketNames')
         other_known_public_buckets = ['helio-public',
                                       'gov-nasa-hdrl-data1']
         public_bucket_arns = []
@@ -86,6 +88,12 @@ class BaseAwsStack(Stack):
         """
         Build / Lookup the VPC that will be used for this HelioCloud installation
         """
+        # TODO:
+        # 1) Validate a pre-existing VPC as having at least 1 public and 1 private subnet.  Note that a private subnet
+        # MUST have a NAT gateway associated to allow hosts in this subnet access to externally hosted resources
+        # such as other libraries & images to aid in deployments (ex: Daskhub)
+        # 2) If constructing a VPC from scratch, ensure it has at least 1 public and 1 private subnet (see #1)
+
         # Determine VPC configuration required
         vpc_config = self.__config.get("vpc")
 

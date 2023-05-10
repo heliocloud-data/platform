@@ -25,7 +25,6 @@ class RegistryStack(Stack):
         # Hold a reference to the base stack
         self.__base_aws_stack = base_aws_stack
         self.__buckets = None
-        self.__catalog_db = None
         self.__cataloger = None
 
         self.__registry_config = config['registry']
@@ -57,8 +56,10 @@ class RegistryStack(Stack):
         # re: object_ownership - We are explicit here to ensure there is only a *single* owner of the content in each
         # bucket - the HelioCloud instance
         self.__buckets = list[s3.Bucket]()
+
         # TODO:  Troubleshoot setting up public read access again. A recent change results in
         # public_read_access=True prevening the bucket from being created
+        print(f"Deploying buckets: {bucket_names}")
         for bucket_name in bucket_names:
             bucket = s3.Bucket(self,
                                id=bucket_name,
@@ -99,7 +100,6 @@ class RegistryStack(Stack):
         """
         cataloger = lambda_.Function(self,
                                      id="Cataloger",
-                                     function_name="Cataloger",
                                      description="Helio Cloud lambda for cataloging data in public s3 data set "
                                                  "buckets.",
                                      runtime=lambda_.Runtime.PYTHON_3_9,

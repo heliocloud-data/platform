@@ -34,7 +34,6 @@ class IngesterStack(Stack):
         # (2) It needs read/write access to the objects in the upload bucket
         ingester = lambda_.Function(self,
                                     id="Ingester",
-                                    function_name="Ingester",
                                     description="HelioCloud lambda for data set ingest",
                                     runtime=lambda_.Runtime.PYTHON_3_9,
                                     handler="app.ingest_handler.handler",

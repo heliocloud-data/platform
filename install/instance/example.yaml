@@ -1,0 +1,35 @@
+# EXAMPLE instance configuration for a HelioCloud installation. A "typical" HelioCloud instance will be configured:
+# - to create a brand new VPC, side stepping any issues with current VPC's lacking necessary subnets, connectivity, etc
+# - with a specific domain prefix for authentication, matching the domain name of the institution doing the install
+# - have all the available modules enabled
+# - name its S3 buckets for the Registry after the institution doing the install
+
+# Create a brand new VPC
+vpc:
+  type: new
+
+# Configure per the domain of your respective organization
+auth:
+  domain_prefix: "edu.myorganization"
+
+# Enabling all available HelioCloud modules
+enabled:
+  registry: True
+  userDashboard: True
+  daskhub: True
+
+# Registry buckets are named in association with your organization
+registry:
+  bucketNames: [
+                 "edu-myorganization-helio1",
+                 "edu-myorganization-helio2"
+               ]
+
+
+
+
+
+
+
+
+

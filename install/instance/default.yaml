@@ -14,42 +14,53 @@ vpc:
   # If using EXISTING, place your VPC ID here. Otherwise, this field is ignored.
   vpc_id: # example: vpc-0f10b7d51cd94cf4c #
 
-# Components to enable in the installation
-components:
-  enableRegistry: True
-  enableUserDashboard: True
-  enableDaskHub: True
+# Settings for the shared user bucket
+userSharedBucket:
+  destroyOnRemoval: False
 
-# Details for the registry component
-# S3 data_sets to use for storing data sets
-# These will be configured as publicly visible, requestor pays, delete protected
+# Configuration block for the Authorization stack. This is automatically installed if authorization
+# capabilities are required by the components enabled below (Registry, Daskhub, Dashboard, etc)
+auth:
+  # Cognito domain name prefix must be unique for all of AWS region
+  domain_prefix: "apl-helio"
+
+
+# Enabled/Disable optional HelioCloud modules
+enabled:
+  registry: False
+  userDashboard: False
+  daskhub: False
+
+
+# REGISTRY component of a HelioCloud instance
+# The Registry is used for storing and making accessible various data sets to this HelioCloud instance
+# as well as any other instances participating in the greater HelioCloud "network". Data stored here
+# is placed in public s3 buckets for access by other HelioClouds.
 registry:
-  # Required: Must have a list of S3 bucket names to use to store registered data sets.
+
+  # REQUIRED: Must have a list of S3 bucket names to use to store registered data sets.
   # This should be provided via an override config.
   bucketNames: [
                 # example: s3://edu.myinstitution.myorganization
                ]
 
-  # Optional: Defaults to False.
+  # OPTIONAL: Defaults to False.
   # Enabling makes (re)deployments of a HelioCloud easier during development & testing
-  destroyOnRemoval: True
+  destroyOnRemoval: False
 
-  # Optional: Defaults to True,
+  # OPTIONAL: Defaults to True,
   # Can be disabled here with the caveat that the AWS account hosting this HelioCloud instance will be responsible
   # for ALL egress costs out of these PUBLIC S3 buckets (re: HIGH RISK).
   requesterPays: True
 
-# Config block for the auth
-auth:
-  # Cognito domain name prefix must be unique for all of AWS region
-  domain_prefix: "apl-helio"
-
-# Config block for user dashboard settings
+# USER DASHBOARD component of a HelioCloud instance
+# TODO: need a good writeup
 userDashboard:
 
-# Config block for the Daskhub
+# DASKHUB component of a HelioCloud instance
+# TODO: need a good writeup
 daskhub:
-  
+
 
 
 

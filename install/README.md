@@ -126,36 +126,67 @@ we have compiled below the list of AWS regions we know a HelioCloud instance can
 TODO: Get a list of regions a HelioCloud instance _should_ be able to be deployed into successfully
 
 ## 2. Configuration
+A single HelioCloud deployment into an AWS account is referred to as a HelioCloud **instance**, in keeping with the idea
+that you are _instantiating_ a HelioCloud using a certain set of parameters as provided by your instance's configuration file.
 
-The config file at `config/dev.yaml` drives the fine details of the installation:
-- Installation of individual components can be enabled/disabled via the `components` configuration block. Each major component has an `enable<Component>` parameter
-- Some individual components have their own configuration blocks. Example `auth` is for configuring the `base_auth` stack.
+Instance configuration files are stored in `instance/` of this installation project. There you will find:
+- _instance/default.yaml_ - the default configuration file used for ALL HelioCloud instance deployments
+- _instance/example.yaml_ - an example configuration file showing typical override settings that would be used when deploying
+a HelioCloud instance.
 
-The importance of individual component configuration values are documented in comments in the config, but some of the more important ones are called attention to and discussed here.
-It is recommended you create a new configuration file `<instance_name>.yaml` for each instance of a HelioCloud you are deploying.
+Make your own copy of the example file at `instance/example.yaml`, providing a name for the copied file that you would like
+to refer to your instance by. For example, if I simple want to call my instance _HelioCloud_:
+```commandline
+cp instance/example.yaml instance/heliocloud.yaml
+```
+Now modify `instance/heliocloud.yaml` to meet your deployment needs, such as enabling the individual HelioCloud modules
+you would like your instance to contain:
+```yaml
+# Enabling all available HelioCloud modules
+enabled:
+  registry: True
+  userDashboard: True
+  daskhub: True
+```
 
-TODO: Add notes on auth:domain_prefix,  registry:requester_pays, bucket_names
+...as well as updating the authentication domain and data registry bucket names to match your organization name:
+```yaml
+# Configure per the domain of your respective organization
+auth:
+  domain_prefix: "edu.myorganization"
+
+# Registry buckets are named in association with your organization
+registry:
+  bucketNames: [
+                 "edu-myorganization-helio1",
+                 "edu-myorganization-helio2"
+               ]
+```
+You can refer to `instance/default.yaml` to gain a full understanding of all the configurable elements of your HelioCloud instance deployment. 
+Additionally, multiple instances can be deployed into a single AWS account by creating additional instance config files stored in the `instance`
+directory.
 
 
 ## 3. Deploy
 Deployment of a HelioCloud instance is a 2 step process consisting of:
-- Running the CDK to install the CloudFormation stacks in your AWS account
+- Running the CDK to install the CloudFormation stacks for your HelioCloud instance into your AWS account
 - Executing the DaskHub follow up deployment steps
 
 ### 3a. Part1: Running the HelioCloud CDK
-You can deploy your configured HelioCloud instance by running `cdk deploy` from the root of the `install` directory. 
-Use the `-all` flag to tell CDK to deploy all the stacks in the project:
-
+You can deploy your configured HelioCloud instance by running `cdk deploy` from the root of the `install` directory,
+passing in the name of your instance as a context variable, along with the `-all` flag to tell CDK to deploy all the 
+CloudFormation stacks required based on your instance's configuration. The following command would deploy a 
+HelioCloud instance using the configuration at `instance/heliocloud.yaml`:
 
 ```commandline
-cdk deploy --all -c config=config/dev.yaml
+cdk deploy --all -c instance=heliocloud
 ```
 
-Subsequent an initial installation, you may want to (re)install some of the individual components following a configuration
-change or upate.  You can deploy a single component stack in CDK by providing its name on deployment:
+Subsequent an initial installation, you may want to (re)install some of the individual modules following a configuration
+change or update.  You can (re)deploy a single component  in CDK by providing its name on deployment:
 
 ```commandline
-cdk deploy DataSetsStack -c config=config/dev.yaml
+cdk deploy RegistryStack -c instance=heliocloud
 ```
 
 ### 3b. Part 2 - Daskhub Install

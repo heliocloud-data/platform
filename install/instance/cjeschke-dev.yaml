@@ -3,13 +3,16 @@
 # Existing cjeschke-dev VPC
 vpc:
   type: existing
-  vpc_id: vpc-0d3c0a227894442bb
+  vpc_id: vpc-0e1d00d723b826a4b
 
-# Only run the registry for now
-components:
-  enableRegistry: True
-  enableUserDashboard: False
-  enableDaskHub: False
+# Destroying so we can clean up dev
+userSharedBucket:
+  destroyOnRemoval: True
+
+# Only working on the registry right now
+enabled:
+  registry: True
+  daskhub: True
 
 # Simple bucket names
 registry:
@@ -19,6 +22,3 @@ registry:
   destroyOnRemoval: True
   requesterPays: True
   uploadBucketName : "cjeschke-dev-uploads"
-
-
-

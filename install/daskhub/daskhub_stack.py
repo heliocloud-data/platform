@@ -1,5 +1,5 @@
-import yaml
 import os
+
 import aws_cdk as cdk
 from aws_cdk import (
     Stack,
@@ -10,14 +10,14 @@ from aws_cdk import (
     aws_cognito as cognito,
 )
 from constructs import Construct
-
+from base_aws.base_aws_stack import BaseAwsStack
 
 class DaskhubStack(Stack):
     """
     CDK stack for installing DaskHub for a HelioCloud instance
     """
 
-    def __init__(self, scope: Construct, construct_id: str, config: dict, base_aws: Stack, base_auth: Stack, **kwargs) -> None:
+    def __init__(self, scope: Construct, construct_id: str, config: dict, base_aws: BaseAwsStack, base_auth: Stack, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
         #############################

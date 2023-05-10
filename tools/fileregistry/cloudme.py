@@ -64,7 +64,7 @@ class CatalogRegistry:
         """
         return self.catalog['registry']
     
-    def get_entries(self) -> List[Tuple[str, str]]:
+    def get_entries_name_region(self) -> List[Tuple[str, str]]:
         """
         Get the entry names and region of each entry in the registry.
         
@@ -178,12 +178,12 @@ class FileRegistry:
             
         # Check catalog entries format assumptions
         for entry in self.catalog['catalog']:
-            if 'start' in entry:
-                entry['start'] = entry.pop('start')
-            if 'stop' in entry:
-                entry['stop'] = entry.pop('stop')
-            if 'modification' in entry:
-                entry['modification'] = entry.pop('modification')
+            #if 'start' in entry:
+            #    entry['start'] = entry.pop('start')
+            #if 'stop' in entry:
+            #    entry['stop'] = entry.pop('stop')
+            #if 'modification' in entry:
+            #    entry['modification'] = entry.pop('modification')
             missing_keys = [key for key in ['id', 'index', 'title', 'start', 'stop'] if key not in entry]
             if len(missing_keys) > 0:
                 raise KeyError(f'Invalid catalog entry. Missing keys ({missing_keys}) in entry: {entry}')
@@ -215,7 +215,7 @@ class FileRegistry:
         """
         return self.catalog
     
-    def get_entries(self) -> List[Tuple[str, str]]:
+    def get_entries_id_title(self) -> List[Tuple[str, str]]:
         """
         Get just the entry id and title of each entry in the catalog.
         
@@ -225,7 +225,7 @@ class FileRegistry:
         # Get the name and region of each entry in the catalog
         return [(x['id'], x['title']) for x in self.catalog['catalog']]
     
-    def get_entry_json(self,id) -> List[Tuple[str, str]]:
+    def get_entry_dict(self,id) -> List[Tuple[str, str]]:
         """
         Get all the items of each entry in the catalog.
         

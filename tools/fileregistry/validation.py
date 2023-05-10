@@ -156,20 +156,20 @@ class Validator:
                             'id': {'type': 'string', 'pattern': '^[a-zA-Z0-9-_]+$'},
                             'loc': {'type': 'string', 'pattern': 's3://\S+/.*'},  # support https?
                             'title': {'type': 'string'},
-                            'startDate': {'type': 'string', 'pattern': '\d{4}-\d{2}-\d{2}T\d{2}(:\d{2}(:\d{2}(\.\d+)?)?)?Z'},
-                            'stopDate': {'type': 'string', 'pattern': '\d{4}-\d{2}-\d{2}T\d{2}(:\d{2}(:\d{2}(\.\d+)?)?)?Z'},
-                            'modificationDate': {'type': 'string', 'pattern': '\d{4}-\d{2}-\d{2}T\d{2}(:\d{2}(:\d{2}(\.\d+)?)?)?Z'},
+                            'start': {'type': 'string', 'pattern': '\d{4}-\d{2}-\d{2}T\d{2}(:\d{2}(:\d{2}(\.\d+)?)?)?Z'},
+                            'stop': {'type': 'string', 'pattern': '\d{4}-\d{2}-\d{2}T\d{2}(:\d{2}(:\d{2}(\.\d+)?)?)?Z'},
+                            'modification': {'type': 'string', 'pattern': '\d{4}-\d{2}-\d{2}T\d{2}(:\d{2}(:\d{2}(\.\d+)?)?)?Z'},
                             'indexFormat': {'type': 'string', 'enum': ['csv', 'csv-zip', 'parquet']},
                             'fileFormat': {'type': 'string'},
                             'description': {'type': 'string'},
-                            'resourceURL': {'type': 'string'},
-                            'creationDate': {'type': 'string', 'pattern': '\d{4}-\d{2}-\d{2}T\d{2}(:\d{2}(:\d{2}(\.\d+)?)?)?Z'},
+                            'resource': {'type': 'string'},
+                            'creation': {'type': 'string', 'pattern': '\d{4}-\d{2}-\d{2}T\d{2}(:\d{2}(:\d{2}(\.\d+)?)?)?Z'},
                             'citation': {'type': 'string'},
                             'contact': {'type': 'string'},
                             'contactID': {'type': 'string'},
                             'aboutURL': {'type': 'string'},
                         },
-                        'required': ['id', 'loc', 'title', 'startDate', 'stopDate', 'modificationDate', 'indexFormat', 'fileFormat'],
+                        'required': ['id', 'loc', 'title', 'start', 'stop', 'modification', 'indexFormat', 'fileFormat'],
                         'additionalProperties': False,
                     },
                 },
@@ -214,7 +214,7 @@ class Validator:
             'type': 'object',
             'properties': {
                 'CloudMe': {'type': 'string'},
-                'modificationDate': {'type': 'string', 'pattern': '\d{4}-\d{2}-\d{2}T\d{2}(:\d{2}(:\d{2}(\.\d+)?)?)?Z'},
+                'modification': {'type': 'string', 'pattern': '\d{4}-\d{2}-\d{2}T\d{2}(:\d{2}(:\d{2}(\.\d+)?)?)?Z'},
                 'registry': {
                     'type': 'array',
                     'items': {
@@ -230,7 +230,7 @@ class Validator:
                     },
                 },
             },
-            'required': ['CloudMe', 'modificationDate', 'registry'],
+            'required': ['CloudMe', 'modification', 'registry'],
             'additionalProperties': False,
         }
 
@@ -253,7 +253,7 @@ class Validator:
         failed_reg_files = 0
         for entry in local_catalog['catalog']:
             try:
-                eid, loc, catalog_start_date, catalog_stop_date = entry['id'], entry['loc'], entry['startDate'], entry['stopDate']
+                eid, loc, catalog_start_date, catalog_stop_date = entry['id'], entry['loc'], entry['start'], entry['stop']
                 ndxformat = 'csv'
 
                 year_start_date = dateutil.parser.parse(catalog_start_date[:-1]).year

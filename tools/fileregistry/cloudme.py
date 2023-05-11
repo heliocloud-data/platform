@@ -74,6 +74,7 @@ class CatalogRegistry:
         # Get the name and region of each entry in the catalog
         return [(x['name'], x['region']) for x in self.catalog['registry']]
 
+    # EDIT: ID is not a valid key.
     def get_entries(self,id):
         """
         Get all data for a given id
@@ -225,15 +226,14 @@ class FileRegistry:
         # Get the name and region of each entry in the catalog
         return [(x['id'], x['title']) for x in self.catalog['catalog']]
     
-    def get_entry_dict(self,id) -> List[Tuple[str, str]]:
+    def get_entries_dict(self) -> List[Dict]:
         """
         Get all the items of each entry in the catalog.
         
         Returns:
             The json items from the catalog
         """
-        # Get the name and region of each entry in the catalog
-        return self.catalog['catalog'][id]
+        return self.catalog['catalog']
     
     def get_entry(self, entry_id: str) -> Dict:
         """

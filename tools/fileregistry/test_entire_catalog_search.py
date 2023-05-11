@@ -1,5 +1,5 @@
 import pytest
-from registry import EntireCatalogSearch
+from cloudme import EntireCatalogSearch
 
 
 @pytest.fixture
@@ -12,11 +12,11 @@ def search():
 def mock_catalog():
     return {
         'catalog': [
-            {'id': 'file1', 'loc': 's3://helio-public/MMS', 'title': 'File 1'},
-            {'id': 'file2', 'loc': 's3://helio-public/MMS', 'title': 'File 2'},
-            {'id': 'file3', 'loc': 's3://helio-public/MMS', 'title': 'Another file'},
-            {'id': 'file4', 'loc': 's3://helio-public/MMS', 'title': 'File 4'},
-            {'id': 'file5', 'loc': 's3://helio-public/SDO', 'title': 'File 5'},
+            {'id': 'file1', 'index': 's3://helio-public/MMS', 'title': 'File 1'},
+            {'id': 'file2', 'index': 's3://helio-public/MMS', 'title': 'File 2'},
+            {'id': 'file3', 'index': 's3://helio-public/MMS', 'title': 'Another file'},
+            {'id': 'file4', 'index': 's3://helio-public/MMS', 'title': 'File 4'},
+            {'id': 'file5', 'index': 's3://helio-public/SDO', 'title': 'File 5'},
         ]
     }
 

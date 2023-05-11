@@ -1,5 +1,7 @@
 import aws_cdk as cdk
 from aws_cdk import (
+    aws_docdb as docdb,
+    aws_ec2 as ec2,
     aws_s3 as s3,
     aws_lambda as lambda_,
     custom_resources as resources,
@@ -31,6 +33,9 @@ class RegistryStack(Stack):
 
         # Build the buckets
         self.__build_registry_buckets()
+
+        # Build the Catalog database
+        self.__build_catalog_db()
 
         # Build the Cataloger lambda
         self.__build_cataloger()
@@ -92,6 +97,17 @@ class RegistryStack(Stack):
                                                          resources=resources.AwsCustomResourcePolicy.ANY_RESOURCE
                                                      ))
                 custom.node.add_dependency(bucket)
+
+    def __build_catalog_db(self):
+        """
+        Builds a Document DB instance to service as the database for cataloging datasets
+        """
+        catalogDB = docdb.DatabaseCluster(
+            self,
+            id="CatalogDB",
+
+            vpc_subnets=ec2
+        )
 
     def __build_cataloger(self):
         """

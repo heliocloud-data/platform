@@ -78,6 +78,8 @@ class MyHelioCloud(Construct):
                                   description="Foundational AWS resources for a HelioCloud instance.",
                                   config=self.__config,
                                   env=self.__env)
+        cdk.Tags.of(base_stack).add("Product", "heliocloud-base")
+
 
         # Next, determine if the Auth module is needed
         enabled_modules = self.__config.get("enabled")
@@ -89,15 +91,18 @@ class MyHelioCloud(Construct):
                                    config=self.__config,
                                    env=self.__env)
             auth_stack.add_dependency(base_stack)
+            cdk.Tags.of(auth_stack).add("Product", "heliocloud-auth")
 
             # Should the User Dashboard module be deployed
             if enabled_modules.get("userDashboard", False):
-                DashboardStack(self,
+                dashboard_stack = DashboardStack(self,
                                "UserDashboard",
                                description="User Dashboard module for a HelioCloud instance.",
                                config=self.__config,
                                env=self.__env,
                                base_auth=auth_stack).add_dependency(auth_stack)
+                cdk.Tags.of(dashboard_stack).add("Product", "heliocloud-dashboard")
+                
 
             # Should Daskhub be deployed
             if enabled_modules.get("daskhub", False):
@@ -110,6 +115,7 @@ class MyHelioCloud(Construct):
                                              env=self.__env)
                 daskhub_stack.add_dependency(base_stack)
                 daskhub_stack.add_dependency(auth_stack)
+                cdk.Tags.of(daskhub_stack).add("Product", "heliocloud-dashboard")
 
         # Deploy the registry module
         if enabled_modules.get("registry", False):
@@ -119,6 +125,8 @@ class MyHelioCloud(Construct):
                                            env=self.__env,
                                            base_aws_stack=base_stack)
             registry_stack.add_dependency(base_stack)
+            cdk.Tags.of(registry_stack).add("Product", "heliocloud-registry")
+            
 
             ingester_stack = IngesterStack(self, "Ingester",
                                            description="HelioCloud data loading and registration.",
@@ -127,6 +135,7 @@ class MyHelioCloud(Construct):
                                            registry_stack=registry_stack)
             ingester_stack.add_dependency(base_stack)
             ingester_stack.add_dependency(registry_stack)
+            cdk.Tags.of(ingester_stack).add("Product", "heliocloud-ingester")
 
 
 def get_instance(app: cdk.App) -> (str, dict):
@@ -141,5 +150,7 @@ def get_instance(app: cdk.App) -> (str, dict):
 
 # Build the HelioCloud
 app = cdk.App()
+cdk.Tags.of(app).add("Project", "heliocloud")
 MyHelioCloud(app, id=get_instance(app))
+
 app.synth()

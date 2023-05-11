@@ -87,6 +87,7 @@ if [[ " ${final_cluster_query[*]} " =~ " ${EKS_NAME} " ]]; then
 
     echo ------------------------------
     echo Creating cluster admin user...
+    # TODO check if need a tag for this
     eksctl create iamidentitymapping --cluster $EKS_NAME --arn $ADMIN_ROLE_ARN --group system:masters --username admin --region $AWS_REGION
 
     echo ------------------------------
@@ -138,6 +139,7 @@ if [[ " ${final_cluster_query[*]} " =~ " ${EKS_NAME} " ]]; then
     # Creates autoscaling for cluster
     cp clusterautoscaler.yaml.template clusterautoscaler.yaml
     sed -i "s|<INSERT_EKS_NAME>|$EKS_NAME|g" clusterautoscaler.yaml
+    # TODO figure out how to tag this resource
     kubectl apply -f clusterautoscaler.yaml
 
     kubectl -n kube-system \
@@ -161,6 +163,7 @@ if [[ " ${final_cluster_query[*]} " =~ " ${EKS_NAME} " ]]; then
     echo ------------------------------
     echo Attaching persistent volume to cluster...
     # Creates Elastic File System on K8s
+    # TODO figure out how to tag this resource (elastic block storage)
     kubectl -n $KUBERNETES_NAMESPACE apply -f efs-pvc.yaml
     kubectl -n $KUBERNETES_NAMESPACE apply -f efs-pv.yaml
 else

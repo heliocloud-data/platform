@@ -74,7 +74,7 @@ class CatalogRegistry:
         # Get the name and region of each entry in the catalog
         return [(x['name'], x['region']) for x in self.catalog['registry']]
 
-    def get_entries(self,id):
+    def get_entries(self):
         """
         Get all data for a given id
         
@@ -82,7 +82,7 @@ class CatalogRegistry:
             A dictionary for that entry
         """
         # Get the name and region of each entry in the catalog
-        myjson = [x for x in self.catalog['catalog'] if x['id'] == id]
+        myjson = [x for x in self.catalog['registry']]
         if myjson is not None:
             myjson = myjson[0]
         return myjson

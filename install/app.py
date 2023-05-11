@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
+import os
 import aws_cdk as cdk
 import yaml
+
+from constructs import Construct
 
 from base_auth.authorization_stack import AuthStack
 from base_aws.base_aws_stack import BaseAwsStack
@@ -9,60 +12,134 @@ from base_data.registry_stack import RegistryStack
 from dashboard.dashboard_stack import DashboardStack
 from daskhub.daskhub_stack import DaskhubStack
 
-# Initialize the CDK app
+
+class MyHelioCloud(Construct):
+    """
+    AWS CDK Construct for instantiating a HelioCloud.  This construct will resolve out the specific
+    Stacks and their deployment configurations.
+    """
+
+    def __init__(self, scope: Construct, id: str, *, prod=False):
+        super().__init__(scope, id)
+
+        # Identity of this HelioCloud instance
+        self.__id = id
+
+        # Get configuration details
+        self.__config = None
+        self.__get_config()
+
+        # Get AWS env details
+        self.__env = None
+        self.__get_aws_env()
+
+        # Build it
+        self.__build_heliocloud()
+
+    def __get_aws_env(self):
+        """
+        Get the AWS Account & Region to deploy into
+        """
+        # First, check the config
+        account = str(self.__config.get("env").get("account", None))
+        region = self.__config.get("env").get("region", None)
+        if (region is not None) and (account is not None):
+            print(f"Using instance configured AWS account {account}, region {region}.")
+        else:
+            # if nothing in the config, resolve from the environment
+            account = os.environ["CDK_DEFAULT_ACCOUNT"]
+            region = os.environ["CDK_DEFAULT_REGION"]
+            print(f"Using AWS CLI provided AWS account {account}, region {region}.")
+
+        self.__env = cdk.Environment(account=account, region=region)
+
+    def __get_config(self):
+        """
+        Get the config for this HelioCloud instance.
+        """
+        # Get the instance for this instance
+        # First load the default instance
+        configuration = dict()
+        with open("instance/default.yaml", "r") as default_config_file:
+            configuration = yaml.safe_load(default_config_file)
+
+        with open("instance/" + self.__id + ".yaml") as instance_config_file:
+            configuration.update(yaml.safe_load(instance_config_file))
+
+        self.__config = configuration
+
+    def __build_heliocloud(self):
+        """
+        Builds the HelioCloud instance.
+        """
+        # First, need the foundation
+        base_stack = BaseAwsStack(self,
+                                  "Base",
+                                  description="Foundational AWS resources for a HelioCloud instance.",
+                                  config=self.__config,
+                                  env=self.__env)
+
+        # Next, determine if the Auth module is needed
+        enabled_modules = self.__config.get("enabled")
+        if enabled_modules.get("daskhub") or enabled_modules.get("userDashboard"):
+            # We need the services of an AuthStack
+            auth_stack = AuthStack(self,
+                                   "Auth",
+                                   description="End-user authentication and authorization for a HelioCloud instance.",
+                                   config=self.__config,
+                                   env=self.__env)
+            auth_stack.add_dependency(base_stack)
+
+            # Should the User Dashboard module be deployed
+            if enabled_modules.get("userDashboard", False):
+                DashboardStack(self,
+                               "UserDashboard",
+                               description="User Dashboard module for a HelioCloud instance.",
+                               config=self.__config,
+                               env=self.__env,
+                               base_auth=auth_stack).add_dependency(auth_stack)
+
+            # Should Daskhub be deployed
+            if enabled_modules.get("daskhub", False):
+                daskhub_stack = DaskhubStack(self,
+                                             "Daskhub",
+                                             description="Daskhub for a HelioCloud instance.",
+                                             config=self.__config,
+                                             base_aws=base_stack,
+                                             base_auth=auth_stack,
+                                             env=self.__env)
+                daskhub_stack.add_dependency(base_stack)
+                daskhub_stack.add_dependency(auth_stack)
+
+        # Deploy the registry module
+        if enabled_modules.get("registry", False):
+            registry_stack = RegistryStack(self, "Registry",
+                                           description="HelioCloud data set management.",
+                                           config=self.__config,
+                                           env=self.__env,
+                                           base_aws_stack=base_stack)
+            registry_stack.add_dependency(base_stack)
+
+            ingester_stack = IngesterStack(self, "Ingester",
+                                           description="HelioCloud data loading and registration.",
+                                           config=self.__config,
+                                           env=self.__env,
+                                           registry_stack=registry_stack)
+            ingester_stack.add_dependency(base_stack)
+            ingester_stack.add_dependency(registry_stack)
+
+
+def get_instance(app: cdk.App) -> (str, dict):
+    """
+    Get the name for this HelioCloud instance.
+    """
+    instance = str(app.node.try_get_context("instance"))
+    if instance is None:
+        raise Exception("No instance specified. Re-run and provide an instance name value -c instance=<instance>.")
+    return instance
+
+
+# Build the HelioCloud
 app = cdk.App()
-
-# Get the configuration file to use for determining bucket count & names
-config_file = app.node.try_get_context("config")
-if config_file is None:
-    raise Exception(
-        "No configuration file was specified. Re-run using flag '-c config=<name of config file>")
-
-print("Using configuration file " + config_file)
-with open(config_file, 'r') as file:
-    config = yaml.safe_load(file)
-
-# Required:  Deploy the Base AWS Stack to make sure the AWS account environment is properly configured
-base_aws_stack = BaseAwsStack(app, "HelioCloud-BaseAwsStack",
-                              description="AWS resources necessary to deploy any HelioCloud instance")
-
-# Determine optional components to deploy
-components = config['components']
-
-# Install the Registry if enabled
-if components.get('enableRegistry', False):
-    registry_stack = RegistryStack(app, "HelioCloud-RegistryStack", description="HelioCloud data set management.")
-    #registry_stack.add_dependency(base_aws_stack)
-
-    ingester_stack = IngesterStack(app, "HelioCloud-IngesterStack",
-                                   description="HelioCloud data loading and registration.",
-                                   registry_stack=registry_stack)
-    #ingester_stack.add_dependency(base_aws_stack)
-    ingester_stack.add_dependency(registry_stack)
-
-# Check for the other stacks to deploy
-daskhub = components.get('enableDaskHub', False)
-dashboard = components.get('enableUserDashboard', False)
-if daskhub or dashboard:
-
-    # Each of these stacks require the Auth stack be deployed first
-    auth_stack = AuthStack(app, "HelioCloud-AuthStack",
-                           description="HelioCloud end-user authorization capabilities. Required for other components.")
-    auth_stack.add_dependency(base_aws_stack)
-
-    # Initialize requested optional stacks
-    if dashboard:
-        DashboardStack(app, "HelioCloud-Dashboard",
-                       description="HelioCloud User Dashboard deployment",
-                       base_auth=auth_stack).add_dependency(auth_stack)
-
-    if daskhub:
-        DaskhubStack(app, "HelioCloud-DaskHub",
-                     description="HelioCloud Daskhub deployment",
-                     base_aws=base_aws_stack,
-                     base_auth=auth_stack).add_dependency(auth_stack)
-        # cdk.Tags.of(daskhub_stack).add("StackType", "daskhub")
-
-# cdk.Tags.of(app).add("app", "heliocloud")
-
+MyHelioCloud(app, id=get_instance(app))
 app.synth()

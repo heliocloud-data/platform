@@ -10,7 +10,7 @@ class DataSetRepository(object):
         """
         TODO: Implement to support AWS DocumentDB
         """
-        self.db_handle = db_handle
+        self.__db_handle = db_handle
 
     def save(self, dataset: DataSet) -> None:
         print(f"Now saving dataset: {dataset}")

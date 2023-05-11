@@ -1,0 +1,87 @@
+# Default configuration values to use for a HelioCloud deployment
+# The HelioCloud CDK installer will use these values as a basis, applying any overrides
+# specific in the instance configuration file provided by the deployer.
+
+# AWS Environment (Optional)
+# Specifies the AWS Account ID and Region into which this HelioCloud instance should be deployed.
+# If values here are not overriden and left empty, the default behavior is to resolve these values
+# from CDK Environment variables, which inherit them from the AWS CLI installation's configuration.
+env:
+  account: #Example: 123456781234
+  region: # Example: us-east-1
+
+
+# AWS VPC (Required)
+# Specify the AWS VPC into which this HelioCloud instance should be deployed. Options are:
+#   default - Use the default VPC for the AWS Account/Region to deploy into.
+#   existing - Use an existing VPC in the AWS Account/Region having the provided vpc_id.
+#   new - Create and use a new VPC in the AWS Account/Region using a set of sensible defaults required for a HelioCloud.
+#       - No vpc_id need be provided then.
+vpc:
+  # Example: using the default VPC
+  type: default
+  # Example: If using existing vpc, place a vpc_id here. Other-wise this field is ignored.
+  vpc_id: # example: vpc-0f10b7d51cd94cf4c #
+
+
+# Shared S3 Bucket (Optional)
+# Configuration options for the S3 bucket that is shared amongst users of this HelioCloud instance.
+userSharedBucket:
+  # Override to True to delete this S3 bucket when destroying the HelioCloud instance (via cdk destroy)
+  destroyOnRemoval: False
+
+
+# Authorization Settings (Required - if using Daskhub, User Dashboard)
+# Configuration of the authorization services for a HelioCloud instance.
+auth:
+  # Cognito domain name prefix must be unique for all of AWS region
+  domain_prefix: "apl-helio"
+
+
+# HelioCloud Modules (Required)
+# Enable/disable the installation of end-user modules in the HelioCloud instance.
+# Defaulting to false, requiring deployers explicitly enable modules in their override config.
+enabled:
+  registry: False
+  userDashboard: False
+  daskhub: False
+
+
+# Registry (Required if enabled.registry is True)
+# Configuration of HelioCloud's Registry module. The Registry is responsible for storing and making broadly accessible
+# those data sets stored in this HelioCloud
+registry:
+  # Names for public s3 buckets storing data sets (Required if enabled.registry is True)
+  bucketNames: [
+                # example: s3://edu.myinstitution.myorganization
+               ]
+  # Delete registry buckets when this HelioCloud instance is destroyed (Optional).
+  # Defaults to False in order to protect production instances. Consider setting to True in development &
+  # test environments to allow redeployment of the same HelioCloud instance.
+  destroyOnRemoval: False
+  # Requires 3rd parties pay AWS egress costs to access data in this HelioCloud instance (Optional)
+  # Defaults to true to ensure production HelioCloud instances don't incur undue expense when serving up the
+  # data sets in their Registry to other HelioCloud instances or the scientific community at large.
+  # Set to false if your organization is willing to incur these egress expenses.
+  requesterPays: True
+  # Allows use of a specific name for the S3 bucket into which Registry uploads can be placed for ingest (Optional)
+  # Defaults to no name. Consider providing a name in development environments for simplicity, but leave
+  # automatically generated in production.
+  uploadBucketName: #Example:  my-uploads
+
+
+# User Dashboard (Required if enabled.userDashboard is True)
+userDashboard:
+
+
+# Daskhub (Required if enabled.daskhub is True)
+daskhub:
+
+
+
+
+
+
+
+
+

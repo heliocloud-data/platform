@@ -1,0 +1,27 @@
+# Overrides for cjeschke's dev environment
+env:
+  account: 006885615091
+  region: us-east-1
+
+# Existing cjeschke-dev VPC
+vpc:
+  type: existing
+  vpc_id: vpc-0e1d00d723b826a4b
+
+# Destroying so we can clean up dev
+userSharedBucket:
+  destroyOnRemoval: True
+
+# Only working on the registry right now
+enabled:
+  registry: True
+  daskhub: True
+
+# Simple bucket names
+registry:
+  bucketNames: [
+    "cjeschke-dev-datasets"
+  ]
+  destroyOnRemoval: True
+  requesterPays: True
+  uploadBucketName : "cjeschke-dev-uploads"

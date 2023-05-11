@@ -36,14 +36,14 @@ Deploying a HelioCloud instance is a simple matter of ensuring your local and AW
 setting a few configuration options to fine tune your deployment to your needs, running the CDK application and finally
 doing a few quick checks to confirm your HelioCloud instance is operating correctly. 
 
-## 1. Environment Preparation
+## 1 Environment Preparation
 A HelioCloud deployment requires certain pre-requesite steps be taken in your AWS and local environments to enable the CDK app to run to completion.  Please work through the following:
 ### Local Environment
 - Install [Python 3.9](#https://www.python.org/downloads/release/python-390/) or later
 - Install the [AWS Command Line Interface](#https://docs.aws.amazon.com/cli/index.html)
 - Install and setup CDK (see [AWS install instructions](https://aws.amazon.com/getting-started/guides/setup-cdk/module-two/), 
 note the requirement for `npm` and `Node.js`).  You have AWS credentials set either with environment variables or 
-- `aws configure` to push anything to AWS account.
+`aws configure` to push anything to AWS account.
 - `git clone` of the entire HelioCloud-Services repository.  `cd`into the `install` sub-dir for running the CDK project
 
 ### AWS Environment
@@ -125,40 +125,150 @@ we have compiled below the list of AWS regions we know a HelioCloud instance can
 
 TODO: Get a list of regions a HelioCloud instance _should_ be able to be deployed into successfully
 
-## 2. Configuration
+## 2 Configuration
+A single HelioCloud deployment into an AWS account is referred to as a HelioCloud **instance**, in keeping with the idea
+that you are _instantiating_ a HelioCloud using a certain set of parameters as provided by your instance's configuration file. 
+Instance configuration files are stored in `instance/` of this installation project. There you will find the following:
+- instance/default.yaml - A default configuration file used for ALL HelioCloud instance deployments. You can refer
+to this file to understand how you can fine tune your instance configuration.
+- instance/example.yaml - An example configuration file showing the typical override settings that would be used when
+deploying a production HelioCloud instance.
 
-The config file at `config/dev.yaml` drives the fine details of the installation:
-- Installation of individual components can be enabled/disabled via the `components` configuration block. Each major component has an `enable<Component>` parameter
-- Some individual components have their own configuration blocks. Example `auth` is for configuring the `base_auth` stack.
+The following steps will guide you through the process of making your own instance configuration file. 
 
-The importance of individual component configuration values are documented in comments in the config, but some of the more important ones are called attention to and discussed here.
-It is recommended you create a new configuration file `<instance_name>.yaml` for each instance of a HelioCloud you are deploying.
+### 2.1 AWS Account ID & Region
+First you need to obtain and specify the AWS Account ID and Region you want to deploy your HelioCloud instance into. In
+many cases, this is likely to be the Account ID and Region used when during your installation of the AWS CLI. However,
+the Account ID and Region is configurable to account for cases wherein you may deploy to other accounts/regions.
 
-TODO: Add notes on auth:domain_prefix,  registry:requester_pays, bucket_names
+Obtaining your AWS Account ID can be accomplished via one of the following:
+- Login to the AWS Console. Click on your username in the upper right hand corner. Select "Account". Your account id
+will be presented on the billing screen.
+- If have you installed and configured the AWS CLI, you can use the `sts` service to obtain your account id.  On the 
+command line, run:
+    ```commandline
+    aws sts get-caller-identity
+    ```
+  This should return a response like:
+    ```commandline
+    {
+        "UserId": "XYZ.......",
+        "Account": "00.....",
+        "Arn": "arn:aws:iam::00....."
+    }
+    ```
+  The Account field is your AWS Account Id.
 
+A valid region can be obtained by looking at the list of valid regions for HelioCloud deployment cited above. Additionally,
+you can obtain your default AWS region via the AWS config file generated during installation of the AWS CLI. Run the 
+following command on the command line:
+```commandline
+cat ~/.aws/credentials
+```
+You should get a response like:
+```commandline
+[default]
+region = us-east-1
+```
 
-## 3. Deploy
+### 2.2 Creating instance configuration
+Next, make your own copy of the instance configuration example file found at `instance/example.yaml` using a name
+you think appropriate for identifying your instance. In this example, we will call our instance `heliocloud`:
+```commandline
+cp instance/example.yaml instance/heliocloud.yaml
+```
+
+Now modify your instance configuration file to set the following:
+- AWS Account ID &  Region:
+    ```yaml
+    env:
+      account: 12345678
+      region: us-east-1
+    ```
+- Your preference for VPC settings. Here we allow the AWS CDK to create a new VPC for our HelioCloud instance:
+    ```yaml
+    vpc:
+      type: new
+    ```
+- Which HelioCloud modules you want activated. Here we will activate all of them:
+    ```yaml
+    enabled:
+      registry: True
+      userDashboard: True
+      daskhub: True
+    ```
+- The User Dashboard and Daskhub will require the Auth stack be installed, so we must provide an authentication
+domain prefix:
+    ```yaml
+    auth:
+      domain_prefix: "myorganization-helio"
+    ```
+- Registry module will require names for its public S3 buckets:
+    ```yaml
+    registry:
+      bucketNames: [
+                     "edu-myorganization-helio1",
+                     "edu-myorganization-helio2"
+                   ]
+    ```
+
+You may also refer to `instance/default.yaml` to gain a full understanding of all the configurable elements of your HelioCloud instance deployment. 
+
+Finally, note that multiple instances of a HelioCloud can be deployed into a single AWS account by creating additional
+instance config files stored in the `instance/` directory. This is especially useful when collaboratively developing
+the platform within one AWS account, or allowing individual (sub)departments within an organization to have their own
+HelioCloud instance deployed into an organization wide AWS account.
+
+## 3 Deploy
 Deployment of a HelioCloud instance is a 2 step process consisting of:
-- Running the CDK to install the CloudFormation stacks in your AWS account
+- Running the CDK to install the CloudFormation stacks for your HelioCloud instance into your AWS account
 - Executing the DaskHub follow up deployment steps
 
-### 3a. Part1: Running the HelioCloud CDK
-You can deploy your configured HelioCloud instance by running `cdk deploy` from the root of the `install` directory. 
-Use the `-all` flag to tell CDK to deploy all the stacks in the project:
+### 3.1 Check via AWS CDK
+Deploying your configured HelioCloud instance is done via the AWS CDK, passing in your instance name as a context
+variable. Getting started, it is useful to run the `cdk ls` command to see the names of the CloudFormation Stacks
+that will be installed based on your instance configuration. 
 
+Assuming your instance name is `heliocloud` and it is configured per the example in the previous section, try running:
+```commandline
+cdk ls -c instance=heliocloud
+```
+The following should appear:
+```commandline
+Using instance configured AWS account 12345678 and region us-east-1
+Using newly created vpc: ${Token[TOKEN.608]}.
+Deploying buckets: ['edu-myorganization-helio1', 'edu-myorganization-helio2']
+heliocloud/Base
+heliocloud/Auth
+heliocloud/Registry
+heliocloud/Daskhub
+heliocloud/Ingester
+heliocloud/UserDashboard
+```
+Note that the name's of each CDK Stack representing HelioCloud components have been returned with a prefix of `heliocloud/`, 
+per the name of the HelioCloud instance being installed. This helps uniquely name and identify these Stacks should you 
+install multiple HelioCloud instances in one AWS account.
+
+### 3.2 Deploy via AWS CDK
+
+You can deploy your configured HelioCloud instance by running `cdk deploy` from the root of the `install` directory,
+passing in the name of your instance as a context variable, along with the `-all` flag to tell CDK to deploy all the 
+CloudFormation stacks required based on your instance's configuration. The following command would deploy a 
+HelioCloud instance using the configuration at `instance/heliocloud.yaml`:
 
 ```commandline
-cdk deploy --all -c config=config/dev.yaml
+cdk deploy --all -c instance=heliocloud
 ```
 
-Subsequent an initial installation, you may want to (re)install some of the individual components following a configuration
-change or upate.  You can deploy a single component stack in CDK by providing its name on deployment:
+Subsequent an initial installation, you may want to (re)install some of the individual modules following a configuration
+change or update. You can (re)deploy a single component in CDK by providing its FULL stack name to the deploy command.
+Note that the full Stack name includes the instance name prefix (e.g. `heliocloud/`), as we saw when running `cdk ls`:
 
 ```commandline
-cdk deploy DataSetsStack -c config=config/dev.yaml
+cdk deploy heliocloud/Registry -c instance=heliocloud
 ```
 
-### 3b. Part 2 - Daskhub Install
+### 3.3 Daskhub Installation
 DaskHub has the initial infrastructure instantiated with this CDK project but currently requires the user to perform 
 additional steps after logging into an admin EC2 instance.  Enable the component in the config file, ensure that the 
 `auth.domain_prefix` is set, and run the cdk deploy for the HelioCloud install then follow the rest of the DaskHub 
@@ -167,7 +277,7 @@ installation instructions [here](daskhub/README.md).
 
 
 
-## 4. Validate
+## 4 Validate
 TODO: I've just a deployment, so what should I check?
 - Do an initial manual run of the Cataloger?  Make sure that the Data Set catalog has been produced?
 - Login to Daskhub / User portal, start up an instance and run an example analytic?

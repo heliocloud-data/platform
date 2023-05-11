@@ -74,7 +74,7 @@ class CatalogRegistry:
         # Get the name and region of each entry in the catalog
         return [(x['name'], x['region']) for x in self.catalog['registry']]
 
-    def get_entries(self:
+    def get_entries(self):
         """
         Get all data for a given registry
         

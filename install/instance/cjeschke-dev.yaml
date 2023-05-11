@@ -1,4 +1,7 @@
 # Overrides for cjeschke's dev environment
+env:
+  account: 006885615091
+  region: us-east-1
 
 # Existing cjeschke-dev VPC
 vpc:

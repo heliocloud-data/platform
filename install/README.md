@@ -43,7 +43,7 @@ A HelioCloud deployment requires certain pre-requesite steps be taken in your AW
 - Install the [AWS Command Line Interface](#https://docs.aws.amazon.com/cli/index.html)
 - Install and setup CDK (see [AWS install instructions](https://aws.amazon.com/getting-started/guides/setup-cdk/module-two/), 
 note the requirement for `npm` and `Node.js`).  You have AWS credentials set either with environment variables or 
-- `aws configure` to push anything to AWS account.
+`aws configure` to push anything to AWS account.
 - `git clone` of the entire HelioCloud-Services repository.  `cd`into the `install` sub-dir for running the CDK project
 
 ### AWS Environment
@@ -139,10 +139,22 @@ to refer to your instance by. For example, if I simple want to call my instance 
 ```commandline
 cp instance/example.yaml instance/heliocloud.yaml
 ```
-Now modify `instance/heliocloud.yaml` to meet your deployment needs, such as enabling the individual HelioCloud modules
-you would like your instance to contain:
+Now modify `instance/heliocloud.yaml` to meet your deployment needs, such as providing your AWS Account Id and Region 
+for deployment:
 ```yaml
-# Enabling all available HelioCloud modules
+env:
+  account: 12345678
+  region: us-east-1
+```
+Specifying that a new AWS VPC be created
+```yaml
+vpc:
+  type: new
+```
+
+
+Then enabling the individual HelioCloud modules you would like your instance to contain:
+```yaml
 enabled:
   registry: True
   userDashboard: True
@@ -151,11 +163,9 @@ enabled:
 
 ...as well as updating the authentication domain and data registry bucket names to match your organization name:
 ```yaml
-# Configure per the domain of your respective organization
 auth:
-  domain_prefix: "edu.myorganization"
+  domain_prefix: "myorganization-helio"
 
-# Registry buckets are named in association with your organization
 registry:
   bucketNames: [
                  "edu-myorganization-helio1",
@@ -172,7 +182,33 @@ Deployment of a HelioCloud instance is a 2 step process consisting of:
 - Running the CDK to install the CloudFormation stacks for your HelioCloud instance into your AWS account
 - Executing the DaskHub follow up deployment steps
 
-### 3a. Part1: Running the HelioCloud CDK
+### 3.a. Check via AWS CDK
+Deploying your configured HelioCloud instance is done via the AWS CDK, passing in your instance name as a context
+variable. Getting started, it is useful to run the `cdk ls` command to see the names of the CloudFormation Stacks
+that will be installed based on your instance configuration. 
+
+Assuming your instance name is `heliocloud` and it is configured per the example in the previous section, try running:
+```commandline
+cdk -ls -c instance=heliocloud
+```
+The following should appear:
+```commandline
+Using instance configured AWS account 12345678 and region us-east-1
+Using newly created vpc: ${Token[TOKEN.608]}.
+Deploying buckets: ['edu-myorganization-helio1', 'edu-myorganization-helio2']
+heliocloud/Base
+heliocloud/Auth
+heliocloud/Registry
+heliocloud/Daskhub
+heliocloud/Ingester
+heliocloud/UserDashboard
+```
+Note that the name's of each CDK Stack representing HelioCloud components have been returned with a prefix of `heliocloud/`, 
+per the name of the HelioCloud instance being installed. This helps uniquely name and identify these Stacks should you 
+install multiple HelioCloud instances in one AWS account.
+
+### 3.b. Deploy via AWS CDK
+
 You can deploy your configured HelioCloud instance by running `cdk deploy` from the root of the `install` directory,
 passing in the name of your instance as a context variable, along with the `-all` flag to tell CDK to deploy all the 
 CloudFormation stacks required based on your instance's configuration. The following command would deploy a 
@@ -186,10 +222,10 @@ Subsequent an initial installation, you may want to (re)install some of the indi
 change or update.  You can (re)deploy a single component  in CDK by providing its name on deployment:
 
 ```commandline
-cdk deploy RegistryStack -c instance=heliocloud
+cdk deploy heliocloud/Registry -c instance=heliocloud
 ```
 
-### 3b. Part 2 - Daskhub Install
+### 3.c. Daskhub Installation
 DaskHub has the initial infrastructure instantiated with this CDK project but currently requires the user to perform 
 additional steps after logging into an admin EC2 instance.  Enable the component in the config file, ensure that the 
 `auth.domain_prefix` is set, and run the cdk deploy for the HelioCloud install then follow the rest of the DaskHub 

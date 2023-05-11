@@ -1,8 +1,14 @@
 # EXAMPLE instance configuration for a HelioCloud installation. A "typical" HelioCloud instance will be configured:
+# - Using a specified AWS Account & Region
 # - to create a brand new VPC, side stepping any issues with current VPC's lacking necessary subnets, connectivity, etc
 # - with a specific domain prefix for authentication, matching the domain name of the institution doing the install
 # - have all the available modules enabled
 # - name its S3 buckets for the Registry after the institution doing the install
+
+# Setting AWS Account ID & region for deployment
+env:
+  account: 12345678
+  region: us-east-1
 
 # Create a brand new VPC
 vpc:

@@ -40,10 +40,17 @@ class MyHelioCloud(Construct):
         """
         Get the AWS Account & Region to deploy into
         """
-        # Use what we inherit from the environment
-        account = os.environ["CDK_DEFAULT_ACCOUNT"]
-        region = os.environ["CDK_DEFAULT_REGION"]
-        print(f"Provisioning into account: {account}, region: {region}.")
+        # First, check the config
+        account = str(self.__config.get("env").get("account", None))
+        region = self.__config.get("env").get("region", None)
+        if (region is not None) and (account is not None):
+            print(f"Using instance configured AWS account {account}, region {region}.")
+        else:
+            # if nothing in the config, resolve from the environment
+            account = os.environ["CDK_DEFAULT_ACCOUNT"]
+            region = os.environ["CDK_DEFAULT_REGION"]
+            print(f"Using AWS CLI provided AWS account {account}, region {region}.")
+
         self.__env = cdk.Environment(account=account, region=region)
 
     def __get_config(self):
@@ -89,6 +96,7 @@ class MyHelioCloud(Construct):
                                "UserDashboard",
                                description="User Dashboard module for a HelioCloud instance.",
                                config=self.__config,
+                               env=self.__env,
                                base_auth=auth_stack).add_dependency(auth_stack)
 
             # Should Daskhub be deployed
@@ -108,12 +116,14 @@ class MyHelioCloud(Construct):
             registry_stack = RegistryStack(self, "Registry",
                                            description="HelioCloud data set management.",
                                            config=self.__config,
+                                           env=self.__env,
                                            base_aws_stack=base_stack)
             registry_stack.add_dependency(base_stack)
 
             ingester_stack = IngesterStack(self, "Ingester",
                                            description="HelioCloud data loading and registration.",
                                            config=self.__config,
+                                           env=self.__env,
                                            registry_stack=registry_stack)
             ingester_stack.add_dependency(base_stack)
             ingester_stack.add_dependency(registry_stack)

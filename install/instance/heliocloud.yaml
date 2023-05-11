@@ -1,0 +1,29 @@
+env:
+  account: 12345678
+  region: us-east-1
+
+vpc:
+  type: new
+
+# Destroying so we can clean up dev
+userSharedBucket:
+  destroyOnRemoval: True
+
+# Only working on the registry right now
+enabled:
+  registry: True
+  daskhub: True
+  userDashboard: True
+
+# Configure per the domain of your respective organization
+auth:
+  domain_prefix: "myorganization-helio"
+
+# Registry buckets are named in association with your organization
+registry:
+  bucketNames: [
+                 "edu-myorganization-helio1",
+                 "edu-myorganization-helio2"
+               ]
+
+

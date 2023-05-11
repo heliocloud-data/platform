@@ -20,11 +20,11 @@ class IngesterStack(Stack):
         super().__init__(scope, construct_id, **kwargs)
 
         registry_config = config['registry']
-        upload_bucket_name = registry_config.get('uploadBucketName')
+        upload_bucket_name = registry_config.get('uploadBucketName', None)
 
-        # Provision an upload bucket for the ingest capability, along with a policy to support read/write
+        # Provision an upload bucket for the ingest capability
         upload_bucket = s3.Bucket(self,
-                                  id=upload_bucket_name,
+                                  id="Ingester-Upload",
                                   bucket_name=upload_bucket_name,
                                   removal_policy=RemovalPolicy.DESTROY,
                                   auto_delete_objects=True)

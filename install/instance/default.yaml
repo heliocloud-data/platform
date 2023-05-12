@@ -19,7 +19,7 @@ env:
 #       - No vpc_id need be provided then.
 vpc:
   # Example: using the default VPC
-  type: default
+  type: new
   # Example: If using existing vpc, place a vpc_id here. Other-wise this field is ignored.
   vpc_id: # example: vpc-0f10b7d51cd94cf4c #
 

@@ -5,8 +5,7 @@ env:
 
 # Existing cjeschke-dev VPC
 vpc:
-  type: existing
-  vpc_id: vpc-0e1d00d723b826a4b
+  type: new
 
 # Destroying so we can clean up dev
 userSharedBucket:

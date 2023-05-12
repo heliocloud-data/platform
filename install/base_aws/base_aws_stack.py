@@ -107,8 +107,12 @@ class BaseAwsStack(Stack):
             self.__heliocloud_vpc = ec2.Vpc.from_lookup(self, id="HelioCloud-VPC", vpc_id=vpc_id)
             print(f"Using existing vpc: {self.__heliocloud_vpc.vpc_id}.")
         elif vpc_type == "new":
-            # TODO:  Review required settings
-            self.__heliocloud_vpc = ec2.Vpc(self, "HelioCloudVPC")
+            # Provision the minimal VPC configuration required
+            self.__heliocloud_vpc = ec2.Vpc(self,
+                                            id="HelioCloudVPC",
+                                            max_azs=2,
+                                            nat_gateways=1
+                                            )
             print(f"Using newly created vpc: {self.__heliocloud_vpc.vpc_id}.")
         else:
             raise Exception(f"Unrecognized vpc type: {vpc_type}")

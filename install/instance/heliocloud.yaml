@@ -13,7 +13,7 @@ userSharedBucket:
 enabled:
   registry: True
   daskhub: True
-  userDashboard: True
+  portal: True
 
 # Configure per the domain of your respective organization
 auth:

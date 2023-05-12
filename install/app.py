@@ -9,7 +9,7 @@ from base_auth.authorization_stack import AuthStack
 from base_aws.base_aws_stack import BaseAwsStack
 from base_data.ingester_stack import IngesterStack
 from base_data.registry_stack import RegistryStack
-from dashboard.dashboard_stack import DashboardStack
+from portal.portal_stack import PortalStack
 from daskhub.daskhub_stack import DaskhubStack
 
 
@@ -83,7 +83,7 @@ class MyHelioCloud(Construct):
 
         # Next, determine if the Auth module is needed
         enabled_modules = self.__config.get("enabled")
-        if enabled_modules.get("daskhub") or enabled_modules.get("userDashboard"):
+        if enabled_modules.get("daskhub") or enabled_modules.get("portal"):
             # We need the services of an AuthStack
             auth_stack = AuthStack(self,
                                    "Auth",
@@ -93,15 +93,15 @@ class MyHelioCloud(Construct):
             auth_stack.add_dependency(base_stack)
             cdk.Tags.of(auth_stack).add("Product", "heliocloud-auth")
 
-            # Should the User Dashboard module be deployed
-            if enabled_modules.get("userDashboard", False):
-                dashboard_stack = DashboardStack(self,
-                               "UserDashboard",
-                               description="User Dashboard module for a HelioCloud instance.",
+            # Should the User Portal module be deployed
+            if enabled_modules.get("portal", False):
+                portal_stack = PortalStack(self,
+                               "Portal",
+                               description="User Portal module for a HelioCloud instance.",
                                config=self.__config,
                                env=self.__env,
                                base_auth=auth_stack).add_dependency(auth_stack)
-                cdk.Tags.of(dashboard_stack).add("Product", "heliocloud-dashboard")
+                cdk.Tags.of(portal_stack).add("Product", "heliocloud-portal")
                 
 
             # Should Daskhub be deployed

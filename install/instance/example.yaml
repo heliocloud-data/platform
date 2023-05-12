@@ -21,7 +21,7 @@ auth:
 # Enabling all available HelioCloud modules
 enabled:
   registry: True
-  userDashboard: True
+  portal: True
   daskhub: True
 
 # Registry buckets are named in association with your organization

@@ -5,7 +5,9 @@ metadata:
   name: <INSERT_EKS_NAME>
   region: <INSERT_REGION>
   version: "1.22"
-
+  tags:
+      Product: heliocloud-daskhub
+      Project: heliocloud
 secretsEncryption:
     keyARN: <INSERT_KMS_ARN>
 
@@ -21,14 +23,14 @@ iam:
       # the namespace will be created if it doesn't exist already
       labels: {aws-usage: "application"}
     attachPolicyARNs:
-    - "<INSERT_helio-s3-policy_ARN>"
+    - "<INSERT_helio-s3-policy_ARN>"  
   - metadata:
       name: cluster-autoscaler
       # if no namespace is set, "default" will be used;
       # the namespace will be created if it doesn't exist already
       namespace: kube-system
     attachPolicyARNs:
-    - "<INSERT_k8s-asg-policy_ARN>"
+    - "<INSERT_k8s-asg-policy_ARN>" 
   - metadata:
       name: admin
       # if no namespace is set, "default" will be used;

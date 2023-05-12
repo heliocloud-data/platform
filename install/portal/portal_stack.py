@@ -10,9 +10,9 @@ from aws_cdk import (
 from constructs import Construct
 
 
-class DashboardStack(Stack):
+class PortalStack(Stack):
     """
-    Stack to install HelioCloud user dashboard.
+    Stack to install HelioCloud user portal.
     """
 
     def __init__(self, scope: Construct, construct_id: str, config: dict, base_auth, **kwargs) -> None:

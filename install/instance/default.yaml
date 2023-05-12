@@ -43,7 +43,7 @@ auth:
 # Defaulting to false, requiring deployers explicitly enable modules in their override config.
 enabled:
   registry: False
-  userDashboard: False
+  portal: False
   daskhub: False
 
 

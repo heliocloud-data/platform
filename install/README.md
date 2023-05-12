@@ -21,7 +21,7 @@ _CDK Deployment Codebase_
 - base_aws - CDK stack(s) for configuring certain AWS services depended upon by all (or most) of the HelioCloud's components
 - base_auth - CDK stack(s) for configuring AWS services to enable HelioCloud end-user authentication and authorization
 - base_data - CDK stack(s) for deploying HelioCloud's Data Set Registry component for ingesting, storing and sharing heliophysics data sets across HelioCloud instances
-- dashboard - CDK stack(s) for deploying HelioCloud's User Dashboard component
+- portal - CDK stack(s) for deploying HelioCloud's User Portal component
 - daskhub - CDK stack(s) for deploying HelioCloud's Daskhub component
 - config - default and example config files to use when invoking this CDK package. See `config/dev.yaml` for current defaults and required fields.
 - `app.py` - main CDK driver
@@ -194,10 +194,10 @@ Now modify your instance configuration file to set the following:
     ```yaml
     enabled:
       registry: True
-      userDashboard: True
+      portal: True
       daskhub: True
     ```
-- The User Dashboard and Daskhub will require the Auth stack be installed, so we must provide an authentication
+- The User Portal and Daskhub will require the Auth stack be installed, so we must provide an authentication
 domain prefix:
     ```yaml
     auth:
@@ -243,7 +243,7 @@ heliocloud/Auth
 heliocloud/Registry
 heliocloud/Daskhub
 heliocloud/Ingester
-heliocloud/UserDashboard
+heliocloud/Portal
 ```
 Note that the name's of each CDK Stack representing HelioCloud components have been returned with a prefix of `heliocloud/`, 
 per the name of the HelioCloud instance being installed. This helps uniquely name and identify these Stacks should you 

@@ -100,7 +100,8 @@ class MyHelioCloud(Construct):
                                description="User Portal module for a HelioCloud instance.",
                                config=self.__config,
                                env=self.__env,
-                               base_auth=auth_stack).add_dependency(auth_stack)
+                               base_auth=auth_stack)
+                portal_stack.add_dependency(auth_stack)
                 cdk.Tags.of(portal_stack).add("Product", "heliocloud-portal")
                 
 

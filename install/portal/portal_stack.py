@@ -15,7 +15,7 @@ class PortalStack(Stack):
     Stack to install HelioCloud user portal.
     """
 
-    def __init__(self, scope: Construct, construct_id: str, config: dict, base_auth, **kwargs) -> None:
+    def __init__(self, scope: Construct, construct_id: str, config: dict, base_auth: Stack, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
         ##############################################

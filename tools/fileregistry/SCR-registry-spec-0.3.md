@@ -6,13 +6,15 @@
 [5 Info Metadata](#5-info)<br/>
 <!-- \TOC -->
 
-Version 0.3.1 \| HelioCloud \|
+Version 0.3.2 \| HelioCloud \|
 
-# 1 The HelioCloud 'CloudMe' Specification
+# 1 The Shared Cloud Registry specification for HelioCloud
 
-This specification creates a global data registry ('HelioDataRegistry'), maintained at the HDRL GitLab repository, then defines the file registry ('fileRegistry') for each dataset, that resides in the S3 (or equivalent) bucket alongside the dataset.
+The Shared Cloud Registry (SCR) specification can be used for sharing datasets across cloud frameworks.
 
-The 'HelioDataRegistry' is a JSON file consisting of **name** and **endpoint** and lists buckets as endpoints, not datasets.  Tools can visit each **endpoint** to get the **catalog.json** listing datasets available in that bucket.  The 'fileRegistry' consists of the required index to the actual files, and an optional dataset summary file. The fileRegistry itself is a set of ***<id>_YYYY.csv*** (or csp-zip or parquet) index files, one per year.  The optional summary file is named **<id>.json** file and provides additional potentially searchable metadata.
+For HelioCloud, this specification creates a global data registry ('HelioDataRegistry'), maintained at the HDRL GitLab repository, then defines the file registry ('fileRegistry') for each dataset, that resides in the S3 (or equivalent) bucket alongside the dataset.
+
+That 'HelioDataRegistry.json' is a JSON file consisting of **name** and **endpoint** and lists buckets as endpoints, not datasets.  Tools can visit each **endpoint** to get the **catalog.json** listing datasets available in that bucket.  The 'fileRegistry' consists of the required index to the actual files, and an optional dataset summary file. The fileRegistry itself is a set of ***<id>_YYYY.csv*** (or csp-zip or parquet) index files, one per year.  The optional summary file is named **<id>.json** file and provides additional potentially searchable metadata.
 
 ## 1.1 Flow
 
@@ -73,7 +75,7 @@ Here is a sample 'HelioDataRegistry.json' for three buckets at two sites.
 
 ```javascript
 {
-    "CloudMe": "0.3",
+    "version": "0.3",
     "modificationDate": "2022-01-01T00:00.00Z",
     "registry": [
         {
@@ -169,7 +171,7 @@ Here is an example catalog, for which only the first item has decided to fill ou
 
 ```javascript
 {
-    "Cloudy": "0.2",
+    "version": "0.3",
     "endpoint": "s3://gov-nasa-helio-public/",
     "name": "GSFC HelioCloud",
     "region": "us-east-1",
@@ -346,7 +348,7 @@ Here is an example with additional metadata and a CSV header as the EUV-ML proje
 
 # 5 Time Specification and ISO 8601
 
-Time values are always strings, and the CloudMe Time format (taken from the HAPI Time format) is a subset of the ISO 8601 standard. The restriction on the ISO 8601 standard is that time must be represented as
+Time values are always strings, and the SCR Time format (taken from the HAPI Time format) is a subset of the ISO 8601 standard. The restriction on the ISO 8601 standard is that time must be represented as
 
 ```
 yyyy-mm-ddThh:mm:ss.sssZ
@@ -373,7 +375,7 @@ Here is an example for a sample optional Info json file.  This is used to indica
 
 ```javascript
 {
-    "CloudMe": "0.2",
+    "version": "0.3",
     "parameters": [
         {"name": "spacecraft", "type": "string"},
         {"name": "wavelength", "type": "int", "units": "Angstroms"},

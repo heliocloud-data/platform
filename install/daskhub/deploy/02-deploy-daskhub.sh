@@ -79,12 +79,20 @@ LOADBALANCER_URL=$(kubectl --namespace=$KUBERNETES_NAMESPACE get svc proxy-publi
 
 echo ------------------------------
 echo Ping for loadbalancer address, wait until loaded...
+iterator=0
 while [[ $LOADBALANCER_URL != *.com ]]
 do
+    if [[ $iterator -gt 60 ]]; then
+      echo Breaking due to exceeding time, check if issue with Daskhub helm deployment
+      break
+    fi
     sleep 20s
     LOADBALANCER_URL=$(kubectl --namespace=$KUBERNETES_NAMESPACE get svc proxy-public --output jsonpath='{.status.loadBalancer.ingress[0].hostname}')
     echo $LOADBALANCER_URL
+    iterator=$((iterator + 1))
+    echo $iterator
 done
+
 
 FINAL_LOADBALANCER_URL=$(kubectl --namespace=$KUBERNETES_NAMESPACE get svc proxy-public --output jsonpath='{.status.loadBalancer.ingress[0].hostname}')
 

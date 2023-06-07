@@ -16,7 +16,7 @@ vpc:
 
 # Configure per the domain of your respective organization
 auth:
-  domain_prefix: "edu.myorganization"
+  domain_prefix: "edu-myorganization"
 
 # Enabling all available HelioCloud modules
 enabled:

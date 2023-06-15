@@ -55,13 +55,13 @@ import json
 import shutil
 import urllib
 import boto3
-import s3fs
 import datetime
 from dateutil import parser
 import magic
 from typing import Dict, List, Tuple, Any, IO, Optional, Union
 import logging
 import multiprocessing_logging
+import time
 
 """ General driver routines here, should work for most cases """
 
@@ -89,7 +89,9 @@ def bundleme(s3staging: str, s3destination: str, movelogdir: str, stripuri: str,
     return sinfo
 
 def init_logger(logfile=None,loglevel=None):
-    if loglevel.lower() == "debug" or loglevel.lower() == "status":
+    if loglevel.lower() == "info":
+        loglevel=logging.INFO # default is INFO+ERROR msgs
+    elif loglevel.lower() == "debug" or loglevel.lower() == "status":
         loglevel=logging.DEBUG # everything gets logged
     elif loglevel.lower() == "error":
         loglevel=logging.ERROR # absolute min, only error
@@ -161,22 +163,6 @@ def getHAPIIDs(lasttime, catalogurl):
         return None
     
     
-def make_subdirs(mybase: str, fname: str) -> None:
-    """
-    Creates all needed subdirectories in the specified directory `fname`.
-    
-    :param mybase: The base directory path.
-    :param fname: The file path whose subdirectories may need to be created.
-    """
-    # used to use make_subdirs(s3staging,s3stub), obsoleted with better path calls
-    #fpath = "/".join((fname.split("/"))[:-1])
-    steps = re.sub("/$","",mybase) # rare case of not needing ending /
-    localpath = (fname.split("/"))[:-1]
-    for subdir in localpath:
-        steps += "/" + subdir
-        if not os.path.isdir(steps):
-            os.mkdir(steps)
-            logme("Making ",steps)
             
 def s3url_to_bucketkey(s3url: str) -> Tuple[str, str]:
     """
@@ -241,21 +227,39 @@ def fetch_and_register(filelist: Dict[str, Any], sinfo: Dict[str, Any], logstrin
             registryloc = os.path.commonprefix([registryloc, head])
         except:
             registryloc = head
-        if head != lastpath:
-            os.makedirs(head,exist_ok=True)
-            lastpath = head
+
         if stagingkey.startswith("s3://"):
             mybucket, myfilekey = s3url_to_bucketkey(stagingkey)
             tempfile = "/tmp/"+re.sub(r"/|:","_",stagingkey)
-            urllib.request.urlretrieve(url_to_fetch,tempfile)
-            if sinfo["fileFormat"] == None: # define from 1st fetch
-                sinfo["fileFormat"] = filetype(tempfile)
+        else:
+            tempfile = stagingkey
+            if head != lastpath:
+                os.makedirs(head,exist_ok=True)
+                lastpath = head
+
+        remaining_download_tries = 5
+        while remaining_download_tries > 0:
+            try:
+                urllib.request.urlretrieve(url_to_fetch,tempfile)
+            except urllib.error.URLError as e:
+                #print("FAILED, not got ",url_to_fetch)
+                remaining_download_tries -= 1
+                time.sleep(1)
+                error_msg = e.reason
+                #print("Error ",error_msg," tries is ",remaining_download_tries," for ",url_to_fetch)
+            else:
+                break
+            
+        if remaining_download_tries <= 0:
+            logme(error_msg,url_to_fetch,"error")
+            continue
+
+        if sinfo["fileFormat"] == None: # define from 1st fetch
+            sinfo["fileFormat"] = filetype(tempfile)
+
+        if stagingkey.startswith("s3://"):
             mys3.upload_file(tempfile,mybucket,myfilekey)
             os.remove(tempfile)
-        else:
-            urllib.request.urlretrieve(url_to_fetch,stagingkey)
-            if sinfo["fileFormat"] == None: # define from 1st fetch
-                sinfo["fileFormat"] = filetype(stagingkey)
             
         csvitem = item[startkey] + "," + s3key + "," + str(item[filesizekey])
         logfsize += item[filesizekey]
@@ -286,23 +290,6 @@ def fetch_and_register(filelist: Dict[str, Any], sinfo: Dict[str, Any], logstrin
 
 def registryname(id,year):
     return f"{id}_{year}.csv"
-
-def local_vs_s3_open(fname: str, mode: str) -> IO:
-    """
-    Opens a file for reading or writing, handling both local and S3 file systems.
-    
-    :param fname: The name of the file to open.
-    :param mode: The mode in which to open the file (e.g. "r" for reading, "w" for writing).
-    
-    :returns: The open file object
-    """
-    # currently not working for s3fs reads (crashes) or writes (hangs)
-    if fname.startswith("s3://"):
-        s3 = s3fs.S3FileSystem(anon=True)
-        fopen = s3.open(fname,mode+"b")
-    else:
-        fopen = open(fname,mode)
-    return fopen
 
 def exists_anywhere(fname: str) -> bool:
     """
@@ -474,8 +461,9 @@ def write_registries(id: str, sinfo: Dict[str, Any],
 
     currentyear="1000" # junk year to compare against
 
-    os.makedirs(sinfo["registryloc"],exist_ok=True)
-
+    if not sinfo["s3staging"].startswith("s3://"):
+        os.makedirs(sinfo["registryloc"],exist_ok=True)
+        
     for line in csvregistry:
         year=line[0:4]
         if year != currentyear:
@@ -625,7 +613,6 @@ def remove_processed(movelogdir: str, allIDs: List[str]) -> List[str]:
         delist=[]
 
         mcache=name_movelog(movelogdir)
-        #fin=open("mastercache_movelog.json"
         try:
             tj = dataingest(mcache,jsonflag=True)
             delist = [item["dataid"] for item in tj["movelist"]]
@@ -661,6 +648,21 @@ def name_movelog(movelogdir,dataid="mastercache"):
     # default if no ID is the global aggregate movelog
     return f"{movelogdir}movelog_{dataid}.json"
 
+def move_to_arch(fname,basedir):
+    """ Moves file to an 'arch' subdir below its current location
+        fname is {basedir}stuff and we want {basedir}arch/stuff
+    """
+    altfname = re.sub(basedir,basedir+"arch/",fname)
+    if fname.startswith("s3://"):
+        mybucket,fnamekey=s3url_to_bucketkey(fname)
+        mybucket,altfnamekey=s3url_to_bucketkey(altfname)
+        s3_res = boto3.resource("s3")
+        copy_source={'Bucket':mybucket,'Key':fnamekey}
+        s3_res.meta.client.copy(copy_source,mybucket,altfnamekey)
+        s3_res.meta.client.delete_object(Bucket=mybucket,Key=fnamekey)
+    else:
+        os.makedirs(basedir+"arch",exist_ok=True)
+        os.rename(fname,altfname)
 
 def mastermovelog(movelogdir,allIDs):
     """
@@ -685,8 +687,12 @@ def mastermovelog(movelogdir,allIDs):
     try:
         tj=uniquejson(tj,"movelist","dataid")
         datadump(mcache,tj,jsonflag=True)
+        for fname in flist:
+            if exists_anywhere(fname):
+                move_to_arch(fname,movelogdir)
     except:
-        pass
+        logme("Unable to collate movelogs to ",mcache,"error")
+
     
 def ready_migrate(dataid,sinfo,startDate,stopDate,catmeta={}):
     """

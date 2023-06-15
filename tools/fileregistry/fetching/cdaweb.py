@@ -60,7 +60,7 @@ import json
 import shutil
 import urllib
 import boto3
-import s3fs
+#import s3fs
 import datetime
 from dateutil import parser
 from multiprocessing.pool import ThreadPool
@@ -76,8 +76,12 @@ def get_CDAWEB_filelist(dataid,time1,time2):
 
     url = "https://cdaweb.gsfc.nasa.gov/WS/cdasr/1/dataviews/sp_phys/datasets/"
     url += dataid + "/orig_data/" + ttime1 + "," + ttime2
-    res = requests.get(url, headers=headers)
-    if res.status_code == 200:
+    try:
+        res = requests.get(url, headers=headers)
+        stat = res.status_code
+    except:
+        stat = -1
+    if stat == 200:
         j = res.json()
         # need to provide the local keys for 'key', 'startDate' and 'filesize'
         # plus any extra keys plus the actual 'data'
@@ -190,12 +194,14 @@ def fetchCDAWebsinglet(dataid,time1=None,time2=None):
         
     # Generic for any fetch
     if flist != None:
-        os.makedirs(sinfo["movelogdir"],exist_ok=True)
+        if not sinfo["movelogdir"].startswith("s3://"):
+            os.makedirs(sinfo["movelogdir"],exist_ok=True)
         csvreg,sinfo = s3s.fetch_and_register(flist, sinfo, logstring=dataid)
-        # prioritize prescribed keys, if any (debate: is this needed?)
-        extrameta = s3s.gatherkeys(sinfo,flist)
-        s3s.write_registries(dataid,sinfo,csvreg)
-        s3s.ready_migrate(dataid,sinfo,time1,time2,catmeta=catmeta)
+        if csvreg is not None:
+            # prioritize prescribed keys, if any (debate: is this needed?)
+            extrameta = s3s.gatherkeys(sinfo,flist)
+            s3s.write_registries(dataid,sinfo,csvreg)
+            s3s.ready_migrate(dataid,sinfo,time1,time2,catmeta=catmeta)
 
 
 def cdaweb_prod(threads=1,logfile=None,loglevel=None,
@@ -268,7 +274,7 @@ def load_cdaweb_params(dataid=None,webfetch=False):
     # Set dataset staging-specific items
     s3staging = "./cdaweb/"  # for now, later s3://helio-data-staging/"
     #s3staging = "s3://antunak1/"
-    s3destination = "s3://helio-data-staging/cdaweb/"
+    s3destination = "s3://gov-nasa-hdrl-data1/cdaweb/"
     movelogdir = s3staging + "movelogs/"
     stripuri = "https://cdaweb.gsfc.nasa.gov/sp_phys/data/"
     extrameta = None # optional extra metadata to include in CSV
@@ -286,17 +292,40 @@ errored ones.
 """
 
 # lname="cdaweb_log.txt", or None to log to screen
-lname=None 
-# stat='error'/only log errors, 'info'/best, or 'debug'/verbose
-loglevel="debug" # info"
+lname="cdaweb_log.txt"
+# stat='error' to only log errors, 'info' as most useful, or 'debug' as verbose
+loglevel="info" # info
 # test=True is quick test on a subset, False=everything for production
-test=True # False #True
+test=False # False #True
 # refreshIDs=False is use local copy, True=possibly iffy webfetch
-refreshIDs=False
+refreshIDs=True
 # tcount is tunable, 1 = single thread, >1 = multiprocessing
 tcount=8
 # limit=N, fetch only N IDs, default None aka get all cdaweb
-limit=2
+limit=None # None # 20
+# retries, repeat fetch to try unfetched/errored items again, in case network was temporarily down
+retries = 3
 
-cdaweb_prod(threads=tcount,logfile=lname,loglevel=loglevel,
-            refreshIDs=refreshIDs,limit=limit,test=test)
+# new schema is to loop it in batches so it updates the logs and caches
+# even when several runs time out
+
+gather = False  # if runs foobarred and left partials, this does a cleanup
+if gather:
+    sinfo,allIDs,allIDs_meta=load_cdaweb_params(webfetch=False)
+    s3s.mastermovelog(sinfo["movelogdir"],allIDs)
+
+
+if limit == None:
+    limit = len(allIDs)
+    print("Fetching all ",limit)
+for i in range(retries):
+    cdaweb_prod(threads=tcount,logfile=lname,loglevel=loglevel,
+                    refreshIDs=refreshIDs,limit=limit,test=test)
+"""
+    except:
+        # cleanup code here.  It's slow (has to read S3 for all
+        # potential log files) but faster than re-fetching datasets
+        s3s.logme("Failed with run",i,"error")
+        sinfo,allIDs,allIDs_meta=load_cdaweb_params(webfetch=False)
+        s3s.mastermovelog(sinfo["movelogdir"],allIDs)
+"""

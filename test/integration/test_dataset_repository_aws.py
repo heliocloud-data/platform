@@ -15,7 +15,7 @@ class TestDataSetRepositoryAWS(unittest.TestCase):
     # Connecting to the DocumentDB instance.
     hostname = "localhost"
     port = 27017
-    global_pem = "/Users/jeschcd1/.aws/global-bundle.pem"  # TODO: Change to using the pem in resources folder
+    global_pem = "test/integration/resources/document_db/global-bundle.pem"  # TODO: Change to using the pem in resources folder
     username = "hc_master"
     password = "password"
 

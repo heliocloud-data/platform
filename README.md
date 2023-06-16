@@ -439,8 +439,3 @@ a HelioCloud instance.
  * `cdk docs`        open CDK documentation
 
 The `cdk.json` file tells the CDK Toolkit how to execute your app. 
-
-## Code Structure
-Per the introduction above, this project is divided into individual CDK Stacks for each major component of a HelioCloud
-installation - data, auth, daskhub, etc.  As such, extending the HelioCloud installation means adding your Stack implementation to a sub-folder 
-of the `install` directory under which this project exists, then updating `app.py` to call your additional CDK Stack(s).

@@ -104,7 +104,7 @@ class RegistryStack(Stack):
                                                  "buckets.",
                                      runtime=lambda_.Runtime.PYTHON_3_9,
                                      handler="app.catalog_handler.handler",
-                                     code=lambda_.Code.from_asset("base_data/lambdas"))
+                                     code=lambda_.Code.from_asset("registry/lambdas"))
 
         # Cataloger needs read/write on registry buckets
         for bucket in self.buckets:

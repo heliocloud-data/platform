@@ -37,7 +37,7 @@ class IngesterStack(Stack):
                                     description="HelioCloud lambda for data set ingest",
                                     runtime=lambda_.Runtime.PYTHON_3_9,
                                     handler="app.ingest_handler.handler",
-                                    code=lambda_.Code.from_asset("base_data/lambdas"),
+                                    code=lambda_.Code.from_asset("registry/lambdas"),
                                     layers=[
                                         lambda_.LayerVersion.from_layer_version_arn(
                                             self,

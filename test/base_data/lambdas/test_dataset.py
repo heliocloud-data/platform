@@ -2,8 +2,8 @@ import unittest
 from datetime import datetime
 
 
-from base_data.lambdas.app.model.dataset import VALID_FILE_FORMATS
-from base_data.lambdas.app.model.dataset import DataSet, Ownership, dataset_from_dict
+from registry.lambdas.app.model.dataset import VALID_FILE_FORMATS
+from registry.lambdas.app.model.dataset import DataSet, Ownership, dataset_from_dict
 
 
 class TestDataSet(unittest.TestCase):

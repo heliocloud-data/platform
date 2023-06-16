@@ -7,8 +7,8 @@ from constructs import Construct
 
 from base_auth.authorization_stack import AuthStack
 from base_aws.base_aws_stack import BaseAwsStack
-from base_data.ingester_stack import IngesterStack
-from base_data.registry_stack import RegistryStack
+from registry.ingester_stack import IngesterStack
+from registry.registry_stack import RegistryStack
 from portal.portal_stack import PortalStack
 from daskhub.daskhub_stack import DaskhubStack
 

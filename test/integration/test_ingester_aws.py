@@ -40,7 +40,7 @@ class TestIngesterAWS(unittest.TestCase):
     # Expecting to connect on localhost to a DocumentDB instance
     db_hostname = "localhost"
     db_port = 27017
-    db_global_pem = "test/integration/resources/document_db/global-bundle.pem"
+    db_global_pem = "registry/lambdas/app/resources/global-bundle.pem"
     db_username = "hc_master"
     db_password = "password"
     # DB & collection names to use for testing.  These will be created & dropped for the test.

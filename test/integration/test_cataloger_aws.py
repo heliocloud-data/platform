@@ -25,7 +25,7 @@ class TestCatalogerAWS(unittest.TestCase):
     # Expecting to connect on localhost to a DocumentDB instance
     db_hostname = "localhost"
     db_port = 27017
-    db_global_pem = "test/integration/resources/document_db/global-bundle.pem"
+    db_global_pem = "registry/lambdas/app/resources/global-bundle.pem"
 
     # TODO: Create an integration test account.  Temporarily using master credentials here (BAD)
     db_username = "hc_master"

@@ -11,7 +11,7 @@ from registry.lambdas.app.aws_utils.document_db import get_documentdb_client
 
 
 class TestAWSUtils(unittest.TestCase):
-    pem_file = os.path.dirname(__file__) + "/resources/global-bundle-pem"
+    pem_file = "registry/lambdas/app/resources/global-bundle.pem"
     bucket = "heliocloud-test-integration-" + str(random.randint(0, 1000))
 
     entry_dataset_file = os.path.dirname(__file__) + "/resources/s3/entry.json"

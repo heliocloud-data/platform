@@ -5,23 +5,23 @@ import unittest.mock as mock
 
 import boto3
 
-#from base_data.ingest.entry import get_entry_from_fs, get_entry_from_s3
-#from base_data.ingest.exceptions import IngesterException
-#from base_data.ingest.ingester import Ingester, get_bucket_name, get_bucket_subfolder
-#from base_data.ingest.manifest import get_manifest_from_fs, get_manifest_from_s3
-#from base_data.registry.repositories import DataSetRepository
+#from registry.ingest.entry import get_entry_from_fs, get_entry_from_s3
+#from registry.ingest.exceptions import IngesterException
+#from registry.ingest.ingester import Ingester, get_bucket_name, get_bucket_subfolder
+#from registry.ingest.manifest import get_manifest_from_fs, get_manifest_from_s3
+#from registry.registry.repositories import DataSetRepository
 
-from base_data.lambdas.app.ingest.entry import get_entry_from_fs, get_entry_from_s3
-from base_data.lambdas.app.ingest.exceptions import IngesterException
-from base_data.lambdas.app.ingest.ingester import Ingester
-from base_data.lambdas.app.ingest.manifest import get_manifest_from_fs, get_manifest_from_s3
-from base_data.lambdas.app.ingest.utils import get_bucket_name, get_bucket_subfolder
-from base_data.lambdas.app.registry.repositories import DataSetRepository
+from registry.lambdas.app.ingest.entry import get_entry_from_fs, get_entry_from_s3
+from registry.lambdas.app.ingest.exceptions import IngesterException
+from registry.lambdas.app.ingest.ingester import Ingester
+from registry.lambdas.app.ingest.manifest import get_manifest_from_fs, get_manifest_from_s3
+from registry.lambdas.app.ingest.utils import get_bucket_name, get_bucket_subfolder
+from registry.lambdas.app.registry.repositories import DataSetRepository
 
 
 class TestIngester(unittest.TestCase):
     # local dir that serves as the base_dir for testing
-    testing_dir = 'test/base_data/resources/ingest/'
+    testing_dir = 'test/registry/resources/ingest/'
     dataset_bucket = "file://test-heliocloud-datasets/"
     upload_bucket = "file://test-heliocloud-uploads/"
 
@@ -57,7 +57,7 @@ class TestIngester(unittest.TestCase):
         self.assertEqual(sub_folder, 'MMS/')
 
     def test_invalid_dest_bucket(self):
-        filename = 'test/base_data/resources/ingest/entry/invalid_loc.json'
+        filename = 'test/registry/resources/ingest/entry/invalid_loc.json'
         entry_ds = get_entry_from_fs(filename)
         manifest_df = get_manifest_from_fs(TestIngester.manifest_file)
         with self.assertRaises(IngesterException) as raised:
@@ -66,7 +66,7 @@ class TestIngester(unittest.TestCase):
             ingester.execute()
 
     def test_missing_file(self):
-        manifest_file = 'test/base_data/resources/ingest/manifest/missing_file.csv'
+        manifest_file = 'test/registry/resources/ingest/manifest/missing_file.csv'
         manifest_df = get_manifest_from_fs(manifest_file)
         entry_ds = get_entry_from_fs(TestIngester.entry_file)
         with self.assertRaises(IngesterException) as raised:

@@ -1,29 +1,29 @@
 import unittest
 import boto3
 
-from base_data.lambdas.app.ingest.exceptions import IngesterException
-from base_data.lambdas.app.ingest.manifest import get_manifest_from_fs, get_manifest_from_s3
+from registry.lambdas.app.ingest.exceptions import IngesterException
+from registry.lambdas.app.ingest.manifest import get_manifest_from_fs, get_manifest_from_s3
 
 
 class TestManifest(unittest.TestCase):
 
     def test_unrecognized_manifest(self):
-        manifest_file = 'test/base_data/resources/ingest/manifest/manifest.txt'
+        manifest_file = 'test/registry/resources/ingest/manifest/manifest.txt'
         with self.assertRaises(IngesterException) as raised:
             manifest_df = get_manifest_from_fs(manifest_file=manifest_file)
 
     def test_manifest_missing_header(self):
-        manifest_file = 'test/base_data/resources/ingest/manifest/missing_header.csv'
+        manifest_file = 'test/registry/resources/ingest/manifest/missing_header.csv'
         with self.assertRaises(IngesterException) as raised:
             manifest_df = get_manifest_from_fs(manifest_file)
 
     def test_manifest_bad_data_type(self):
-        manifest_file = 'test/base_data/resources/ingest/manifest/bad_data.csv'
+        manifest_file = 'test/registry/resources/ingest/manifest/bad_data.csv'
         with self.assertRaises(IngesterException) as raised:
             manifest_df = get_manifest_from_fs(manifest_file=manifest_file)
 
     def test_get_valid_manifest(self):
-        manifest_file = 'test/base_data/resources/ingest/manifest/valid.csv'
+        manifest_file = 'test/registry/resources/ingest/manifest/valid.csv'
         manifest_df = get_manifest_from_fs(manifest_file=manifest_file)
         self.assertEqual(manifest_df.columns[0], 'time')
 

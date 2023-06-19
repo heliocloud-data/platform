@@ -1,29 +1,7 @@
-import boto3
 import pandas as pd
 
 # Local imports
-from .exceptions import IngesterException
-
-
-def get_manifest_from_s3(s3client: boto3.client, bucket_name: str, manifest_key: str) -> pd.DataFrame:
-    """
-    Retrieves a manifest file from S3, returning it as a list of strings
-    """
-    if not manifest_key.endswith(".csv"):
-        raise IngesterException(f"Expecting .csv extension for manifest file: {manifest_key}.")
-
-    response = s3client.get_object(Bucket=bucket_name, Key=manifest_key)
-    manifest_lines = []
-    for line in response['Body'].readlines():
-        line = str(line).lstrip('b\'')
-        line = line.replace('\\n\'', '')
-        line = line.strip()
-        line = line.split(',')
-        if len(line) == 3:
-            manifest_lines.append(line)
-
-    # Build the data frame
-    return __build_manifest_df(manifest_lines)
+from ..exceptions import IngesterException
 
 
 def get_manifest_from_fs(manifest_file: str) -> pd.DataFrame:
@@ -40,10 +18,10 @@ def get_manifest_from_fs(manifest_file: str) -> pd.DataFrame:
             manifest_lines.append(line.strip().split(','))
 
     # Hand it off to build the manifest Dataframe
-    return __build_manifest_df(manifest_lines)
+    return build_manifest_df(manifest_lines)
 
 
-def __build_manifest_df(manifest: list[list[str]]) -> pd.DataFrame:
+def build_manifest_df(manifest: list[list[str]]) -> pd.DataFrame:
     """
     Return the manifest as a Panda's DataFrame
     """

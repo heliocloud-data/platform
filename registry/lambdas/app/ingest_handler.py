@@ -1,8 +1,12 @@
+import os
+
 import boto3
 
-from .ingest import utils as utils
-from .ingest.entry import get_entry_from_s3
-from .ingest.manifest import get_manifest_from_s3
+from .aws_utils.document_db import get_documentdb_client
+from .aws_utils.s3 import get_s3_bucket_name
+from .aws_utils.s3 import get_s3_bucket_subfolder
+from .aws_utils.s3 import get_manifest_from_s3
+from .aws_utils.s3 import get_dataset_entry_from_s3
 from .ingest.ingester import Ingester
 from .registry.repositories import DataSetRepository
 
@@ -10,39 +14,44 @@ from .registry.repositories import DataSetRepository
 def handler(event, context):
     """
     AWS Lambda to be invoked on an Ingest event, to load files into the data set registry
+
+    Parameters:
+        event: must be populated with the name of the AWS s3 bucket & folder containing the dataset to ingest
+        context:
     """
+    session = boto3.session.Session()
 
-    # From the event, we must get
-    # - the upload bucket name
-    # - the folder the upload is under
-    # - the name of the manifest file
-    # - the name the entry.json file
+    # Get the Ingest bucket name & folder
+    ingest_bucket = event['ingest_bucket']
+    ingest_folder = str(event['ingest_folder'])
+    if not ingest_folder.endswith("/"):
+        ingest_folder += "/"
 
-    # Get the upload path,  manifest & entry files
-    upload_path = event['upload_path']
-    manifest_file_name = event['manifest']
-    entry_file_name = event['entry']
+    # Get the manifest
+    manifest_key = ingest_folder + "manifest.csv"
+    manifest_df = get_manifest_from_s3(session=session, bucket_name=ingest_bucket, manifest_key=manifest_key)
 
-    # S3 client for this Lambda invocation
-    s3client = boto3.client("s3")
+    # Get the entry dataset
+    entry_key = ingest_folder + "entry.json"
+    entry_ds = get_dataset_entry_from_s3(session=session, bucket_name=ingest_bucket, entry_key=entry_key)
 
-    # Get the Manifest file
-    bucket_name = utils.get_bucket_name(upload_path)
-    subfolder = utils.get_bucket_subfolder(upload_path)
-    manifest_key = subfolder + manifest_file_name
-    manifest_df = get_manifest_from_s3(s3client=s3client, bucket_name=bucket_name, manifest_key=manifest_key)
-
-    # Get the bucket name, path & entry file
-    entry_key = subfolder + entry_file_name
-    entry_dataset = get_entry_from_s3(s3client=s3client, bucket_name=bucket_name, entry_key=entry_key)
+    # Get a handle to the Catalog DB
+    catalog_db_secret = os.environ['CATALOG_DB_SECRET']
+    db_client = get_documentdb_client(session=session, secret_name=catalog_db_secret,
+                                      tlsCAFile=os.path.dirname(__file__) + "/resources/global-bundle.pem")
+    ds_repo = DataSetRepository(db_client=db_client)
 
     # Instantiate an Ingester instance and execute it
-    ingester = Ingester(upload_path=upload_path, manifest_df=manifest_df, entry_dataset=entry_dataset,
-                        dataset_repository=DataSetRepository(), s3client=s3client)
+    ingester = Ingester(session=session, ingest_bucket=ingest_bucket, ingest_folder=ingest_folder,
+                        entry_dataset=entry_ds,
+                        manifest_df=manifest_df, ds_repo=ds_repo)
     ingester.execute()
 
-    # Clean up
-    s3client.close()
+    # Remove the entry & manifest files
+    s3_client = session.client("s3")
+    s3_client.delete_object(Bucket=ingest_bucket, Key=manifest_key)
+    s3_client.delete_object(Bucket=ingest_bucket, Key=entry_key)
+    s3_client.close()
 
     # On Success
     return {

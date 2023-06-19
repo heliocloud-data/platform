@@ -1,74 +1,99 @@
 # Contains implementations of Bucket Catalog generation per the specification at
 # https://git.smce.nasa.gov/heliocloud/heliocloud-services/-/blob/develop/install/base_data/documentation/CloudMe-data-access-spec-0.1.1.md#5-info
+import dataclasses
 
 import boto3
+import json
+from collections import OrderedDict
+from dataclasses import dataclass, field
+
+from .repositories import DataSetRepository
+from ..aws_utils.s3 import get_s3_bucket_name
+from ..model.dataset import DataSet
 
 
 class Cataloger(object):
     """
-    Generates the catalog JSON file stored at the root of each public S3 bucket in the registry.
-    This catalog contains metadata about each registered dataset and its files stored in the bucket.
+    The Cataloger is used to generate catalog.json files placed at the root of the public s3 buckets that
+    are part of a HelioCloud instance's Registry module. They are created by traversing a DataSetRepository
+    instance for all DataSet entries, grouping them by public s3 bucket name, and composing individual
+    catalog.json files for each bucket.
+
+    Currently implements the CloudMe v.03 specification
     """
 
-    def __init__(self, s3client: boto3.client = None, dbhandle=None) -> None:
+    @dataclass
+    class Catalog(object):
         """
-        TODO:  Still implementing...
+        Internal class to help with generating and validating the head fields of catalog.json file
         """
-        self.s3client = s3client
-        self.dbhandle = dbhandle
+        Cloudy: str = field(default=0.3, init=False)  # Version
+        endpoint: str  # An accessible S3 (or equivalent) bucket link
+        name: str  # Descriptive name for the dataset
+        region: str  # Which AWS region hosts it
+        contact: str  # Whom to contact for issues with this bucket
+        egress: str = "user-pays"  # One of 'no-egress', 'user-pays', 'egress-allowed', 'none'
+        status: str = "1200/OK"  # A return code '1200/OK'. Sit owners can temporarily set this to other values
+        description: str = None  # Optional description of this collection
+        citation: str = None  # Optional how to cite, preferably a DOI for the server
+        comment: str = None  # A catch-all comment field for data provider and developer use.
+        catalog: list[DataSet] = field(default_factory=list)
 
-        # Possible status codes for the availability of a particular data set
-        self.__status_codes = {
-            "OK": "1200/OK",
-            "Unavailable": "1400/temporarily unavailable",
-            "User Pays": "1600/user pays"
-        }
+        def __post_init__(self):
+            if self.egress not in ('no-egress', 'user-pays', 'egress-allowed', 'none'):
+                raise TypeError("egress must be one of: no-egress, user-pays, egress-allowed, none")
 
-        # A publicly accessible S3 bucket designated for storing HelioCloud data
-        self.__endpoint = "s3://helio.....blah"
-        self.__name = "APL HelioCloud"  # Descriptive name for the data set
-        self.__status = "1200/OK"  # Toggleable by owners to disable access
-        self.__contact = "Dr. Contact, dr_contact@example.com"  # Example contact information
-        self.__description = "Human readable description for this bucket"
-        self.__citation = "Optional how to cite, preferably a DOI for the server"
-        self.__catalog = list()
+        def to_serializable_dict(self) -> OrderedDict:
+            datasets_dicts = [dataset.to_serializable_dict() for dataset in self.catalog]
+            catalog_dict = OrderedDict(dataclasses.asdict(self))
+            catalog_dict['catalog'] = datasets_dicts
+            return catalog_dict
 
-    def write_catalog(self):
+    def __init__(self, session: boto3.session.Session, dataset_repository: DataSetRepository) -> None:
         """
-        Stub method for outputting the catalog
+        Initialize a new Cataloger instance.
+
+        Parameters:
+            session: a boto3.Session instance to use for accessing AWS services
+            dataset_repository: an instance of DataSetRepository to execute against
         """
-        example_json = {
-            "Cloudy": "0.1",
-            "endpoint": "s3://gov-nasa-helio-public/MMS/",
-            "name": "GSFC HelioCloud",
-            "contact": "Dr. Contact, dr_contact@example.com",
-            "description": "Optional description of this collection",
-            "citation": "Optional how to cite, preferably a DOI for the server",
-            "registry": [
-                {
-                    "id": "mms1_feeps_brst_electron",
-                    "loc": "s3://helio-public/MMS/mms1/feeps/brst/l2/electron/",
-                    "title": "mms1/feeps/brst/l2/electron/",
-                    "startdate": "2015-06-01T00:00Z",
-                    "enddate": "2021-12-31T23:59Z",
-                    "modificationdate": "2023-03-08T00:00Z",
-                    "indexformat": "csv",
-                    "fileformat": "cdf",
-                    "ownership": {
-                        "description": "Optional description for dataset",
-                        "resourceID": "optional identifier e.g. SPASE ID",
-                        "creationDate": "optional ISO 8601 date/time of the dataset creation",
-                        "citation": "optional how to cite this dataset, DOI or similar",
-                        "contact": "optional contact info, SPASE ID, email, or ORCID",
-                        "aboutURL": "optional website URL for info, team, etc"
-                    }
-                }
-            ]
-        }
+        self.__s3client = session.client('s3')
+        self.__dataset_repository = dataset_repository
+
+    def __cache_datasets_by_bucket(self):
+        # Internal method to pull all the DataSet instances out of the repository and group them up
+        # by s3 bucket name
+        datasets = self.__dataset_repository.get_all()
+        self.__bucket_dataset_cache = dict[str, list[DataSet]]()
+        for dataset in datasets:
+            bucket_name = get_s3_bucket_name(dataset.index)
+            if bucket_name not in self.__bucket_dataset_cache:
+                self.__bucket_dataset_cache[bucket_name] = [dataset]
+            else:
+                self.__bucket_dataset_cache[bucket_name].append(dataset)
+
+    def __generate_bucket_catalog(self):
+        # Generates a catalog.json for each s3 bucket
+        for bucket in self.__bucket_dataset_cache.keys():
+            catalog = self.Catalog(
+                endpoint="s3://" + bucket,
+                name="TBD-INJECTED",
+                region=self.__s3client.get_bucket_location(Bucket=bucket)['LocationConstraint'],
+                contact="Dr.YouKnowWho"
+            )
+            for dataset in self.__bucket_dataset_cache[bucket]:
+                catalog.catalog.append(dataset)
+
+            bucket_catalog_json = json.dumps(catalog.to_serializable_dict(), indent="\t")
+            self.__s3client.put_object(Bucket=bucket,
+                                       Body=bytes(bucket_catalog_json, 'utf-8'),
+                                       Key="catalog.json")
 
     def execute(self):
         """
-        Generate and store the Catalog JSON files in the registry S3 buckets.
+        Executes a Cataloger run, resulting in catalog.json files being placed in the root all
+        AWS S3 buckets found in the DataSets contained in the DataSetRepository instance provided.
         """
-        self.write_catalog()
-        print("Not implemented yet")
+        self.__cache_datasets_by_bucket()
+        self.__generate_bucket_catalog()
+        self.__s3client.close()

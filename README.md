@@ -427,6 +427,30 @@ To add additional dependencies, for example other CDK libraries, just add
 them to your `setup.py` file and rerun the `pip install -r requirements.txt`
 command.
 
+## Testing
+
+### Unit Testing
+The `test` directory contains a collection of unit and integration tests for exercising the HelioCloud codebase
+and any development instance installed and operating in your AWS account. The `test/unit` sub-directory contains 
+unit tests intended to cover any code developed for components of individual HelioCloud stacks, such as the `base_data` 
+stack's Ingester & Registry lambda implemetations.  You can run the unit tests by invoking the Python interpreter with 
+a sub-directory arguement for the stack sub-dir who's tests you want to run:
+```commandline
+% python test/unit/base_data
+```
+These tests can be run locally and have no requirement of access to an AWS account.
+
+
+### Integration Testing
+A few integration tests have been deployed to test certain modules of a deployed HelioCloud instance, such as its Registry.
+These are very effective for helping ensure AWS services are being configured correctly by the CDK, and that any 
+module specific features leveraging AWS resources (e.g. S3) are working correctly.  
+
+The integration tests can be run by invoking the Python interpreter wth a sub-directory arguement of `test/integration`:
+```commandline
+% python test/integration
+```
+
 
 ## AWS CDK Commands
 There are multiple CDK commands to become familiar with to aid in testing and deploying 
@@ -438,4 +462,12 @@ a HelioCloud instance.
  * `cdk diff`        compare deployed stack with current state
  * `cdk docs`        open CDK documentation
 
-The `cdk.json` file tells the CDK Toolkit how to execute your app. 
+The `cdk.json` file tells the CDK Toolkit how to execute your app.
+
+Typically, deploying a development HelioCloud instance using the codebase you are actively developing on means (re)deploying
+using an instance configuration you have created for development purposes:
+```commandline
+% cdk deploy --all -c instance=my_dev_instance_name
+```
+.....where you have an instance configuration created at `instance/my_dev_instance_name.yaml`.
+

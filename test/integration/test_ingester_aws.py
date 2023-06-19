@@ -18,7 +18,7 @@ from registry.lambdas.app.ingest.ingester import Ingester
 from registry.lambdas.app.ingest.manifest import get_manifest_from_fs
 from registry.lambdas.app.local_utils.entry import get_entry_from_fs
 from registry.lambdas.app.model.dataset import FileType, IndexType
-from registry.lambdas.app.registry.repositories import DataSetRepository
+from registry.lambdas.app.repositories import DataSetRepository
 
 
 class TestIngesterAWS(unittest.TestCase):
@@ -70,12 +70,16 @@ class TestIngesterAWS(unittest.TestCase):
         for entry in os.scandir("test/integration/resources/s3"):
             if entry.is_file() and entry.name.startswith("mms1_fgm_brst_l2_20150901"):
                 key = TestIngesterAWS.ingest_folder + "mms1/fgm/brst/l2/2015/09/01/" + entry.name
-                s3client.upload_file(Filename=entry.path, Bucket=TestIngesterAWS.ingest_bucket,
-                                     Key=key)
             elif entry.is_file() and entry.name.startswith("mms1_fgm_brst_l2_20150902"):
                 key = TestIngesterAWS.ingest_folder + "mms1/fgm/brst/l2/2015/09/02/" + entry.name
-                s3client.upload_file(Filename=entry.path, Bucket=TestIngesterAWS.ingest_bucket,
-                                     Key=key)
+            elif entry.is_file() and entry.name.startswith("mms1_fgm_brst_l2_20191130"):
+                key = TestIngesterAWS.ingest_folder + "mms1/fgm/brst/l2/2019/11/30/" + entry.name
+            else:
+                # Skip this iteration
+                continue
+            s3client.upload_file(Filename=entry.path, Bucket=TestIngesterAWS.ingest_bucket,
+                                 Key=key)
+            print(f"\tUploaded file s3://{TestIngesterAWS.ingest_bucket}/{key}.")
         s3client.close()
 
     def tearDown(self) -> None:
@@ -102,7 +106,7 @@ class TestIngesterAWS(unittest.TestCase):
         s3client.delete_bucket(Bucket=TestIngesterAWS.dataset_bucket)
         s3client.close()
 
-    @patch('registry.lambdas.app.registry.repositories.DataSetRepository')
+    @patch('registry.lambdas.app.repositories.DataSetRepository')
     def test_invalid_dest_bucket(self, ds_repo) -> None:
         # Check that the Ingester throws an exception if provided an invalid destination location in the entry
 
@@ -121,7 +125,7 @@ class TestIngesterAWS(unittest.TestCase):
                                 manifest_df=manifest_df, ds_repo=ds_repo)
             ingester.execute()
 
-    @patch('registry.lambdas.app.registry.repositories.DataSetRepository')
+    @patch('registry.lambdas.app.repositories.DataSetRepository')
     def test_missing_file(self, ds_repo):
         # Check that the Ingester throws an exception if the manifest references a file that doesn't exist
 
@@ -145,7 +149,7 @@ class TestIngesterAWS(unittest.TestCase):
                                 manifest_df=manifest_df, ds_repo=ds_repo)
             ingester.execute()
 
-    @patch('registry.lambdas.app.registry.repositories.DataSetRepository')
+    @patch('registry.lambdas.app.repositories.DataSetRepository')
     def test_ingester_aws(self, ds_repo) -> None:
         # Test the Ingester implementation with an AWS account
 
@@ -173,11 +177,13 @@ class TestIngesterAWS(unittest.TestCase):
         # Check for the index file & confirm the count of records
         s3client = self.__session.client("s3")
         response = s3client.get_object(Bucket=TestIngesterAWS.dataset_bucket, Key="MMS/MMS_2015.csv")
-        self.assertEqual(len(response['Body'].readlines()) - 1, 32)
+        self.assertEqual(len(response['Body'].readlines()) - 1, 4)
+        response = s3client.get_object(Bucket=TestIngesterAWS.dataset_bucket, Key="MMS/MMS_2019.csv")
+        self.assertEqual(len(response['Body'].readlines()) - 1, 2)
 
         # Check for the dataset directory and confirm 32 objects
         response = s3client.list_objects(Bucket=TestIngesterAWS.dataset_bucket, Prefix="MMS/mms1")
-        self.assertEqual(len(response['Contents']), 32, msg="Contents wrong length")
+        self.assertEqual(len(response['Contents']), 6, msg="Contents wrong length")
 
         # Make sure the upload bucket was cleaned up
         response = s3client.list_objects(Bucket=TestIngesterAWS.ingest_bucket, Prefix=TestIngesterAWS.ingest_folder)

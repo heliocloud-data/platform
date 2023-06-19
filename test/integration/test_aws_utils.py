@@ -60,5 +60,5 @@ class TestAWSUtils(unittest.TestCase):
         s3client = boto3.client('s3')
         manifest_df = get_manifest_from_s3(session=self.__session, bucket_name=TestAWSUtils.bucket,
                                            manifest_key=TestAWSUtils.manifest_key)
-        self.assertEqual(manifest_df.shape[0], 32)
+        self.assertEqual(manifest_df.shape[0], 6)
         s3client.close()

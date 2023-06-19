@@ -3,11 +3,11 @@ import os
 import boto3
 
 from .aws_utils.document_db import get_documentdb_client
-from .registry.repositories import DataSetRepository
-from .registry.cataloger import Cataloger
+from registry.lambdas.app.repositories import DataSetRepository
+from registry.lambdas.app.catalog.cataloger import Cataloger
 
 
-def catalog_handler(event, context) -> None:
+def handler(event, context) -> None:
     """
     Lambda handler function for invoking the Catalog generator
 

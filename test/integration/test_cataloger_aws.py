@@ -6,8 +6,8 @@ import boto3
 import pymongo
 
 from registry.lambdas.app.model.dataset import DataSet
-from registry.lambdas.app.registry.cataloger import Cataloger
-from registry.lambdas.app.registry.repositories import DataSetRepository
+from registry.lambdas.app.catalog.cataloger import Cataloger
+from registry.lambdas.app.repositories import DataSetRepository
 
 
 @unittest.skip("Requires SSH tunnel to DocumentDB.")

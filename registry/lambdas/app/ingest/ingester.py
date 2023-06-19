@@ -15,7 +15,7 @@ from boto3.session import Session
 
 from enum import Enum
 from ..exceptions import IngesterException
-from ..registry.repositories import DataSetRepository
+from registry.lambdas.app.repositories import DataSetRepository
 from ..model.dataset import DataSet, FileType
 from ..aws_utils.s3 import get_bucket_name, get_bucket_subfolder
 
@@ -123,21 +123,22 @@ class Ingester(object):
 
             # Check that the file exists and has the correct size
             s3key = self.__ingest_folder + row.s3key
-            print(f"Checking S3 bucket {self.__ingest_bucket} for file {s3key}.")
             try:
                 response = self.__s3_client.head_object(Bucket=self.__ingest_bucket, Key=s3key)
             except botocore.exceptions.ClientError as ce:
                 # File wasn't found
                 record['status'] = FileStatus.NOT_FOUND.name
+                print(f"Manifest file s3://{self.__ingest_bucket}/{s3key} not found.")
             else:
                 status_code = response['ResponseMetadata']['HTTPStatusCode']
                 content_length = response['ContentLength']
                 if row.filesize != content_length:
                     # File was the wrong size
                     record['status'] = FileStatus.WRONG_SIZE.name
+                    print(f"Manifest file s3://{self.__ingest_bucket}/{s3key} wrong size.")
                 else:
                     record['status'] = FileStatus.VALID.name
-
+                    print(f"Manifest file s3://{self.__ingest_bucket}/{s3key} validated.")
             # results of check
             return record
 
@@ -243,6 +244,8 @@ class Ingester(object):
         # Now update the CatalogEntry that will be made
         # Start date & end date come from the min & max of the manifest
         start_date = self.__manifest_df['time'].min()
+
+        # Note:  End date is the min "start time" of the data provided.  Not really the end date....
         end_date = self.__manifest_df['time'].max()
         self.__entry_dataset.start = start_date
         self.__entry_dataset.stop = end_date

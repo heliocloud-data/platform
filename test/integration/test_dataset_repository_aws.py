@@ -2,7 +2,7 @@ from datetime import datetime
 import unittest
 import pymongo
 
-from registry.lambdas.app.registry.repositories import DataSetRepository
+from registry.lambdas.app.repositories import DataSetRepository
 from registry.lambdas.app.model.dataset import DataSet, IndexType, FileType
 
 

@@ -7,9 +7,9 @@ import json
 from collections import OrderedDict
 from dataclasses import dataclass, field
 
-from .repositories import DataSetRepository
-from ..aws_utils.s3 import get_s3_bucket_name
-from ..model.dataset import DataSet
+from registry.lambdas.app.repositories import DataSetRepository
+from registry.lambdas.app.aws_utils.s3 import get_s3_bucket_name
+from registry.lambdas.app.model.dataset import DataSet
 
 
 class Cataloger(object):

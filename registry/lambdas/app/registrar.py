@@ -8,7 +8,7 @@ class Registrar(object):
     """
 
     def __init__(self, config) -> None:
-        print("Initializing a registry")
+        pass
 
     def global_update(self) -> None:
         """
@@ -34,4 +34,5 @@ class Registrar(object):
                     "region": "us-west-1"
                 }
             ]
+        raise
         }

@@ -43,9 +43,13 @@ def get_manifest_from_s3(session: Session, bucket_name: str, manifest_key: str) 
     response = session.client("s3").get_object(Bucket=bucket_name, Key=manifest_key)
     manifest_lines = []
     for line in response['Body'].readlines():
+        # Strip leading 'b in the stream
         line = str(line).lstrip('b\'')
-        line = line.replace('\\n\'', '')
-        line = line.strip()
+
+        # Strip trailing ' and \n
+        line = line.rstrip("'")
+        line = line.rstrip("\\n")
+
         line = line.split(',')
         if len(line) == 3:
             manifest_lines.append(line)

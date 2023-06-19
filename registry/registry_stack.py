@@ -185,7 +185,7 @@ class RegistryStack(Stack):
 
                                            # Runtime environment with dependencies (pandas)
                                            runtime=lambda_.Runtime.PYTHON_3_9,
-                                           handler="app.ingest_handler.handler",
+                                           handler="app.ingest_function.handler",
                                            code=lambda_.Code.from_asset("registry/lambdas"),
                                            layers=[pandas_layer, pymongo_layer],
 

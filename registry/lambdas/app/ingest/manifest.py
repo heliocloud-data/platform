@@ -37,6 +37,9 @@ def build_manifest_df(manifest: list[list[str]]) -> pd.DataFrame:
                                 + ".")
 
     # Check data types of manifest and cast appropriately
+    # TODO:
+    #  (1) Make the manifest resilient to additional headers coming in (don't fail)
+    #  (2) Allow the manifest to pass through additional columns
     try:
         manifest_df = manifest_df.astype(dtype={
             'time': 'datetime64[ns, UTC]',

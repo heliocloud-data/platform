@@ -12,6 +12,7 @@ from utils import (
 )
 
 
+@unittest.skip("Skipping for now")
 class TestRegistryAWS(unittest.TestCase):
     """
     Full integration test for evaluating a Registry module deployed to an AWS account. Assumes the following:

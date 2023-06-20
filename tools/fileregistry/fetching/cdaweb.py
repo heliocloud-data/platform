@@ -205,7 +205,7 @@ def fetchCDAWebsinglet(dataid,time1=None,time2=None):
 
 
 def cdaweb_prod(threads=1,logfile=None,loglevel=None,
-                refreshIDs=False,limit=None,test=True):
+                refreshIDs=False,limit=None,test=True,stripMMS=False):
     """
     threads
     logfile
@@ -229,11 +229,17 @@ def cdaweb_prod(threads=1,logfile=None,loglevel=None,
     # loglevel = [None/info, debug, error]
     s3s.init_logger(logfile=logfile,loglevel=loglevel)
     logstr1 = f"logfile {logfile}, loglevel {loglevel}, threads {threads},"
-    logstr2 = f"limit {limit}, refreshIDs {refreshIDs}, test {test},"
+    logstr2 = f"limit {limit}, refreshIDs {refreshIDs}, test {test}, stripMMS {stripMMS}"
     s3s.logme(logstr1,logstr2,"log")
     
     sinfo,allIDs,allIDs_meta=load_cdaweb_params(webfetch=webfetch)
     
+    if stripMMS:
+        s3s.logme("Stripping MMS","","log")
+        allIDs = [myall for myall in allIDs if not myall.startswith("MMS")]
+    else:
+        s3s.logme("Fetching full CDAWeb set","","log")
+        
     if test:
         allIDs = [myall for myall in allIDs if myall.startswith("AC_H2")]
         s3s.logme("Test set is ",allIDs,"log")
@@ -266,15 +272,19 @@ def load_cdaweb_params(dataid=None,webfetch=False):
     use webfetch=True to grab and make local cached copy,
         webfetch=False to use local cached copy
     """
+    # Set dataset staging-specific items
+    s3staging = "s3://helio-data-staging/cdaweb/"
+    local = False # False # test case toggle
+    if local: s3staging = "./cdaweb/"
+    s3destination = "s3://gov-nasa-hdrl-data1/cdaweb/"
+
+    
     localcopy_cdaweblist="datasets_all.json"
     allIDs, allIDs_meta = get_CDAWEB_IDs(localcopy_cdaweblist,
                                          dataid=dataid,
                                          webfetch=webfetch)
 
-    # Set dataset staging-specific items
-    s3staging = "./cdaweb/"  # for now, later s3://helio-data-staging/"
-    #s3staging = "s3://antunak1/"
-    s3destination = "s3://gov-nasa-hdrl-data1/cdaweb/"
+    # more configs
     movelogdir = s3staging + "movelogs/"
     stripuri = "https://cdaweb.gsfc.nasa.gov/sp_phys/data/"
     extrameta = None # optional extra metadata to include in CSV
@@ -292,13 +302,13 @@ errored ones.
 """
 
 # lname="cdaweb_log.txt", or None to log to screen
-lname="cdaweb_log.txt"
+lname=None ## "cdaweb_log.txt"
 # stat='error' to only log errors, 'info' as most useful, or 'debug' as verbose
 loglevel="info" # info
 # test=True is quick test on a subset, False=everything for production
 test=False # False #True
 # refreshIDs=False is use local copy, True=possibly iffy webfetch
-refreshIDs=True
+refreshIDs=False
 # tcount is tunable, 1 = single thread, >1 = multiprocessing
 tcount=8
 # limit=N, fetch only N IDs, default None aka get all cdaweb
@@ -306,7 +316,8 @@ limit=None # None # 20
 # retries, repeat fetch to try unfetched/errored items again, in case network was temporarily down
 retries = 3
 
-# new schema is to loop it in batches so it updates the logs and caches
+
+    # new schema is to loop it in batches so it updates the logs and caches
 # even when several runs time out
 
 gather = False  # if runs foobarred and left partials, this does a cleanup
@@ -315,12 +326,9 @@ if gather:
     s3s.mastermovelog(sinfo["movelogdir"],allIDs)
 
 
-if limit == None:
-    limit = len(allIDs)
-    print("Fetching all ",limit)
 for i in range(retries):
     cdaweb_prod(threads=tcount,logfile=lname,loglevel=loglevel,
-                    refreshIDs=refreshIDs,limit=limit,test=test)
+                    refreshIDs=refreshIDs,limit=limit,test=test,stripMMS=True)
 """
     except:
         # cleanup code here.  It's slow (has to read S3 for all

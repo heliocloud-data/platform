@@ -302,7 +302,7 @@ errored ones.
 """
 
 # lname="cdaweb_log.txt", or None to log to screen
-lname=None ## "cdaweb_log.txt"
+lname="cdaweb_log.txt"
 # stat='error' to only log errors, 'info' as most useful, or 'debug' as verbose
 loglevel="info" # info
 # test=True is quick test on a subset, False=everything for production

@@ -172,16 +172,15 @@ class Ingester(object):
             destination_key = self.__destination_folder + uploaded_file
 
             def copy_callback(transferred):
-                source_s3 = "s3://" + self.__ingest_bucket + "/" \
-                            + self.__ingest_folder + uploaded_file
-                dest_s3 = "s3://" + self.__destination_bucket + "/" + destination_key
+                source_s3 = f"s3://{self.__ingest_bucket}/{self.__ingest_folder}{uploaded_file}"
+                dest_s3 = f"s3://{self.__destination_bucket}/{destination_key}"
                 print(f"Copied {transferred} of {source_s3} to {dest_s3}.")
 
             self.__s3_client.copy(CopySource=copy_source, Bucket=self.__destination_bucket,
                                   Key=destination_key, Callback=copy_callback)
 
             # Final file name in the destination bucket
-            target_file = "s3://" + self.__destination_bucket + "/" + destination_key
+            target_file = f"s3://{self.__destination_bucket}/{destination_key}"
 
             # Store a record for the registered file
             installed_files.append([start_date, target_file, size])

@@ -1,7 +1,7 @@
-sharedcloudregistry Documentation
+scregistry Documentation
 ---------------------------------
 
-This is the documentation for sharedcloudregistry.
+This is the documentation for scregistry.
 
 .. toctree::
    :maxdepth: 2

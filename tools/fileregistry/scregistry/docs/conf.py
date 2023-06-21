@@ -9,12 +9,12 @@
 
 # -- Project information -----------------------------------------------------
 
-project = 'sharedcloudregistry'
-copyright = '2022, JHUAPL'
+project = 'scregistry'
+copyright = '2023, Johns Hopkins University Applied Physics Laboratory LLC'
 author = 'JHUAPL'
 
 # The full version, including alpha/beta/rc tags
-from sharedcloudregistry import __version__
+from scregistry import __version__
 release = __version__
 
 # -- General configuration ---------------------------------------------------

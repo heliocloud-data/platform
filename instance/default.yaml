@@ -47,17 +47,24 @@ enabled:
   daskhub: False
 
 
-# Registry (Required if enabled.registry is True)
-# Configuration of HelioCloud's Registry module. The Registry is responsible for storing and making broadly accessible
-# those data sets stored in this HelioCloud
+# REGISTRY:  The registry is responsible for storing and accessible datasets stored in this HelioCloud instance.
+# (REQUIRED) if enabled.registry is True
 registry:
-  # Names for public s3 buckets storing data sets (Required if enabled.registry is True)
+  catalogDb:
+    # (OPTIONAL): Create a bastion server via EC2 to facilitate direct access to the AWS DocumentDB resource
+    # backing the registry. This is typically used in a development setting to enable unit & integration
+    # testing.
+    createBastionServer: False
+    # (OPTIONAL): Name of the master administrative user for the AWS Document DB resource.
+    # Note: password is automatically generated and stored in an AWS Secret
+    masterUser: master
+  # (REQUIRED): Names for public s3 buckets storing data sets (Required if enabled.registry is True)
   bucketNames: [
                 # example: s3://edu.myinstitution.myorganization
                ]
-  # Delete registry buckets when this HelioCloud instance is destroyed (Optional).
-  # Defaults to False in order to protect production instances. Consider setting to True in development &
-  # test environments to allow redeployment of the same HelioCloud instance.
+  # (OPTIONAL) Delete public 3 buckets storing data sets when this HelioCloud instance is destroyed.
+  # Defaults to False in order to protect production instances.
+  # Set to true if in development and you will be (re)deploying HelioCloud instances frequently.
   destroyOnRemoval: False
   # Requires 3rd parties pay AWS egress costs to access data in this HelioCloud instance (Optional)
   # Defaults to true to ensure production HelioCloud instances don't incur undue expense when serving up the

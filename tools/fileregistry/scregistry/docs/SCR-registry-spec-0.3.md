@@ -6,7 +6,7 @@
 [5 Info Metadata](#5-info)<br/>
 <!-- \TOC -->
 
-Version 0.3.2 \| HelioCloud \|
+Version 0.3.5 \| HelioCloud \|
 
 # 1 The Shared Cloud Registry specification for HelioCloud
 

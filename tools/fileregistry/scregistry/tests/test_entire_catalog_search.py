@@ -5,7 +5,7 @@ from cloudme import EntireCatalogSearch
 @pytest.fixture
 def search():
     # won't actually use this catalog, but need a working json file to just do tests
-    return EntireCatalogSearch(catalog_url='http://ghostlibrary.com/HelioDataRegistry.json')
+    return EntireCatalogSearch()
 
 
 @pytest.fixture

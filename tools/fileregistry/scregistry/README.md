@@ -68,3 +68,25 @@ top_search_result = search.search_by_keywords(['vector', 'mission', 'useful'])[0
 # Prints out the top result with all the catalog info, including id, loc, startdate, etc.
 print(top_search_result)
 ```
+
+### Terse example for an SDO fetch of the filelist for all the 94A EUV images (1,624,900 files)
+```
+import scregistry
+dataid = "aia_0094"
+s3bucket="s3://gov-nasa-hdrl-data1/"
+fr = scregistry.FileRegistry(s3bucket)
+mySDOlist = fr.request_file_registry(dataid,
+	    start_date=fr.get_entry(dataid)['start'],
+	    stop_date=fr.get_entry(dataid)['stop'])
+```
+
+### Terse example for an MMS fetch of the filelist for all of a specific MMS item (64,383 files)
+```
+import scregistry
+dataid = "mms1_feeps_brst_electron"
+s3bucket="s3://helio-public/"
+fr = scregistry.FileRegistry(s3bucket)
+myMMSlist = fr.request_file_registry(dataid,
+	    start_date=fr.get_entry(dataid)['start'],
+	    stop_date=fr.get_entry(dataid)['stop'])
+```

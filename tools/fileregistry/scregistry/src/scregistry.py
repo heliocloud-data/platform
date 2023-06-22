@@ -26,9 +26,10 @@ class CatalogRegistry:
             catalog_url = os.getenv('ROOT_CATALOG_REGISTRY_URL')
             if catalog_url is None:
                 # TODO: Edit to real catalog
-                catalog_url = 'https://git.mysmce.com/heliocloud/heliocloud-data-uploads/-/blob/main/catalog.json'
+                #catalog_url = 'https://git.mysmce.com/heliocloud/heliocloud-data-uploads/-/blob/main/catalog.json'
+                catalog_url = 'http://heliocloud.org/catalog/HelioDataRegistry.json'
                 # TODO: Remove ValueError
-                raise ValueError('No environment variable ROOT_CATALOG_REGISTRY_URL nor was an explicit catalog_url passed in.')
+                #raise ValueError('No environment variable ROOT_CATALOG_REGISTRY_URL nor was an explicit catalog_url passed in.')
         self.catalog_url = catalog_url
 
         # Load the content from json

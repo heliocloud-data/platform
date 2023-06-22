@@ -62,6 +62,7 @@ from typing import Dict, List, Tuple, Any, IO, Optional, Union
 import logging
 import multiprocessing_logging
 import time
+import shutil
 
 """ General driver routines here, should work for most cases """
 
@@ -214,6 +215,9 @@ def fetch_and_register(filelist: Dict[str, Any], sinfo: Dict[str, Any], logstrin
     if sinfo["s3staging"].startswith("s3://"):
         mys3 = boto3.client("s3")
 
+    # start a Session object for efficiency
+    mysession = requests.Session()
+    
     for item in filelist["data"]:
         url_to_fetch = item[filelist["key"]]
         logme("fetching ",url_to_fetch)
@@ -240,7 +244,39 @@ def fetch_and_register(filelist: Dict[str, Any], sinfo: Dict[str, Any], logstrin
         remaining_download_tries = 5
         while remaining_download_tries > 0:
             try:
+                with mysession.get(url_to_fetch, stream=True) as r:
+                    with open(tempfile, 'wb') as f:
+                        shutil.copyfileobj(r.raw, f)
+                #print("Wrote ",tempfile)
+                break
+            except:
+                #print("Error Timeout, trying again for ",url_to_fetch)
+                remaining_download_tries -= 1
+                time.sleep(1)
+            """
+            r=mysession.get(url_to_fetch)
+            if r.status_code == 200:
+                try:
+                    with open(tempfile, 'wb') as fd:
+                        fd.write(r.raw)
+                    print("Good: ",r.status_code)
+                    print("Good pt 2: ",r.headers)
+
+                except:
+                    print("***************")
+                    print("Bad: ",r.status_code)
+                    print("Bad pt 2: ",r.headers)
+                    print("Bad pt 3: ",r.raw)
+                    exit()
+            else:
+                error_msg = str(r.status_code) + ' ' + url_to_fetch
+                remaining_download_tries -= 1
+                time.sleep(1)
+            """
+            """ # original version
+            try:
                 urllib.request.urlretrieve(url_to_fetch,tempfile)
+                
             except urllib.error.URLError as e:
                 #print("FAILED, not got ",url_to_fetch)
                 remaining_download_tries -= 1
@@ -249,9 +285,10 @@ def fetch_and_register(filelist: Dict[str, Any], sinfo: Dict[str, Any], logstrin
                 #print("Error ",error_msg," tries is ",remaining_download_tries," for ",url_to_fetch)
             else:
                 break
+            """
             
         if remaining_download_tries <= 0:
-            logme(error_msg,url_to_fetch,"error")
+            logme("Failed to fetch",url_to_fetch,"error")
             continue
 
         if sinfo["fileFormat"] == None: # define from 1st fetch

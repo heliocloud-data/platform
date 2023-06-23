@@ -1,5 +1,6 @@
 .idea/
 .venv/
 cdk.out/
-__pycache__
 *.pyc
+__pycache__
+*/__pycache__

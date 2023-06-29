@@ -7,7 +7,6 @@ from constructs import Construct
 
 from base_auth.authorization_stack import AuthStack
 from base_aws.base_aws_stack import BaseAwsStack
-from registry.ingester_stack import IngesterStack
 from registry.registry_stack import RegistryStack
 from portal.portal_stack import PortalStack
 from daskhub.daskhub_stack import DaskhubStack
@@ -80,7 +79,6 @@ class MyHelioCloud(Construct):
                                   env=self.__env)
         cdk.Tags.of(base_stack).add("Product", "heliocloud-base")
 
-
         # Next, determine if the Auth module is needed
         enabled_modules = self.__config.get("enabled")
         if enabled_modules.get("daskhub") or enabled_modules.get("portal"):
@@ -104,7 +102,6 @@ class MyHelioCloud(Construct):
                                base_aws=base_stack)
                 portal_stack.add_dependency(auth_stack)
                 cdk.Tags.of(portal_stack).add("Product", "heliocloud-portal")
-                
 
             # Should Daskhub be deployed
             if enabled_modules.get("daskhub", False):
@@ -128,26 +125,16 @@ class MyHelioCloud(Construct):
                                            base_aws_stack=base_stack)
             registry_stack.add_dependency(base_stack)
             cdk.Tags.of(registry_stack).add("Product", "heliocloud-registry")
-            
-
-            ingester_stack = IngesterStack(self, "Ingester",
-                                           description="HelioCloud data loading and registration.",
-                                           config=self.__config,
-                                           env=self.__env,
-                                           registry_stack=registry_stack)
-            ingester_stack.add_dependency(base_stack)
-            ingester_stack.add_dependency(registry_stack)
-            cdk.Tags.of(ingester_stack).add("Product", "heliocloud-ingester")
 
 
 def get_instance(app: cdk.App) -> (str, dict):
     """
     Get the name for this HelioCloud instance.
     """
-    instance = str(app.node.try_get_context("instance"))
+    instance = app.node.try_get_context("instance")
     if instance is None:
         raise Exception("No instance specified. Re-run and provide an instance name value -c instance=<instance>.")
-    return instance
+    return str(instance)
 
 
 # Build the HelioCloud

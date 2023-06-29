@@ -10,14 +10,15 @@ from flask_jwt_extended import (
 from flask_cors import CORS
 from waitress import serve
 
-from config import region, aws_cognito_domain, user_pool_id, user_pool_client_id, user_pool_client_secret, redirect_url, flask_secret_key, site_url
+from config import region, aws_cognito_domain, user_pool_id, user_pool_client_id, user_pool_client_secret, redirect_url, site_url, flask_secret_key
 from ec2_config import image_id_dict
 from messages import keypair_message, access_key_message, make_session_token_message, download_message
 
 from aws import start_aws_session,  get_weekly_overall_cost
 from auth import get_user_info, set_token_cookie, get_tokens, get_cognito_public_keys
-from ec2 import get_instances, create_instance, list_instance_types, list_key_pairs, stop_instance, terminate_instance, start_instance, create_key_pair, delete_key_pair, create_custom_ami, create_launch_template, get_launch_templates, get_custom_amis, get_ami_info, get_running_instances
+from ec2 import get_instances, create_instance, list_instance_types, list_key_pairs, stop_instance, terminate_instance, start_instance, create_key_pair, delete_key_pair, get_ami_info, get_running_instances
 from access import list_access_key, create_access_key, delete_access_key, update_key_status, get_session_token, list_mfa_devices, get_access_flag, get_aws_console_username
+
 
 # Create a new app
 app = Flask(__name__)
@@ -36,6 +37,7 @@ app.config['AWS_COGNITO_USER_POOL_CLIENT_SECRET'] = user_pool_client_secret
 app.config['AWS_COGNITO_REDIRECT_URL'] = redirect_url
 app.config["JWT_PUBLIC_KEY"] = RSAAlgorithm.from_jwk(get_cognito_public_keys())
 app.config['SECRET_KEY'] = flask_secret_key
+
 
 
 CORS(app)

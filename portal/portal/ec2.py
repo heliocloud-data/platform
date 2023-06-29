@@ -1,7 +1,7 @@
 import datetime
 from dateutil.tz import tzutc
 from config import region
-from ec2_config import instance_types_master_dict, security_group_id
+from ec2_config import instance_types_master_dict, security_group_id, default_ec2_role_arn, default_ec2_role_name
 from aws import create_user_tag, get_ec2_pricing
 
 ### keypairs
@@ -33,54 +33,33 @@ def create_instance(aws_session, username, instance_launch_info):
         {'ResourceType': 'instance',
          'Tags': [{'Key': 'Owner', 'Value': username}, {'Key': 'Name', 'Value': instance_launch_info['instance_name']}, {'Key':'Dashboard', 'Value':'True'}]}
     ]
-    # run from template
-    if 'launch_template_id' in instance_launch_info:
-        response = ec2_client.run_instances(
-            LaunchTemplate={
-                'LaunchTemplateId': instance_launch_info['launch_template_id'],
-            },
-            MaxCount=1,
-            MinCount=1,
-            Monitoring={
-                'Enabled': False
-            },
-            NetworkInterfaces=[{'DeviceIndex':0}],
-            TagSpecifications=tag_specifications
-        )
-    else:
-        response = ec2_client.run_instances(
-            BlockDeviceMappings=[
-                {
-                    'DeviceName': instance_launch_info['device_name'],
-                    'Ebs': {
-                        'DeleteOnTermination': True,
-                        'VolumeSize': instance_launch_info['volume_size'],
-                        'VolumeType': instance_launch_info['volume_type']
-                    }
+    response = ec2_client.run_instances(
+        BlockDeviceMappings=[
+            {
+                'DeviceName': instance_launch_info['device_name'],
+                'Ebs': {
+                    'DeleteOnTermination': True,
+                    'VolumeSize': instance_launch_info['volume_size'],
+                    'VolumeType': instance_launch_info['volume_type']
                 }
-            ],
-            #BlockDeviceMappings=[
-            #    {
-            #        'DeviceName': '/dev/xvda',
-            #        'Ebs': {
-            #            'DeleteOnTermination': False,
-
-            #        },
-            #    },
-            #],
-
-            ImageId=instance_launch_info['image_id'],
-            InstanceType=instance_launch_info['instance_type'],
-            MaxCount=1,
-            MinCount=1,
-            Monitoring={
-                'Enabled': False
             },
-            KeyName=instance_launch_info['key_pair'],
-            TagSpecifications=tag_specifications,
-            SecurityGroupIds=[
-                security_group_id,
-            ],
+        ],
+        ImageId=instance_launch_info['image_id'],
+        InstanceType=instance_launch_info['instance_type'],
+        MaxCount=1,
+        MinCount=1,
+        Monitoring={
+            'Enabled': False
+        },
+        KeyName=instance_launch_info['key_pair'],
+        TagSpecifications=tag_specifications,
+        SecurityGroupIds=[
+            security_group_id,
+        ],
+        IamInstanceProfile={
+            'Arn': default_ec2_role_arn,
+            'Name': default_ec2_role_name,
+        },
         )
     return response
 
@@ -168,96 +147,6 @@ def get_instances(aws_session, username):
             else:
                 instance_dict['image_name'] = ''
             response.append(instance_dict)
-    return response
-
-
-### create templates and images
-
-def create_launch_data(instance_info):
-    launch_template_data = {field: instance_info[field] for field in
-                            ['KernelId', 'EbsOptimized', 'IamInstanceProfile', 'BlockDeviceMappings',
-                             'NetworkInterfaces', 'ImageId', 'InstanceType', 'KeyName', 'Monitoring', 'Placement',
-                             'RamDiskId', 'DisableApiTermination', 'InstanceInitiatedShutdownBehavior', 'UserData',
-                             'TagSpecifications', 'ElasticGpuSpecifications', 'ElasticInferenceAccelerators',
-                             'SecurityGroupIds', 'SecurityGroups', 'InstanceMarketOptions', 'CreditSpecification',
-                             'CpuOptions', 'CapacityReservationSpecification', 'LicenseSpecifications',
-                             'HibernationOptions', 'MetadataOptions', 'EnclaveOptions', 'InstanceRequirements',
-                             'PrivateDnsNameOptions', 'MaintenanceOptions'] if field in instance_info.keys()}
-    if 'Monitoring' in launch_template_data.keys():
-        if launch_template_data['Monitoring'] != 'Enabled':
-            del launch_template_data['Monitoring']
-    if 'NetworkInterfaces' in launch_template_data.keys():
-        for i, ni in enumerate(launch_template_data['NetworkInterfaces']):
-            new_ni = {key: ni[key] for key in
-                      ['AssociateCarrierIpAddress', 'AssociatePublicIpAddress', 'DeleteOnTermination', 'Description',
-                       'DeviceIndex', 'Groups', 'InterfaceType', 'Ipv6AddressCount', 'Ipv6Addresses',
-                       'NetworkInterfaceId', 'PrivateIpAddress', 'PrivateIpAddresses', 'SecondaryPrivateIpAddressCount',
-                       'SubnetId', 'NetworkCardIndex', 'Ipv4Prefixes', 'Ipv4PrefixCount', 'Ipv6Prefixes',
-                       'Ipv6PrefixCount'] if key in ni.keys()}
-            if 'Groups' in new_ni.keys():
-                glist = []
-                for g in new_ni['Groups']:
-                    glist.append(g['GroupId'])
-                new_ni['Groups'] = glist
-            if 'PrivateIpAddresses' in new_ni.keys():
-                plist = []
-                for p in new_ni['PrivateIpAddresses']:
-                    plist.append({k:p[k] for k in ['Primary', 'PrivateIpAddress']})
-                new_ni['PrivateIpAddresses'] = plist
-            launch_template_data['NetworkInterfaces'][i] = new_ni
-    if 'SecurityGroups' in launch_template_data.keys():
-        for i, sg in enumerate(launch_template_data['SecurityGroups']):
-            if 'GroupId' in sg:
-                launch_template_data['SecurityGroups'][i] = sg['GroupId']
-    if 'BlockDeviceMappings' in launch_template_data.keys():
-        for i, bdm in enumerate(launch_template_data['BlockDeviceMappings']):
-            new_bdm = {key: bdm[key] for key in
-                       ['Encrypted', 'DeleteOnTermination', 'Iops', 'KmsKeyId', 'SnapshotId', 'VolumeSize',
-                        'VolumeType', 'Throughput'] if key in bdm.keys()}
-            launch_template_data['BlockDeviceMappings'][i] = new_bdm
-    if 'MetadataOptions' in launch_template_data.keys():
-        if 'State' in launch_template_data['MetadataOptions']:
-            del launch_template_data['MetadataOptions']['State']
-    return launch_template_data
-
-def create_launch_template(aws_session, username, template_name, instance_info):
-    ec2_client = aws_session.client('ec2', region_name=region)
-    launch_template_data = create_launch_data(instance_info)
-    resp = ec2_client.create_launch_template(
-        LaunchTemplateName=template_name,
-        LaunchTemplateData=launch_template_data,
-        TagSpecifications=[{'ResourceType': 'launch-template', 'Tags': [{'Key': 'Owner', 'Value': username}, {'Key':'Dashboard', 'Value':'True'}]}]
-    )
-    return resp
-
-def get_launch_templates(aws_session, username):
-    ec2_client = aws_session.client('ec2', region_name=region)
-    user_tag_dict = create_user_tag(username)
-    resp = ec2_client.describe_launch_templates(Filters=[user_tag_dict])
-    response = []
-    for r in resp['LaunchTemplates']:
-        template_info = ec2_client.describe_launch_template_versions(LaunchTemplateId=r['LaunchTemplateId'], Versions=['$Latest'])
-        for t in template_info['LaunchTemplateVersions']:
-            response.append(t)
-    return response
-
-def create_custom_ami(aws_session, username, instance_id, ami_name, ami_description):
-    ec2_client = aws_session.client('ec2', region_name=region)
-    response = ec2_client.create_image(
-        InstanceId=instance_id,
-        Name=ami_name,
-        Description=ami_description,
-        TagSpecifications=[{'ResourceType': 'image', 'Tags': [{'Key': 'Owner', 'Value': username}, {'Key':'Dashboard', 'Value':'True'}]}]
-    )
-    return response
-
-def get_custom_amis(aws_session, username):
-    ec2_client = aws_session.client('ec2', region_name=region)
-    user_tag_dict = create_user_tag(username)
-    resp = ec2_client.describe_images(Filters=[user_tag_dict])
-    response = []
-    for image in resp['Images']:
-        response.append(image)
     return response
 
 def get_ami_info(aws_session, ami_list):

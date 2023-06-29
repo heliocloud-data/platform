@@ -35,5 +35,8 @@ image_id_dict = {
 }
 
 security_group_id = os.getenv('DEFAULT_SECURITY_GROUP_ID')
+default_ec2_role_arn = os.getenv('DEFAULT_EC2_ROLE_ARN')
+default_ec2_role_name = os.getenv('DEFAULT_EC2_ROLE_NAME')
+
 
 

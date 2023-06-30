@@ -6,14 +6,15 @@ FROM --platform=linux/amd64 python:3.8
 # Set the working directory in the container
 WORKDIR /app
 
+RUN pwd
 # Copy the dependencies file to the working directory
-COPY requirements.txt .
+COPY ./portal/requirements.txt .
 
 # Install any dependencies
 RUN pip3 install -r requirements.txt
 
 # Copy the content of the local src directory to the working directory
-COPY . .
+COPY ./portal .
 
 # Specify the command to run on container start
 CMD [ "python", "-u", "./app.py" ]

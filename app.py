@@ -94,11 +94,12 @@ class MyHelioCloud(Construct):
             # Should the User Portal module be deployed
             if enabled_modules.get("portal", False):
                 portal_stack = PortalStack(self,
-                                           "Portal",
-                                           description="User Portal module for a HelioCloud instance.",
-                                           config=self.__config,
-                                           env=self.__env,
-                                           base_auth=auth_stack)
+                               "Portal",
+                               description="User Portal module for a HelioCloud instance.",
+                               config=self.__config,
+                               env=self.__env,
+                               base_auth=auth_stack,
+                               base_aws=base_stack)
                 portal_stack.add_dependency(auth_stack)
                 cdk.Tags.of(portal_stack).add("Product", "heliocloud-portal")
 

@@ -63,7 +63,7 @@ note the requirement for `npm` and `Node.js`; currently nvm == 18.0.0 stable but
 
 ### VPN Warning
 
-If you are using a VPN, you may need to turn off the VPN for the environment setup steps (ex. the AWS bootstrap CDK installation step: `cdk boostrap aws://ACC/us-east-1`). However, generally you should be able to run cdk commands on VPN.
+If you are using a VPN, you may need to turn off the VPN for the environment setup steps (ex. the AWS bootstrap CDK installation step: `cdk bootstrap aws://ACC/us-east-1`). However, generally you should be able to run cdk commands on VPN.
 
 
 
@@ -232,6 +232,16 @@ Modify your newly created instance configuration to suit your HelioCloud instanc
                      "edu-myorganization-helio2"
                    ]
     ```
+  
+- The User Portal requires a domain URL, record, and the ARN corresponding to an active SSL certificate. 
+    ```yaml
+    portal:
+      domain_url: "myorganization-domain.org"
+      domain_record: "portal"
+      domain_certificate_arn: "arn:aws:acm:[region]]:[account]:certificate/[certificate-id]"
+    ```
+  For how to request a public certificate for your domain, see [here](https://docs.aws.amazon.com/acm/latest/userguide/gs-acm-request-public.html#:~:text=Sign%20in%20to%20the%20AWS,name%20such%20as%20example.com%20.). 
+  The user portal will be hosted at `[domain_record].[domain_url]` (e.g. `portal.myorganization-domain.org`). Make sure this is globally unique, otherwise deployment will not complete.
 
 You may also refer to `instance/default.yaml` to gain a full understanding of all the configurable elements of your HelioCloud instance deployment. 
 
@@ -244,6 +254,7 @@ HelioCloud instance deployed into an organization wide AWS account.
 Deployment of a HelioCloud instance is potentially a 2 step process consisting of:
 - Running the CDK to install the CloudFormation stacks for your HelioCloud instance into your AWS account
 - (if deploying the DaskHub) Executing the DaskHub follow up deployment steps
+- (if deploying the User Portal) Make sure your machine is running Docker and that you are logged in. To set up, see [here](https://www.docker.com).
 
 ### 3.1 Check via AWS CDK
 Deploying your configured HelioCloud instance is done via the AWS CDK, passing in your instance name as a context
@@ -266,7 +277,7 @@ heliocloud/Daskhub
 heliocloud/Ingester
 heliocloud/Portal
 ```
-Note that the name's of each CDK Stack representing HelioCloud components have been returned with a prefix of `heliocloud/`, 
+Note that the names of each CDK Stack representing HelioCloud components have been returned with a prefix of `heliocloud/`, 
 per the name of the HelioCloud instance being installed. This helps uniquely name and identify these Stacks should you 
 install multiple HelioCloud instances in one AWS account. 
 

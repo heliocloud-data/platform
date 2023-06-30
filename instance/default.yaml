@@ -77,8 +77,12 @@ registry:
   uploadBucketName: #Example:  my-uploads
 
 
-# User Dashboard (Required if enabled.userDashboard is True)
-userDashboard:
+# User Portal (Required if enabled.portal is True)
+portal:
+  # portal will be hosted at <domain_record>.<domain_url>
+  domain_url: #"myorganization-domain.org"
+  domain_record: #"portal"
+  domain_certificate_arn: #"arn:aws:acm:us-east-1:123456789012:certificate/abcdefg01-a0b0-c0f0-1mb09mf01fp1"
 
 
 # Daskhub (Required if enabled.daskhub is True)

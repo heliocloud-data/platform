@@ -20,7 +20,7 @@ from base_aws.base_aws_stack import BaseAwsStack
 
 class PortalStack(Stack):
     """
-    Stack to install HelioCloud user dashboard.
+    Stack to install HelioCloud user portal.
     """
 
     def __init__(

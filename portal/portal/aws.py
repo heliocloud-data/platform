@@ -13,9 +13,13 @@ def create_user_tag(username):
 def get_ec2_pricing(aws_session, instance_types):
     pricing_client = aws_session.client(
         "pricing", region_name="us-east-1"
-    )  # must be on us-east-1
+    )  # pricing tool is only available through us-east-1
     filters = [
-        {"Field": "regionCode", "Value": "us-east-1", "Type": "TERM_MATCH"},
+        {
+            "Field": "regionCode",
+            "Value": "us-east-1",
+            "Type": "TERM_MATCH",
+        },  # pricing tool is only available through us-east-1
         {"Field": "operatingSystem", "Value": "Linux", "Type": "TERM_MATCH"},
         {"Field": "tenancy", "Value": "Shared", "Type": "TERM_MATCH"},
         {"Field": "preInstalledSw", "Value": "NA", "Type": "TERM_MATCH"},

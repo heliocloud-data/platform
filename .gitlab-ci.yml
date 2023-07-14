@@ -1,0 +1,26 @@
+# build and send new container to ECR registry
+default:
+  image: python:latest
+
+stages:
+  - test
+
+test:
+  stage: test
+  before_script:
+    - mkdir -p public/badges  
+  script:
+    - python -m pip install -r requirements.txt
+    - python -m pip install -r requirements-dev.txt
+    - coverage run test/unit/registry
+    - coverage xml
+    - coverage html
+  artifacts:
+    when: always
+    paths:
+      - coverage.xml
+      - htmlcov
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage.xml

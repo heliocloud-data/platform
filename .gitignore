@@ -6,3 +6,8 @@ cdk.out/
 __pycache__/
 *.py[cod]
 *.$py.class
+
+# Output files from code coverage
+.coverage
+coverage.xml
+htmlcov

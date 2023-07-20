@@ -197,6 +197,7 @@ def fetchCDAWebsinglet(dataid,time1=None,time2=None):
         if not sinfo["movelogdir"].startswith("s3://"):
             os.makedirs(sinfo["movelogdir"],exist_ok=True)
         csvreg,sinfo = s3s.fetch_and_register(flist, sinfo, logstring=dataid)
+
         if csvreg is not None:
             # prioritize prescribed keys, if any (debate: is this needed?)
             extrameta = s3s.gatherkeys(sinfo,flist)
@@ -273,11 +274,18 @@ def load_cdaweb_params(dataid=None,webfetch=False):
         webfetch=False to use local cached copy
     """
     # Set dataset staging-specific items
-    s3staging = "s3://helio-data-staging/cdaweb/"
-    local = False # False # test case toggle
-    if local: s3staging = "./cdaweb/"
     s3destination = "s3://gov-nasa-hdrl-data1/cdaweb/"
 
+    s3staging = "s3://helio-data-staging/cdaweb/"
+
+    """ 'local' means copy TO a local disk rather than S3
+        'fetchlocal' means fetch FROM a local disk instead of a URI
+    """
+    local = False # False # test case toggle
+    if local: s3staging = "./cdaweb/"
+
+    #fetchlocal = '/Users/antunak1/gits/heliocloud/tools/fileregistry/fetching/storage2/'
+    fetchlocal = None # 'None' for default URI fetch, disk loc otherwise
     
     localcopy_cdaweblist="datasets_all.json"
     allIDs, allIDs_meta = get_CDAWEB_IDs(localcopy_cdaweblist,
@@ -290,7 +298,7 @@ def load_cdaweb_params(dataid=None,webfetch=False):
     extrameta = None # optional extra metadata to include in CSV
 
     sinfo=s3s.bundleme(s3staging,s3destination,movelogdir,stripuri,
-                       extrameta)
+                       extrameta,fetchlocal)
     
     return sinfo, allIDs, allIDs_meta
 
@@ -301,21 +309,35 @@ error out, every time you re-run you will still be calling those same
 errored ones.
 """
 
-# lname="cdaweb_log.txt", or None to log to screen
-lname="cdaweb_log.txt"
-# stat='error' to only log errors, 'info' as most useful, or 'debug' as verbose
-loglevel="info" # info
-# test=True is quick test on a subset, False=everything for production
-test=False # False #True
-# refreshIDs=False is use local copy, True=possibly iffy webfetch
-refreshIDs=False
-# tcount is tunable, 1 = single thread, >1 = multiprocessing
-tcount=8
-# limit=N, fetch only N IDs, default None aka get all cdaweb
-limit=None # None # 20
-# retries, repeat fetch to try unfetched/errored items again, in case network was temporarily down
-retries = 3
+PRODUCTION = False
 
+if PRODUCTION:
+    # lname="cdaweb_log.txt", or None to log to screen
+    lname = "cdaweb_log.txt"
+    # stat='error' to only log errors, 'info' as most useful, or 'debug' as verbose
+    loglevel = "info" # info
+    # test=True is quick test on a subset, False=everything for production
+    test = False # False #True
+    # refreshIDs=False is use local copy, True=possibly iffy webfetch
+    refreshIDs = False
+    # tcount is tunable, 1 = single thread, >1 = multiprocessing
+    tcount = 8
+    # limit=N, fetch only N IDs, default None aka get all cdaweb
+    limit = None # None # 20
+    # retries, repeat fetch to try unfetched/errored items again, in case network was temporarily down
+    retries = 3
+    # also edit 'local' and 'fetchlocal' in load_cdaweb_params()
+else:
+    # test mode
+    lname="cdaweb_log.txt"
+    loglevel="info"
+    test=True
+    refreshIDs=False
+    tcount=1
+    limit=20
+    retries = 3
+    # also edit 'local' and 'fetchlocal' in load_cdaweb_params()
+    
 
     # new schema is to loop it in batches so it updates the logs and caches
 # even when several runs time out
@@ -336,4 +358,24 @@ for i in range(retries):
         s3s.logme("Failed with run",i,"error")
         sinfo,allIDs,allIDs_meta=load_cdaweb_params(webfetch=False)
         s3s.mastermovelog(sinfo["movelogdir"],allIDs)
+"""
+
+"""
+Notes for testing vs production
+
+Testing:
+   1) set 'PRODUCTION = False' at line 312
+   2) If copying to a local directory, set 'local = True' at line 284
+      otherwise if copying to S3, keep 'local = False' at line 284
+   3) If fetching from the web like usual, set 'fetchlocal = None' at line 288
+      otherwise, if fetching from a locally mounted disk on storage 2, edit
+      'fetchlocal' at line 288 to point to the storage2 drives
+
+Production:
+   1) set 'PRODUCTION = True' at line 312
+      optionally, edit 'tcount' at line 324 for the # of threads to run simo
+   2) Set 'local = False' at line 284 so it writes to S3
+   3) If fetching from the web like usual, set 'fetchlocal = None' at line 288
+      otherwise, if fetching from a locally mounted disk on storage 2, edit
+      'fetchlocal' at line 288 to point to the storage2 drives
 """

@@ -63,10 +63,11 @@ import logging
 import multiprocessing_logging
 import time
 import shutil
+import urllib.parse
 
 """ General driver routines here, should work for most cases """
 
-def bundleme(s3staging: str, s3destination: str, movelogdir: str, stripuri: str, extrameta: Optional[Dict[str, str]] = None):
+def bundleme(s3staging: str, s3destination: str, movelogdir: str, stripuri: str, extrameta: Optional[Dict[str, str]] = None, fetchlocal = None):
     """
     Bundles the core parameters required for any run.
     
@@ -75,6 +76,7 @@ def bundleme(s3staging: str, s3destination: str, movelogdir: str, stripuri: str,
     :param movelogdir: The directory to which move logs should be written.
     :param stripuri: The URI prefix to strip from S3 keys when moving files.
     :param extrameta: (Optional) A dictionary of extra metadata to include in the run.
+    :param fetchlocal: (Optional) A path to locally avail files rather than a URI
     
     :returns: A dictionary containing the bundled parameters.
     """
@@ -85,7 +87,8 @@ def bundleme(s3staging: str, s3destination: str, movelogdir: str, stripuri: str,
            "stripuri":stripuri,
            "extrameta":extrameta,
            "fileFormat":None,
-           "registryloc":None
+           "registryloc":None,
+           "fetchlocal":fetchlocal
            }
     return sinfo
 
@@ -200,7 +203,8 @@ def fetch_and_register(filelist: Dict[str, Any], sinfo: Dict[str, Any], logstrin
         - "filesize": The key to use in the file description dictionaries for the file size.
         - Other optional metadata keys (stopDate, checksum, checksum_algorithm) or None values if none exist.
     :param sinfo: A dictionary containing the S3 staging and destination bucket information and the URI prefix to strip from S3 keys.
-                  Need keys: stripuri (fetching URL to replace with s3staging), s3staging, s3destination, and optionally extrameta
+                  Need keys: stripuri (fetching URL to replace with s3staging), s3staging, s3destination, and optionally extrameta and fetchlocal
+          "fetchlocal": mode made initially for CDAWeb to fetch data via networked disk rathe than URI; field represents the path to replace the 'https://.*/' with
 
     :returns: A tuple containing the final destination directory for the uploaded files and the strings for the CSV registry of the uploaded files.
     """
@@ -241,7 +245,25 @@ def fetch_and_register(filelist: Dict[str, Any], sinfo: Dict[str, Any], logstrin
                 os.makedirs(head,exist_ok=True)
                 lastpath = head
 
-        remaining_download_tries = 5
+        if sinfo["fetchlocal"] != None:
+            """
+            Instead of fetching a URI and writing to 'tempfile', we
+            copy a file on an adjascent disk.  Two cases as usual:
+            (a) copy adjascent disk file to our local disk destination
+            (b) copy adjascent disk file to S3 destination
+            """
+            localfile = sinfo["fetchlocal"] + urllib.parse.urlparse(url_to_fetch).path
+            localfile = re.sub(r"//","/",localfile) # cleanup
+
+            if stagingkey.startswith("s3://"):
+                tempfile = localfile # will later be staged
+            else:
+                shutil.copy2(localfile, tempfile)
+            remaining_download_tries = 0 # skips the later URI download step
+        else:
+            # normal web fetch
+            remaining_download_tries = 5
+            
         while remaining_download_tries > 0:
             try:
                 with mysession.get(url_to_fetch, stream=True) as r:
@@ -287,7 +309,7 @@ def fetch_and_register(filelist: Dict[str, Any], sinfo: Dict[str, Any], logstrin
                 break
             """
             
-        if remaining_download_tries <= 0:
+        if remaining_download_tries <= 0 and sinfo["fetchlocal"] == None:
             logme("Failed to fetch",url_to_fetch,"error")
             continue
 
@@ -500,7 +522,7 @@ def write_registries(id: str, sinfo: Dict[str, Any],
 
     if not sinfo["s3staging"].startswith("s3://"):
         os.makedirs(sinfo["registryloc"],exist_ok=True)
-        
+
     for line in csvregistry:
         year=line[0:4]
         if year != currentyear:

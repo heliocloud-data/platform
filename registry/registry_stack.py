@@ -33,13 +33,13 @@ class RegistryStack(Stack):
 
         # Registry config
         self.__registry_config = config['registry']
+        self.__removal_policy = self.__registry_config['destroyOnRemoval']
 
         # Hold a reference to the base stack
         self.__base_aws_stack = base_aws_stack
 
         # Internal fields
-        self.__buckets = None
-        self.__cataloger = None
+        self.__buckets = list[s3.Bucket]()
         self.__ingest_bucket = None
 
         # Build the buckets
@@ -57,44 +57,40 @@ class RegistryStack(Stack):
         Build the AWS S3 bucket that will support the ingest process.
         Users of this HelioCloud instance can upload their datasets here.
         """
-        bucket_name = self.__registry_config.get('uploadBucketName', None)
+        bucket_name = self.__registry_config.get("ingestBucketName", None)
+        removal_policy, auto_delete_objects = (RemovalPolicy.DESTROY, True) if self.__removal_policy else \
+            (RemovalPolicy.RETAIN, False)
 
-        # Provision an upload bucket for the ingest capability
-        self.__ingest_bucket = s3.Bucket(self,
-                                         id="Ingest-Bucket",
-                                         bucket_name=bucket_name,
-                                         removal_policy=RemovalPolicy.DESTROY,
-                                         auto_delete_objects=True)
+        if bucket_name is None:
+            self.__ingest_bucket = s3.Bucket(self, id="Ingest-Bucket",
+                                             removal_policy=removal_policy,
+                                             auto_delete_objects=auto_delete_objects)
+        else:
+            self.__ingest_bucket = s3.Bucket(self, id="Ingest-Bucket",
+                                             bucket_name=bucket_name,
+                                             removal_policy=removal_policy,
+                                             auto_delete_objects=auto_delete_objects)
 
     def __build_registry_buckets(self):
         """
         Build the s3 buckets that act as the storage for the Registry.
         """
+        bucket_names = self.__registry_config.get('datasetBucketNames')
+        requester_pays = self.__registry_config.get("requesterPays")
 
-        bucket_names = self.__registry_config.get('bucketNames')
-        destroy_on_removal = self.__registry_config.get('destroyOnRemoval', False)
-        requester_pays = self.__registry_config.get('requesterPays', True)
-
-        # Option to destroy public s3 buckets on removal - helps with development (re)deployments of this stack
-        if destroy_on_removal:
-            removal_policy = cdk.RemovalPolicy.DESTROY
-            auto_delete_objects = True
-        else:
-            removal_policy = cdk.RemovalPolicy.RETAIN
-            auto_delete_objects = False
+        # If buckets should be destroyed on removal, objects must be automatically deleted
+        removal_policy, auto_delete_objects = (RemovalPolicy.DESTROY, True) if self.__removal_policy \
+            else (RemovalPolicy.RETAIN, False)
 
         # Create the AWS S3 buckets for data set storage in the Registry, using provided names from the configuration
         # re: object_ownership - We are explicit here to ensure there is only a *single* owner of the content in each
         # bucket - the HelioCloud instance
-        self.__buckets = list[s3.Bucket]()
-
-        # public_read_access=True prevening the bucket from being created
         print(f"Deploying buckets: {bucket_names}")
         for bucket_name in bucket_names:
             bucket = s3.Bucket(self,
                                id=f"Registry Bucket: {bucket_name}",
                                bucket_name=bucket_name,
-                               public_read_access=False,
+                               public_read_access=False,# TODO: Not honoring config here. True is causing a failure.
                                object_ownership=s3.ObjectOwnership.BUCKET_OWNER_ENFORCED,
                                removal_policy=removal_policy,
                                auto_delete_objects=auto_delete_objects)
@@ -132,6 +128,9 @@ class RegistryStack(Stack):
 
         # Create the AWS Document DB resource to act as the catalog database
         master_user = self.__registry_config['catalogDb']['masterUser']
+        removal_policy, delete_protection = (RemovalPolicy.DESTROY, False) \
+            if self.__registry_config['destroyOnRemoval'] else (RemovalPolicy.RETAIN, True)
+
         self.__catalog_db = docdb.DatabaseCluster(
             self,
             id="CatalogDB",
@@ -150,7 +149,7 @@ class RegistryStack(Stack):
             parameter_group=docdb.ClusterParameterGroup(
                 self,
                 id="CatalogDB Parameters",
-                family="docdb4.0",
+                family="docdb5.0",
                 parameters={
                     "audit_logs": "all"
                 },
@@ -159,8 +158,8 @@ class RegistryStack(Stack):
             export_audit_logs_to_cloud_watch=True,
 
             # TODO: Retain?  Keeping it simple right now to facilitate development.
-            deletion_protection=False,
-            removal_policy=RemovalPolicy.DESTROY
+            deletion_protection=delete_protection,
+            removal_policy=removal_policy
         )
 
     def __build_lambdas(self) -> None:
@@ -207,7 +206,7 @@ class RegistryStack(Stack):
 
                                             # Runtime environment with dependencies (PyMongo)
                                             runtime=lambda_.Runtime.PYTHON_3_9,
-                                            handler="app.catalog_function.catalog_handler",
+                                            handler="app.catalog_function.handler",
                                             code=lambda_.Code.from_asset("registry/lambdas"),
                                             layers=[pymongo_layer, pandas_layer],
 

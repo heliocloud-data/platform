@@ -3,7 +3,7 @@ env:
   account: 006885615091
   region: us-east-1
 
-# Existing cjeschke-dev VPC
+# new VPC every time
 vpc:
   type: new
 
@@ -17,12 +17,12 @@ enabled:
 
 # Simple bucket names
 registry:
-  catalogDb:
-    createBastionServer: True
-    masterUser: master
-  bucketNames: [
+  datasetBucketNames: [
     "cjeschke-dev-datasets"
   ]
-  destroyOnRemoval: True
+  ingestBucketName: "cjeschke-dev-uploads"
   requesterPays: True
-  uploadBucketName : "cjeschke-dev-uploads"
+  catalogDb:
+    createBastionServer: False
+    masterUser: master
+  destroyOnRemoval: False

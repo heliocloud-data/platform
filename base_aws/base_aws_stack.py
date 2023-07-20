@@ -37,7 +37,7 @@ class BaseAwsStack(Stack):
         # based on known HelioCloud public buckets (maybe use user script to pull names?)
         # Need to iteratively adjust though, maybe lambda
         registry = self.__config.get('registry')
-        public_buckets = registry.get('bucketNames')
+        public_buckets = registry.get('datasetBucketNames')
         other_known_public_buckets = ['helio-public',
                                       'gov-nasa-hdrl-data1']
         public_bucket_arns = []

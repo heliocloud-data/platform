@@ -3,12 +3,10 @@ import os
 import boto3
 
 from .aws_utils.document_db import get_documentdb_client
-from .aws_utils.s3 import get_s3_bucket_name
-from .aws_utils.s3 import get_s3_bucket_subfolder
 from .aws_utils.s3 import get_manifest_from_s3
 from .aws_utils.s3 import get_dataset_entry_from_s3
 from .ingest.ingester import Ingester
-from registry.lambdas.app.repositories import DataSetRepository
+from .repositories import DataSetRepository
 
 
 def handler(event, context):

@@ -12,7 +12,6 @@ from utils import (
 )
 
 
-@unittest.skip("Skipping for now")
 class TestRegistryAWS(unittest.TestCase):
     """
     Full integration test for evaluating a Registry module deployed to an AWS account. Assumes the following:
@@ -45,15 +44,27 @@ class TestRegistryAWS(unittest.TestCase):
         # get the name of the ingest bucket and upload our test dataset
         s3client = TestRegistryAWS.session.client('s3')
 
+        # Upload the manifest file to the ingest bucket
+        manifest_file = "test/integration/resources/s3/manifest.csv"
+        key = TestRegistryAWS.ingest_job_subfolder + "/manifest.csv"
+        print(f"Uploading manifest file: {manifest_file} to key: {key}")
+        s3client.upload_file(Filename=manifest_file, Bucket=TestRegistryAWS.ingest_bucket, Key=key)
+
         # Upload test files to the ingest bucket
         for entry in os.scandir("test/integration/resources/s3"):
-            if entry.name.startswith("mms1_fgm"):
-                key = TestRegistryAWS.ingest_job_subfolder + "mms1/fgm/brst/l2/2015/09/"
-                if entry.is_file() and entry.name.startswith("mms1_fgm_brst_l2_20150901"):
-                    key += "01/"
-                elif entry.is_file() and entry.name.startswith("mms1_fgm_brst_l2_20150902"):
-                    key += "02/"
+            key = TestRegistryAWS.ingest_job_subfolder
+
+            # Only process mms1 files & the valid manifest
+            if entry.name.startswith("mms1_fgm") and entry.is_file():
+                if entry.name.startswith("mms1_fgm_brst_l2_20150901"):
+                    key += "mms1/fgm/brst/l2/2015/09/01/"
+                if entry.name.startswith("mms1_fgm_brst_l2_20150902"):
+                    key += "mms1/fgm/brst/l2/2015/09/02/"
+                if entry.name.startswith("mms1_fgm_brst_l2_20191130"):
+                    key += "mms1/fgm/brst/l2/2019/11/30/"
                 key += entry.name
+
+                # Upload the file
                 print(f"Uploading file: {entry.name} to key: {key}")
                 s3client.upload_file(Filename=entry.path, Bucket=TestRegistryAWS.ingest_bucket,
                                      Key=key)
@@ -147,9 +158,17 @@ class TestRegistryAWS(unittest.TestCase):
                                 Filename="/tmp/MMS_2015.CSV")
         with open("/tmp/MMS_2015.csv") as registry_index:
             lines = [line for line in registry_index]
-            self.assertEqual(len(lines), 33)
+            self.assertEqual(len(lines), 5)
         os.remove("/tmp/MMS_2015.csv")
         print(f"Confirmed registry index s3://{TestRegistryAWS.registry_bucket}/MMS/MMS_2015.csv is correct.")
+
+        s3_client.download_file(Bucket=TestRegistryAWS.registry_bucket, Key="MMS/MMS_2019.csv",
+                                Filename="/tmp/MMS_2019.csv")
+        with open("/tmp/MMS_2019.csv") as registry_index:
+            lines = [line for line in registry_index]
+            self.assertEqual(len(lines), 3)
+        os.remove("/tmp/MMS_2019.csv")
+        print(f"Confirmed registry index s3://{TestRegistryAWS.registry_bucket}/MMS/MMS_2019.csv is correct")
 
         # (2b) Does every file exist that should?
         manifest_file = open("test/integration/resources/s3/manifest.csv")

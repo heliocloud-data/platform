@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from typing import Any
 from pymongo import MongoClient
-from registry.lambdas.app.model.dataset import DataSet
+from .model.dataset import DataSet
 
 
 class DataSetRepository(object):

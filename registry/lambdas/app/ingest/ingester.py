@@ -3,19 +3,17 @@
 # Stick to the CSV RFC: https://www.ietf.org/rfc/rfc4180.txt
 import csv
 import datetime
-import shutil
 import os
 
 import boto3
 import botocore.exceptions
 import pandas as pd
 
-import boto3
 from boto3.session import Session
 
 from enum import Enum
 from ..exceptions import IngesterException
-from registry.lambdas.app.repositories import DataSetRepository
+from ..repositories import DataSetRepository
 from ..model.dataset import DataSet, FileType
 from ..aws_utils.s3 import get_bucket_name, get_bucket_subfolder
 

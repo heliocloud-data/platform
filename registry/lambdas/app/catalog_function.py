@@ -3,8 +3,8 @@ import os
 import boto3
 
 from .aws_utils.document_db import get_documentdb_client
-from registry.lambdas.app.repositories import DataSetRepository
-from registry.lambdas.app.catalog.cataloger import Cataloger
+from .repositories import DataSetRepository
+from .catalog.cataloger import Cataloger
 
 
 def handler(event, context) -> None:

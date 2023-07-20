@@ -37,7 +37,6 @@ auth:
   # Cognito domain name prefix must be unique for all of AWS region
   domain_prefix: "apl-helio"
 
-
 # HelioCloud Modules (Required)
 # Enable/disable the installation of end-user modules in the HelioCloud instance.
 # Defaulting to false, requiring deployers explicitly enable modules in their override config.
@@ -46,36 +45,43 @@ enabled:
   portal: False
   daskhub: False
 
-
-# REGISTRY:  The registry is responsible for storing and accessible datasets stored in this HelioCloud instance.
+# REGISTRY
+# The registry is responsible for storing and accessible datasets stored in this HelioCloud instance.
 # (REQUIRED) if enabled.registry is True
 registry:
-  catalogDb:
-    # (OPTIONAL): Create a bastion server via EC2 to facilitate direct access to the AWS DocumentDB resource
-    # backing the registry. This is typically used in a development setting to enable unit & integration
-    # testing.
-    createBastionServer: False
-    # (OPTIONAL): Name of the master administrative user for the AWS Document DB resource.
-    # Note: password is automatically generated and stored in an AWS Secret
-    masterUser: master
+
   # (REQUIRED): Names for public s3 buckets storing data sets (Required if enabled.registry is True)
-  bucketNames: [
-                # example: s3://edu.myinstitution.myorganization
-               ]
-  # (OPTIONAL) Delete public 3 buckets storing data sets when this HelioCloud instance is destroyed.
-  # Defaults to False in order to protect production instances.
-  # Set to true if in development and you will be (re)deploying HelioCloud instances frequently.
-  destroyOnRemoval: False
-  # Requires 3rd parties pay AWS egress costs to access data in this HelioCloud instance (Optional)
+  datasetBucketNames: [
+    # example: s3://edu.myinstitution.myorganization
+  ]
+
+  # (OPTIONAL) Allows use of a specific name for the S3 bucket into which datasets may be uploaded for ingest
+  # into a HelioCloud instance's Registry. Defaults to generated name, though consider providing a name
+  # in development environments for simplicity.
+  ingestBucketName: #Example: my.ingest.bucket
+
+  # (OPTIONAL): Requires 3rd parties pay AWS egress costs to access data in this HelioCloud instance.
   # Defaults to true to ensure production HelioCloud instances don't incur undue expense when serving up the
   # data sets in their Registry to other HelioCloud instances or the scientific community at large.
   # Set to false if your organization is willing to incur these egress expenses.
   requesterPays: True
-  # Allows use of a specific name for the S3 bucket into which Registry uploads can be placed for ingest (Optional)
-  # Defaults to no name. Consider providing a name in development environments for simplicity, but leave
-  # automatically generated in production.
-  uploadBucketName: #Example:  my-uploads
 
+  # Settings for the catalog db - a database for storing registry information
+  catalogDb:
+
+    # (OPTIONAL): Create a bastion server via EC2 to facilitate direct access to the AWS DocumentDB resource
+    # backing the registry. This is typically used in a development setting to enable unit & integration
+    # testing.
+    createBastionServer: False
+
+    # (OPTIONAL): Name of the master administrative user for the AWS Document DB resource.
+    # Note: password is automatically generated and stored in an AWS Secret
+    masterUser: master
+
+  # (OPTIONAL): Typically, the catalog db and S3 buckets for ingest and data set storage should be retained even
+  # on destruction of a HelioCloud instance, as these are likely to contain research data sets that shouldn't be lost.
+  # Switching to True is useful in HelioCloud development.
+  destroyOnRemoval: False
 
 # User Portal (Required if enabled.portal is True)
 portal:
@@ -84,8 +90,8 @@ portal:
   domain_record: #"portal"
   domain_certificate_arn: #"arn:aws:acm:us-east-1:123456789012:certificate/abcdefg01-a0b0-c0f0-1mb09mf01fp1"
 
-
-# Daskhub (Required if enabled.daskhub is True)
+# Daskhub
+# (Required if enabled.daskhub is True)
 daskhub:
 
 

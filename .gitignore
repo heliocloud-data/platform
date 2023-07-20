@@ -1,6 +1,8 @@
 .idea/
 .venv/
 cdk.out/
-*.pyc
-__pycache__
-*/__pycache__
+
+# Python files to ignore
+__pycache__/
+*.py[cod]
+*.$py.class

@@ -5,14 +5,31 @@ default:
 stages:
   - test
 
-test:
+unit-test:
+  stage: test
+  before_script:
+    - mkdir -p public/badges
+  script:
+    - export PYTHONPATH=.
+    - python -m pip install -r requirements.txt
+    - python -m pip install -r requirements-dev.txt
+    - pytest -c pytest-unit.ini --junit-xml=TEST-HelioCloud-platform.xml --junit-prefix=HelioCloud-platform
+  artifacts:
+    when: always
+    paths:
+      - TEST-HelioCloud-platform.xml
+    reports:
+      junit: TEST-HelioCloud-platform.xml
+
+coverage:
   stage: test
   before_script:
     - mkdir -p public/badges  
   script:
+    - export PYTHONPATH=.
     - python -m pip install -r requirements.txt
     - python -m pip install -r requirements-dev.txt
-    - coverage run test/unit/registry
+    - coverage run -m pytest -c pytest-unit.ini
     - coverage xml
     - coverage html
   artifacts:

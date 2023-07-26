@@ -192,7 +192,10 @@ class RegistryStack(Stack):
                                            vpc=self.__base_aws_stack.heliocloud_vpc,
                                            vpc_subnets=ec2.SubnetSelection(
                                                subnet_type=ec2.SubnetType.PRIVATE_WITH_EGRESS),
-                                           environment={"CATALOG_DB_SECRET": self.__catalog_db.secret.secret_name},
+                                           environment={
+                                               "CATALOG_DB_SECRET": self.__catalog_db.secret.secret_name,
+                                               "ingest_bucket": self.__ingest_bucket.bucket_name,
+                                           },
 
                                            # Allow for max runtime with a decent amount of memory
                                            # so as to handle large ingest jobs

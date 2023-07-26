@@ -124,14 +124,13 @@ class TestRegistryAWS(unittest.TestCase):
     def test_registry(self):
         """
         End to end test of the Registry module. An example Data Set for ingestion is uploaded, the Ingester
-        and Cataloger lambdas invokved, and the Registry S3 buckets checked for the installed DataSet.
+        and Cataloger lambdas invoked, and the Registry S3 buckets checked for the installed DataSet.
         """
 
         # First, run the Ingester Lambda
         lambda_client = TestRegistryAWS.session.client("lambda")
         payload = {
-            "ingest_bucket": TestRegistryAWS.ingest_bucket,
-            "ingest_folder": TestRegistryAWS.ingest_job_subfolder,
+            "job_folder": TestRegistryAWS.ingest_job_subfolder,
         }
         response = lambda_client.invoke(FunctionName=TestRegistryAWS.ingest_function_name, Payload=json.dumps(payload))
         self.assertEqual(response['StatusCode'], 200)

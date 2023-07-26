@@ -35,9 +35,7 @@ More details can be found in the Portal module's [README.md](portal/README.md)
 module. More details can be found in the Registry module's [README.md](registry/README.md)
 - `test/` - contains unit & integration tests for exercising the HelioCloud codebase.  Note:  Integration tests
 require you have deployed a development instance of HelioCloud to AWS. 
-
-Additionally, various tools for helping administer a HelioCloud instance have been amalgamated over time into 
-the `tools/` directory.
+- `tools/` - client side tools for administering and operating a Heliocloud instance
 
 
 ---
@@ -64,7 +62,6 @@ note the requirement for `npm` and `Node.js`; currently nvm == 18.0.0 stable but
 ### VPN Warning
 
 If you are using a VPN, you may need to turn off the VPN for the environment setup steps (ex. the AWS bootstrap CDK installation step: `cdk bootstrap aws://ACC/us-east-1`). However, generally you should be able to run cdk commands on VPN.
-
 
 
 ### AWS Environment
@@ -319,22 +316,33 @@ TODO: I've just a deployment, so what should I check?
 - Login to Daskhub / User portal, start up an instance and run an example analytic?
 - Check the CloudFormation templates in AWS console?
 ----
-# Operations
+# Operations: Using your HelioCloud
 
-## Ingester
-The HelioCloud's Registry component is capable of ingesting and registering heliophysics data sets within your HelioCloud 
-instance, thereby making them available the Registry's public S3 buckets and via the HelioCloud data sets API.  This also
-makes said datasets available to other deployed HelioCloud instances. This is accomplished by way of the _Ingester_ lambda
-function deployed as part of the Registry stack.
+## Registering DataSets
+The HelioCloud's registry component is capable of ingesting and registering heliophysics data sets within your HelioCloud 
+instance, thereby making them available via the registry's public S3 buckets and via the HelioCloud data sets API.  
+This also makes said datasets available to other deployed HelioCloud instances. There are two steps to execute to 
+register a new or updated data set within a HelioCloud:
+- Execute an ingest job
+- Run a catalog update
 
-The _Ingester_ lambda is currently intended to be invoked via the AWS CLI. Invocation is expecting an upload package 
-comprised of:
-1. An S3 bucket with a sub-folder containing a directory tree of files to ingest into the Registry. 
-Example: `s3://my.upload.bucket/upload`
-2. A manifest CSV file `manifest.csv` containing a list of the files in the tree to ingest, along with key metadata. The
-manifest file should sit at the root of the subfolder in the S3 bucket: `s3://my.upload.bucket/upload/manifest.csv`
-3. An entry JSON file `entry.json` that provides meta-data about the data set in the Registry into which this upload
-should be installed. Example:
+### Executing an ingest job
+New or updated datasets are ingested into a HelioCloud registry via that Heliocloud's Ingest service - an AWS Lambda
+deployed and configured as part of a HelioCloud. The ingest service executes a _job_, which is constructed by putting
+your dataset files and accompanying metadata in a subfolder within the ingest service's s3 bucket, then running the 
+ingest service via a commandline tool. The process of constructing and executing an ingest job is as follows:
+1. Create a sub-folder in the ingest s3 bucket. For example, if your bucket was named `my.upload.bucket` in your 
+instance configuration, a valid ingest job location would be `s3://my.upload.bucket/my_job`.
+
+2. Upload the dataset files with an accompanying manifest CSV `manifest.csv` listing those
+files along with the relevant metadata. The manifest file should sit at the root of the subfolder in the 
+S3 bucket: `s3://my.upload.bucket/my_job/manifest.csv`. Example manifest file:
+    ```text
+    test, test, test
+    more data
+    ```
+3. Create and upload a dataset entry file `entry.json` to provide the necessary meta-data about the data set in 
+Registry this ingest job should update.  Example:
     ```json
     {
       "id" : "MyDataSet",
@@ -358,26 +366,24 @@ should be installed. Example:
     - **ownership** - this is a block of additional descriptive metadata about the DataSet (optional)
 
     The `entry.json` file should be placed adjacent to the `manifest.csv` at the root of the s3 upload bucket sub-folder.
-    Example `s3://my.upload.bucket/upload/entry.json`
+    Example `s3://my.upload.bucket/my_job/entry.json`
 
-Once the upload package is in place, the Ingester can be invoked from the AWS CLI as follows:
-```commandline
-aws lambda invoke \
-    --cli-binary-format raw-in-base64-out \
-    --invocation-type Event \
-    --function-name Ingester \
-    --payload '{ "upload_path" : "s3://my.upload.bucket/upload/", "manifest" : "manifest.csv", "entry" : "entry.json" }' \
-    results.json
-```
-Note that we invoke the AWS Lambda asynchronously via `invocation-type Event`. This is intentional as most upload jobs 
-will take several minutes - dependent of course on the volume of data being processed. Synchronous calls would be 
-prone to timing out on the command line.
+4. Once the upload package is in place, the Ingest service can be invoked using the Python script
+at `tools/ingest.py`, providing it the name of the HelioCloud instance and the sub-folder in 
+in the S3 ingest bucket that the job is in:
+    ```commandline
+   python tools/ingest.py my_instance my_job
+    
+    ```
+5. Completion of the ingest job can be confirmed by looking at either the ingest job sub-folder 
+to confirm it is empty, or by checking the public S3 buckets in the HelioCloud registry to
+confirm the new data was incorporated. 
 
-Completion of the upload job can be confirmed by looking at the destination bucket subfolder (`s3://my.public.heliocloud.bucket/mds`)
-to see if the ingested data is present and a CSV placed in the destination bucket subfolder named `<id_year>.cvs`. 
-Example `s3://my.public.heliocloud.bucket/mds/MyDataSet_2023.csv`.
+### Updating the Catalog
+After running an ingest job (or several),  updating the HelioCLoud's Registry catalog is necessary to make the data 
+available through the HelioCloud data API:
+TODO: Finish
 
-TODO: Add instructions for tailing the Ingest Lambda logs.
 
 
 

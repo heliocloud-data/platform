@@ -171,7 +171,9 @@ class TestIngesterAWS(unittest.TestCase):
         # Create an Ingester instance and run it
         ingester = Ingester(ingest_bucket=TestIngesterAWS.ingest_bucket, ingest_folder=TestIngesterAWS.ingest_folder,
                             entry_dataset=entry_dataset, manifest_df=manifest_df, ds_repo=ds_repo)
-        ingester.execute()
+        result = ingester.execute()
+        self.assertEqual(result.dataset_updated, "MMS")
+        self.assertEqual(result.files_contributed, 6)
 
         # Do some validation of the target S3 bucket
         # Check for the index file & confirm the count of records

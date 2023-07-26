@@ -1,6 +1,3 @@
-# Use data in  s3://test-cdaweb/mms/mms1/fgm/brst/l2
-# 8 years with 3-6 months per year of data and 100-1000 files per month.  Long baseline yet relatively small data set.
-# Stick to the CSV RFC: https://www.ietf.org/rfc/rfc4180.txt
 import csv
 import datetime
 import os
@@ -10,8 +7,9 @@ import botocore.exceptions
 import pandas as pd
 
 from boto3.session import Session
-
+from dataclasses import dataclass
 from enum import Enum
+
 from ..exceptions import IngesterException
 from ..repositories import DataSetRepository
 from ..model.dataset import DataSet, FileType
@@ -27,7 +25,14 @@ class FileStatus(Enum):
     VALID = "VALID"
 
 
-# TODO:  Review if the local testing mode is still required.  May simply be too divergent from using the
+@dataclass
+class Result:
+    # Name the dataset in the catalog that was updated with this ingest job
+    dataset_updated: str = ""
+
+    # Number of files - new or updated - contributed to the dataset
+    files_contributed: int = ""
+
 
 class Ingester(object):
     """
@@ -84,6 +89,9 @@ class Ingester(object):
 
         # File successfully installed by this Ingester
         self.__installed_files: pd.DataFrame = None
+
+        # Final report
+        self.__result = Result()
 
     def __validate_destination(self) -> None:
         """
@@ -160,8 +168,6 @@ class Ingester(object):
 
         installed_files = list[[str, str, int]]()
         for (start_date, uploaded_file, size) in self.__manifest_df.to_records(index=False):
-            target_file = str()
-
             # copy the file over to the destination bucket in the correct sub folder
             copy_source = {
                 'Bucket': self.__ingest_bucket,
@@ -184,7 +190,7 @@ class Ingester(object):
             installed_files.append([start_date, target_file, size])
 
         # Store a dataframe for the installed files
-        self.installed_files_df = pd.DataFrame(installed_files, columns=['startDate', 'key', 'size'])
+        self.__installed_files = pd.DataFrame(installed_files, columns=['startDate', 'key', 'size'])
 
     def __install_index_files(self) -> None:
         """
@@ -198,8 +204,8 @@ class Ingester(object):
         def get_year(start_date: datetime.datetime):
             return start_date.year
 
-        self.installed_files_df['year'] = self.installed_files_df['startDate'].apply(get_year)
-        years = self.installed_files_df['year'].unique()
+        self.__installed_files['year'] = self.__installed_files['startDate'].apply(get_year)
+        years = self.__installed_files['year'].unique()
 
         # For each year, generate an index file stored in a temporary directory
         index_files = list[str]()
@@ -208,7 +214,7 @@ class Ingester(object):
             # Generate a temp file first
             index_file = self.__tmp_dir + "/" + self.__entry_dataset.dataset_id + "_" + str(year) + ".csv"
             tmp_index_file = index_file + ".tmp"
-            year_df = self.installed_files_df[self.installed_files_df["year"] == year]
+            year_df = self.__installed_files[self.__installed_files["year"] == year]
             year_df.to_csv(tmp_index_file, header=False, index=False, quoting=csv.QUOTE_ALL,
                            quotechar="'", columns=['startDate', 'key', 'size'])
 
@@ -275,7 +281,7 @@ class Ingester(object):
         # clean up
         self.__s3_client.close()
 
-    def execute(self):
+    def execute(self) -> Result:
         # Check that the entry instructions are valid (namely that the destination S3 bucket exists)
         self.__validate_destination()
 
@@ -293,3 +299,9 @@ class Ingester(object):
 
         # Clean up the upload directory
         self.__clean_up()
+
+        # Send back results
+        self.__result.dataset_updated = self.__entry_dataset.dataset_id
+        self.__result.files_contributed = int(self.__installed_files['key'].count())
+
+        return self.__result

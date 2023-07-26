@@ -1,1 +1,1 @@
-Tools for use with your HelioCloud instance
+Tools for use with your HelioCloud instance.

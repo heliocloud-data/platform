@@ -1,11 +1,15 @@
 .idea/
 .venv/
 cdk.out/
+*~
 
 # Python files to ignore
 __pycache__/
 *.py[cod]
 *.$py.class
+
+# Output files from pytest
+TEST-*.xml
 
 # Output files from code coverage
 .coverage

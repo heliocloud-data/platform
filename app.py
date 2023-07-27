@@ -3,6 +3,7 @@ import os
 import aws_cdk as cdk
 import yaml
 
+from config import Config
 from constructs import Construct
 
 from base_auth.authorization_stack import AuthStack
@@ -56,16 +57,7 @@ class MyHelioCloud(Construct):
         """
         Get the config for this HelioCloud instance.
         """
-        # Get the instance for this instance
-        # First load the default instance
-        configuration = dict()
-        with open("instance/default.yaml", "r") as default_config_file:
-            configuration = yaml.safe_load(default_config_file)
-
-        with open("instance/" + self.__id + ".yaml") as instance_config_file:
-            configuration.update(yaml.safe_load(instance_config_file))
-
-        self.__config = configuration
+        self.__config = Config().load_configs(id=self.__id)
 
     def __build_heliocloud(self):
         """

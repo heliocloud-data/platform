@@ -61,8 +61,15 @@ note the requirement for `npm` and `Node.js`; currently nvm == 18.0.0 stable but
 
 ### VPN Warning
 
-If you are using a VPN, you may need to turn off the VPN for the environment setup steps (ex. the AWS bootstrap CDK installation step: `cdk bootstrap aws://ACC/us-east-1`). However, generally you should be able to run cdk commands on VPN.
+If you are using a VPN, you may need to turn off the VPN for the environment setup steps (ex. the AWS bootstrap CDK installation step: `cdk bootstrap aws://[account]/[region] -c instance=[something]`). However, generally you should be able to run cdk commands on VPN.
 
+#### TLS/Self-signed certificates
+On certain networks with self-signed certificates, you may see the following error message (`Error: self-signed certificate in certificate chain`) when running `cdk` commands in verbose mode (`-v`).
+
+CDK assumes the node TLS settings.  The following command will disable all TLS validation.  This should is a brute force approach to get past this issue and should not be .
+```
+export NODE_TLS_REJECT_UNAUTHORIZED=0
+```
 
 ### AWS Environment
 #### IAM Role
@@ -235,7 +242,7 @@ Modify your newly created instance configuration to suit your HelioCloud instanc
     portal:
       domain_url: "myorganization-domain.org"
       domain_record: "portal"
-      domain_certificate_arn: "arn:aws:acm:[region]]:[account]:certificate/[certificate-id]"
+      domain_certificate_arn: "arn:aws:acm:[region]:[account]:certificate/[certificate-id]"
     ```
   For how to request a public certificate for your domain, see [here](https://docs.aws.amazon.com/acm/latest/userguide/gs-acm-request-public.html#:~:text=Sign%20in%20to%20the%20AWS,name%20such%20as%20example.com%20.). 
   The user portal will be hosted at `[domain_record].[domain_url]` (e.g. `portal.myorganization-domain.org`). Make sure this is globally unique, otherwise deployment will not complete.

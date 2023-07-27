@@ -6,9 +6,11 @@ import unittest
 
 from registry.lambdas.app.model.dataset import DataSet
 from utils import (
+    get_hc_instance,
     get_lambda_function_name,
     get_registry_s3_buckets,
-    get_ingest_s3_bucket_name
+    get_ingest_s3_bucket_name,
+    remove_file_if_exists
 )
 
 
@@ -26,18 +28,19 @@ class TestRegistryAWS(unittest.TestCase):
     session = boto3.session.Session()
 
     # TODO:  Get these from the instance config
-    registry_bucket = get_registry_s3_buckets(hc_instance="cjeschke-dev")[0]
+    hc_instance = get_hc_instance()
 
-    # TODO: Get these from the instance config
-    ingest_bucket = get_ingest_s3_bucket_name(hc_instance="cjeschke-dev")
+    registry_bucket = get_registry_s3_buckets(hc_instance=hc_instance)[0]
+
+    ingest_bucket = get_ingest_s3_bucket_name(hc_instance=hc_instance)
 
     # Ingest job path
-    ingest_job_subfolder = "upload/"
+    ingest_job_subfolder = "upload"
 
     # Get the function names
-    ingest_function_name = get_lambda_function_name(session=session, hc_instance="cjeschkedev",
+    ingest_function_name = get_lambda_function_name(session=session, hc_instance=hc_instance,
                                                     lambda_name="Ingester")
-    cataloger_function_name = get_lambda_function_name(session=session, hc_instance="cjeschkedev",
+    cataloger_function_name = get_lambda_function_name(session=session, hc_instance=hc_instance,
                                                        lambda_name="Cataloger")
 
     def setUp(self) -> None:
@@ -47,7 +50,7 @@ class TestRegistryAWS(unittest.TestCase):
         # Upload the manifest file to the ingest bucket
         manifest_file = "test/integration/resources/s3/manifest.csv"
         key = TestRegistryAWS.ingest_job_subfolder + "/manifest.csv"
-        print(f"Uploading manifest file: {manifest_file} to key: {key}")
+        print(f"Uploading manifest file: {manifest_file} to key: {key} in bucket: {TestRegistryAWS.ingest_bucket}")
         s3client.upload_file(Filename=manifest_file, Bucket=TestRegistryAWS.ingest_bucket, Key=key)
 
         # Upload test files to the ingest bucket
@@ -57,11 +60,11 @@ class TestRegistryAWS(unittest.TestCase):
             # Only process mms1 files & the valid manifest
             if entry.name.startswith("mms1_fgm") and entry.is_file():
                 if entry.name.startswith("mms1_fgm_brst_l2_20150901"):
-                    key += "mms1/fgm/brst/l2/2015/09/01/"
+                    key += "/mms1/fgm/brst/l2/2015/09/01/"
                 if entry.name.startswith("mms1_fgm_brst_l2_20150902"):
-                    key += "mms1/fgm/brst/l2/2015/09/02/"
+                    key += "/mms1/fgm/brst/l2/2015/09/02/"
                 if entry.name.startswith("mms1_fgm_brst_l2_20191130"):
-                    key += "mms1/fgm/brst/l2/2019/11/30/"
+                    key += "/mms1/fgm/brst/l2/2019/11/30/"
                 key += entry.name
 
                 # Upload the file
@@ -70,7 +73,7 @@ class TestRegistryAWS(unittest.TestCase):
                                      Key=key)
 
         # Upload entry and manifest files to the ingest bucket
-        key = TestRegistryAWS.ingest_job_subfolder + "manifest.csv"
+        key = TestRegistryAWS.ingest_job_subfolder + "/manifest.csv"
         print(f"Uploading file: manifest.csv to key: {key}")
         s3client.upload_file(Filename="test/integration/resources/s3/manifest.csv",
                              Bucket=TestRegistryAWS.ingest_bucket,
@@ -83,7 +86,7 @@ class TestRegistryAWS(unittest.TestCase):
         entry_dataset.resource = "SPASE-12345678"
         entry_dataset.contact = "Dr. Soandso, ephemerus.soandso@nasa.gov"
         entry_dataset.description = "Data from the Magnetospheric Multiscale Mission run by NASA"
-        key = TestRegistryAWS.ingest_job_subfolder + "entry.json"
+        key = TestRegistryAWS.ingest_job_subfolder + "/entry.json"
         print(f"Creating entry.json at key: {key}")
         s3client.put_object(Bucket=TestRegistryAWS.ingest_bucket, Key=key,
                             Body=entry_dataset.to_json())
@@ -132,17 +135,24 @@ class TestRegistryAWS(unittest.TestCase):
         payload = {
             "job_folder": TestRegistryAWS.ingest_job_subfolder,
         }
+
+        print(f'Running lambda function {TestRegistryAWS.ingest_function_name}')
+        print(f'{json.dumps(payload)}')
         response = lambda_client.invoke(FunctionName=TestRegistryAWS.ingest_function_name, Payload=json.dumps(payload))
         self.assertEqual(response['StatusCode'], 200)
         print("Ingester lambda ran successfully.")
 
         # Next, run the Cataloger
+        print(f'Running lambda function {TestRegistryAWS.cataloger_function_name}')
         response = lambda_client.invoke(FunctionName=TestRegistryAWS.cataloger_function_name)
         self.assertEqual(response['StatusCode'], 200)
         lambda_client.close()
         print("Cataloger lambda ran successfully.")
 
         # Now inspect the results
+
+        remove_file_if_exists("/tmp/MMS_2015.csv")
+        remove_file_if_exists("/tmp/MMS_2019.csv")
 
         # (1) Check that the ingest folder is completely empty
         s3_client = TestRegistryAWS.session.client("s3")
@@ -154,7 +164,7 @@ class TestRegistryAWS(unittest.TestCase):
         # (2) Check registry bucket for the dataset
         # (2a) Open the index file & check the line count
         s3_client.download_file(Bucket=TestRegistryAWS.registry_bucket, Key="MMS/MMS_2015.csv",
-                                Filename="/tmp/MMS_2015.CSV")
+                                Filename="/tmp/MMS_2015.csv")
         with open("/tmp/MMS_2015.csv") as registry_index:
             lines = [line for line in registry_index]
             self.assertEqual(len(lines), 5)

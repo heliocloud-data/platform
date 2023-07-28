@@ -15,3 +15,7 @@ TEST-*.xml
 .coverage
 coverage.xml
 htmlcov
+
+# Output files from static-analysis
+codeclimate.json
+pylint.txt

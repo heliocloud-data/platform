@@ -21,6 +21,8 @@ unit-test:
     reports:
       junit: TEST-HelioCloud-platform.xml
 
+# See
+# * https://docs.gitlab.com/ee/ci/testing/test_coverage_visualization.html
 coverage:
   stage: test
   before_script:
@@ -30,8 +32,10 @@ coverage:
     - python -m pip install -r requirements.txt
     - python -m pip install -r requirements-dev.txt
     - coverage run -m pytest -c pytest-unit.ini
+    - coverage report
     - coverage xml
     - coverage html
+  coverage: '/(?i)TOTAL.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/'
   artifacts:
     when: always
     paths:
@@ -41,3 +45,38 @@ coverage:
       coverage_report:
         coverage_format: cobertura
         path: coverage.xml
+
+# For static-analysis, we're going to run the analysis once for badge generation
+# and once for generating the codeclimate report, which is required integration
+# with the gitlab pull request.
+#
+# This configuration only runs pylint on the main source files of the project,
+# it excludes the unit and integration test folders as well as the cdk output
+# build folder.
+#
+# See:
+#  * https://pypi.org/project/pylint-gitlab/
+static-analysis:
+  stage: test
+  variables:
+    PYLINT_TEXT_OUTPUT_FILE: 'pylint.txt'
+    CODE_CLIMATE_OUTPUT_FILE: 'codeclimate.json'
+  before_script:
+    - mkdir -p public/badges  
+  script:
+    - export PYTHONPATH=.
+    - python -m pip install -r requirements.txt
+    - python -m pip install -r requirements-dev.txt
+    - pylint --exit-zero --output-format=text $(find -type f -name "*.py" ! -path "**/.venv/**" | grep -v '/test/' | grep -v '/cdk.out/') | tee ${PYLINT_TEXT_OUTPUT_FILE}
+    - sed -n 's/^Your code has been rated at \([-0-9.]*\)\/.*/\1/p' ${PYLINT_TEXT_OUTPUT_FILE} > public/badges/pylint.score
+    - pylint --exit-zero --load-plugins=pylint_gitlab --output-format=gitlab-codeclimate $(find -type f -name "*.py" ! -path "**/.venv/**" | grep -v '/test/' | grep -v '/cdk.out/') > ${CODE_CLIMATE_OUTPUT_FILE}
+  artifacts:
+    when: always
+    paths:
+      - ${CODE_CLIMATE_OUTPUT_FILE}
+    reports:
+      codequality: ${CODE_CLIMATE_OUTPUT_FILE}
+
+# NOTES:
+# CI_COMMIT_BRANCH -> The branch name
+#     - PYLINT_CODE_QUALITY=$(cat pylint.txt | grep 'Your code has been rated at' | sed 's/^Your code has been rated at \([-0-9.]*\)\/.*/\1/g')

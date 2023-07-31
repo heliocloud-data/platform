@@ -2,7 +2,7 @@ import pytest
 import unittest
 import sys
 
-from config import Config
+from app_config import load_configs
 
 class TestConfig(unittest.TestCase):
     """
@@ -10,8 +10,7 @@ class TestConfig(unittest.TestCase):
     """
 
     def test_method_load_configs_OK(self):
-        config_obj = Config()
-        cfg = config_obj.load_configs('test/unit/resources/test_config/instance', 'test_config')
+        cfg = load_configs('test/unit/resources/test_app_config/instance', 'test_config')
 
         print(cfg)
 
@@ -30,8 +29,7 @@ class TestConfig(unittest.TestCase):
         self.assertIsNone(cfg['daskhub'])
 
     def test_method_load_configs_OK_BasedirIsNull_Example(self):
-        config_obj = Config()
-        cfg = config_obj.load_configs(id='example')
+        cfg = load_configs(hc_id='example')
 
         print(cfg)
 
@@ -39,17 +37,15 @@ class TestConfig(unittest.TestCase):
         self.assertEqual(cfg['env']['account'], 12345678)
 
     def test_method_load_configs_FileNotFound(self):
-        config_obj = Config()
         try:
-            cfg = config_obj.load_configs('test/unit/resources/test_config/instance', 'DoesNotExist')
+            cfg = load_configs('test/unit/resources/test_app_config/instance', 'DoesNotExist')
             self.fail("FileNotFoundError should be thrown")
         except FileNotFoundError as e:
             print(e)
 
     def test_method_load_configs_InvalidFile(self):
-        config_obj = Config()
         try:
-            cfg = config_obj.load_configs('test/unit/resources/test_config/instance', 'invalid')
+            cfg = load_configs('test/unit/resources/test_app_config/instance', 'invalid')
             self.fail("ValueError should be thrown")
         except ValueError as e:
             print(e)

@@ -2,7 +2,7 @@
 import boto3
 import os
 
-from config import Config
+from app_config import load_configs
 
 # The default HC instance name.
 DEFAULT_HC_INSTANCE="example"
@@ -22,7 +22,7 @@ def get_ingest_s3_bucket_name(hc_instance: str) -> str:
         hc_instance : name of the HelioCloud instance
     """
 
-    cfg = Config().load_configs(id=hc_instance)
+    cfg = load_configs(hc_id=hc_instance)
     return cfg['registry']['ingestBucketName']
 
 
@@ -34,7 +34,7 @@ def get_registry_s3_buckets(hc_instance: str) -> list[str]:
         hc_instance: name of the HelioCloud instance
     """
 
-    cfg = Config().load_configs(id=hc_instance)
+    cfg = load_configs(hc_id=hc_instance)
     return cfg['registry']['datasetBucketNames']
 
 def remove_file_if_exists(filename: str) -> bool:

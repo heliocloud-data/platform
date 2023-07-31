@@ -1,3 +1,6 @@
+[![Coverage](https://gitlab.smce.nasa.gov/heliocloud/platform/badges/develop/coverage.svg)](https://gitlab.smce.nasa.gov/api/v4/projects/139/jobs/artifacts/develop/download?job=coverage)
+[![pylint](https://gitlab.smce.nasa.gov/api/v4/projects/139/jobs/artifacts/develop/raw/public/pylint.svg?job=static-analysis)](https://gitlab.smce.nasa.gov/api/v4/projects/139/jobs/artifacts/develop/raw/pylint.txt?job=static-analysis)
+
 # HelioCloud
 
 - [Overview](#overview)

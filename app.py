@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 import os
 import aws_cdk as cdk
-import yaml
 
-from config import Config
+
 from constructs import Construct
 
+from app_config import load_configs
 from base_auth.authorization_stack import AuthStack
 from base_aws.base_aws_stack import BaseAwsStack
 from registry.registry_stack import RegistryStack
@@ -57,7 +57,7 @@ class MyHelioCloud(Construct):
         """
         Get the config for this HelioCloud instance.
         """
-        self.__config = Config().load_configs(id=self.__id)
+        self.__config = load_configs(hc_id=self.__id)
 
     def __build_heliocloud(self):
         """

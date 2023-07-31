@@ -64,57 +64,68 @@ class MyHelioCloud(Construct):
         Builds the HelioCloud instance.
         """
         # First, need the foundation
-        base_stack = BaseAwsStack(self,
-                                  "Base",
-                                  description="Foundational AWS resources for a HelioCloud instance.",
-                                  config=self.__config,
-                                  env=self.__env)
+        base_stack = BaseAwsStack(
+            self,
+            "Base",
+            description="Foundational AWS resources for a HelioCloud instance.",
+            config=self.__config,
+            env=self.__env,
+        )
         cdk.Tags.of(base_stack).add("Product", "heliocloud-base")
 
         # Next, determine if the Auth module is needed
         enabled_modules = self.__config.get("enabled")
         if enabled_modules.get("daskhub") or enabled_modules.get("portal"):
             # We need the services of an AuthStack
-            auth_stack = AuthStack(self,
-                                   "Auth",
-                                   description="End-user authentication and authorization for a HelioCloud instance.",
-                                   config=self.__config,
-                                   env=self.__env)
+            auth_stack = AuthStack(
+                self,
+                "Auth",
+                description="End-user authentication and authorization for a HelioCloud instance.",
+                config=self.__config,
+                env=self.__env,
+            )
             auth_stack.add_dependency(base_stack)
             cdk.Tags.of(auth_stack).add("Product", "heliocloud-auth")
 
             # Should the User Portal module be deployed
             if enabled_modules.get("portal", False):
-                portal_stack = PortalStack(self,
-                               "Portal",
-                               description="User Portal module for a HelioCloud instance.",
-                               config=self.__config,
-                               env=self.__env,
-                               base_auth=auth_stack,
-                               base_aws=base_stack)
+                portal_stack = PortalStack(
+                    self,
+                    "Portal",
+                    description="User Portal module for a HelioCloud instance.",
+                    config=self.__config,
+                    env=self.__env,
+                    base_auth=auth_stack,
+                    base_aws=base_stack,
+                )
                 portal_stack.add_dependency(auth_stack)
                 cdk.Tags.of(portal_stack).add("Product", "heliocloud-portal")
 
             # Should Daskhub be deployed
             if enabled_modules.get("daskhub", False):
-                daskhub_stack = DaskhubStack(self,
-                                             "Daskhub",
-                                             description="Daskhub for a HelioCloud instance.",
-                                             config=self.__config,
-                                             base_aws=base_stack,
-                                             base_auth=auth_stack,
-                                             env=self.__env)
+                daskhub_stack = DaskhubStack(
+                    self,
+                    "Daskhub",
+                    description="Daskhub for a HelioCloud instance.",
+                    config=self.__config,
+                    base_aws=base_stack,
+                    base_auth=auth_stack,
+                    env=self.__env,
+                )
                 daskhub_stack.add_dependency(base_stack)
                 daskhub_stack.add_dependency(auth_stack)
                 cdk.Tags.of(daskhub_stack).add("Product", "heliocloud-dashboard")
 
         # Deploy the registry module
         if enabled_modules.get("registry", False):
-            registry_stack = RegistryStack(self, "Registry",
-                                           description="HelioCloud data set management.",
-                                           config=self.__config,
-                                           env=self.__env,
-                                           base_aws_stack=base_stack)
+            registry_stack = RegistryStack(
+                self,
+                "Registry",
+                description="HelioCloud data set management.",
+                config=self.__config,
+                env=self.__env,
+                base_aws_stack=base_stack,
+            )
             registry_stack.add_dependency(base_stack)
             cdk.Tags.of(registry_stack).add("Product", "heliocloud-registry")
 
@@ -125,7 +136,9 @@ def get_instance(app: cdk.App) -> (str, dict):
     """
     instance = app.node.try_get_context("instance")
     if instance is None:
-        raise Exception("No instance specified. Re-run and provide an instance name value -c instance=<instance>.")
+        raise Exception(
+            "No instance specified. Re-run and provide an instance name value -c instance=<instance>."
+        )
     return str(instance)
 
 

@@ -13,32 +13,31 @@ def catalog_registry():
             {
                 "endpoint": "s3://helio-public/",
                 "name": "GSFC HelioCloud Public Temp",
-                "region": "us-east-1"
+                "region": "us-east-1",
             },
             {
                 "endpoint": "s3://helio-public2/",
                 "name": "GSFC HelioCloud Public Temp",
-                "region": "us-east-2"
+                "region": "us-east-2",
             },
             {
                 "endpoint": "s3://helio-public/MMS/",
                 "name": "GSFC HC MMS bucket",
-                "region": "us-east-1"
+                "region": "us-east-1",
             },
             {
                 "endpoint": "s3://gov-nasa-hdrl-data2/",
                 "name": "GSFC HelioCloud Set 2",
-                "region": "us-east-1"
+                "region": "us-east-1",
             },
             {
                 "endpoint": "s3://edu-apl-helio-public/",
                 "name": "APL HelioCLoud",
-                "region": "us-west-1"
-            }
-        ]
+                "region": "us-west-1",
+            },
+        ],
     }
     return cr
-    
 
 
 def test_get_catalog(catalog_registry):
@@ -64,21 +63,24 @@ def test_get_entries_name_region(catalog_registry):
         assert len(entry) == 2
 
 
-@pytest.mark.parametrize("name, region_prefix, force_first", [
-    ("APL Heliocloud", "", False),
-    ("GSFC HelioCloud Public Temp", "us-east-1", False),
-    ("GSFC HelioCloud Public Temp", "us-east", True)
-])
+@pytest.mark.parametrize(
+    "name, region_prefix, force_first",
+    [
+        ("APL Heliocloud", "", False),
+        ("GSFC HelioCloud Public Temp", "us-east-1", False),
+        ("GSFC HelioCloud Public Temp", "us-east", True),
+    ],
+)
 def test_get_endpoint(catalog_registry, name, region_prefix, force_first):
     endpoint = catalog_registry.get_endpoint(name, region_prefix, force_first)
     assert isinstance(endpoint, str)
     assert len(endpoint) > 0
-    
 
-@pytest.mark.parametrize("name, region_prefix, force_first", [
-    ("GSFC HelioCloud Public Temp", "", False),
-    ("GSFC HelioCloud Public Temp", "us-east", False)
-])
+
+@pytest.mark.parametrize(
+    "name, region_prefix, force_first",
+    [("GSFC HelioCloud Public Temp", "", False), ("GSFC HelioCloud Public Temp", "us-east", False)],
+)
 def test_get_endpoint(catalog_registry, name, region_prefix, force_first):
     with pytest.raises(ValueError):
         endpoint = catalog_registry.get_endpoint(name, region_prefix, force_first)

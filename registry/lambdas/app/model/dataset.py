@@ -7,6 +7,7 @@ from datetime import datetime
 
 # Valid file formats for data set files stored in public s3 buckets
 
+
 class FileType(enum.Enum):
     FITS = "fits"
     CSV = "csv"
@@ -108,17 +109,20 @@ class DataSet(object):
     multiyear: bool = False
 
     def __setattr__(self, key, value):
-
         # Validate all the required fields
         if key == "dataset_id":
-            if not re.fullmatch(r'^[a-zA-Z0-9_-]*$', str(value)):
-                raise ValueError(f"Dataset ID {value} not valid. Must contain only alphanumeric, underscore and dash "
-                                 "characters.")
+            if not re.fullmatch(r"^[a-zA-Z0-9_-]*$", str(value)):
+                raise ValueError(
+                    f"Dataset ID {value} not valid. Must contain only alphanumeric, underscore and dash "
+                    "characters."
+                )
 
         # Confirm index is one of s3:// or https://
         if key == "index":
             if not (str(value).startswith("s3://") or str(value).startswith("https://")):
-                raise ValueError(f"Dataset index {value} invalid. Must start with s3:// or https://.")
+                raise ValueError(
+                    f"Dataset index {value} invalid. Must start with s3:// or https://."
+                )
 
         # Check that start is before stop
         if key == "start" and (self.stop is not None):
@@ -137,8 +141,8 @@ class DataSet(object):
         Returns this Dataset instance as JSON string.
         """
         dataset_dict = self.__dict__
-        dataset_dict['id'] = dataset_dict['dataset_id']
-        del dataset_dict['dataset_id']
+        dataset_dict["id"] = dataset_dict["dataset_id"]
+        del dataset_dict["dataset_id"]
         return json.dumps(dataset_dict, cls=DataSetEncoder)
 
     def to_serializable_dict(self) -> dict:
@@ -149,7 +153,7 @@ class DataSet(object):
         dataset_dict = self.__dict__.copy()
 
         # Serialize Enum & datetime fields to strings
-        for (key, value) in dataset_dict.items():
+        for key, value in dataset_dict.items():
             if isinstance(value, IndexType):
                 dataset_dict[key] = value.value
             if isinstance(value, list):
@@ -166,15 +170,15 @@ class DataSet(object):
         De-serialize a dataset instance from its JSON string representation.
         """
         dataset_dict = json.loads(dataset_json)
-        dataset = DataSet(dataset_id=dataset_dict['id'],
-                          index=dataset_dict['index'],
-                          title=dataset_dict['title'])
-        for (key, value) in dataset_dict.items():
+        dataset = DataSet(
+            dataset_id=dataset_dict["id"], index=dataset_dict["index"], title=dataset_dict["title"]
+        )
+        for key, value in dataset_dict.items():
             # Already required to instantiate a DataSet
-            if key in ('id', 'index', 'title'):
+            if key in ("id", "index", "title"):
                 continue
             # Enum field
-            if key == 'indextype':
+            if key == "indextype":
                 dataset.indextype = IndexType(value)
                 continue
             # Enum field
@@ -185,7 +189,7 @@ class DataSet(object):
                 dataset.filetype = filetypes
                 continue
             # Datetime fields
-            if key in ('start', 'stop', 'modification', 'creation', 'expiration', 'verified'):
+            if key in ("start", "stop", "modification", "creation", "expiration", "verified"):
                 dataset.__dict__[key] = datetime.fromisoformat(value) if value is not None else None
                 continue
             # Everything else
@@ -200,26 +204,28 @@ class DataSet(object):
         """
         # Remove any null fields.  These will just be the default values
         # from dataset instantiation
-        for (key, value) in list(dataset_dict.items()):
+        for key, value in list(dataset_dict.items()):
             if value is None:
                 del dataset_dict[key]
 
         # Dataset instance to populate
-        dataset = DataSet(dataset_id=dataset_dict['dataset_id'],
-                          index=dataset_dict['index'],
-                          title=dataset_dict['title'])
-        for key in ('dataset_id', 'index', 'title'):
+        dataset = DataSet(
+            dataset_id=dataset_dict["dataset_id"],
+            index=dataset_dict["index"],
+            title=dataset_dict["title"],
+        )
+        for key in ("dataset_id", "index", "title"):
             del dataset_dict[key]
 
         # Now set any remaining attributes
-        for (key, value) in dataset_dict.items():
-            if key == 'indextype':
+        for key, value in dataset_dict.items():
+            if key == "indextype":
                 dataset.indextype = IndexType(value)
                 continue
-            if key == 'filetype':
+            if key == "filetype":
                 dataset.filetype = [FileType(val) for val in value]
                 continue
-            if key in ('start', 'stop', 'modification', 'creation', 'expiration', 'verified'):
+            if key in ("start", "stop", "modification", "creation", "expiration", "verified"):
                 dataset.__setattr__(key, datetime.fromisoformat(value))
                 continue
             dataset.__setattr__(key, value)

@@ -20,6 +20,7 @@ class FileStatus(Enum):
     """
     Help describe the status of a file during validation of the manifest.
     """
+
     NOT_FOUND = "NOT_FOUND"
     WRONG_SIZE = "WRONG_SIZE"
     VALID = "VALID"
@@ -46,8 +47,16 @@ class Ingester(object):
         - the dataset files themselves
     """
 
-    def __init__(self, ingest_bucket: str, ingest_folder: str, manifest_df: pd.DataFrame, entry_dataset: DataSet,
-                 ds_repo: DataSetRepository, tmp_dir="/tmp", session: Session = boto3.session.Session()) -> None:
+    def __init__(
+        self,
+        ingest_bucket: str,
+        ingest_folder: str,
+        manifest_df: pd.DataFrame,
+        entry_dataset: DataSet,
+        ds_repo: DataSetRepository,
+        tmp_dir="/tmp",
+        session: Session = boto3.session.Session(),
+    ) -> None:
         """
         Initialize an Ingester instance
 
@@ -104,11 +113,13 @@ class Ingester(object):
             raise IngesterException(ce)
         else:
             # Need a 200 status code to confirm the bucket is accessible.  Otherwise, return exception
-            status_code = response['ResponseMetadata']['HTTPStatusCode']
+            status_code = response["ResponseMetadata"]["HTTPStatusCode"]
             if status_code != 200:
-                print('Got here??')
-                raise IngesterException(f"S3 bucket {self.__destination_bucket} is not accessible. Received response :"
-                                        f"{response}")
+                print("Got here??")
+                raise IngesterException(
+                    f"S3 bucket {self.__destination_bucket} is not accessible. Received response :"
+                    f"{response}"
+                )
 
     def __validate_manifest(self) -> None:
         """
@@ -123,8 +134,8 @@ class Ingester(object):
         # Iterate through the manifest entries, checking that files exists and are the correct size
         def check_file(row):
             record = {
-                'status': None,
-                'filename': None,
+                "status": None,
+                "filename": None,
             }
 
             # Check that the file exists and has the correct size
@@ -133,33 +144,38 @@ class Ingester(object):
                 response = self.__s3_client.head_object(Bucket=self.__ingest_bucket, Key=s3key)
             except botocore.exceptions.ClientError as ce:
                 # File wasn't found
-                record['status'] = FileStatus.NOT_FOUND.name
+                record["status"] = FileStatus.NOT_FOUND.name
                 print(f"Manifest file s3://{self.__ingest_bucket}/{s3key} not found.")
             else:
-                status_code = response['ResponseMetadata']['HTTPStatusCode']
-                content_length = response['ContentLength']
+                status_code = response["ResponseMetadata"]["HTTPStatusCode"]
+                content_length = response["ContentLength"]
                 if row.filesize != content_length:
                     # File was the wrong size
-                    record['status'] = FileStatus.WRONG_SIZE.name
+                    record["status"] = FileStatus.WRONG_SIZE.name
                     print(f"Manifest file s3://{self.__ingest_bucket}/{s3key} wrong size.")
                 else:
-                    record['status'] = FileStatus.VALID.name
+                    record["status"] = FileStatus.VALID.name
                     print(f"Manifest file s3://{self.__ingest_bucket}/{s3key} validated.")
             # results of check
             return record
 
         # Check all the files in the manifest
-        results = self.__manifest_df.apply(check_file, axis=1, result_type='expand')
+        results = self.__manifest_df.apply(check_file, axis=1, result_type="expand")
 
         # If the count of records that are VALID is less than the total records, we've got invalid entries
         # and can't load
-        valid = results[results['status'] == FileStatus.VALID.name]
-        if valid['status'].count() < results['status'].count():
+        valid = results[results["status"] == FileStatus.VALID.name]
+        if valid["status"].count() < results["status"].count():
             # TODO: Need to store & propagate the records back
-            vc = valid['status'].count()
-            rc = results['status'].count()
-            raise IngesterException("Error validating manifest entries. Only " + str(vc)
-                                    + " records were valid out of " + str(rc) + " files checked")
+            vc = valid["status"].count()
+            rc = results["status"].count()
+            raise IngesterException(
+                "Error validating manifest entries. Only "
+                + str(vc)
+                + " records were valid out of "
+                + str(rc)
+                + " files checked"
+            )
 
     def __install_dataset(self):
         """
@@ -167,11 +183,11 @@ class Ingester(object):
         """
 
         installed_files = list[[str, str, int]]()
-        for (start_date, uploaded_file, size) in self.__manifest_df.to_records(index=False):
+        for start_date, uploaded_file, size in self.__manifest_df.to_records(index=False):
             # copy the file over to the destination bucket in the correct sub folder
             copy_source = {
-                'Bucket': self.__ingest_bucket,
-                'Key': self.__ingest_folder + uploaded_file
+                "Bucket": self.__ingest_bucket,
+                "Key": self.__ingest_folder + uploaded_file,
             }
             destination_key = self.__destination_folder + uploaded_file
 
@@ -180,8 +196,12 @@ class Ingester(object):
                 dest_s3 = f"s3://{self.__destination_bucket}/{destination_key}"
                 print(f"Copied {transferred} of {source_s3} to {dest_s3}.")
 
-            self.__s3_client.copy(CopySource=copy_source, Bucket=self.__destination_bucket,
-                                  Key=destination_key, Callback=copy_callback)
+            self.__s3_client.copy(
+                CopySource=copy_source,
+                Bucket=self.__destination_bucket,
+                Key=destination_key,
+                Callback=copy_callback,
+            )
 
             # Final file name in the destination bucket
             target_file = f"s3://{self.__destination_bucket}/{destination_key}"
@@ -190,7 +210,7 @@ class Ingester(object):
             installed_files.append([start_date, target_file, size])
 
         # Store a dataframe for the installed files
-        self.__installed_files = pd.DataFrame(installed_files, columns=['startDate', 'key', 'size'])
+        self.__installed_files = pd.DataFrame(installed_files, columns=["startDate", "key", "size"])
 
     def __install_index_files(self) -> None:
         """
@@ -204,23 +224,30 @@ class Ingester(object):
         def get_year(start_date: datetime.datetime):
             return start_date.year
 
-        self.__installed_files['year'] = self.__installed_files['startDate'].apply(get_year)
-        years = self.__installed_files['year'].unique()
+        self.__installed_files["year"] = self.__installed_files["startDate"].apply(get_year)
+        years = self.__installed_files["year"].unique()
 
         # For each year, generate an index file stored in a temporary directory
         index_files = list[str]()
         for year in years:
-
             # Generate a temp file first
-            index_file = self.__tmp_dir + "/" + self.__entry_dataset.dataset_id + "_" + str(year) + ".csv"
+            index_file = (
+                self.__tmp_dir + "/" + self.__entry_dataset.dataset_id + "_" + str(year) + ".csv"
+            )
             tmp_index_file = index_file + ".tmp"
             year_df = self.__installed_files[self.__installed_files["year"] == year]
-            year_df.to_csv(tmp_index_file, header=False, index=False, quoting=csv.QUOTE_ALL,
-                           quotechar="'", columns=['startDate', 'key', 'size'])
+            year_df.to_csv(
+                tmp_index_file,
+                header=False,
+                index=False,
+                quoting=csv.QUOTE_ALL,
+                quotechar="'",
+                columns=["startDate", "key", "size"],
+            )
 
             # We do this loop so we can prepend the header row without it being quoted, per the spec
-            with open(tmp_index_file, mode='r') as t_file:
-                with open(index_file, mode='x') as i_file:
+            with open(tmp_index_file, mode="r") as t_file:
+                with open(index_file, mode="x") as i_file:
                     i_file.write("# startDate, key, size\n")
                     for line in t_file:
                         i_file.write(line)
@@ -229,13 +256,9 @@ class Ingester(object):
 
         # Upload the index files to the destination bucket and subfolder
         for index_file in index_files:
-            key = self.__destination_folder + index_file[index_file.rindex("/") + 1:]
-            data = open(index_file, mode='rb')
-            self.__s3_client.put_object(
-                Bucket=self.__destination_bucket,
-                Key=key,
-                Body=data
-            )
+            key = self.__destination_folder + index_file[index_file.rindex("/") + 1 :]
+            data = open(index_file, mode="rb")
+            self.__s3_client.put_object(Bucket=self.__destination_bucket, Key=key, Body=data)
             print(f"Uploading {index_file} to bucket: {self.__destination_bucket} at key: {key}.")
             data.close()
             os.remove(index_file)
@@ -246,10 +269,10 @@ class Ingester(object):
         """
         # Now update the CatalogEntry that will be made
         # Start date & end date come from the min & max of the manifest
-        start_date = self.__manifest_df['time'].min()
+        start_date = self.__manifest_df["time"].min()
 
         # Note:  End date is the min "start time" of the data provided.  Not really the end date....
-        end_date = self.__manifest_df['time'].max()
+        end_date = self.__manifest_df["time"].max()
         self.__entry_dataset.start = start_date
         self.__entry_dataset.stop = end_date
 
@@ -257,7 +280,7 @@ class Ingester(object):
         def get_extension(filename: str):
             return filename.split(".")[-1].lower()
 
-        extensions = self.__manifest_df['s3key'].apply(get_extension).unique()
+        extensions = self.__manifest_df["s3key"].apply(get_extension).unique()
 
         # TODO: Do an earlier check on the extensions.  Why copy the files over if the extension type is not supported?
         self.__entry_dataset.filetype = [FileType(extension) for extension in extensions]
@@ -302,6 +325,6 @@ class Ingester(object):
 
         # Send back results
         self.__result.dataset_updated = self.__entry_dataset.dataset_id
-        self.__result.files_contributed = int(self.__installed_files['key'].count())
+        self.__result.files_contributed = int(self.__installed_files["key"].count())
 
         return self.__result

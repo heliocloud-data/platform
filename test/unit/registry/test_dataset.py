@@ -1,11 +1,7 @@
 import unittest
 from datetime import datetime
 
-from registry.lambdas.app.model.dataset import (
-    DataSet,
-    FileType,
-    IndexType
-)
+from registry.lambdas.app.model.dataset import DataSet, FileType, IndexType
 
 
 class TestDataSet(unittest.TestCase):
@@ -24,7 +20,9 @@ class TestDataSet(unittest.TestCase):
 
     def test_invalid_index(self):
         with self.assertRaises(ValueError) as raised:
-            DataSet(dataset_id=TestDataSet.dataset_id, index="ftp://something", title=TestDataSet.title)
+            DataSet(
+                dataset_id=TestDataSet.dataset_id, index="ftp://something", title=TestDataSet.title
+            )
 
     def test_invalid_start_stop(self):
         start = datetime(year=2015, month=9, day=1, hour=12, minute=11, second=14)
@@ -35,18 +33,20 @@ class TestDataSet(unittest.TestCase):
             dataset.stop = stop
 
     def test_dataset_serialized_dict(self):
-        dataset = DataSet(dataset_id=TestDataSet.dataset_id,
-                          index=TestDataSet.index,
-                          title=TestDataSet.title,
-                          start=TestDataSet.start,
-                          stop=TestDataSet.stop,
-                          modification=TestDataSet.modification,
-                          filetype=TestDataSet.filetype,
-                          indextype=TestDataSet.indextype,
-                          citation="Cited by XYZ")
+        dataset = DataSet(
+            dataset_id=TestDataSet.dataset_id,
+            index=TestDataSet.index,
+            title=TestDataSet.title,
+            start=TestDataSet.start,
+            stop=TestDataSet.stop,
+            modification=TestDataSet.modification,
+            filetype=TestDataSet.filetype,
+            indextype=TestDataSet.indextype,
+            citation="Cited by XYZ",
+        )
 
         dataset_dict = dataset.to_serializable_dict()
-        self.assertEqual(dataset_dict['dataset_id'], dataset.dataset_id)
+        self.assertEqual(dataset_dict["dataset_id"], dataset.dataset_id)
 
         restored_dataset = DataSet.from_serialized_dict(dataset_dict)
         self.assertEqual(dataset.dataset_id, restored_dataset.dataset_id)

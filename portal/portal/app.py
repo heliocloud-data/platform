@@ -100,14 +100,10 @@ def index():
         if request.method == "GET":
             instances = get_instances(aws_session, username)
             running_instances = [
-                ins
-                for ins in instances
-                if ins["instance_state"] in ["running", "pending"]
+                ins for ins in instances if ins["instance_state"] in ["running", "pending"]
             ]
             stopped_instances = [
-                ins
-                for ins in instances
-                if ins["instance_state"] in ["stopped", "stopping"]
+                ins for ins in instances if ins["instance_state"] in ["stopped", "stopping"]
             ]
             # sort stopped and running by launch time and only show last 5 stopped instances
             if len(running_instances) > 0:
@@ -153,25 +149,19 @@ def instance_action():
                 stop_instance(aws_session, instance_id)
                 return redirect(url_for("index"))
             except Exception as e:
-                return render_template(
-                    "error.html", error_code="Botocore Error", error_message=e
-                )
+                return render_template("error.html", error_code="Botocore Error", error_message=e)
         if request.args.get("action") == "start":
             try:
                 start_instance(aws_session, instance_id)
                 return redirect(url_for("index"))
             except Exception as e:
-                return render_template(
-                    "error.html", error_code="Botocore Error", error_message=e
-                )
+                return render_template("error.html", error_code="Botocore Error", error_message=e)
         if request.args.get("action") == "terminate":
             try:
                 terminate_instance(aws_session, instance_id)
                 return redirect(url_for("index"))
             except Exception as e:
-                return render_template(
-                    "error.html", error_code="Botocore Error", error_message=e
-                )
+                return render_template("error.html", error_code="Botocore Error", error_message=e)
     else:
         return redirect(aws_auth.get_sign_in_url())
 
@@ -199,9 +189,7 @@ def launch_template():
             for r in running_instances:
                 if r["InstanceId"] == instance_id:
                     instance_info = r
-            resp = create_launch_template(
-                aws_session, username, template_name, instance_info
-            )
+            resp = create_launch_template(aws_session, username, template_name, instance_info)
             return redirect(url_for("index"))
     else:
         return redirect(aws_auth.get_sign_in_url())
@@ -258,9 +246,7 @@ def launch_instance():
                             error_message=f'The selected image requires at least {instance_launch_info["min_volume_size"]} GB of volume storage but you only opted for {instance_launch_info["volume_size"]} GB. Increase the volume size to use this image.',
                         )
                     else:
-                        response = create_instance(
-                            aws_session, username, instance_launch_info
-                        )
+                        response = create_instance(aws_session, username, instance_launch_info)
                         if "Error" in response:
                             error = response["Error"]
                             return render_template(
@@ -271,9 +257,7 @@ def launch_instance():
                         else:
                             return redirect(url_for("index"))
             except Exception as e:
-                return render_template(
-                    "error.html", error_code="Botocore Error", error_message=e
-                )
+                return render_template("error.html", error_code="Botocore Error", error_message=e)
         else:
             # existing_images = get_custom_amis(aws_session, username)
             allowed_images_dict = {
@@ -331,9 +315,7 @@ def get_access():
                             active_access_keys, inactive_access_keys = list_access_key(
                                 aws_session, aws_console_username
                             )
-                            mfa_devices = list_mfa_devices(
-                                aws_session, aws_console_username
-                            )
+                            mfa_devices = list_mfa_devices(aws_session, aws_console_username)
                             session["download"] = secret_access_key
                             return render_template(
                                 "access.html",
@@ -341,9 +323,7 @@ def get_access():
                                 inactive_access_keys=inactive_access_keys,
                                 mfa_devices=mfa_devices,
                                 user=username,
-                                message=access_key_message.format(
-                                    access_key_id, secret_access_key
-                                ),
+                                message=access_key_message.format(access_key_id, secret_access_key),
                                 download="secret_key",
                             )
                     except Exception as e:
@@ -367,9 +347,7 @@ def get_access():
                         active_access_keys, inactive_access_keys = list_access_key(
                             aws_session, aws_console_username
                         )
-                        mfa_devices = list_mfa_devices(
-                            aws_session, aws_console_username
-                        )
+                        mfa_devices = list_mfa_devices(aws_session, aws_console_username)
                         session["download"] = {
                             "access": resp["AccessKeyId"],
                             "secret": resp["SecretAccessKey"],
@@ -409,32 +387,22 @@ def access_id_action():
         aws_console_username = get_aws_console_username(username)
         if request.args.get("action") == "set_inactive":
             try:
-                update_key_status(
-                    aws_session, aws_console_username, access_key_id, "Inactive"
-                )
+                update_key_status(aws_session, aws_console_username, access_key_id, "Inactive")
                 return redirect(url_for("get_access"))
             except Exception as e:
-                return render_template(
-                    "error.html", error_code="Botocore Error", error_message=e
-                )
+                return render_template("error.html", error_code="Botocore Error", error_message=e)
         if request.args.get("action") == "set_active":
             try:
-                update_key_status(
-                    aws_session, aws_console_username, access_key_id, "Active"
-                )
+                update_key_status(aws_session, aws_console_username, access_key_id, "Active")
                 return redirect(url_for("get_access"))
             except Exception as e:
-                return render_template(
-                    "error.html", error_code="Botocore Error", error_message=e
-                )
+                return render_template("error.html", error_code="Botocore Error", error_message=e)
         if request.args.get("action") == "delete":
             try:
                 delete_access_key(aws_session, aws_console_username, access_key_id)
                 return redirect(url_for("get_access"))
             except Exception as e:
-                return render_template(
-                    "error.html", error_code="Botocore Error", error_message=e
-                )
+                return render_template("error.html", error_code="Botocore Error", error_message=e)
     else:
         return redirect(aws_auth.get_sign_in_url())
 
@@ -505,9 +473,7 @@ def get_keypairs():
                         error = resp["Error"]
                         message = f'<p>Error: {error["Code"]} {error["Message"]}'
                     else:
-                        message = (
-                            f"<p>Successfully deleted key pair {keypair_name}.</p>"
-                        )
+                        message = f"<p>Successfully deleted key pair {keypair_name}.</p>"
                     keypairs = list_key_pairs(aws_session, username)
                     return render_template(
                         "keypairs.html",

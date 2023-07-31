@@ -24,9 +24,12 @@ def handler(event, context) -> None:
     session = boto3.session.Session()
 
     # DataSetRepository creation
-    catalog_db_secret = os.environ['CATALOG_DB_SECRET']
-    db_client = get_documentdb_client(session=session, secret_name=catalog_db_secret,
-                                      tlsCAFile=os.path.dirname(__file__) + "/resources/global-bundle.pem")
+    catalog_db_secret = os.environ["CATALOG_DB_SECRET"]
+    db_client = get_documentdb_client(
+        session=session,
+        secret_name=catalog_db_secret,
+        tlsCAFile=os.path.dirname(__file__) + "/resources/global-bundle.pem",
+    )
     ds_repo = DataSetRepository(db_client=db_client)
 
     # Create and execute a Cataloger

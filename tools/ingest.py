@@ -17,15 +17,21 @@ class IngestRunner(object):
         parser = argparse.ArgumentParser(
             prog="HelioCloud Ingest Runner",
             description="Enables manual invocation of the HelioCloud ingest service against a specified folder in a "
-                        "HelioCloud instance\'s ingest S3 bucket."
+            "HelioCloud instance's ingest S3 bucket.",
         )
-        parser.add_argument("instance", type=str,
-                            help="Name of the HelioCloud instance whose Ingest service should be run. "
-                                 "This should match the instance configuration used to deploy the "
-                                 "HelioCloud to AWS.")
-        parser.add_argument("job_folder", type=str,
-                            help="Name of the folder in the ingest bucket (an AWS S3 bucket) provisioned for the "
-                                 "HelioCloud instance being called.")
+        parser.add_argument(
+            "instance",
+            type=str,
+            help="Name of the HelioCloud instance whose Ingest service should be run. "
+            "This should match the instance configuration used to deploy the "
+            "HelioCloud to AWS.",
+        )
+        parser.add_argument(
+            "job_folder",
+            type=str,
+            help="Name of the folder in the ingest bucket (an AWS S3 bucket) provisioned for the "
+            "HelioCloud instance being called.",
+        )
         args = parser.parse_args()
 
         self.__instance = args.instance
@@ -39,8 +45,8 @@ class IngestRunner(object):
         """
 
         response = self.__lambda_client.list_functions()
-        for function in response['Functions']:
-            function_name = str(function['FunctionName'])
+        for function in response["Functions"]:
+            function_name = str(function["FunctionName"])
             if ("Ingest" in function_name) and function_name.startswith(self.__instance):
                 return function_name
 
@@ -49,32 +55,35 @@ class IngestRunner(object):
         Executes the Ingester Lambda on a specific HelioCloud instance
         :return: nothing
         """
-        print(f"Invoking the Ingester service on HelioCloud {self.__instance} against folder {self.__job_folder}.")
+        print(
+            f"Invoking the Ingester service on HelioCloud {self.__instance} against folder {self.__job_folder}."
+        )
 
         # Run the Ingester as requested and get the response
-        payload = {
-            "job_folder": self.__job_folder
-        }
-        response = self.__lambda_client.invoke(FunctionName=self.__get_function_name(), Payload=json.dumps(payload))
-        status_code = response['StatusCode']
+        payload = {"job_folder": self.__job_folder}
+        response = self.__lambda_client.invoke(
+            FunctionName=self.__get_function_name(), Payload=json.dumps(payload)
+        )
+        status_code = response["StatusCode"]
 
         # 200 indicates successful invocation of the lambda, but we have to pick apart the response to figure out if
         # the ingester itself ran to completion
         if status_code == 200:
-
             # There was an error
-            if 'FunctionError' in response:
-                function_error = response['FunctionError']
-                payload_str = response['Payload'].read().decode()
+            if "FunctionError" in response:
+                function_error = response["FunctionError"]
+                payload_str = response["Payload"].read().decode()
                 print(f"Ingester service reported an error: {function_error}")
                 print(f"Response payload was:\n {payload_str}")
 
             # Invocation must have been successful
             else:
-                payload_str = response['Payload'].read().decode()
+                payload_str = response["Payload"].read().decode()
                 results = json.loads(payload_str)
-                print(f"Ingester service incorporated {results['files_contributed']} "
-                      f"files into dataset {results['dataset_updated']}.")
+                print(
+                    f"Ingester service incorporated {results['files_contributed']} "
+                    f"files into dataset {results['dataset_updated']}."
+                )
 
         # Different problem in Lambda invocation
         else:
@@ -85,5 +94,5 @@ class IngestRunner(object):
         self.__lambda_client.close()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     IngestRunner().execute()

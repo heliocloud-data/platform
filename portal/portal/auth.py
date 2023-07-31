@@ -28,9 +28,9 @@ def get_tokens(request_args):
         "client_id": user_pool_client_id,
         "grant_type": "authorization_code",
     }
-    secret = b64encode(
-        f"{user_pool_client_id}:{user_pool_client_secret}".encode("utf-8")
-    ).decode("utf-8")
+    secret = b64encode(f"{user_pool_client_id}:{user_pool_client_secret}".encode("utf-8")).decode(
+        "utf-8"
+    )
     headers = {"Authorization": f"Basic {secret}"}
     response = requests.post(token_url, data=data, headers=headers)
     response_json = response.json()

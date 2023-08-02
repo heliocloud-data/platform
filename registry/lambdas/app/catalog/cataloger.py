@@ -27,6 +27,7 @@ class Cataloger(object):
         """
         Internal class to help with generating and validating the head fields of catalog.json file
         """
+
         Cloudy: str = field(default=0.3, init=False)  # Version
         endpoint: str  # An accessible S3 (or equivalent) bucket link
         name: str  # Descriptive name for the dataset
@@ -40,16 +41,18 @@ class Cataloger(object):
         catalog: list[DataSet] = field(default_factory=list)
 
         def __post_init__(self):
-            if self.egress not in ('no-egress', 'user-pays', 'egress-allowed', 'none'):
+            if self.egress not in ("no-egress", "user-pays", "egress-allowed", "none"):
                 raise TypeError("egress must be one of: no-egress, user-pays, egress-allowed, none")
 
         def to_serializable_dict(self) -> OrderedDict:
             datasets_dicts = [dataset.to_serializable_dict() for dataset in self.catalog]
             catalog_dict = OrderedDict(dataclasses.asdict(self))
-            catalog_dict['catalog'] = datasets_dicts
+            catalog_dict["catalog"] = datasets_dicts
             return catalog_dict
 
-    def __init__(self, session: boto3.session.Session, dataset_repository: DataSetRepository) -> None:
+    def __init__(
+        self, session: boto3.session.Session, dataset_repository: DataSetRepository
+    ) -> None:
         """
         Initialize a new Cataloger instance.
 
@@ -57,7 +60,7 @@ class Cataloger(object):
             session: a boto3.Session instance to use for accessing AWS services
             dataset_repository: an instance of DataSetRepository to execute against
         """
-        self.__s3client = session.client('s3')
+        self.__s3client = session.client("s3")
         self.__dataset_repository = dataset_repository
 
     def __cache_datasets_by_bucket(self):
@@ -78,16 +81,16 @@ class Cataloger(object):
             catalog = self.Catalog(
                 endpoint="s3://" + bucket,
                 name="TBD-INJECTED",
-                region=self.__s3client.get_bucket_location(Bucket=bucket)['LocationConstraint'],
-                contact="Dr.YouKnowWho"
+                region=self.__s3client.get_bucket_location(Bucket=bucket)["LocationConstraint"],
+                contact="Dr.YouKnowWho",
             )
             for dataset in self.__bucket_dataset_cache[bucket]:
                 catalog.catalog.append(dataset)
 
             bucket_catalog_json = json.dumps(catalog.to_serializable_dict(), indent="\t")
-            self.__s3client.put_object(Bucket=bucket,
-                                       Body=bytes(bucket_catalog_json, 'utf-8'),
-                                       Key="catalog.json")
+            self.__s3client.put_object(
+                Bucket=bucket, Body=bytes(bucket_catalog_json, "utf-8"), Key="catalog.json"
+            )
 
     def execute(self):
         """

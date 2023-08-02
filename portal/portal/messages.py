@@ -1,6 +1,4 @@
-keypair_message = (
-    "Created new key pair {}. Download then change permissions `chmod 400 {}.pem`."
-)
+keypair_message = "Created new key pair {}. Download then change permissions `chmod 400 {}.pem`."
 
 access_key_message = r"<p>Your new access key was successfully created.</p><p><b>AWS Access Key ID</b>: {}</p><p><b>AWS Secret Access Key</b>: {}</p>"
 
@@ -34,9 +32,7 @@ def download_message(username, session, type):
         filename = f"{username}_secret_access_key.txt"
     elif type == "session_token":
         tokens = session.get("download")
-        content = make_session_token_download(
-            tokens["access"], tokens["secret"], tokens["token"]
-        )
+        content = make_session_token_download(tokens["access"], tokens["secret"], tokens["token"])
         filename = f"{username}_session_token.txt"
     else:
         content = None

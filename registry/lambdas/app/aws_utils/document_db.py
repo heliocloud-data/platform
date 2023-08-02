@@ -4,7 +4,9 @@ import pymongo
 from botocore.exceptions import ClientError
 
 
-def get_documentdb_client(session: boto3.session.Session, secret_name: str, tlsCAFile: str, local=False) -> pymongo.MongoClient:
+def get_documentdb_client(
+    session: boto3.session.Session, secret_name: str, tlsCAFile: str, local=False
+) -> pymongo.MongoClient:
     """
     Given an AWS Secret name and a PEM file, construct and return a MongoClient instance
     connected to a DocumentDB instance at hostname
@@ -24,17 +26,32 @@ def get_documentdb_client(session: boto3.session.Session, secret_name: str, tlsC
         response = sm_client.get_secret_value(SecretId=secret_name)
     except ClientError as e:
         raise e
-    secret_string = json.loads(response['SecretString'])
-    username = secret_string['username']
-    password = secret_string['password']
-    port = secret_string['port']
+    secret_string = json.loads(response["SecretString"])
+    username = secret_string["username"]
+    password = secret_string["password"]
+    port = secret_string["port"]
     sm_client.close()
 
     # Allow localhost override (typically used in development scenarios)
     if local:
-        return pymongo.MongoClient(host="localhost", port=port, username=username, password=password,
-                                   tls=True, tlsInsecure=True, tlsCAFile=tlsCAFile, retryWrites=False)
+        return pymongo.MongoClient(
+            host="localhost",
+            port=port,
+            username=username,
+            password=password,
+            tls=True,
+            tlsInsecure=True,
+            tlsCAFile=tlsCAFile,
+            retryWrites=False,
+        )
     else:
-        host = secret_string['host']
-        return pymongo.MongoClient(host=host, port=port, username=username, password=password,
-                                   tls=True, tlsCAFile=tlsCAFile, retryWrites=False)
+        host = secret_string["host"]
+        return pymongo.MongoClient(
+            host=host,
+            port=port,
+            username=username,
+            password=password,
+            tls=True,
+            tlsCAFile=tlsCAFile,
+            retryWrites=False,
+        )

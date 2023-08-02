@@ -12,6 +12,7 @@ class TestDataSetRepositoryAWS(unittest.TestCase):
     Tests the DataSetRepository implemented as backed by a DocumentDB instance running on AWS.
     Assumes there is a local SSH tunnel to facilitate access to the DocumentDB instance.
     """
+
     # Connecting to the DocumentDB instance.
     hostname = "localhost"
     port = 27017
@@ -34,7 +35,7 @@ class TestDataSetRepositoryAWS(unittest.TestCase):
             tlsAllowInvalidHostnames=True,
             tlsCAFile=TestDataSetRepositoryAWS.global_pem,
             directConnection=True,
-            retryWrites=False
+            retryWrites=False,
         )
 
         # Clear out the datasets collection
@@ -45,7 +46,9 @@ class TestDataSetRepositoryAWS(unittest.TestCase):
         self.db_client.close()
 
     def test_single_dataset(self):
-        saved_ds = DataSet(dataset_id="1234_ABC", index="s3://my.dataset.bucket/MMS", title="MMS_data")
+        saved_ds = DataSet(
+            dataset_id="1234_ABC", index="s3://my.dataset.bucket/MMS", title="MMS_data"
+        )
         saved_ds.start = datetime(year=2015, month=1, day=12, hour=9, minute=30, second=30)
         saved_ds.stop = datetime(year=2018, month=12, day=31, hour=12, minute=30, second=15)
         saved_ds.modification = datetime(year=2023, month=5, day=17, hour=15, minute=30, second=15)
@@ -76,10 +79,12 @@ class TestDataSetRepositoryAWS(unittest.TestCase):
 
         # Make 3 DataSet instances and save them
         datasets = list[DataSet]()
-        for dataset_id in ['SET1', 'SET2', 'SET3']:
-            dataset = DataSet(dataset_id=dataset_id,
-                              index="s3://my.dataset.bucket/MMS",
-                              title=f"Data for set {dataset_id}")
+        for dataset_id in ["SET1", "SET2", "SET3"]:
+            dataset = DataSet(
+                dataset_id=dataset_id,
+                index="s3://my.dataset.bucket/MMS",
+                title=f"Data for set {dataset_id}",
+            )
             dataset.start = datetime(year=2023, month=5, day=12, hour=9, minute=30, second=6)
             dataset.stop = datetime(year=2023, month=12, day=12, hour=9, minute=30, second=6)
             dataset.modification = datetime.now()

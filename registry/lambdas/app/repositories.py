@@ -31,7 +31,7 @@ class DataSetRepository(object):
             result = self.__datasets_collection.replace_one(
                 filter={"_id": dataset.dataset_id},
                 replacement=DataSetRepository.__dataset_to_dict(dataset),
-                upsert=True
+                upsert=True,
             )
             # If an object id came back, it was an insert
             if result.upserted_id is not None:
@@ -45,9 +45,7 @@ class DataSetRepository(object):
         """
         Return a single dataset instance found by its dataset_id
         """
-        result = self.__datasets_collection.find_one(
-            filter={"_id": dataset_id}
-        )
+        result = self.__datasets_collection.find_one(filter={"_id": dataset_id})
         return None if result is None else DataSetRepository.__dataset_from_dict(result)
 
     def get_all(self) -> list[DataSet] | None:
@@ -55,16 +53,18 @@ class DataSetRepository(object):
         Return all the datasets in the catalog. Returns None if the catalog is empty.
         """
         results = self.__datasets_collection.find()
-        return None if results is None else [DataSetRepository.__dataset_from_dict(result) for result in results]
+        return (
+            None
+            if results is None
+            else [DataSetRepository.__dataset_from_dict(result) for result in results]
+        )
 
     def delete_by_dataset_id(self, dataset_id: str) -> bool:
         """
         Delete a dataset document by id.
         Returns True if successful, else False
         """
-        delete_result = self.__datasets_collection.delete_one(
-            filter={"_id": dataset_id}
-        )
+        delete_result = self.__datasets_collection.delete_one(filter={"_id": dataset_id})
         return True if delete_result.deleted_count == 1 else False
 
     def delete_all(self) -> int | None:
@@ -93,7 +93,7 @@ class DataSetRepository(object):
         dataset_dict = dataset.to_serializable_dict()
 
         # Delete any empty fields.  We aren't going to persist them
-        for (key, value) in list(dataset_dict.items()):
+        for key, value in list(dataset_dict.items()):
             if value is None:
                 del dataset_dict[key]
 
@@ -101,7 +101,7 @@ class DataSetRepository(object):
         # to the dataset_id. This ensures:
         #    - There is only 1 document in the dataset collection per dataset
         #    - A dataset document can quickly be found by its dataset_id thanks to the index on _id
-        dataset_dict['_id'] = dataset.dataset_id
+        dataset_dict["_id"] = dataset.dataset_id
 
         return dataset_dict
 
@@ -112,5 +112,5 @@ class DataSetRepository(object):
         retrieved from DocumentDB
         """
         # Don't need this field from Document DB
-        del dataset_dict['_id']
+        del dataset_dict["_id"]
         return DataSet.from_serialized_dict(dataset_dict)

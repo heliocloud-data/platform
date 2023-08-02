@@ -21,10 +21,10 @@ def get_dataset_entry_from_s3(session: Session, bucket_name: str, entry_key: str
         raise RegistryException(f"Expecting .json extension for dataset file: {entry_key}.")
 
     response = session.client("s3").get_object(Bucket=bucket_name, Key=entry_key)
-    data = json.load(response['Body'])
+    data = json.load(response["Body"])
 
     # Correction for id field used in the JSON form
-    data['dataset_id'] = data['id']
+    data["dataset_id"] = data["id"]
     return DataSet.from_serialized_dict(data)
 
 
@@ -42,15 +42,15 @@ def get_manifest_from_s3(session: Session, bucket_name: str, manifest_key: str) 
 
     response = session.client("s3").get_object(Bucket=bucket_name, Key=manifest_key)
     manifest_lines = []
-    for line in response['Body'].readlines():
+    for line in response["Body"].readlines():
         # Strip leading 'b in the stream
-        line = str(line).lstrip('b\'')
+        line = str(line).lstrip("b'")
 
         # Strip trailing ' and \n
         line = line.rstrip("'")
         line = line.rstrip("\\n")
 
-        line = line.split(',')
+        line = line.split(",")
         if len(line) == 3:
             manifest_lines.append(line)
 
@@ -75,7 +75,11 @@ def get_s3_bucket_subfolder(uri: str) -> str:
     Parameters:
         uri : an s3:// uri
     """
-    return "/".join(uri.split("/", )[3:], )
+    return "/".join(
+        uri.split(
+            "/",
+        )[3:],
+    )
 
 
 def get_bucket_name(path: str) -> str:
@@ -96,4 +100,8 @@ def get_bucket_subfolder(path: str) -> str:
     - file://
     - s3://
     """
-    return "/".join(path.split("/", )[3:], )
+    return "/".join(
+        path.split(
+            "/",
+        )[3:],
+    )

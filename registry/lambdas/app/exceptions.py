@@ -1,5 +1,4 @@
 class RegistryException(Exception):
-
     def __init__(self, message="There was an error in the Registry module") -> None:
         """
         Exception raised for events in the Registry Module

@@ -23,29 +23,41 @@ def handler(event, context) -> dict:
     session = boto3.session.Session()
 
     # Get the Ingest bucket name & folder
-    ingest_bucket = os.environ['ingest_bucket']
-    ingest_folder = str(event['job_folder'])
+    ingest_bucket = os.environ["ingest_bucket"]
+    ingest_folder = str(event["job_folder"])
     if not ingest_folder.endswith("/"):
         ingest_folder += "/"
 
     # Get the manifest
     manifest_key = ingest_folder + "manifest.csv"
-    manifest_df = get_manifest_from_s3(session=session, bucket_name=ingest_bucket, manifest_key=manifest_key)
+    manifest_df = get_manifest_from_s3(
+        session=session, bucket_name=ingest_bucket, manifest_key=manifest_key
+    )
 
     # Get the entry dataset
     entry_key = ingest_folder + "entry.json"
-    entry_ds = get_dataset_entry_from_s3(session=session, bucket_name=ingest_bucket, entry_key=entry_key)
+    entry_ds = get_dataset_entry_from_s3(
+        session=session, bucket_name=ingest_bucket, entry_key=entry_key
+    )
 
     # Get a handle to the Catalog DB
-    catalog_db_secret = os.environ['CATALOG_DB_SECRET']
-    db_client = get_documentdb_client(session=session, secret_name=catalog_db_secret,
-                                      tlsCAFile=os.path.dirname(__file__) + "/resources/global-bundle.pem")
+    catalog_db_secret = os.environ["CATALOG_DB_SECRET"]
+    db_client = get_documentdb_client(
+        session=session,
+        secret_name=catalog_db_secret,
+        tlsCAFile=os.path.dirname(__file__) + "/resources/global-bundle.pem",
+    )
     ds_repo = DataSetRepository(db_client=db_client)
 
     # Instantiate an Ingester instance and execute it
-    ingester = Ingester(session=session, ingest_bucket=ingest_bucket, ingest_folder=ingest_folder,
-                        entry_dataset=entry_ds,
-                        manifest_df=manifest_df, ds_repo=ds_repo)
+    ingester = Ingester(
+        session=session,
+        ingest_bucket=ingest_bucket,
+        ingest_folder=ingest_folder,
+        entry_dataset=entry_ds,
+        manifest_df=manifest_df,
+        ds_repo=ds_repo,
+    )
     results = ingester.execute()
 
     # Remove the entry & manifest files
@@ -57,5 +69,5 @@ def handler(event, context) -> dict:
     # Information to return back in the Lambda response payload stream
     return {
         "dataset_updated": results.dataset_updated,
-        "files_contributed": results.files_contributed
+        "files_contributed": results.files_contributed,
     }

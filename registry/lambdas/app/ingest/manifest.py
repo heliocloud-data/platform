@@ -15,7 +15,7 @@ def get_manifest_from_fs(manifest_file: str) -> pd.DataFrame:
     manifest_lines = []
     with open(manifest_file) as manifest:
         for line in manifest:
-            manifest_lines.append(line.strip().split(','))
+            manifest_lines.append(line.strip().split(","))
 
     # Hand it off to build the manifest Dataframe
     return build_manifest_df(manifest_lines)
@@ -26,26 +26,25 @@ def build_manifest_df(manifest: list[list[str]]) -> pd.DataFrame:
     Return the manifest as a Panda's DataFrame
     """
     # Split the lines and create a data frame
-    columns = [column.replace('#', '').strip() for column in manifest[0]]
+    columns = [column.replace("#", "").strip() for column in manifest[0]]
     manifest_df = pd.DataFrame(columns=columns, data=manifest[1:])
 
     # Validate the manifest structure
-    required_headers = ['time', 's3key', 'filesize']
+    required_headers = ["time", "s3key", "filesize"]
     # First, confirm all required headers are present
     if not all(header in manifest_df.columns for header in required_headers):
-        raise IngesterException("Manifest file is missing one of the required headers: " + str(required_headers)
-                                + ".")
+        raise IngesterException(
+            "Manifest file is missing one of the required headers: " + str(required_headers) + "."
+        )
 
     # Check data types of manifest and cast appropriately
     # TODO:
     #  (1) Make the manifest resilient to additional headers coming in (don't fail)
     #  (2) Allow the manifest to pass through additional columns
     try:
-        manifest_df = manifest_df.astype(dtype={
-            'time': 'datetime64[ns, UTC]',
-            's3key': 'string',
-            'filesize': 'int64'
-        })
+        manifest_df = manifest_df.astype(
+            dtype={"time": "datetime64[ns, UTC]", "s3key": "string", "filesize": "int64"}
+        )
     except ValueError as ex:
         raise IngesterException(str(ex))
 

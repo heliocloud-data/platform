@@ -1,4 +1,3 @@
-
 def get_bucket_name(path: str) -> str:
     """
     Gets the name of the bucket. Assumes names start with one of:
@@ -14,4 +13,8 @@ def get_bucket_subfolder(path: str) -> str:
     - file://
     - s3://
     """
-    return "/".join(path.split("/", )[3:], )
+    return "/".join(
+        path.split(
+            "/",
+        )[3:],
+    )

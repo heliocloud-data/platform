@@ -9,6 +9,7 @@ from ec2_config import (
 )
 from aws import create_user_tag, get_ec2_pricing
 
+
 ### keypairs
 def create_key_pair(aws_session, username, keypair_name):
     ec2_client = aws_session.client("ec2", region_name=region)
@@ -29,9 +30,7 @@ def create_key_pair(aws_session, username, keypair_name):
 
 def list_key_pairs(aws_session, username):
     ec2_client = aws_session.client("ec2", region_name=region)
-    response = ec2_client.describe_key_pairs(
-        Filters=[{"Name": "tag:Owner", "Values": [username]}]
-    )
+    response = ec2_client.describe_key_pairs(Filters=[{"Name": "tag:Owner", "Values": [username]}])
     return response["KeyPairs"]
 
 
@@ -80,7 +79,9 @@ def create_instance(aws_session, username, instance_launch_info):
         Monitoring={"Enabled": False},
         KeyName=instance_launch_info["key_pair"],
         TagSpecifications=tag_specifications,
-        SecurityGroupIds=[security_group_id,],
+        SecurityGroupIds=[
+            security_group_id,
+        ],
         IamInstanceProfile={
             "Arn": default_ec2_role_arn,
             "Name": default_ec2_role_name,
@@ -206,13 +207,7 @@ def get_ami_info(aws_session, ami_list):
     for r in resp["Images"]:
         resp_dict[r["ImageId"]] = r
         if "BlockDeviceMappings" in r.keys():
-            resp_dict[r["ImageId"]]["DeviceName"] = r["BlockDeviceMappings"][0][
-                "DeviceName"
-            ]
-            resp_dict[r["ImageId"]]["VolumeSize"] = r["BlockDeviceMappings"][0]["Ebs"][
-                "VolumeSize"
-            ]
-            resp_dict[r["ImageId"]]["VolumeType"] = r["BlockDeviceMappings"][0]["Ebs"][
-                "VolumeType"
-            ]
+            resp_dict[r["ImageId"]]["DeviceName"] = r["BlockDeviceMappings"][0]["DeviceName"]
+            resp_dict[r["ImageId"]]["VolumeSize"] = r["BlockDeviceMappings"][0]["Ebs"]["VolumeSize"]
+            resp_dict[r["ImageId"]]["VolumeType"] = r["BlockDeviceMappings"][0]["Ebs"]["VolumeType"]
     return resp_dict

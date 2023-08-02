@@ -36,7 +36,9 @@ class PortalStack(Stack):
 
         # get the configuration file from the context
         portal_config = config.get("portal")
-        portal_url = f'https://{portal_config.get("domain_record")}.{portal_config.get("domain_url")}'
+        portal_url = (
+            f'https://{portal_config.get("domain_record")}.{portal_config.get("domain_url")}'
+        )
         auth_config = config.get("auth")
         env_config = config.get("env")
 
@@ -58,9 +60,7 @@ class PortalStack(Stack):
                 callback_urls=[f"{portal_url}/loggedin"],
                 logout_urls=[f"{portal_url}/logout"],
             ),
-            supported_identity_providers=[
-                cognito.UserPoolClientIdentityProvider.COGNITO
-            ],
+            supported_identity_providers=[cognito.UserPoolClientIdentityProvider.COGNITO],
             prevent_user_existence_errors=True,
         )
 
@@ -168,24 +168,12 @@ class PortalStack(Stack):
             vpc=base_aws.heliocloud_vpc,
             allow_all_outbound=True,
         )
-        portal_ec2_default_sg.add_ingress_rule(
-            ec2.Peer.ipv4("0.0.0.0/0"), ec2.Port.tcp(22)
-        )
-        portal_ec2_default_sg.add_ingress_rule(
-            ec2.Peer.ipv4("0.0.0.0/0"), ec2.Port.tcp(443)
-        )
-        portal_ec2_default_sg.add_ingress_rule(
-            ec2.Peer.ipv4("0.0.0.0/0"), ec2.Port.tcp(80)
-        )
-        portal_ec2_default_sg.add_ingress_rule(
-            ec2.Peer.ipv4("0.0.0.0/0"), ec2.Port.tcp(8000)
-        )
-        portal_ec2_default_sg.add_ingress_rule(
-            ec2.Peer.ipv4("0.0.0.0/0"), ec2.Port.tcp(8000)
-        )
-        portal_ec2_default_sg.add_egress_rule(
-            ec2.Peer.ipv4("0.0.0.0/0"), ec2.Port.tcp(8000)
-        )
+        portal_ec2_default_sg.add_ingress_rule(ec2.Peer.ipv4("0.0.0.0/0"), ec2.Port.tcp(22))
+        portal_ec2_default_sg.add_ingress_rule(ec2.Peer.ipv4("0.0.0.0/0"), ec2.Port.tcp(443))
+        portal_ec2_default_sg.add_ingress_rule(ec2.Peer.ipv4("0.0.0.0/0"), ec2.Port.tcp(80))
+        portal_ec2_default_sg.add_ingress_rule(ec2.Peer.ipv4("0.0.0.0/0"), ec2.Port.tcp(8000))
+        portal_ec2_default_sg.add_ingress_rule(ec2.Peer.ipv4("0.0.0.0/0"), ec2.Port.tcp(8000))
+        portal_ec2_default_sg.add_egress_rule(ec2.Peer.ipv4("0.0.0.0/0"), ec2.Port.tcp(8000))
 
         ### Create default EC2 policy
         shared_policy = base_aws.s3_managed_policy
@@ -208,9 +196,7 @@ class PortalStack(Stack):
         identity_pool_id_secret = sm.Secret(
             self,
             "portal_identity_pool_id",
-            secret_string_value=aws_cdk.SecretValue(
-                portal_identity_pool.identity_pool_id
-            ),
+            secret_string_value=aws_cdk.SecretValue(portal_identity_pool.identity_pool_id),
         )
         user_pool_client_id_secret = sm.Secret(
             self,
@@ -254,18 +240,12 @@ class PortalStack(Stack):
                 "DEFAULT_EC2_ROLE_NAME": portal_ec2_default_role.role_name,
             },
             secrets={
-                "IDENTITY_POOL_ID": ecs.Secret.from_secrets_manager(
-                    identity_pool_id_secret
-                ),
+                "IDENTITY_POOL_ID": ecs.Secret.from_secrets_manager(identity_pool_id_secret),
                 "USER_POOL_CLIENT_SECRET": ecs.Secret.from_secrets_manager(
                     user_pool_client_secret_secret
                 ),
-                "USER_POOL_CLIENT_ID": ecs.Secret.from_secrets_manager(
-                    user_pool_client_id_secret
-                ),
-                "FLASK_SECRET_KEY": ecs.Secret.from_secrets_manager(
-                    flask_secret_key_secret
-                ),
+                "USER_POOL_CLIENT_ID": ecs.Secret.from_secrets_manager(user_pool_client_id_secret),
+                "FLASK_SECRET_KEY": ecs.Secret.from_secrets_manager(flask_secret_key_secret),
             },
             logging=ecs.LogDrivers.aws_logs(
                 stream_prefix="PortalContainer",
@@ -307,5 +287,6 @@ class PortalStack(Stack):
             assign_public_ip=True,
         )
         portal_service.target_group.configure_health_check(
-            path="/health", healthy_http_codes="200-499",
+            path="/health",
+            healthy_http_codes="200-499",
         )

@@ -4,6 +4,7 @@ within the CDK as well as unit and integration tests.
 """
 import yaml
 
+
 def load_configs(basedir: str = None, hc_id: str = None) -> dict:
     """
     Get the config for this HelioCloud instance.
@@ -13,7 +14,7 @@ def load_configs(basedir: str = None, hc_id: str = None) -> dict:
     # First load the default instance
 
     if basedir is None:
-        basedir = 'instance'
+        basedir = "instance"
 
     configuration = {}
     with open(f"{basedir}/default.yaml", "r", encoding="utf-8") as default_config_file:

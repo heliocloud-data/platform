@@ -16,6 +16,7 @@ class TestCatalogerAWS(unittest.TestCase):
     Test Case for testing the Ingester codebase with AWS.  Uses live AWS resources to
     exercise all the Ingester logic.
     """
+
     # AWS S3
     # Generate bucket names to avoid collisions with existing buckets in AWS
     ds_bucket_1 = "heliocloud-test-integration-" + str(random.randint(0, 1000))
@@ -36,9 +37,11 @@ class TestCatalogerAWS(unittest.TestCase):
 
     def setUp(self) -> None:
         # Populate the upload path in S3
-        s3client = boto3.client('s3')
+        s3client = boto3.client("s3")
         print("----------")
-        print(f"Creating dataset buckets: {TestCatalogerAWS.ds_bucket_1}, {TestCatalogerAWS.ds_bucket_2}")
+        print(
+            f"Creating dataset buckets: {TestCatalogerAWS.ds_bucket_1}, {TestCatalogerAWS.ds_bucket_2}"
+        )
         s3client.create_bucket(Bucket=TestCatalogerAWS.ds_bucket_1)
         s3client.create_bucket(Bucket=TestCatalogerAWS.ds_bucket_2)
         s3client.close()
@@ -54,7 +57,7 @@ class TestCatalogerAWS(unittest.TestCase):
             tlsAllowInvalidHostnames=True,
             tlsCAFile=TestCatalogerAWS.db_global_pem,
             directConnection=True,
-            retryWrites=False
+            retryWrites=False,
         )
         self.__db_client.drop_database(TestCatalogerAWS.db_name)
 
@@ -63,12 +66,11 @@ class TestCatalogerAWS(unittest.TestCase):
         s3client = boto3.client("s3")
         for bucket in (TestCatalogerAWS.ds_bucket_1, TestCatalogerAWS.ds_bucket_2):
             response = s3client.list_objects(Bucket=bucket)
-            if 'Contents' in response:
-                keys = [content['Key'] for content in response['Contents']]
-                s3client.delete_objects(Bucket=bucket,
-                                        Delete={
-                                            "Objects": [{'Key': key} for key in keys]
-                                        })
+            if "Contents" in response:
+                keys = [content["Key"] for content in response["Contents"]]
+                s3client.delete_objects(
+                    Bucket=bucket, Delete={"Objects": [{"Key": key} for key in keys]}
+                )
             s3client.delete_bucket(Bucket=bucket)
             print(f"Deleted bucket {bucket}.")
         s3client.close()
@@ -81,18 +83,42 @@ class TestCatalogerAWS(unittest.TestCase):
         # Test the Ingester implementation with an AWS account
 
         # Start the s3 client
-        s3client = boto3.client('s3')
+        s3client = boto3.client("s3")
 
         # Instantiate a repository instance
         repository = DataSetRepository(db_client=self.__db_client, db=TestCatalogerAWS.db_name)
 
         # Generate a couple of Datasets that will go into the repository, for generating Catalog files
-        ds1 = DataSet(dataset_id="DS1", index="s3://" + TestCatalogerAWS.ds_bucket_1 + "/DS1", title="DataSet1")
-        ds2 = DataSet(dataset_id="DS2", index="s3://" + TestCatalogerAWS.ds_bucket_1 + "/DS2", title="DataSet2")
-        ds3 = DataSet(dataset_id="DS3", index="s3://" + TestCatalogerAWS.ds_bucket_1 + "/DS3", title="DataSet3")
-        ds4 = DataSet(dataset_id="DS4", index="s3://" + TestCatalogerAWS.ds_bucket_2 + "/DS4", title="DataSet4")
-        ds5 = DataSet(dataset_id="DS5", index="s3://" + TestCatalogerAWS.ds_bucket_2 + "/DS5", title="DataSet5")
-        ds6 = DataSet(dataset_id="DS6", index="s3://" + TestCatalogerAWS.ds_bucket_2 + "/DS6", title="DataSet6")
+        ds1 = DataSet(
+            dataset_id="DS1",
+            index="s3://" + TestCatalogerAWS.ds_bucket_1 + "/DS1",
+            title="DataSet1",
+        )
+        ds2 = DataSet(
+            dataset_id="DS2",
+            index="s3://" + TestCatalogerAWS.ds_bucket_1 + "/DS2",
+            title="DataSet2",
+        )
+        ds3 = DataSet(
+            dataset_id="DS3",
+            index="s3://" + TestCatalogerAWS.ds_bucket_1 + "/DS3",
+            title="DataSet3",
+        )
+        ds4 = DataSet(
+            dataset_id="DS4",
+            index="s3://" + TestCatalogerAWS.ds_bucket_2 + "/DS4",
+            title="DataSet4",
+        )
+        ds5 = DataSet(
+            dataset_id="DS5",
+            index="s3://" + TestCatalogerAWS.ds_bucket_2 + "/DS5",
+            title="DataSet5",
+        )
+        ds6 = DataSet(
+            dataset_id="DS6",
+            index="s3://" + TestCatalogerAWS.ds_bucket_2 + "/DS6",
+            title="DataSet6",
+        )
         repository.save([ds1, ds2, ds3, ds4, ds5, ds6])
 
         # Create a cataloger instance and run it
@@ -100,21 +126,23 @@ class TestCatalogerAWS(unittest.TestCase):
         cataloger.execute()
 
         # Pull the catalog.json for each bucket and check it
-        response = s3client.get_object(Bucket=TestCatalogerAWS.ds_bucket_1, Key='catalog.json')
-        catalog_1to3 = json.load((response['Body']))
-        self.assertEqual(catalog_1to3['endpoint'], "s3://"+TestCatalogerAWS.ds_bucket_1)
-        self.assertTrue(len(catalog_1to3['catalog']), 3)
-        for catalog in catalog_1to3['catalog']:
-            self.assertTrue(str(catalog['index']).startswith("s3://"+TestCatalogerAWS.ds_bucket_1))
+        response = s3client.get_object(Bucket=TestCatalogerAWS.ds_bucket_1, Key="catalog.json")
+        catalog_1to3 = json.load((response["Body"]))
+        self.assertEqual(catalog_1to3["endpoint"], "s3://" + TestCatalogerAWS.ds_bucket_1)
+        self.assertTrue(len(catalog_1to3["catalog"]), 3)
+        for catalog in catalog_1to3["catalog"]:
+            self.assertTrue(
+                str(catalog["index"]).startswith("s3://" + TestCatalogerAWS.ds_bucket_1)
+            )
 
-        response = s3client.get_object(Bucket=TestCatalogerAWS.ds_bucket_2, Key='catalog.json')
-        catalog_4to6 = json.load((response['Body']))
-        self.assertEqual(catalog_4to6['endpoint'], "s3://"+TestCatalogerAWS.ds_bucket_2)
-        self.assertTrue(len(catalog_4to6['catalog']), 3)
-        for catalog in catalog_4to6['catalog']:
-            self.assertTrue(str(catalog['index']).startswith("s3://"+TestCatalogerAWS.ds_bucket_2))
+        response = s3client.get_object(Bucket=TestCatalogerAWS.ds_bucket_2, Key="catalog.json")
+        catalog_4to6 = json.load((response["Body"]))
+        self.assertEqual(catalog_4to6["endpoint"], "s3://" + TestCatalogerAWS.ds_bucket_2)
+        self.assertTrue(len(catalog_4to6["catalog"]), 3)
+        for catalog in catalog_4to6["catalog"]:
+            self.assertTrue(
+                str(catalog["index"]).startswith("s3://" + TestCatalogerAWS.ds_bucket_2)
+            )
 
         # Clean up
         s3client.close()
-
-

@@ -34,16 +34,16 @@ def list_access_key(aws_session, username):
 
 def delete_access_key(aws_session, username, access_key_id):
     iam_client = aws_session.client("iam", region_name=region)
-    response = iam_client.delete_access_key(
-        UserName=username, AccessKeyId=access_key_id
-    )
+    response = iam_client.delete_access_key(UserName=username, AccessKeyId=access_key_id)
     return response
 
 
 def update_key_status(aws_session, username, access_key_id, new_status):
     iam_client = aws_session.client("iam", region_name=region)
     response = iam_client.update_access_key(
-        UserName=username, AccessKeyId=access_key_id, Status=new_status,
+        UserName=username,
+        AccessKeyId=access_key_id,
+        Status=new_status,
     )
     return response
 
@@ -61,5 +61,8 @@ def get_session_token(access_key_id, secret_access_key, mfa_arn, mfa_token):
         aws_secret_access_key=secret_access_key,
     )
     sts_client = user_session.client("sts", region_name=region)
-    response = sts_client.get_session_token(SerialNumber=mfa_arn, TokenCode=mfa_token,)
+    response = sts_client.get_session_token(
+        SerialNumber=mfa_arn,
+        TokenCode=mfa_token,
+    )
     return response["Credentials"]

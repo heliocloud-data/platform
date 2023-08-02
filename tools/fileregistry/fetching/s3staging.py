@@ -67,51 +67,60 @@ import urllib.parse
 
 """ General driver routines here, should work for most cases """
 
-def bundleme(s3staging: str, s3destination: str, movelogdir: str, stripuri: str, extrameta: Optional[Dict[str, str]] = None, fetchlocal = None):
+
+def bundleme(
+    s3staging: str,
+    s3destination: str,
+    movelogdir: str,
+    stripuri: str,
+    extrameta: Optional[Dict[str, str]] = None,
+    fetchlocal=None,
+):
     """
     Bundles the core parameters required for any run.
-    
+
     :param s3staging: The S3 staging bucket to use.
     :param s3destination: The S3 destination bucket to use.
     :param movelogdir: The directory to which move logs should be written.
     :param stripuri: The URI prefix to strip from S3 keys when moving files.
     :param extrameta: (Optional) A dictionary of extra metadata to include in the run.
     :param fetchlocal: (Optional) A path to locally avail files rather than a URI
-    
+
     :returns: A dictionary containing the bundled parameters.
     """
     # core items needed for any run, None = defined at runtime
-    sinfo={"s3staging":s3staging,
-           "s3destination":s3destination,
-           "movelogdir":movelogdir,
-           "stripuri":stripuri,
-           "extrameta":extrameta,
-           "fileFormat":None,
-           "registryloc":None,
-           "fetchlocal":fetchlocal
-           }
+    sinfo = {
+        "s3staging": s3staging,
+        "s3destination": s3destination,
+        "movelogdir": movelogdir,
+        "stripuri": stripuri,
+        "extrameta": extrameta,
+        "fileFormat": None,
+        "registryloc": None,
+        "fetchlocal": fetchlocal,
+    }
     return sinfo
 
-def init_logger(logfile=None,loglevel=None):
+
+def init_logger(logfile=None, loglevel=None):
     if loglevel.lower() == "info":
-        loglevel=logging.INFO # default is INFO+ERROR msgs
+        loglevel = logging.INFO  # default is INFO+ERROR msgs
     elif loglevel.lower() == "debug" or loglevel.lower() == "status":
-        loglevel=logging.DEBUG # everything gets logged
+        loglevel = logging.DEBUG  # everything gets logged
     elif loglevel.lower() == "error":
-        loglevel=logging.ERROR # absolute min, only error
+        loglevel = logging.ERROR  # absolute min, only error
     else:
-        loglevel=logging.INFO # default is INFO+ERROR msgs
+        loglevel = logging.INFO  # default is INFO+ERROR msgs
 
     if logfile:
-        logging.basicConfig(filename=logfile,
-                            level=loglevel,
-                            format="%(levelname)s %(message)s %(asctime)s")
+        logging.basicConfig(
+            filename=logfile, level=loglevel, format="%(levelname)s %(message)s %(asctime)s"
+        )
     else:
-        logging.basicConfig(level=loglevel,
-                            format="%(levelname)s %(message)s %(asctime)s")
-    multiprocessing_logging.install_mp_handler() # put after basicConfig
+        logging.basicConfig(level=loglevel, format="%(levelname)s %(message)s %(asctime)s")
+    multiprocessing_logging.install_mp_handler()  # put after basicConfig
 
-        
+
 def logme(message: str, data: str = "", type: str = "status") -> None:
     """
     Logs a message to the console with a specified type.
@@ -124,37 +133,43 @@ def logme(message: str, data: str = "", type: str = "status") -> None:
         logging.error(f"Error: {message} {data}")
     elif type == "log" or type == "info":
         logging.info(f"Log: {message} {data}")
-    else: # just an onscreen status
+    else:  # just an onscreen status
         logging.debug(f"Status: {message} {data}")
+
 
 def getHAPIIDs(lasttime: str, catalogurl: str) -> Optional[List[str]]:
     """
     Gets a list of HAPI IDs from the specified HAPI catalog URL.
-    
+
     :param lasttime: A string representing the last time the catalog was accessed, in ISO format (YYYY-MM-DDTHH:MM:SSZ).
     :param catalogurl: The URL of the HAPI catalog to query.
-    
+
     :returns: A list of HAPI IDs that have been modified since the last time the catalog was accessed, or None if the request fails.
     """
     # fetch last modified date for that ID
     # for now, use current time
-    lasttime=datetime.datetime.utcnow().isoformat()
+    lasttime = datetime.datetime.utcnow().isoformat()
     return lasttime
+
 
 def filetype(fname):
     # 'imghdr' is useless and 'magic' thinks CDF is 'FoxPro FPT'
     ##cmd = shlex.split('file --mime-type {0}'.format(fname))
     ##result = subprocess.check_output(cmd)
     ##mime_type=result.split()[-1]
-    result=magic.from_file(fname).split(" ")[0]
-    if result.startswith("Fox"): result="CDF"
-    if result.startswith("Hierarch"): result="HDF5"
+    result = magic.from_file(fname).split(" ")[0]
+    if result.startswith("Fox"):
+        result = "CDF"
+    if result.startswith("Hierarch"):
+        result = "HDF5"
     return result
+
 
 def get_lastModified(item):
     # fetch last modified for that ID, default is current time
-    lasttime=datetime.datetime.utcnow().isoformat()
+    lasttime = datetime.datetime.utcnow().isoformat()
     return lasttime
+
 
 def getHAPIIDs(lasttime, catalogurl):
     # no longer needed, we fetch from CDAWeb itself now
@@ -165,33 +180,35 @@ def getHAPIIDs(lasttime, catalogurl):
         return [item["id"] for item in j["catalog"] if get_lastModified(item) > lasttime]
     else:
         return None
-    
-    
-            
+
+
 def s3url_to_bucketkey(s3url: str) -> Tuple[str, str]:
     """
     Extracts the S3 bucket name and file key from an S3 URL.
-    
+
     S3 paths are weird, bucket + everything else, e.g.
     s3://b1/b2/b3/t.txt would be bucket b1, file b2/b3/t.txt
-    
+
     :param s3url: The S3 URL to extract the bucket name and file key from.
-    
+
     :returns: A tuple containing the S3 bucket name and file key.
     """
     # S3 paths are weird, bucket + everything else, e.g.
     # s3://b1/b2/b3/t.txt would be bucket b1, file b2/b3/t.txt
-    name2 = re.sub(r"s3://","",s3url)
-    s = name2.split("/",1)
+    name2 = re.sub(r"s3://", "", s3url)
+    s = name2.split("/", 1)
     mybucket = s[0]
-    myfilekey = s[1] if len(s) > 1 else "" # Want None if no key?
+    myfilekey = s[1] if len(s) > 1 else ""  # Want None if no key?
     return mybucket, myfilekey
-        
-def fetch_and_register(filelist: Dict[str, Any], sinfo: Dict[str, Any], logstring: str = "") -> Tuple[str, List[str]]:
+
+
+def fetch_and_register(
+    filelist: Dict[str, Any], sinfo: Dict[str, Any], logstring: str = ""
+) -> Tuple[str, List[str]]:
     """
     Fetches files from URLs specified in a list of file descriptions, uploads them to an S3 staging bucket,
     and generates a list of strings for the CSV registry of the uploaded files.
-    
+
     :param filelist: A dictionary containing the file descriptions.
         - "data": A list of dictionaries containing the file descriptions.
             - "URI": The URL of the file to fetch.
@@ -208,7 +225,7 @@ def fetch_and_register(filelist: Dict[str, Any], sinfo: Dict[str, Any], logstrin
 
     :returns: A tuple containing the final destination directory for the uploaded files and the strings for the CSV registry of the uploaded files.
     """
-    lastpath = "/" # used later to avoid os calls
+    lastpath = "/"  # used later to avoid os calls
     logtime1 = datetime.datetime.now()
     logfsize = 0
     csvregistry = []
@@ -221,28 +238,28 @@ def fetch_and_register(filelist: Dict[str, Any], sinfo: Dict[str, Any], logstrin
 
     # start a Session object for efficiency
     mysession = requests.Session()
-    
+
     for item in filelist["data"]:
         url_to_fetch = item[filelist["key"]]
-        logme("fetching ",url_to_fetch)
-        s3stub = re.sub(sinfo["stripuri"],"",url_to_fetch)
+        logme("fetching ", url_to_fetch)
+        s3stub = re.sub(sinfo["stripuri"], "", url_to_fetch)
         stagingkey = sinfo["s3staging"] + s3stub
         s3key = sinfo["s3destination"] + s3stub
         # make any necessary subdirectories in staging
-        (head,tail) = os.path.split(stagingkey)
+        (head, tail) = os.path.split(stagingkey)
         try:
-            registryloc = re.sub(r"\d{4}$","",registryloc) # remove any year stub
+            registryloc = re.sub(r"\d{4}$", "", registryloc)  # remove any year stub
             registryloc = os.path.commonprefix([registryloc, head])
         except:
             registryloc = head
 
         if stagingkey.startswith("s3://"):
             mybucket, myfilekey = s3url_to_bucketkey(stagingkey)
-            tempfile = "/tmp/"+re.sub(r"/|:","_",stagingkey)
+            tempfile = "/tmp/" + re.sub(r"/|:", "_", stagingkey)
         else:
             tempfile = stagingkey
             if head != lastpath:
-                os.makedirs(head,exist_ok=True)
+                os.makedirs(head, exist_ok=True)
                 lastpath = head
 
         if sinfo["fetchlocal"] != None:
@@ -253,26 +270,26 @@ def fetch_and_register(filelist: Dict[str, Any], sinfo: Dict[str, Any], logstrin
             (b) copy adjascent disk file to S3 destination
             """
             localfile = sinfo["fetchlocal"] + urllib.parse.urlparse(url_to_fetch).path
-            localfile = re.sub(r"//","/",localfile) # cleanup
+            localfile = re.sub(r"//", "/", localfile)  # cleanup
 
             if stagingkey.startswith("s3://"):
-                tempfile = localfile # will later be staged
+                tempfile = localfile  # will later be staged
             else:
                 shutil.copy2(localfile, tempfile)
-            remaining_download_tries = 0 # skips the later URI download step
+            remaining_download_tries = 0  # skips the later URI download step
         else:
             # normal web fetch
             remaining_download_tries = 5
-            
+
         while remaining_download_tries > 0:
             try:
                 with mysession.get(url_to_fetch, stream=True) as r:
-                    with open(tempfile, 'wb') as f:
+                    with open(tempfile, "wb") as f:
                         shutil.copyfileobj(r.raw, f)
-                #print("Wrote ",tempfile)
+                # print("Wrote ",tempfile)
                 break
             except:
-                #print("Error Timeout, trying again for ",url_to_fetch)
+                # print("Error Timeout, trying again for ",url_to_fetch)
                 remaining_download_tries -= 1
                 time.sleep(1)
             """
@@ -308,18 +325,18 @@ def fetch_and_register(filelist: Dict[str, Any], sinfo: Dict[str, Any], logstrin
             else:
                 break
             """
-            
+
         if remaining_download_tries <= 0 and sinfo["fetchlocal"] == None:
-            logme("Failed to fetch",url_to_fetch,"error")
+            logme("Failed to fetch", url_to_fetch, "error")
             continue
 
-        if sinfo["fileFormat"] == None: # define from 1st fetch
+        if sinfo["fileFormat"] == None:  # define from 1st fetch
             sinfo["fileFormat"] = filetype(tempfile)
 
         if stagingkey.startswith("s3://"):
-            mys3.upload_file(tempfile,mybucket,myfilekey)
+            mys3.upload_file(tempfile, mybucket, myfilekey)
             os.remove(tempfile)
-            
+
         csvitem = item[startkey] + "," + s3key + "," + str(item[filesizekey])
         logfsize += item[filesizekey]
         if filelist["stopDate"] != None:
@@ -331,24 +348,26 @@ def fetch_and_register(filelist: Dict[str, Any], sinfo: Dict[str, Any], logstrin
         if sinfo["extrameta"] != None:
             for extrakey in sinfo["extrameta"]:
                 csvitem += "," + item[extrakey]
-    
+
         logme(csvitem)
         csvregistry.append(csvitem)
 
-    #registryloc = re.sub(r"\d{4}$","",registryloc) # remove any year stub
-    if not re.search(r"/$",registryloc):
-        registryloc += "/" # all locs end in a "/"
-    logme(logstring + " final destination was: ",registryloc+" ,","log")
+    # registryloc = re.sub(r"\d{4}$","",registryloc) # remove any year stub
+    if not re.search(r"/$", registryloc):
+        registryloc += "/"  # all locs end in a "/"
+    logme(logstring + " final destination was: ", registryloc + " ,", "log")
 
     sinfo["registryloc"] = registryloc
 
     logstr = f"{logfsize}:{datetime.datetime.now().timestamp()-logtime1.timestamp()} ,"
-    logme(logstring + " Performance (bytes:seconds:timestamp):",logstr,"log")
+    logme(logstring + " Performance (bytes:seconds:timestamp):", logstr, "log")
 
-    return csvregistry,sinfo
+    return csvregistry, sinfo
 
-def registryname(id,year):
+
+def registryname(id, year):
     return f"{id}_{year}.csv"
+
 
 def exists_anywhere(fname: str) -> bool:
     """
@@ -362,7 +381,7 @@ def exists_anywhere(fname: str) -> bool:
         s3_client = boto3.client("s3")
         mybucket, myfilekey = s3url_to_bucketkey(fname)
         try:
-            s3_client.get_object(Bucket=mybucket,Key=myfilekey)
+            s3_client.get_object(Bucket=mybucket, Key=myfilekey)
             return True
         except s3_client.exceptions.NoSuchKey:
             return False
@@ -372,36 +391,38 @@ def exists_anywhere(fname: str) -> bool:
         else:
             return False
 
+
 def dataingest(fname: str, jsonflag: bool = False) -> Union[str, dict]:
     """
     Reads data from a file or S3 object and optionally parses it as JSON.
-    
+
     :param fname: The path or S3 URL of the file/object to read.
     :param jsonflag: Whether to parse the data as JSON. Default is False.
-    
+
     :returns: The data read from the file/object, either as a string or dictionary depending on the value of jsonflag.
     """
     if fname.startswith("s3://"):
         s3 = boto3.resource("s3")
         mybucket, myfilekey = s3url_to_bucketkey(fname)
-        s3object = s3.Object(mybucket,myfilekey)
-        #tempdata = s3object.get()["Body"].read().decode("utf-8")
+        s3object = s3.Object(mybucket, myfilekey)
+        # tempdata = s3object.get()["Body"].read().decode("utf-8")
         tempdata = s3object.get()["Body"].read().decode()
         if jsonflag:
-            tempdata=json.loads(tempdata)
+            tempdata = json.loads(tempdata)
     else:
-        with open(fname,"r") as fin:
+        with open(fname, "r") as fin:
             if jsonflag:
-                tempdata=json.load(fin)
+                tempdata = json.load(fin)
             else:
                 tempdata = fin.read()
-            
+
     return tempdata
+
 
 def datadump(fname: str, tempdata: Union[str, dict], jsonflag: bool = False) -> None:
     """
     Writes data to a file, either locally or on S3.
-    
+
     :param fname: The file path to write the data to.
     :param tempdata: The data to write to the file.
     :param jsonflag: Whether the data should be written as JSON. Defaults to False.
@@ -412,25 +433,26 @@ def datadump(fname: str, tempdata: Union[str, dict], jsonflag: bool = False) -> 
         mys3 = boto3.client("s3")
 
         mybucket, myfilekey = s3url_to_bucketkey(fname)
-        tempfile = "/tmp/"+re.sub(r"/|:","_",fname)
-        with open(tempfile,"w") as fout:
+        tempfile = "/tmp/" + re.sub(r"/|:", "_", fname)
+        with open(tempfile, "w") as fout:
             if jsonflag:
-                json.dump(tempdata,fout,indent=4,ensure_ascii=False)
+                json.dump(tempdata, fout, indent=4, ensure_ascii=False)
             else:
                 fout.write(tempdata)
-        mys3.upload_file(tempfile,mybucket,myfilekey)
+        mys3.upload_file(tempfile, mybucket, myfilekey)
         os.remove(tempfile)
     else:
-        with open(fname,"w") as fout:
+        with open(fname, "w") as fout:
             if jsonflag:
-                json.dump(tempdata,fout,indent=4,ensure_ascii=False)
+                json.dump(tempdata, fout, indent=4, ensure_ascii=False)
             else:
-                fout.write(tempdata) # local write
+                fout.write(tempdata)  # local write
+
 
 def uniquejson(jobj: Dict[str, Any], masterkey: str, uniquekey: str) -> Dict[str, Any]:
     """
     Removes duplicate items in a JSON object based on a specified key.
-    
+
     :param jobj: The JSON object to be processed.
     :param masterkey: The key in the JSON object that contains the list of items.
     :param uniquekey: The key in the list of items that contains the unique identifier.
@@ -438,13 +460,14 @@ def uniquejson(jobj: Dict[str, Any], masterkey: str, uniquekey: str) -> Dict[str
     :returns: A new JSON object with duplicate items removed. Also, edits jobj inplace (bug?).
     """
     movie = jobj[masterkey]
-    unique_stuff = {elem[uniquekey]:elem for elem in movie}.values()
-    
-    jobj[masterkey]=[]
+    unique_stuff = {elem[uniquekey]: elem for elem in movie}.values()
+
+    jobj[masterkey] = []
     # cannot just assign jobj[masterkey]=unique_stuff as that breaks json.dump
     for ele in unique_stuff:
         jobj[masterkey].append(ele)
     return jobj
+
 
 def replaceIsotime(catData: Dict[str, Any], mykey: str, maybetime: str) -> Dict[str, Any]:
     """
@@ -453,7 +476,7 @@ def replaceIsotime(catData: Dict[str, Any], mykey: str, maybetime: str) -> Dict[
     :param catData: The catalog data to modify.
     :param mykey: The key of the isotime to replace or add.
     :param maybetime: The new isotime value.
-    
+
     :return: The modified catalog data.
     """
     # non-optimized way to conditionally replace an isotime in the catalog
@@ -464,101 +487,105 @@ def replaceIsotime(catData: Dict[str, Any], mykey: str, maybetime: str) -> Dict[
             if key == mykey:
                 unfound = False
                 if maybetime > catData["catalog"][i][key]:
-                    catData["catalog"][i][key]=maybetime
+                    catData["catalog"][i][key] = maybetime
 
     if unfound:
-        catData["catalog"].append({mykey:maybetime})
-                    
+        catData["catalog"].append({mykey: maybetime})
+
     return catData
+
 
 def cda2iso(timey: str) -> str:
     """
     Converts a datetime string in ISO format to our specific string format (YYYY:MM:DDTHH:MM:SSZ).
-    
+
     :param timey: The ISO datetime string to convert.
     :returns: The datetime string in our specific format.
     """
     # converts most any isotime to our specific string format
     # annoying reformat of YYYYMMDDTHHMMSSZ to YYYY:MM:DDTHH:MM:SSZ
-    r=parser.parse(timey)
-    timey=r.strftime("%Y-%m-%dT%H:%M:%SZ")
-    #timey=datetime.datetime.fromisoformat(timey).isoformat() # only for python>3.11
-    #timey = timey[0:4]+":"+timey[4:6]+":"+timey[6:11]+":"+timey[11:13]+":"+timey[13:]
+    r = parser.parse(timey)
+    timey = r.strftime("%Y-%m-%dT%H:%M:%SZ")
+    # timey=datetime.datetime.fromisoformat(timey).isoformat() # only for python>3.11
+    # timey = timey[0:4]+":"+timey[4:6]+":"+timey[6:11]+":"+timey[11:13]+":"+timey[13:]
     return timey
+
 
 def iso2nodash(timey: str) -> str:
     """
     Removes dashes from an ISO-formatted datetime string.
     (for what cdaweb curl expects)
     time1="2022-01-01T00:00:00Z" -> time1="20220101T000000Z"
-    
+
     :param timey: The ISO-formatted datetime string to remove dashes from.
-    
+
     :returns: The datetime string with dashes removed: YYYYMMDDTHHMMSSZ
     """
     # removes dashes to what cdaweb curl expects
     # so time1="2022-01-01T00:00:00Z" -> time1="20220101T000000Z"
-    r=parser.parse(timey)
-    timey=r.strftime("%Y%m%dT%H%M%SZ")
+    r = parser.parse(timey)
+    timey = r.strftime("%Y%m%dT%H%M%SZ")
     return timey
 
 
-def write_registries(id: str, sinfo: Dict[str, Any],
-                     csvregistry: List[str]) -> None:
+def write_registries(id: str, sinfo: Dict[str, Any], csvregistry: List[str]) -> None:
     """
     Creates files <id>_YYYY.csv with designated entries in the temporary directory s3staging+id/,
     which will later be moved (by the separate staging-to-production code) to the location as defined in catalog.csv
     as the field 'loc'.
-    
+
     :param id: The identifier for the registry file.
     :param registryloc: The directory where the registry file will be created.
     :param csvregistry: The list of entries to be included in the registry file.
     :param extrameta: (Optional) A list of extra metadata fields to include in the registry file.
     """
-    keyset=["startDate","key","filesize"]
-    if sinfo["extrameta"] != None: keyset += sinfo["extrameta"]
+    keyset = ["startDate", "key", "filesize"]
+    if sinfo["extrameta"] != None:
+        keyset += sinfo["extrameta"]
 
-    currentyear="1000" # junk year to compare against
+    currentyear = "1000"  # junk year to compare against
 
     if not sinfo["s3staging"].startswith("s3://"):
-        os.makedirs(sinfo["registryloc"],exist_ok=True)
+        os.makedirs(sinfo["registryloc"], exist_ok=True)
 
     for line in csvregistry:
-        year=line[0:4]
+        year = line[0:4]
         if year != currentyear:
             try:
-                datadump(fname,tempdata)
+                datadump(fname, tempdata)
             except:
                 pass
             currentyear = year
-            fname = sinfo["registryloc"]+registryname(id,currentyear)
-            logme("Creating registry ",fname,"status")
+            fname = sinfo["registryloc"] + registryname(id, currentyear)
+            logme("Creating registry ", fname, "status")
             header = "#" + ",".join(keyset) + "\n"
             tempdata = header
         line += "\n"
         tempdata += line
-    datadump(fname,tempdata)
+    datadump(fname, tempdata)
+
 
 def fetch_catalogkeys():
-    catalogkeys = ["id",
-                   "loc",
-                   "title",
-                   "startDate",
-                   "stopDate",
-                   "modificationDate",
-                   "indexformat",
-                   "fileformat",
-                   "description",
-                   "resourceURL",
-                   "creationDate",
-                   "citation",
-                   "contact",
-                   "aboutURL"]
+    catalogkeys = [
+        "id",
+        "loc",
+        "title",
+        "startDate",
+        "stopDate",
+        "modificationDate",
+        "indexformat",
+        "fileformat",
+        "description",
+        "resourceURL",
+        "creationDate",
+        "citation",
+        "contact",
+        "aboutURL",
+    ]
     return catalogkeys
 
-def create_catalog_stub(dataid,sinfo,catmeta,startDate,stopDate,
-                        appendflag=False
-):
+
+def create_catalog_stub(dataid, sinfo, catmeta, startDate, stopDate, appendflag=False):
     """Generates a catalog_stub.json file, suitable for
     adding to the s3destination catalog.json after merging.
     Location is s3staging+dataid+"/"+catalog_stub.json
@@ -589,41 +616,42 @@ def create_catalog_stub(dataid,sinfo,catmeta,startDate,stopDate,
     """
 
     catalogkeys = fetch_catalogkeys()
-    
+
     fstub = sinfo["registryloc"] + "catalog_stub.json"
     if appendflag and exists_anywhere(fstub):
-        catData = dataingest(fstub,jsonflag=True)
+        catData = dataingest(fstub, jsonflag=True)
     else:
         # new catalog
-        catData = {"catalog":[]}
+        catData = {"catalog": []}
 
-    dstub=sinfo["registryloc"]
-    dstub = re.sub(sinfo["s3staging"],sinfo["s3destination"],dstub)
-    catmeta["loc"]=dstub                      # defined at runtime
-    catmeta["fileFormat"]=sinfo["fileFormat"] # defined at runtime
+    dstub = sinfo["registryloc"]
+    dstub = re.sub(sinfo["s3staging"], sinfo["s3destination"], dstub)
+    catmeta["loc"] = dstub  # defined at runtime
+    catmeta["fileFormat"] = sinfo["fileFormat"]  # defined at runtime
 
     for mykey in catalogkeys:
         if mykey in catmeta:
-            catData["catalog"].append({mykey:catmeta[mykey]})
+            catData["catalog"].append({mykey: catmeta[mykey]})
 
-    catData = replaceIsotime(catData,"startDate",startDate)
-    catData = replaceIsotime(catData,"stopDate",stopDate)
+    catData = replaceIsotime(catData, "startDate", startDate)
+    catData = replaceIsotime(catData, "stopDate", stopDate)
 
-    datadump(fstub,catData,jsonflag=True)
-    logme("Wrote catalog stub ",fstub,"status")
+    datadump(fstub, catData, jsonflag=True)
+    logme("Wrote catalog stub ", fstub, "status")
 
 
 def blank_catalog(dataid):
-    catalog={}
-    catalog["id"]=dataid
+    catalog = {}
+    catalog["id"] = dataid
     return catalog
-    
-def hapi_info_to_catdata(dataid,hapiurl):
+
+
+def hapi_info_to_catdata(dataid, hapiurl):
     """
     For datasets that have a HAPI info endpoint, fetch metadata from it
     Other datasets will need their own parsers for getting metadata
     """
-    
+
     catalogkeys = fetch_catalogkeys()
 
     headers = {"Accept": "application/json"}
@@ -631,29 +659,34 @@ def hapi_info_to_catdata(dataid,hapiurl):
     if res.status_code == 200:
         try:
             j = res.json()
-            print("hapi j",j)
+            print("hapi j", j)
         except:
-            print("failed with url ",hapiurl)
-            j=blank_catalog(dataid)
+            print("failed with url ", hapiurl)
+            j = blank_catalog(dataid)
 
     catmeta = {}
     for mykey in catalogkeys:
         if mykey in j["parameters"]:
-            catmeta[mykey]=j[mykey]
-        
+            catmeta[mykey] = j[mykey]
+
     return catmeta
 
-def gatherkeys(sinfo,flist):
+
+def gatherkeys(sinfo, flist):
     # THIS IS TERRIBLE CODE
     optkeys = []
-    if flist["stopDate"] != None: optkeys.append("stopDate")
-    if flist["checksum"] != None: optkeys.append("checksum")
-    if flist["checksum_algorithm"] != None: optkeys.append("checksum_algorithm")
+    if flist["stopDate"] != None:
+        optkeys.append("stopDate")
+    if flist["checksum"] != None:
+        optkeys.append("checksum")
+    if flist["checksum_algorithm"] != None:
+        optkeys.append("checksum_algorithm")
     if sinfo["extrameta"] != None:
         extrameta = optkeys + sinfo["extrameta"]
     elif len(optkeys) > 0:
         extrameta = optkeys
     return extrameta
+
 
 def remove_processed(movelogdir: str, allIDs: List[str]) -> List[str]:
     """
@@ -669,91 +702,94 @@ def remove_processed(movelogdir: str, allIDs: List[str]) -> List[str]:
     exists.
     """
     if exists_anywhere(movelogdir):
-        delist=[]
+        delist = []
 
-        mcache=name_movelog(movelogdir)
+        mcache = name_movelog(movelogdir)
         try:
-            tj = dataingest(mcache,jsonflag=True)
+            tj = dataingest(mcache, jsonflag=True)
             delist = [item["dataid"] for item in tj["movelist"]]
         except:
             for dataid in allIDs:
-                movelog=name_movelog(movelogdir,dataid)
+                movelog = name_movelog(movelogdir, dataid)
                 if exists_anywhere(movelog):
                     delist.append(dataid)
-                    
+
         allIDs = [id for id in allIDs if id not in delist]
 
     return allIDs
 
 
-def getmeta(dataid,sinfo,allIDs_meta):
+def getmeta(dataid, sinfo, allIDs_meta):
     if dataid in allIDs_meta:
         catmeta = allIDs_meta[dataid]
     else:
         # try HAPI
         try:
-            hapiurl = "https://cdaweb.gsfc.nasa.gov/hapi/info?id="+dataid
-            catmeta = hapi_info_to_catdata(dataid,hapiurl)
+            hapiurl = "https://cdaweb.gsfc.nasa.gov/hapi/info?id=" + dataid
+            catmeta = hapi_info_to_catdata(dataid, hapiurl)
         except:
             catmeta = blank_catalog(dataid)
 
-    catmeta["loc"]=None
-    catmeta["fileFormat"]=None
-    catmeta["indexFormat"]="csv" # hard-coded, for now
-    
+    catmeta["loc"] = None
+    catmeta["fileFormat"] = None
+    catmeta["indexFormat"] = "csv"  # hard-coded, for now
+
     return catmeta
 
-def name_movelog(movelogdir,dataid="mastercache"):
+
+def name_movelog(movelogdir, dataid="mastercache"):
     # default if no ID is the global aggregate movelog
     return f"{movelogdir}movelog_{dataid}.json"
 
-def move_to_arch(fname,basedir):
-    """ Moves file to an 'arch' subdir below its current location
-        fname is {basedir}stuff and we want {basedir}arch/stuff
-    """
-    altfname = re.sub(basedir,basedir+"arch/",fname)
-    if fname.startswith("s3://"):
-        mybucket,fnamekey=s3url_to_bucketkey(fname)
-        mybucket,altfnamekey=s3url_to_bucketkey(altfname)
-        s3_res = boto3.resource("s3")
-        copy_source={'Bucket':mybucket,'Key':fnamekey}
-        s3_res.meta.client.copy(copy_source,mybucket,altfnamekey)
-        s3_res.meta.client.delete_object(Bucket=mybucket,Key=fnamekey)
-    else:
-        os.makedirs(basedir+"arch",exist_ok=True)
-        os.rename(fname,altfname)
 
-def mastermovelog(movelogdir,allIDs):
+def move_to_arch(fname, basedir):
+    """Moves file to an 'arch' subdir below its current location
+    fname is {basedir}stuff and we want {basedir}arch/stuff
+    """
+    altfname = re.sub(basedir, basedir + "arch/", fname)
+    if fname.startswith("s3://"):
+        mybucket, fnamekey = s3url_to_bucketkey(fname)
+        mybucket, altfnamekey = s3url_to_bucketkey(altfname)
+        s3_res = boto3.resource("s3")
+        copy_source = {"Bucket": mybucket, "Key": fnamekey}
+        s3_res.meta.client.copy(copy_source, mybucket, altfnamekey)
+        s3_res.meta.client.delete_object(Bucket=mybucket, Key=fnamekey)
+    else:
+        os.makedirs(basedir + "arch", exist_ok=True)
+        os.rename(fname, altfname)
+
+
+def mastermovelog(movelogdir, allIDs):
     """
     Assembles all the individual movelogs into a single file.
     """
-    
-    mcache=name_movelog(movelogdir)
+
+    mcache = name_movelog(movelogdir)
 
     try:
-        tj = dataingest(mcache,jsonflag=True)
+        tj = dataingest(mcache, jsonflag=True)
     except:
         pass
 
-    flist=[name_movelog(movelogdir,id) for id in allIDs]
+    flist = [name_movelog(movelogdir, id) for id in allIDs]
     for fname in flist:
         if exists_anywhere(fname):
-            tempdata=dataingest(fname,jsonflag=True)
+            tempdata = dataingest(fname, jsonflag=True)
             try:
                 tj["movelist"].extend(tempdata["movelist"])
             except:
-                tj=tempdata
+                tj = tempdata
     try:
-        tj=uniquejson(tj,"movelist","dataid")
-        datadump(mcache,tj,jsonflag=True)
+        tj = uniquejson(tj, "movelist", "dataid")
+        datadump(mcache, tj, jsonflag=True)
         for fname in flist:
             if exists_anywhere(fname):
-                move_to_arch(fname,movelogdir)
+                move_to_arch(fname, movelogdir)
     except:
-        logme("Unable to collate movelogs to ",mcache,"error")
+        logme("Unable to collate movelogs to ", mcache, "error")
 
-    
-def ready_migrate(dataid,sinfo,startDate,stopDate,catmeta={}):
+
+def ready_migrate(dataid, sinfo, startDate, stopDate, catmeta={}):
     """
     once an item is properly staged, this lists it in a file
     so the subsequent migration to the s3 destination knows what to
@@ -769,35 +805,36 @@ def ready_migrate(dataid,sinfo,startDate,stopDate,catmeta={}):
     migration is simply
     'cp -r <s3staging>/<s3subdir> <s3destination>/<s3subdir>'
     then update <s3destination>/catalog.json with <catalog_stub>
-    
+
     """
 
-    create_catalog_stub(dataid,sinfo,catmeta,startDate,stopDate)
+    create_catalog_stub(dataid, sinfo, catmeta, startDate, stopDate)
 
     # elegant way to get the first subdir where the actual data exists
     s3subdir = sinfo["registryloc"].split(sinfo["s3staging"])[1].split("/")[0] + "/"
 
-    entry = {"dataid": dataid,
-             "s3destination": sinfo["s3destination"],
-             "s3staging": sinfo["s3staging"],
-             "s3subdir": s3subdir,
-             "registryloc": sinfo["registryloc"],
-             "catalog_stub": sinfo["registryloc"]+"catalog_stub.json"}
+    entry = {
+        "dataid": dataid,
+        "s3destination": sinfo["s3destination"],
+        "s3staging": sinfo["s3staging"],
+        "s3subdir": s3subdir,
+        "registryloc": sinfo["registryloc"],
+        "catalog_stub": sinfo["registryloc"] + "catalog_stub.json",
+    }
 
-    movelog = name_movelog(sinfo["movelogdir"],dataid)
+    movelog = name_movelog(sinfo["movelogdir"], dataid)
     if exists_anywhere(movelog):
-        logme("Updating movelog ",movelog+" with "+dataid,"status")
-        movelist = dataingest(movelog,jsonflag=True)
+        logme("Updating movelog ", movelog + " with " + dataid, "status")
+        movelist = dataingest(movelog, jsonflag=True)
     else:
-        logme("Creating movelog ",movelog+" with "+dataid,"status")
-        movelist={"movelist":[]}
+        logme("Creating movelog ", movelog + " with " + dataid, "status")
+        movelist = {"movelist": []}
 
     movelist["movelist"].append(entry)
-    movelist=uniquejson(movelist,"movelist","dataid")
-    datadump(movelog,movelist,jsonflag=True)
+    movelist = uniquejson(movelist, "movelist", "dataid")
+    datadump(movelog, movelist, jsonflag=True)
 
 
-        
 def migrate_staging_to_s3():
     """
     The later actual migration will involve
@@ -810,4 +847,3 @@ def migrate_staging_to_s3():
      g) delete and deregister obsolete files from 'deleteme' list
     """
     pass
-

@@ -2,7 +2,7 @@ import sys
 import unittest
 from pathlib import Path
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # Update the path
     install_project_dir = str(Path(__file__).parent.parent.parent)
     sys.path.append(install_project_dir)

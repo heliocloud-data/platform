@@ -43,10 +43,7 @@ def get_ec2_pricing(aws_session, instance_types):
     for r in price_list:
         resp_json = json.loads(r)
         rit = resp_json["product"]["attributes"]["instanceType"]
-        if (
-            rit in instance_out_dict.keys()
-            and instance_out_dict[rit]["price"] is not None
-        ):
+        if rit in instance_out_dict.keys() and instance_out_dict[rit]["price"] is not None:
             od = resp_json["terms"]["OnDemand"]
             key1 = list(od.keys())[0]
             key2 = list(od[key1]["priceDimensions"].keys())[0]
@@ -78,15 +75,9 @@ def start_aws_session(id_token):
 
 
 def get_weekly_overall_cost(aws_session, username):
-    time_end = (datetime.datetime.now() + datetime.timedelta(days=1)).strftime(
-        "%Y-%m-%d"
-    )
-    week_start = (datetime.datetime.now() - datetime.timedelta(days=7)).strftime(
-        "%Y-%m-%d"
-    )
-    overall_start = (datetime.datetime.now() - datetime.timedelta(days=365)).strftime(
-        "%Y-%m-%d"
-    )
+    time_end = (datetime.datetime.now() + datetime.timedelta(days=1)).strftime("%Y-%m-%d")
+    week_start = (datetime.datetime.now() - datetime.timedelta(days=7)).strftime("%Y-%m-%d")
+    overall_start = (datetime.datetime.now() - datetime.timedelta(days=365)).strftime("%Y-%m-%d")
     ce_client = aws_session.client("ce")
     week_resp = ce_client.get_cost_and_usage(
         TimePeriod={"Start": week_start, "End": time_end},

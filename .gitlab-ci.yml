@@ -77,6 +77,13 @@ static-analysis:
     reports:
       codequality: ${CODE_CLIMATE_OUTPUT_FILE}
 
+black:
+  stage: test
+  script:
+    - export PYTHONPATH=.
+    - python -m pip install -r requirements-dev.txt
+    - black --check .
+
 # NOTES:
 # CI_COMMIT_BRANCH -> The branch name
 #     - PYLINT_CODE_QUALITY=$(cat pylint.txt | grep 'Your code has been rated at' | sed 's/^Your code has been rated at \([-0-9.]*\)\/.*/\1/g')

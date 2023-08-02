@@ -62,34 +62,37 @@ import re
 import sys
 import os.path
 
-#fname = '2cf0f8e0-47ff-4bb7-b897-818c1378f532.csv'
+# fname = '2cf0f8e0-47ff-4bb7-b897-818c1378f532.csv'
 try:
     fname = sys.argv[1]
-    print("Processing ",fname)
+    print("Processing ", fname)
 except:
     print("Usage is: python parse_mms_s3_inventory.py FILENAME.CSV")
     exit()
-    
-baseuri = 's3://helio-public/'  # must end in /
 
-csvData = pandas.read_csv(fname,header=None,names=['bucket','s3key','fsize','moddate','hash','null'])
+baseuri = "s3://helio-public/"  # must end in /
 
-fout_name = 'skipme' # just initializing to a will-not-match value
+csvData = pandas.read_csv(
+    fname, header=None, names=["bucket", "s3key", "fsize", "moddate", "hash", "null"]
+)
+
+fout_name = "skipme"  # just initializing to a will-not-match value
+
 
 def registryName(s3key):
-    parts = re.split(r'/l2/',s3key)
+    parts = re.split(r"/l2/", s3key)
     part1 = parts[0][4:]
-    part1 = re.sub(r'/','_',part1)
-    extras = re.split(r'/\d{4}',parts[1])
+    part1 = re.sub(r"/", "_", part1)
+    extras = re.split(r"/\d{4}", parts[1])
     part2 = extras[0]
-    if part2 != '' and len(extras) > 1:
-        part2 = '_'+part2
+    if part2 != "" and len(extras) > 1:
+        part2 = "_" + part2
     else:
-        part2 = ''
-    getyear = re.search(r'/\d{4}/',s3key)
+        part2 = ""
+    getyear = re.search(r"/\d{4}/", s3key)
     year = getyear[0][1:5]
-    indexname = part1 + part2 + '_' + year + '.csv'
-    #print("index is ",indexname," from ",s3key,"(",part1,")",part2)
+    indexname = part1 + part2 + "_" + year + ".csv"
+    # print("index is ",indexname," from ",s3key,"(",part1,")",part2)
     return indexname
 
 
@@ -100,28 +103,43 @@ for row in csvData.itertuples():
     if mykey.endswith(".cdf"):
         # looking for pattern *YYYYMMDDhhmmss*.cdf
         # or *_YYYYMMDD_
-        mytime1=re.search(r'\d{14}',mykey)
-        mytime2=re.search(r'_\d{8}_',mykey)
+        mytime1 = re.search(r"\d{14}", mykey)
+        mytime2 = re.search(r"_\d{8}_", mykey)
         if mytime1:
             got = mytime1[0]
         elif mytime2:
-            got = mytime2[0][1:9] + '0000000' # not all files have hhmmsec
+            got = mytime2[0][1:9] + "0000000"  # not all files have hhmmsec
         else:
-            print("Skipping, trouble parsing ",mykey)
+            print("Skipping, trouble parsing ", mykey)
             continue
-        reparse = got[0:4]+'-'+got[4:6]+'-'+got[6:8]+'T'+got[8:10]+':'+got[10:12]+':'+got[12:14]+'Z'
+        reparse = (
+            got[0:4]
+            + "-"
+            + got[4:6]
+            + "-"
+            + got[6:8]
+            + "T"
+            + got[8:10]
+            + ":"
+            + got[10:12]
+            + ":"
+            + got[12:14]
+            + "Z"
+        )
         fmaybe = registryName(mykey)
         if fmaybe != fout_name:
             # need to open a different file handle
-            try: fout.close()
-            except: pass
+            try:
+                fout.close()
+            except:
+                pass
             fout_name = fmaybe
             if os.path.exists(fout_name):
-                fout = open(fout_name,mode='a')
+                fout = open(fout_name, mode="a")
             else:
-                fout = open(fout_name,mode='w')
+                fout = open(fout_name, mode="w")
                 fout.write("#time, s3key, filesize\n")
-        fullstr = reparse+','+baseuri+mykey+','+str(mysize)
-        fout.write(fullstr+'\n')
+        fullstr = reparse + "," + baseuri + mykey + "," + str(mysize)
+        fout.write(fullstr + "\n")
 
 fout.close()

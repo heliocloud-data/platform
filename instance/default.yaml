@@ -67,16 +67,18 @@ registry:
   requesterPays: True
 
   # Settings for the catalog db - a database for storing registry information
-  catalogDb:
-
-    # (OPTIONAL): Create a bastion server via EC2 to facilitate direct access to the AWS DocumentDB resource
-    # backing the registry. This is typically used in a development setting to enable unit & integration
-    # testing.
-    createBastionServer: False
+  catalog:
 
     # (OPTIONAL): Name of the master administrative user for the AWS Document DB resource.
     # Note: password is automatically generated and stored in an AWS Secret
     masterUser: master
+
+    # (OPTIONAL): Value to use when populating the name field of catalog.json at the root of each public s3 bucket
+    name:
+
+    # (OPTIONAL): Value ot use when populating the contact field of catalog.json at the root of each public s3 bucket
+    contact:
+
 
   # (OPTIONAL): Typically, the catalog db and S3 buckets for ingest and data set storage should be retained even
   # on destruction of a HelioCloud instance, as these are likely to contain research data sets that shouldn't be lost.

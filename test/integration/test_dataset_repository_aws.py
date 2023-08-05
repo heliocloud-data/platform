@@ -2,7 +2,7 @@ from datetime import datetime
 import unittest
 import pymongo
 
-from registry.lambdas.app.repositories import DataSetRepository
+from registry.lambdas.app.catalog.dataset_repository import DataSetRepository
 from registry.lambdas.app.model.dataset import DataSet, IndexType, FileType
 
 
@@ -57,7 +57,9 @@ class TestDataSetRepositoryAWS(unittest.TestCase):
         saved_ds.resource = "SPASE 1234567"
 
         # Save it and find it again
-        ds_repo = DataSetRepository(db_client=self.db_client, db=TestDataSetRepositoryAWS.db_name)
+        ds_repo = DataSetRepository(
+            db_client=self.db_client, db_name=TestDataSetRepositoryAWS.db_name
+        )
         ds_repo.save([saved_ds])
         found_ds = ds_repo.get_by_dataset_id(dataset_id=saved_ds.dataset_id)
 
@@ -75,7 +77,9 @@ class TestDataSetRepositoryAWS(unittest.TestCase):
         self.assertIsNone(result)
 
     def test_multiple_datasets(self):
-        ds_repo = DataSetRepository(db_client=self.db_client, db=TestDataSetRepositoryAWS.db_name)
+        ds_repo = DataSetRepository(
+            db_client=self.db_client, db_name=TestDataSetRepositoryAWS.db_name
+        )
 
         # Make 3 DataSet instances and save them
         datasets = list[DataSet]()

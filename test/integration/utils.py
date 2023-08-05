@@ -9,6 +9,10 @@ DEFAULT_HC_INSTANCE = "example"
 
 
 def get_hc_instance() -> str:
+    """
+    Gets name of the HelioCloud instance currently being worked with
+    :return: name of the instance
+    """
     ret = os.environ["HC_INSTANCE"]
     if ret is None or len(ret) == 0:
         ret = DEFAULT_HC_INSTANCE
@@ -18,24 +22,20 @@ def get_hc_instance() -> str:
 
 def get_ingest_s3_bucket_name(hc_instance: str) -> str:
     """
-    Returns the name of the S3 bucket used by the Ingester of the HelioCloud instance
-
-    Parameters:
-        hc_instance : name of the HelioCloud instance
+    Gets the name of the AWS S3 bucket being used for ingest in a HelioCloud's Registry
+    :param hc_instance: name of the HelioCloud instance to get the ingest bucket name for
+    :return: the ingest bucket name
     """
-
     cfg = load_configs(hc_id=hc_instance)
     return cfg["registry"]["ingestBucketName"]
 
 
 def get_registry_s3_buckets(hc_instance: str) -> list[str]:
     """
-    Returns the S3 buckets used in the Registry of the provided heliocloud instance
-
-    Parameters:
-        hc_instance: name of the HelioCloud instance
+    Gets the name of the AWS S3 buckets being used in a HelioCloud's Registry for storing and sharing datasets
+    :param hc_instance: name of the HelioCloud instance to get the registry bucket name(s) for
+    :return: a list of S3 bucket names used by the Registry
     """
-
     cfg = load_configs(hc_id=hc_instance)
     return cfg["registry"]["datasetBucketNames"]
 
@@ -52,14 +52,12 @@ def remove_file_if_exists(filename: str) -> bool:
 
 def get_lambda_function_name(session: boto3.Session, hc_instance: str, lambda_name: str) -> str:
     """
-    Gets the name of a particular lambda function in AWS based on the HelioCloud instance name and the
-    name of the lambda in the codebase.
-    Note:  Fuzzy, imperfect search right now...
-
-    Parameters:
-        session: a configured Boto3 session instance to use
-        hc_instance:  name of the HelioCloud instance
-        lambda_name:  name of the Lambda to look up (as registered in the CDK)
+    Gets the name of a particular lambda function in AWS based on the HelioCloud instance name and the name
+    of the lambda in the codebase
+    :param session: a boto3.Session instance to use
+    :param hc_instance: name of the HelioCloud instance to lookup the lambda within
+    :param lambda_name: name of the lambda to lookup
+    :return: function name of the lambda in AWS
     """
 
     # Derive the starting characters of the function name, which as far as I know,

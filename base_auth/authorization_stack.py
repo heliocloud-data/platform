@@ -1,3 +1,8 @@
+"""
+CDK Stack responsible for defining the AWS authorization infrastructure required
+for a HelioCloud instance.
+"""
+
 from aws_cdk import (
     Stack,
     aws_cognito as cognito,
@@ -9,7 +14,8 @@ from constructs import Construct
 class AuthStack(Stack):
     """
     Stack for instantiating Authorization and Authentication services in AWS
-    that are required by other HelioCloud components:  User dashboard, Daskhub, File Registration, etc"
+    that are required by other HelioCloud components:  User dashboard, Daskhub,
+    File Registration, etc"
     """
 
     def __init__(self, scope: Construct, construct_id: str, config: dict, **kwargs) -> None:
@@ -18,7 +24,6 @@ class AuthStack(Stack):
         auth = config["auth"]
         domain_prefix = auth.get("domain_prefix", "")
 
-        # TODO add ability to setup MFA
         self.userpool = cognito.UserPool(
             self,
             "Pool",

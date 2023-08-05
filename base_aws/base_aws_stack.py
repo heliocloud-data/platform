@@ -1,3 +1,6 @@
+"""
+CDK Stack definition for deploying foundational AWS services required for a HelioCloud instance.
+"""
 from aws_cdk import (
     Stack,
     aws_s3 as s3,
@@ -7,6 +10,15 @@ from aws_cdk import (
     RemovalPolicy,
 )
 from constructs import Construct
+
+
+class BaseAwsStackException(BaseException):
+    """
+    Exceptions during Base Stack creation
+    """
+
+    def __init__(self, message):
+        super().__init__(message)
 
 
 class BaseAwsStack(Stack):
@@ -27,8 +39,6 @@ class BaseAwsStack(Stack):
         ###############################################
         # Create S3 Bucket for shared user storage #
         ###############################################
-        # TODO potentially make this configurable along with component in s3 policy document
-        # TODO figure out retention plan, persists after stack deleted
         destroy_on_removal = config.get("userSharedBucket").get("destroyOnRemoval")
         user_shared_bucket = s3.Bucket(
             self,
@@ -36,7 +46,6 @@ class BaseAwsStack(Stack):
             removal_policy=RemovalPolicy.DESTROY if destroy_on_removal else RemovalPolicy.RETAIN,
         )
 
-        # TODO programmatically add additional policy statements
         # based on known HelioCloud public buckets (maybe use user script to pull names?)
         # Need to iteratively adjust though, maybe lambda
         registry = self.__config.get("registry")
@@ -93,11 +102,6 @@ class BaseAwsStack(Stack):
         """
         Build / Lookup the VPC that will be used for this HelioCloud installation
         """
-        # TODO:
-        # 1) Validate a pre-existing VPC as having at least 1 public and 1 private subnet.  Note that a private subnet
-        # MUST have a NAT gateway associated to allow hosts in this subnet access to externally hosted resources
-        # such as other libraries & images to aid in deployments (ex: Daskhub)
-        # 2) If constructing a VPC from scratch, ensure it has at least 1 public and 1 private subnet (see #1)
 
         # Determine VPC configuration required
         vpc_config = self.__config.get("vpc")
@@ -116,8 +120,12 @@ class BaseAwsStack(Stack):
             self.__heliocloud_vpc = ec2.Vpc(self, id="HelioCloudVPC", max_azs=2, nat_gateways=1)
             print(f"Using newly created vpc: {self.__heliocloud_vpc.vpc_id}.")
         else:
-            raise Exception(f"Unrecognized vpc type: {vpc_type}")
+            raise BaseAwsStackException(message=f"Unrecognized vpc type: {vpc_type}")
 
     @property
     def heliocloud_vpc(self) -> ec2.Vpc:
+        """
+        The VPC this HelioCloud instance will be instantiated in.
+        :return: ec2.Vpc instance referring the VPC this HelioCloud is instantiated in.
+        """
         return self.__heliocloud_vpc

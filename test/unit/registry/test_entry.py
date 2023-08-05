@@ -2,7 +2,7 @@ import datetime
 import unittest
 
 from registry.lambdas.app.local_utils.entry import get_entry_from_fs
-from registry.lambdas.app.exceptions import IngesterException
+from registry.lambdas.app.core.exceptions import IngesterException
 
 
 class TestEntry(unittest.TestCase):

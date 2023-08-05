@@ -1,7 +1,10 @@
+"""
+Helper methods for creating a manifest dataframe.
+"""
+
 import pandas as pd
 
-# Local imports
-from ..exceptions import IngesterException
+from ..core.exceptions import IngesterException
 
 
 def get_manifest_from_fs(manifest_file: str) -> pd.DataFrame:
@@ -13,7 +16,7 @@ def get_manifest_from_fs(manifest_file: str) -> pd.DataFrame:
 
     # Read the manifest in line by line
     manifest_lines = []
-    with open(manifest_file) as manifest:
+    with open(manifest_file, encoding="UTF-8") as manifest:
         for line in manifest:
             manifest_lines.append(line.strip().split(","))
 
@@ -38,14 +41,11 @@ def build_manifest_df(manifest: list[list[str]]) -> pd.DataFrame:
         )
 
     # Check data types of manifest and cast appropriately
-    # TODO:
-    #  (1) Make the manifest resilient to additional headers coming in (don't fail)
-    #  (2) Allow the manifest to pass through additional columns
     try:
         manifest_df = manifest_df.astype(
             dtype={"time": "datetime64[ns, UTC]", "s3key": "string", "filesize": "int64"}
         )
     except ValueError as ex:
-        raise IngesterException(str(ex))
+        raise IngesterException(str(ex)) from ex
 
     return manifest_df

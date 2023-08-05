@@ -26,7 +26,7 @@ class DaskhubStack(Stack):
         base_aws: BaseAwsStack,
         base_auth: Stack,
         **kwargs,
-    ) -> None:
+    ) -> None:  # pylint disable=too-many-arguments
         super().__init__(scope, construct_id, **kwargs)
 
         #############################
@@ -100,7 +100,6 @@ class DaskhubStack(Stack):
             "sudo chown -R ssm-user:ssm-user /home/ssm-user",
         )
 
-        # TODO: add cloudwatch logs to SSM
         # Create admin instance and attach role
         instance = ec2.Instance(
             self,
@@ -139,8 +138,6 @@ class DaskhubStack(Stack):
             self, "K8AutoScalingManagedPolicy", document=autoscaling_custom_policy_document
         )
 
-        # TODO figure out retention plan, persists after stack deleted
-        # TODO make this an option (ALSO MUST MAKE OPTIONAL IN K8s SCRIPTS)
         file_system = efs.FileSystem(
             self,
             "DaskhubEFS",
@@ -152,9 +149,6 @@ class DaskhubStack(Stack):
         ##############################################
         # Authentication and Authorization (Cognito) #
         ##############################################
-        # TODO make these configurable (with defaults), note changes to this
-        # need to be reflected in the "deploy/dh-auth.yaml.template" file
-        # or things could break
         daskhub_client = base_auth.userpool.add_client(
             "heliocloud-daskhub",
             generate_secret=True,

@@ -1,16 +1,17 @@
-import boto3
 import datetime
 import json
 import os
 import unittest
 
+import boto3
+
+from registry.lambdas.app.catalog_lambda import lambda_execute
 from registry.lambdas.app.model.dataset import DataSet
 from utils import (
     get_hc_instance,
     get_lambda_function_name,
     get_registry_s3_buckets,
     get_ingest_s3_bucket_name,
-    remove_file_if_exists,
 )
 
 
@@ -161,24 +162,22 @@ class TestRegistryAWS(unittest.TestCase):
         print("Ingester lambda ran successfully.")
 
         # Next, run the Cataloger
-        print(f"Running lambda function {TestRegistryAWS.cataloger_function_name}")
-        response = lambda_client.invoke(FunctionName=TestRegistryAWS.cataloger_function_name)
-        self.assertEqual(response["StatusCode"], 200)
-        lambda_client.close()
-        print("Cataloger lambda ran successfully.")
+        response = lambda_execute(
+            function_name=TestRegistryAWS.cataloger_function_name, session=TestRegistryAWS.session
+        )
+        print(response.error_message)
+        print(response.function_error)
+        self.assertTrue(response.is_success)
+        print("Cataloger ran successfully.")
 
         # Now inspect the results
-
-        remove_file_if_exists("/tmp/MMS_2015.csv")
-        remove_file_if_exists("/tmp/MMS_2019.csv")
-
         # (1) Check that the ingest folder is completely empty
         s3_client = TestRegistryAWS.session.client("s3")
         response = s3_client.list_objects_v2(Bucket=TestRegistryAWS.ingest_bucket, Prefix="MMS/")
         self.assertTrue("Contents" not in response)
         print(
-            f"Confirmed ingest folder s3://{TestRegistryAWS.ingest_bucket}/{TestRegistryAWS.ingest_job_subfolder} "
-            f"is empty."
+            f"Confirmed ingest folder s3://{TestRegistryAWS.ingest_bucket}/"
+            f"{TestRegistryAWS.ingest_job_subfolder} is empty."
         )
 
         # (2) Check registry bucket for the dataset
@@ -193,7 +192,8 @@ class TestRegistryAWS(unittest.TestCase):
             self.assertEqual(len(lines), 5)
         os.remove("/tmp/MMS_2015.csv")
         print(
-            f"Confirmed registry index s3://{TestRegistryAWS.registry_bucket}/MMS/MMS_2015.csv is correct."
+            f"Confirmed registry index s3://{TestRegistryAWS.registry_bucket}/MMS/MMS_2015.csv "
+            f"is correct."
         )
 
         s3_client.download_file(
@@ -206,7 +206,8 @@ class TestRegistryAWS(unittest.TestCase):
             self.assertEqual(len(lines), 3)
         os.remove("/tmp/MMS_2019.csv")
         print(
-            f"Confirmed registry index s3://{TestRegistryAWS.registry_bucket}/MMS/MMS_2019.csv is correct"
+            f"Confirmed registry index s3://{TestRegistryAWS.registry_bucket}/MMS/MMS_2019.csv "
+            f"is correct"
         )
 
         # (2b) Does every file exist that should?
@@ -220,7 +221,8 @@ class TestRegistryAWS(unittest.TestCase):
                 # Couldn't find one of the files
                 self.assertTrue(False, msg=str(e))
         print(
-            f"Confirmed all files in the manifest are present at s3://{TestRegistryAWS.registry_bucket}/MMS"
+            f"Confirmed all files in the manifest are present at "
+            f"s3://{TestRegistryAWS.registry_bucket}/MMS"
         )
 
         # (2c) Does the catalog file exist and is it correct?
@@ -230,6 +232,8 @@ class TestRegistryAWS(unittest.TestCase):
         with open("/tmp/catalog.json") as catalog_json:
             catalog = json.load(catalog_json)
             self.assertEqual(catalog["endpoint"], f"s3://{TestRegistryAWS.registry_bucket}")
+            self.assertIsNotNone(catalog["name"])
+            self.assertIsNotNone(catalog["contact"])
             if "catalog" in catalog:
                 mms_found = False
                 for ds_entry in catalog["catalog"]:

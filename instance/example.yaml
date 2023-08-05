@@ -30,6 +30,9 @@ registry:
                  "edu-myorganization-helio1",
                  "edu-myorganization-helio2"
                ]
+  catalog:
+    name: "Dr. Helio Cloud"
+    contact: "helio.cloud@jhuapl.edu"
 
 
 

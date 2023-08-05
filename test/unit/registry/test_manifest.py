@@ -1,6 +1,6 @@
 import unittest
 
-from registry.lambdas.app.exceptions import IngesterException
+from registry.lambdas.app.core.exceptions import IngesterException
 from registry.lambdas.app.ingest.manifest import get_manifest_from_fs
 
 

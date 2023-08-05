@@ -1,3 +1,7 @@
+"""
+Defines a DataSet stored in the HelioCloud Registry.
+"""
+
 import enum
 import json
 import re
@@ -5,10 +9,11 @@ from dataclasses import dataclass
 from datetime import datetime
 
 
-# Valid file formats for data set files stored in public s3 buckets
-
-
 class FileType(enum.Enum):
+    """
+    Valid file formats for data set files stored in public s3 buckets
+    """
+
     FITS = "fits"
     CSV = "csv"
     CDF = "cdf"
@@ -19,6 +24,10 @@ class FileType(enum.Enum):
 
 
 class IndexType(enum.Enum):
+    """
+    Valid file extensions for index files
+    """
+
     CSV = "csv"
     CSV_ZIP = "csv_zip"
     PARQUET = "parquet"
@@ -26,35 +35,37 @@ class IndexType(enum.Enum):
 
 class DataSetEncoder(json.JSONEncoder):
     """
-    Helps with encoding enums in a DataSet instance that must be serialized as strings in JSON format
+    Helps with encoding enums in a DataSet instance serialized as strings in JSON format
     """
 
-    def default(self, obj):
-        if isinstance(obj, IndexType):
-            return IndexType(obj).value
-        if isinstance(obj, FileType):
-            return FileType(obj).value
-        if isinstance(obj, datetime):
-            return obj.isoformat()
-        return json.JSONEncoder.default(self, obj)
+    def default(self, o):
+        if isinstance(o, IndexType):
+            return IndexType(o).value
+        if isinstance(o, FileType):
+            return FileType(o).value
+        if isinstance(o, datetime):
+            return o.isoformat()
+        return json.JSONEncoder.default(self, o)
 
 
 @dataclass
-class DataSet(object):
+class DataSet:  # pylint: disable=too-many-instance-attributes
     """
-    Model object describing a DataSet (a collection of related files & metadata) being stored in a HelioCloud
-    instance's registry (public S3 buckets).
+    Model object describing a DataSet (a collection of related files & metadata) being stored in a
+    HelioCloud instance's registry (public S3 buckets).
     """
 
-    """
-    Required fields
-    """
-    # Unique identifier for this data set, meeting naming requirements: alphanumeric, dashes and underscores only
-    # NOTE: Will be serialized as "id".
+    # pylint disable=too-many-instance-attributes
+    # This is a dataclass describing a DataSet, so it must contain all the necessary fields
+
+    # Required fields
+
+    # Unique identifier for this data set, meeting naming requirements: alphanumeric, dashes
+    # and underscores only. NOTE: Will be serialized as "id".
     dataset_id: str
 
-    # A fully qualified pointer to the object directory containing both the dataset and its file registry.
-    # It MUST start with 's3://' or 'https://', and terminate in '/'
+    # A fully qualified pointer to the object directory containing both the dataset and
+    # its file registry. It MUST start with 's3://' or 'https://', and terminate in '/'
     index: str
 
     # A short descriptive title sufficient to identify the dataset and its utility to users
@@ -77,14 +88,13 @@ class DataSet(object):
     # The file format of the actual data. Must be one of VALID_FILE_FORMATs
     filetype: list[FileType] = None
 
-    """
-    Optional Fields
-    """
+    # Optional fields
+
     # Optional descriptive statement about a data set
     description: str = None
 
-    # Identifier - such as a SPASE ID, dataset description URL, DOI, json link of model parameters or similar
-    # ancillary information
+    # Identifier - such as a SPASE ID, dataset description URL, DOI, json link of model
+    # parameters or similar ancillary information
     resource: str = None
 
     # ISO 8601 date/time of the dataset creation
@@ -113,8 +123,8 @@ class DataSet(object):
         if key == "dataset_id":
             if not re.fullmatch(r"^[a-zA-Z0-9_-]*$", str(value)):
                 raise ValueError(
-                    f"Dataset ID {value} not valid. Must contain only alphanumeric, underscore and dash "
-                    "characters."
+                    f"Dataset ID {value} not valid. Must contain only alphanumeric, underscore "
+                    f"and dash characters."
                 )
 
         # Confirm index is one of s3:// or https://
@@ -184,8 +194,8 @@ class DataSet(object):
             # Enum field
             if key == "filetype":
                 filetypes = list[FileType]()
-                for v in value:
-                    filetypes.append(v)
+                for types in value:
+                    filetypes.append(types)
                 dataset.filetype = filetypes
                 continue
             # Datetime fields
@@ -226,7 +236,7 @@ class DataSet(object):
                 dataset.filetype = [FileType(val) for val in value]
                 continue
             if key in ("start", "stop", "modification", "creation", "expiration", "verified"):
-                dataset.__setattr__(key, datetime.fromisoformat(value))
+                setattr(dataset, key, datetime.fromisoformat(value))
                 continue
-            dataset.__setattr__(key, value)
+            setattr(dataset, key, value)
         return dataset

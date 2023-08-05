@@ -1,31 +1,32 @@
-import boto3
+"""
+Method(s) for getting access to a HelioCloud's AWS DocumentDB instance
+"""
 import json
+import boto3
 import pymongo
 from botocore.exceptions import ClientError
 
 
 def get_documentdb_client(
-    session: boto3.session.Session, secret_name: str, tlsCAFile: str, local=False
+    session: boto3.session.Session, secret_name: str, tls_ca_file: str, local=False
 ) -> pymongo.MongoClient:
     """
-    Given an AWS Secret name and a PEM file, construct and return a MongoClient instance
-    connected to a DocumentDB instance at hostname
-
-    Parameters:
-        session: boto3 session to use for accessing AWS services
-        secret_name: name of the secret in AWS Secrets Manager containing DocumentDB connection credentials
-        tlsCAFile: CA file to use in a secure connection
-        local: defaults to False.  If set true, will use localhost as the hostname when trying to connect
-               to DocumentDB, as is fitting in some development setups using an SSH tunnel to the DocumentDB
-               cluster.
+    Constructs and returns a MongoClient instance connected to this HelioCloud's DocumentDB instance
+    :param session: boto3.Session to use
+    :param secret_name: name of the AWS Secrets Manager secret containing connection credentials
+    :param tls_ca_file: CA file to use in a secure connection
+    :param local: if True, use  localhost as the hostname to connect to DocumentDB.
+           Defaults to False.
+    :return:
     """
 
     # Get the connection secrets
     sm_client = session.client("secretsmanager")
     try:
         response = sm_client.get_secret_value(SecretId=secret_name)
-    except ClientError as e:
-        raise e
+    except ClientError as error:
+        raise error
+
     secret_string = json.loads(response["SecretString"])
     username = secret_string["username"]
     password = secret_string["password"]
@@ -41,17 +42,18 @@ def get_documentdb_client(
             password=password,
             tls=True,
             tlsInsecure=True,
-            tlsCAFile=tlsCAFile,
+            tlsCAFile=tls_ca_file,
             retryWrites=False,
         )
-    else:
-        host = secret_string["host"]
-        return pymongo.MongoClient(
-            host=host,
-            port=port,
-            username=username,
-            password=password,
-            tls=True,
-            tlsCAFile=tlsCAFile,
-            retryWrites=False,
-        )
+
+    # Otherwise normal connection
+    host = secret_string["host"]
+    return pymongo.MongoClient(
+        host=host,
+        port=port,
+        username=username,
+        password=password,
+        tls=True,
+        tlsCAFile=tls_ca_file,
+        retryWrites=False,
+    )

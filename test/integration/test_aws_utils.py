@@ -2,12 +2,14 @@ import boto3
 import os.path
 import random
 import unittest
-
 from registry.lambdas.app.aws_utils.s3 import get_dataset_entry_from_s3, get_manifest_from_s3
-from registry.lambdas.app.aws_utils.document_db import get_documentdb_client
 
 
 class TestAWSUtils(unittest.TestCase):
+    """
+    Simple integration tests for AWS utils functionality.
+    """
+
     pem_file = "registry/lambdas/app/resources/global-bundle.pem"
     bucket = "heliocloud-test-integration-" + str(random.randint(0, 1000))
 
@@ -43,15 +45,6 @@ class TestAWSUtils(unittest.TestCase):
         s3client.delete_object(Bucket=TestAWSUtils.bucket, Key=TestAWSUtils.manifest_key)
         s3client.delete_bucket(Bucket=TestAWSUtils.bucket)
         s3client.close()
-
-    @unittest.skip("Requires SSH tunnel.")
-    def test_documentdb_connection(self):
-        get_documentdb_client(
-            session=self.__session,
-            secret_name="cjeschkedev/registry/catalogdb/credentials",
-            tlsCAFile=TestAWSUtils.pem_file,
-            local=True,
-        )
 
     def test_entry_json_s3(self):
         s3client = boto3.client("s3")

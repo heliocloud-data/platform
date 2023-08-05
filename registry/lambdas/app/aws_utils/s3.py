@@ -1,21 +1,22 @@
-import boto3
+"""
+Helper methods for getting HelioCloud Registry files from S3 buckets.
+"""
 import json
 import pandas as pd
 
 from boto3.session import Session
 from ..ingest.manifest import build_manifest_df
 from ..model.dataset import DataSet
-from ..exceptions import RegistryException
+from ..core.exceptions import RegistryException
 
 
 def get_dataset_entry_from_s3(session: Session, bucket_name: str, entry_key: str) -> DataSet:
     """
-    Load the entry.json file from an S3 location, returning a DataSet instance.
-
-    Parameters:
-        session: boto3 session to use for connecting to S3
-        bucket_name: name of the AWS s3 bucket
-        entry_key: AWS s3 key of the entry dataset file (should end in .json)
+    Load the entry.json file from an S3 location, returning a DataSet instance
+    :param session: boto3.Session to use for accessing AWS S3
+    :param bucket_name: name of the AWS S3 bucket
+    :param entry_key: AWS S3 key of the entry dataset file
+    :return: a DataSet instance created from the entry_key
     """
     if not entry_key.endswith(".json"):
         raise RegistryException(f"Expecting .json extension for dataset file: {entry_key}.")
@@ -96,9 +97,12 @@ def get_bucket_name(path: str) -> str:
 
 def get_bucket_subfolder(path: str) -> str:
     """
-    Gets the sub folder within the bucket (everything after the bucket name). Assumes paths starting with:
-    - file://
-    - s3://
+    Gets the sub folder within the bucket (everything after bucket name).
+    Assumes the path starts with one of:
+        - file ://
+        - s3://
+    :param path: the full path of the bucket
+    :return: sub folder in the bucket
     """
     return "/".join(
         path.split(

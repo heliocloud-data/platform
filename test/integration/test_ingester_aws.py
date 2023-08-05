@@ -1,24 +1,18 @@
+import boto3
 import os
 import random
 import unittest
-from datetime import datetime
 from unittest.mock import patch
-from zoneinfo import ZoneInfo
-
-import boto3
-import pymongo
 
 from registry.lambdas.app.aws_utils.s3 import (
     get_bucket_name,
     get_dataset_entry_from_s3,
     get_manifest_from_s3,
 )
-from registry.lambdas.app.exceptions import IngesterException
+from registry.lambdas.app.core.exceptions import IngesterException
 from registry.lambdas.app.ingest.ingester import Ingester
 from registry.lambdas.app.ingest.manifest import get_manifest_from_fs
 from registry.lambdas.app.local_utils.entry import get_entry_from_fs
-from registry.lambdas.app.model.dataset import FileType, IndexType
-from registry.lambdas.app.repositories import DataSetRepository
 
 
 class TestIngesterAWS(unittest.TestCase):
@@ -35,17 +29,6 @@ class TestIngesterAWS(unittest.TestCase):
     ingest_folder = "upload/"
     entry_key = ingest_folder + "entry.json"
     manifest_key = ingest_folder + "manifest.csv"
-
-    # TODO: Update to use an SSH tunnel w/ AWS
-    # AWS DocumentDB Environment
-    # Expecting to connect on localhost to a DocumentDB instance
-    db_hostname = "localhost"
-    db_port = 27017
-    db_global_pem = "registry/lambdas/app/resources/global-bundle.pem"
-    db_username = "hc_master"
-    db_password = "password"
-    # DB & collection names to use for testing.  These will be created & dropped for the test.
-    db_name = "ingester"
 
     def setUp(self) -> None:
         self.__session = boto3.session.Session()
@@ -109,7 +92,7 @@ class TestIngesterAWS(unittest.TestCase):
         s3client.delete_bucket(Bucket=TestIngesterAWS.dataset_bucket)
         s3client.close()
 
-    @patch("registry.lambdas.app.repositories.DataSetRepository")
+    @patch("registry.lambdas.app.catalog.dataset_repository.DataSetRepository")
     def test_invalid_dest_bucket(self, ds_repo) -> None:
         # Check that the Ingester throws an exception if provided an invalid destination location in the entry
 
@@ -132,7 +115,7 @@ class TestIngesterAWS(unittest.TestCase):
             )
             ingester.execute()
 
-    @patch("registry.lambdas.app.repositories.DataSetRepository")
+    @patch("registry.lambdas.app.catalog.dataset_repository.DataSetRepository")
     def test_missing_file(self, ds_repo):
         # Check that the Ingester throws an exception if the manifest references a file that doesn't exist
 
@@ -165,7 +148,7 @@ class TestIngesterAWS(unittest.TestCase):
             )
             ingester.execute()
 
-    @patch("registry.lambdas.app.repositories.DataSetRepository")
+    @patch("registry.lambdas.app.catalog.dataset_repository.DataSetRepository")
     def test_ingester_aws(self, ds_repo) -> None:
         # Test the Ingester implementation with an AWS account
 
@@ -228,79 +211,6 @@ class TestIngesterAWS(unittest.TestCase):
 
         # save() should have been called once
         self.assertEqual(ds_repo.save.call_count, 1)
-
-        # Clean up
-        s3client.close()
-
-    @unittest.skip("Requires SSH tunnel")
-    def test_ingester_with_catalogdb_aws(self):
-        # Test the Ingester implementation with a live catalog db, validating catalog db entries
-
-        # Start the s3 client
-        s3client = boto3.client("s3")
-
-        # Get the entry dataset and update the index to use the dataset bucket created
-        entry_dataset = get_dataset_entry_from_s3(
-            session=self.__session,
-            bucket_name=TestIngesterAWS.ingest_bucket,
-            entry_key=TestIngesterAWS.entry_key,
-        )
-        entry_dataset.index = entry_dataset.index.replace(
-            get_bucket_name(entry_dataset.index), TestIngesterAWS.dataset_bucket
-        )
-
-        # Get the manifest
-        manifest_df = get_manifest_from_s3(
-            session=self.__session,
-            bucket_name=TestIngesterAWS.ingest_bucket,
-            manifest_key=TestIngesterAWS.manifest_key,
-        )
-        # Instantiate a clean repository instance
-        db_client = pymongo.MongoClient(
-            TestIngesterAWS.db_hostname,
-            port=TestIngesterAWS.db_port,
-            username=TestIngesterAWS.db_username,
-            password=TestIngesterAWS.db_password,
-            tls=True,
-            tlsAllowInvalidCertificates=True,
-            tlsAllowInvalidHostnames=True,
-            tlsCAFile=TestIngesterAWS.db_global_pem,
-            directConnection=True,
-            retryWrites=False,
-        )
-        db_client.drop_database(TestIngesterAWS.db_name)
-        ds_repo = DataSetRepository(db_client=db_client, db=TestIngesterAWS.db_name)
-
-        # Create an Ingester instance and run it
-        ingester = Ingester(
-            ingest_bucket=TestIngesterAWS.ingest_bucket,
-            ingest_folder=TestIngesterAWS.ingest_folder,
-            entry_dataset=entry_dataset,
-            manifest_df=manifest_df,
-            ds_repo=ds_repo,
-        )
-        ingester.execute()
-
-        # Do some validation of the catalog db.  Check various fields on the dataset
-        dataset = ds_repo.get_all()[0]
-        self.assertEqual(dataset.dataset_id, entry_dataset.dataset_id)
-        self.assertEqual(dataset.index, entry_dataset.index)
-        self.assertEqual(dataset.title, entry_dataset.title)
-        self.assertEqual(
-            dataset.start,
-            datetime(
-                year=2015, month=9, day=1, hour=12, minute=11, second=14, tzinfo=ZoneInfo("UTC")
-            ),
-        )
-        self.assertEqual(
-            dataset.stop,
-            datetime(
-                year=2015, month=9, day=2, hour=18, minute=10, second=0, tzinfo=ZoneInfo("UTC")
-            ),
-        )
-        self.assertEqual(dataset.filetype, [FileType.CDF])
-        self.assertEqual(dataset.indextype, IndexType.CSV)
-        self.assertEqual(dataset.creation, entry_dataset.creation)
 
         # Clean up
         s3client.close()

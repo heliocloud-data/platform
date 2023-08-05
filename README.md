@@ -316,12 +316,6 @@ DaskHub has the initial infrastructure instantiated with this CDK project but cu
 additional steps after logging into an admin EC2 instance.  The DaskHub installation assumes you have followed the above deployment instructions and builds upon this infrastructure. For the remainder of the installation instructions see the DaskHub 
 installation instructions [here](daskhub/README.md).
 
-
-## 4 Validate
-TODO: I've just a deployment, so what should I check?
-- Do an initial manual run of the Cataloger?  Make sure that the Data Set catalog has been produced?
-- Login to Daskhub / User portal, start up an instance and run an example analytic?
-- Check the CloudFormation templates in AWS console?
 ----
 # Operations: Using your HelioCloud
 
@@ -338,6 +332,7 @@ New or updated datasets are ingested into a HelioCloud registry via that Heliocl
 deployed and configured as part of a HelioCloud. The ingest service executes a _job_, which is constructed by putting
 your dataset files and accompanying metadata in a subfolder within the ingest service's s3 bucket, then running the 
 ingest service via a commandline tool. The process of constructing and executing an ingest job is as follows:
+
 1. Create a sub-folder in the ingest s3 bucket. For example, if your bucket was named `my.upload.bucket` in your 
 instance configuration, a valid ingest job location would be `s3://my.upload.bucket/my_job`.
 
@@ -387,11 +382,18 @@ to confirm it is empty, or by checking the public S3 buckets in the HelioCloud r
 confirm the new data was incorporated. 
 
 ### Updating the Catalog
-After running an ingest job (or several),  updating the HelioCLoud's Registry catalog is necessary to make the data 
-available through the HelioCloud data API:
-TODO: Finish
-
-
+After running an ingest job (or several), updating the HelioCloud's Registry catalog is necessary to make the data 
+available through the HelioCloud data API. Simply run the Python script at `tools/catalog.py`with the name of your 
+Heliocloud instance:
+```shell
+python tools/catalog.py my_instance
+```
+You can then check the `catalog.json` file(s) at the root of the public S3 buckets in your HelicoCloud's registry:
+```shell
+aws s3 cp s3://my.registry.bucket/catalog.json .
+cat catalog.json
+```
+Read the catalog entries to see that your ingest job incorporated the data correctly. 
 
 
 -------

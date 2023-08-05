@@ -22,7 +22,8 @@ registry:
   ]
   ingestBucketName: "cjeschke-dev-uploads"
   requesterPays: True
-  catalogDb:
-    createBastionServer: False
+  catalog:
     masterUser: master
+    name: "Chris Jeschke"
+    contact: "chris.jeschke@jhuapl.edu"
   destroyOnRemoval: False

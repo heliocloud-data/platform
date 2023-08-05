@@ -1,7 +1,12 @@
-#!/usr/bin/env python3
-import os
-import aws_cdk as cdk
+"""
+CDK script for deploying a HelioCloud instance to AWS
+"""
 
+# !/usr/bin/env python3
+import os
+import sys
+
+import aws_cdk as cdk
 
 from constructs import Construct
 
@@ -19,11 +24,16 @@ class MyHelioCloud(Construct):
     Stacks and their deployment configurations.
     """
 
-    def __init__(self, scope: Construct, id: str, *, prod=False):
-        super().__init__(scope, id)
+    def __init__(self, scope: Construct, heliocloud_id: str):
+        """
+        Initialize a HelioCloud instance
+        :param scope:
+        :param heliocloud_id: identifier(name) to use for this instance of a HelioCloud
+        """
+        super().__init__(scope, heliocloud_id)
 
         # Identity of this HelioCloud instance
-        self.__id = id
+        self.__heliocloud_id = heliocloud_id
 
         # Get configuration details
         self.__config = None
@@ -57,7 +67,7 @@ class MyHelioCloud(Construct):
         """
         Get the config for this HelioCloud instance.
         """
-        self.__config = load_configs(hc_id=self.__id)
+        self.__config = load_configs(hc_id=self.__heliocloud_id)
 
     def __build_heliocloud(self):
         """
@@ -130,14 +140,17 @@ class MyHelioCloud(Construct):
             cdk.Tags.of(registry_stack).add("Product", "heliocloud-registry")
 
 
-def get_instance(app: cdk.App) -> (str, dict):
+def get_instance(cdk_app: cdk.App) -> str:
     """
-    Get the name for this HelioCloud instance.
+    Get the name to use for this HelioCloud instance from the CDK app context
+    :param cdk_app: CDK app context
+    :return: name to use
     """
-    instance = app.node.try_get_context("instance")
+    instance = cdk_app.node.try_get_context("instance")
     if instance is None:
-        raise Exception(
-            "No instance specified. Re-run and provide an instance name value -c instance=<instance>."
+        sys.exit(
+            "No instance specified. Re-run and provide an instance name value -c "
+            "instance=<instance>"
         )
     return str(instance)
 
@@ -145,6 +158,6 @@ def get_instance(app: cdk.App) -> (str, dict):
 # Build the HelioCloud
 app = cdk.App()
 cdk.Tags.of(app).add("Project", "heliocloud")
-MyHelioCloud(app, id=get_instance(app))
+MyHelioCloud(app, heliocloud_id=get_instance(app))
 
 app.synth()

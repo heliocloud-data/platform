@@ -13,7 +13,7 @@ def get_access_flag(aws_session, username):
     try:
         response = iam_client.get_user(UserName=username)
         access_flag = True
-    except Exception as e:
+    except Exception:
         access_flag = False
     return access_flag
 

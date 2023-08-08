@@ -63,6 +63,19 @@ class PortalStack(Stack):
             supported_identity_providers=[cognito.UserPoolClientIdentityProvider.COGNITO],
             prevent_user_existence_errors=True,
         )
+        ## Create identity pool
+        portal_identity_pool = identity_pool.IdentityPool(
+            self,
+            "IdentityPool",
+            identity_pool_name="portal_idpool",
+            authentication_providers=identity_pool.IdentityPoolAuthenticationProviders(
+                user_pools=[
+                    identity_pool.UserPoolAuthenticationProvider(
+                        user_pool=base_auth.userpool, user_pool_client=portal_client
+                    )
+                ]
+            ),
+        )
 
         ## Create IAM auth/unauth Roles
         authenticated_policy_document = iam.PolicyDocument.from_json(
@@ -83,6 +96,7 @@ class PortalStack(Stack):
                             "cognito-sync:*",
                             "pricing:GetProducts",
                             "iam:CreateAccessKey",
+                            "iam:PassRole",
                             "ec2:StartInstances",
                             "ec2:CreateSecurityGroup",
                             "ec2:DescribeKeyPairs",
@@ -104,6 +118,8 @@ class PortalStack(Stack):
                             "iam:GetUser",
                             "ec2:DescribeSubnets",
                             "ec2:DeleteKeyPair",
+                            "ec2:AssociateIamInstanceProfile",
+                            "ec2:ReplaceIamInstanceProfileAssociation",
                         ],
                         "Resource": "*",
                     }
@@ -113,12 +129,7 @@ class PortalStack(Stack):
         authenticated_policy = iam.Policy(
             self, "PortalAuthPolicy", document=authenticated_policy_document
         )
-        authenticated_role = iam.Role(
-            self,
-            "PortalAuthRole",
-            assumed_by=iam.FederatedPrincipal("cognito-identity.amazonaws.com"),
-        )
-        authenticated_role.attach_inline_policy(authenticated_policy)
+        portal_identity_pool.authenticated_role.attach_inline_policy(authenticated_policy)
         unauthenticated_policy_document = iam.PolicyDocument.from_json(
             {
                 "Version": "2012-10-17",
@@ -134,28 +145,7 @@ class PortalStack(Stack):
         unauthenticated_policy = iam.Policy(
             self, "PortalUnauthPolicy", document=unauthenticated_policy_document
         )
-        unauthenticated_role = iam.Role(
-            self,
-            "PortalUnauthRole",
-            assumed_by=iam.FederatedPrincipal("cognito-identity.amazonaws.com"),
-        )
-        unauthenticated_role.attach_inline_policy(unauthenticated_policy)
-
-        ## Create identity pool
-        portal_identity_pool = identity_pool.IdentityPool(
-            self,
-            "IdentityPool",
-            identity_pool_name="portal_idpool",
-            authentication_providers=identity_pool.IdentityPoolAuthenticationProviders(
-                user_pools=[
-                    identity_pool.UserPoolAuthenticationProvider(
-                        user_pool=base_auth.userpool, user_pool_client=portal_client
-                    )
-                ]
-            ),
-            authenticated_role=authenticated_role,
-            unauthenticated_role=unauthenticated_role,
-        )
+        portal_identity_pool.unauthenticated_role.attach_inline_policy(unauthenticated_policy)
 
         ##############################################
         #    Create Portal Resources and Secrets     #
@@ -184,7 +174,11 @@ class PortalStack(Stack):
             description="Default Portal EC2 Role with S3 access",
         )
         portal_ec2_default_role.add_managed_policy(shared_policy)
-
+        portal_ec2_default_instance_profile = iam.CfnInstanceProfile(
+            self,
+            "PortalEc2InstanceProfile",
+            roles=[portal_ec2_default_role.role_name],
+        )
         ec2_admin_role = iam.Role(
             self,
             "EC2AdminRole",
@@ -236,8 +230,8 @@ class PortalStack(Stack):
                 "USER_POOL_ID": base_auth.userpool.user_pool_id,
                 "SITE_URL": portal_url,
                 "DEFAULT_SECURITY_GROUP_ID": portal_ec2_default_sg.security_group_id,
-                "DEFAULT_EC2_ROLE_ARN": portal_ec2_default_role.role_arn,
-                "DEFAULT_EC2_ROLE_NAME": portal_ec2_default_role.role_name,
+                "DEFAULT_EC2_INSTANCE_PROFILE_ARN": portal_ec2_default_instance_profile.attr_arn,
+                "DEFAULT_EC2_SUBNET_ID": base_aws.heliocloud_vpc.public_subnets[0].subnet_id,
             },
             secrets={
                 "IDENTITY_POOL_ID": ecs.Secret.from_secrets_manager(identity_pool_id_secret),

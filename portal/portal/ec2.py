@@ -4,8 +4,8 @@ from config import region
 from ec2_config import (
     instance_types_master_dict,
     security_group_id,
-    default_ec2_role_arn,
-    default_ec2_role_name,
+    default_ec2_instance_profile_arn,
+    default_subnet_id,
 )
 from aws import create_user_tag, get_ec2_pricing
 
@@ -79,12 +79,12 @@ def create_instance(aws_session, username, instance_launch_info):
         Monitoring={"Enabled": False},
         KeyName=instance_launch_info["key_pair"],
         TagSpecifications=tag_specifications,
+        SubnetId=default_subnet_id,
         SecurityGroupIds=[
             security_group_id,
         ],
         IamInstanceProfile={
-            "Arn": default_ec2_role_arn,
-            "Name": default_ec2_role_name,
+            "Arn": default_ec2_instance_profile_arn,
         },
     )
     return response

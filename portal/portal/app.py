@@ -166,35 +166,6 @@ def instance_action():
         return redirect(aws_auth.get_sign_in_url())
 
 
-@app.route("/launch_template", methods=["POST", "GET"])
-def launch_template():
-    verify_jwt_in_request(optional=True)
-    username = session.get("username", None)
-    id_token = session.get("id_token", None)
-    aws_session = start_aws_session(id_token)
-    running_instances = get_running_instances(aws_session, username)
-    if get_jwt_identity():
-        if request.method == "GET":
-            instance_id = request.args.get("instance_id")
-            for r in running_instances:
-                if r["InstanceId"] == instance_id:
-                    instance_info = r
-            return render_template("launch_template.html", instance_info=instance_info)
-        if request.method == "POST":
-            id_token = session.get("id_token", None)
-            username = session.get("username", None)
-            aws_session = start_aws_session(id_token)
-            template_name = request.form.get("template_name")
-            instance_id = request.args.get("instance_id")
-            for r in running_instances:
-                if r["InstanceId"] == instance_id:
-                    instance_info = r
-            resp = create_launch_template(aws_session, username, template_name, instance_info)
-            return redirect(url_for("index"))
-    else:
-        return redirect(aws_auth.get_sign_in_url())
-
-
 @app.route("/launch_instance", methods=["POST", "GET"])
 def launch_instance():
     verify_jwt_in_request(optional=True)
@@ -203,7 +174,6 @@ def launch_instance():
         username = session.get("username", None)
         aws_session = start_aws_session(id_token)
         if request.method == "POST":
-            launch_type = request.form.get("launch_type")
             image_output = request.form.get("image_output").split(",")
             instance_launch_info = {
                 "instance_name": request.form.get("instance_name_for_custom"),

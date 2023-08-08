@@ -50,4 +50,4 @@ Make sure Docker[https://www.docker.com] is installed on your machine and that y
 
 The user portal requires that the domain name has an active public SSL certificate for the host domain (e.g. `your-heliocloud-domain.org`), validated through Amazon Certification Manager (ACM). 
 See [here](https://docs.aws.amazon.com/acm/latest/userguide/gs-acm-request-public.html#:~:text=Sign%20in%20to%20the%20AWS,name%20such%20as%20example.com%20) for instructions on how to set up a public certificate through ACM. 
-As a part of portal deployment configuation, add the certificate ARN to your instance `.yaml` file.
+As a part of portal deployment configuration, add the certificate ARN to your instance `.yaml` file.

@@ -60,7 +60,6 @@ image_id_dict = {
     "us-east-1": {
         "Amazon Linux": ["ami-0cff7528ff583bf9a", "ami-031118784a2fe4935"],
         "Ubuntu": ["ami-052efd3df9dad4825", "ami-077fb40eebcc23898"],
-        #'Windows': ['ami-041306c411c38a789'],
         "Red Hat": ["ami-06640050dc3f556bb"],
     },
     "us-east-2": {
@@ -71,5 +70,5 @@ image_id_dict = {
 }
 
 security_group_id = os.getenv("DEFAULT_SECURITY_GROUP_ID")
-default_ec2_role_arn = os.getenv("DEFAULT_EC2_ROLE_ARN")
-default_ec2_role_name = os.getenv("DEFAULT_EC2_ROLE_NAME")
+default_ec2_instance_profile_arn = os.getenv("DEFAULT_EC2_INSTANCE_PROFILE_ARN")
+default_subnet_id = os.getenv("DEFAULT_EC2_SUBNET_ID")

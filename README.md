@@ -496,4 +496,3 @@ using an instance configuration you have created for development purposes:
 % cdk deploy --all -c instance=my_dev_instance_name
 ```
 .....where you have an instance configuration created at `instance/my_dev_instance_name.yaml`.
-

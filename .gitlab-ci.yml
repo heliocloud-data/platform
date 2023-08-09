@@ -118,10 +118,11 @@ integration-cdk-deploy:
   stage: integration
   environment:
     name: testing/$CI_COMMIT_REF_SLUG
-    url: https://$CI_ENVIRONMENT_SLUG.example.com
+    url: https://portal-${CI_COMMIT_REF_SLUG}.aplscicloud.org
     on_stop: integration-cdk-destroy-on_stop_hook
     auto_stop_in: 8 hours
   script:
+    - export AWS_DEFAULT_REGION=us-east-2
     - printenv
     - python -m pip install -r requirements.txt
     - python -m pip install -r requirements-dev.txt

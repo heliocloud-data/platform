@@ -7,6 +7,10 @@ from app_config import load_configs
 # The default HC instance name.
 DEFAULT_HC_INSTANCE = "example"
 
+# The maximum number of characters that appear in the lambda name that are
+# assigned by the heliocloud deployment.
+MAX_LAMBDA_SEGMENT_NAME = 32
+
 
 def get_hc_instance() -> str:
     """
@@ -63,6 +67,10 @@ def get_lambda_function_name(session: boto3.Session, hc_instance: str, lambda_na
     # Derive the starting characters of the function name, which as far as I know,
     # simply drops any hyphen characters from the heliocloud instance name.
     function_name_starts_with = hc_instance.replace("-", "")
+
+    # Additionally, it appears that this segment is a maximum of 32 characters.
+    if len(function_name_starts_with) > MAX_LAMBDA_SEGMENT_NAME:
+        function_name_starts_with = function_name_starts_with[:MAX_LAMBDA_SEGMENT_NAME]
 
     client = session.client("lambda")
     response = client.list_functions()

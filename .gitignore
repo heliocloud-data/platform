@@ -19,3 +19,7 @@ htmlcov
 # Output files from static-analysis
 codeclimate.json
 pylint.txt
+
+# Output files from the integration tests
+instance/gitlab-integration-*
+IT-*.xml

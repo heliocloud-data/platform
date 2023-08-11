@@ -113,7 +113,8 @@ integration-cdk-deploy:
   environment:
     name: testing/$CI_COMMIT_REF_SLUG
     url: https://$CI_ENVIRONMENT_SLUG.example.com
-    on_stop: integration-cdk-destroy
+    on_stop: integration-cdk-destroy-on_stop_hook
+    auto_stop_in: 8 hours
   script:
     - printenv
     - python -m pip install -r requirements.txt
@@ -136,6 +137,7 @@ integration-test:
   stage: integration
   environment:
     name: testing/$CI_COMMIT_REF_SLUG
+    action: verify
   script:
     - printenv
     - export PYTHONPATH=.:test/integration
@@ -154,6 +156,29 @@ integration-test:
   needs: ['integration-cdk-deploy']
 
 integration-cdk-destroy:
+  stage: integration
+  environment:
+    name: testing/$CI_COMMIT_REF_SLUG
+    action: stop
+  script:
+    - python -m pip install -r requirements.txt
+    - python -m pip install -r requirements-dev.txt
+    - curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
+    - apt-get install -y nodejs
+    - npm install -g npm
+    - npm install -g aws-cdk
+    - cdk --version
+    - apt-get update && apt-get install -y gettext
+    # Modify the cdk.json file to run in coverage mode.
+    - cdk --app "coverage run app.py" destroy --all -c instance=gitlab-integration-${CI_COMMIT_REF_SLUG} --force -v
+  dependencies:
+    - integration-cdk-deploy
+    - integration-test
+  needs: ['integration-cdk-deploy', 'integration-test']
+  rules:
+    - if: $CI_COMMIT_BRANCH == "develop" || $CI_COMMIT_BRANCH == "main"
+
+integration-cdk-destroy-on_stop_hook:
   stage: integration
   when: manual
   environment:
@@ -174,6 +199,7 @@ integration-cdk-destroy:
     - integration-cdk-deploy
     - integration-test
   needs: ['integration-cdk-deploy', 'integration-test']
+
 
 # NOTES:
 # CI_COMMIT_BRANCH -> The branch name

@@ -14,6 +14,12 @@ from registry.lambdas.app.ingest.ingester import Ingester
 from registry.lambdas.app.ingest.manifest import get_manifest_from_fs
 from registry.lambdas.app.local_utils.entry import get_entry_from_fs
 
+from utils import (
+    new_boto_session,
+    get_hc_instance,
+    get_region,
+)
+
 
 class TestIngesterAWS(unittest.TestCase):
     """
@@ -31,14 +37,29 @@ class TestIngesterAWS(unittest.TestCase):
     manifest_key = ingest_folder + "manifest.csv"
 
     def setUp(self) -> None:
-        self.__session = boto3.session.Session()
+        self.__hc_instance = get_hc_instance()
+        self.__session = new_boto_session(self.__hc_instance)
+        self.__location_constraint = get_region(self.__hc_instance, True)
 
         # Populate the upload path in S3
-        s3client = self.__session.client("s3")
+        s3client = self.__session.client(service_name="s3")
         print("\nSetting up for test.")
         print("\tCreating buckets.")
-        s3client.create_bucket(Bucket=TestIngesterAWS.ingest_bucket)
-        s3client.create_bucket(Bucket=TestIngesterAWS.dataset_bucket)
+
+        print(f"\t\t{TestIngesterAWS.ingest_bucket}...")
+        s3client.create_bucket(
+            Bucket=TestIngesterAWS.ingest_bucket,
+            CreateBucketConfiguration={
+                "LocationConstraint": self.__location_constraint,
+            },
+        )
+        print(f"\t\t{TestIngesterAWS.dataset_bucket}...")
+        s3client.create_bucket(
+            Bucket=TestIngesterAWS.dataset_bucket,
+            CreateBucketConfiguration={
+                "LocationConstraint": self.__location_constraint,
+            },
+        )
 
         # Upload entry & Manifest files
         print("\tUploading entry & manifest files.")

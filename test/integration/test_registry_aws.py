@@ -8,10 +8,12 @@ import boto3
 from registry.lambdas.app.catalog_lambda import lambda_execute
 from registry.lambdas.app.model.dataset import DataSet
 from utils import (
+    new_boto_session,
     get_hc_instance,
     get_lambda_function_name,
     get_registry_s3_buckets,
     get_ingest_s3_bucket_name,
+    list_lambda_function_names,
 )
 
 
@@ -25,11 +27,10 @@ class TestRegistryAWS(unittest.TestCase):
 
     """
 
-    # Boto3 session to use for AWS calls
-    session = boto3.session.Session()
-
-    # TODO:  Get these from the instance config
     hc_instance = get_hc_instance()
+
+    # Boto3 session to use for AWS calls
+    session = new_boto_session(hc_instance)
 
     registry_bucket = get_registry_s3_buckets(hc_instance=hc_instance)[0]
 
@@ -153,7 +154,12 @@ class TestRegistryAWS(unittest.TestCase):
             "job_folder": TestRegistryAWS.ingest_job_subfolder,
         }
 
-        print(f"Running lambda function {TestRegistryAWS.ingest_function_name}")
+        if TestRegistryAWS.ingest_function_name is None:
+            print(f"Unable to locate lambda ingest function for {TestRegistryAWS.hc_instance}")
+            list_lambda_function_names(TestRegistryAWS.session)
+        else:
+            print(f"Running lambda ingest function {TestRegistryAWS.ingest_function_name}")
+
         print(f"{json.dumps(payload)}")
         response = lambda_client.invoke(
             FunctionName=TestRegistryAWS.ingest_function_name, Payload=json.dumps(payload)

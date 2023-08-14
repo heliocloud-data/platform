@@ -12,6 +12,36 @@ DEFAULT_HC_INSTANCE = "example"
 MAX_LAMBDA_SEGMENT_NAME = 32
 
 
+def get_region(hc_instance: str, use_env_var_if_available: bool = False) -> str:
+    """
+    Utility function for fetching the AWS region based on the configuration chain.
+    """
+
+    cfg = load_configs(hc_id=hc_instance)
+
+    region = None
+    if "env" in cfg and "region" in cfg["env"]:
+        region = cfg["env"]["region"]
+
+    if region is None and use_env_var_if_available:
+        region = os.getenv("AWS_DEFAULT_REGION")
+
+    return region
+
+
+def new_boto_session(hc_instance: str) -> boto3.session.Session:
+    """
+    Creates a new boto3 session for the given heliocloud instance.
+    """
+    cfg = load_configs(hc_id=hc_instance)
+
+    region = get_region(hc_instance)
+
+    if region is None:
+        return boto3.session.Session()
+    return boto3.session.Session(region_name=region)
+
+
 def get_hc_instance() -> str:
     """
     Gets name of the HelioCloud instance currently being worked with
@@ -81,3 +111,25 @@ def get_lambda_function_name(session: boto3.Session, hc_instance: str, lambda_na
 
         if (lambda_name in function_name) and function_name.startswith(function_name_starts_with):
             return function_name
+
+
+def list_lambda_function_names(session: boto3.Session):
+    """
+    Prints the lambda functions to the console.
+    :param session: a boto3.Session instance to use
+    """
+
+    client = session.client("lambda")
+    response = client.list_functions()
+    client.close()
+
+    count = 0
+    print("Lambda Function(s):")
+    for function in response["Functions"]:
+        function_name = str(function["FunctionName"])
+
+        print(f" * {function_name}")
+        count = count + 1
+
+    if count == 0:
+        print("<EMPTY>")

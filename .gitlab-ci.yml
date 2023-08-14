@@ -1,11 +1,13 @@
 # build and send new container to ECR registry
 default:
-  image: python:latest
+  image: python:3.9
 
 stages:
   - test
   - integration
 
+# At the momemnt, there are a subset of unit tests that require nodejs
+# to be installed.
 unit-test:
   stage: test
   before_script:
@@ -14,6 +16,8 @@ unit-test:
     - export PYTHONPATH=.
     - python -m pip install -r requirements.txt
     - python -m pip install -r requirements-dev.txt
+    - curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
+    - apt-get install -y nodejs
     - pytest -c pytest-unit.ini --junit-xml=TEST-HelioCloud-platform.xml --junit-prefix=HelioCloud-platform
   artifacts:
     when: always
@@ -30,6 +34,8 @@ coverage:
     - export PYTHONPATH=.
     - python -m pip install -r requirements.txt
     - python -m pip install -r requirements-dev.txt
+    - curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
+    - apt-get install -y nodejs
     - coverage run -m pytest -c pytest-unit.ini
     - coverage report
     - coverage xml

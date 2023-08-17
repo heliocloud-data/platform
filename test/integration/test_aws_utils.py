@@ -4,6 +4,12 @@ import random
 import unittest
 from registry.lambdas.app.aws_utils.s3 import get_dataset_entry_from_s3, get_manifest_from_s3
 
+from utils import (
+    new_boto_session,
+    get_hc_instance,
+    get_region,
+)
+
 
 class TestAWSUtils(unittest.TestCase):
     """
@@ -20,9 +26,17 @@ class TestAWSUtils(unittest.TestCase):
     manifest_key = "manifest.csv"
 
     def setUp(self) -> None:
+        self.__hc_instance = get_hc_instance()
+        self.__location_constraint = get_region(self.__hc_instance, True)
+
         # put the test file up on S3
         s3client = boto3.client("s3")
-        s3client.create_bucket(Bucket=TestAWSUtils.bucket)
+        s3client.create_bucket(
+            Bucket=TestAWSUtils.bucket,
+            CreateBucketConfiguration={
+                "LocationConstraint": self.__location_constraint,
+            },
+        )
         s3client.upload_file(
             Filename=TestAWSUtils.entry_dataset_file,
             Bucket=TestAWSUtils.bucket,
@@ -36,7 +50,8 @@ class TestAWSUtils(unittest.TestCase):
         s3client.close()
 
         # Session to use
-        self.__session = boto3.session.Session()
+        self.__hc_instance = get_hc_instance()
+        self.__session = new_boto_session(self.__hc_instance)
 
     def tearDown(self) -> None:
         # Delete it from S3

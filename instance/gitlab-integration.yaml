@@ -38,3 +38,5 @@ registry:
     name: "Chris Jeschke"
     contact: "chris.jeschke@jhuapl.edu"
   destroyOnRemoval: True
+  layers:
+    pandas: "arn:aws:lambda:${AWS_DEFAULT_REGION}:336392948345:layer:AWSSDKPandas-Python39:6"

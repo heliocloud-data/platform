@@ -17,6 +17,10 @@ from constructs import Construct
 
 from base_aws.base_aws_stack import BaseAwsStack
 
+from registry.lambdas.app.core.constants import (
+    DEFAULT_PANDA_LAYERS_ARN,
+)
+
 
 class RegistryStack(Stack):  # pylint: disable=too-many-instance-attributes
     """
@@ -25,9 +29,6 @@ class RegistryStack(Stack):  # pylint: disable=too-many-instance-attributes
     (a) the rest of the components of this instance (e.g. Daskhub)
     (b) other HelioCloud instances
     """
-
-    # ARN for a Pandas Lambda Layer (used by multiple HelioCloud lambdas)
-    pandas_layer_arn = "arn:aws:lambda:us-east-1:336392948345:layer:AWSSDKPandas-Python39:6"
 
     def __init__(
         self,
@@ -42,6 +43,9 @@ class RegistryStack(Stack):  # pylint: disable=too-many-instance-attributes
         # Registry config
         self.__registry_config = config["registry"]
         self.__removal_policy = self.__registry_config["destroyOnRemoval"]
+        self.__pandas_layer_arn = DEFAULT_PANDA_LAYERS_ARN
+        if "layers" in self.__registry_config and "pandas" in self.__registry_config["layers"]:
+            self.__pandas_layer_arn = self.__registry_config["layers"]["pandas"]
 
         # Hold a reference to the base stack
         self.__base_aws_stack = base_aws_stack
@@ -204,7 +208,7 @@ class RegistryStack(Stack):  # pylint: disable=too-many-instance-attributes
         # Only need one instance of this layer construct
         if self.__pandas_layer is None:
             self.__pandas_layer = lambda_.LayerVersion.from_layer_version_arn(
-                self, id="Pandas Layer", layer_version_arn=RegistryStack.pandas_layer_arn
+                self, id="Pandas Layer", layer_version_arn=self.__pandas_layer_arn
             )
         return self.__pandas_layer
 
@@ -290,3 +294,10 @@ class RegistryStack(Stack):  # pylint: disable=too-many-instance-attributes
         S3 buckets created by this stack for storing data sets
         """
         return self.__buckets
+
+    @property
+    def pandas_layer_arn(self) -> str:
+        """
+        Returns the ARN for the PANDAS layer.
+        """
+        return self.__pandas_layer_arn

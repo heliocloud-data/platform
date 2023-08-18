@@ -1,5 +1,5 @@
 """
-Utility functions for loading CDK instance configurations intented for use
+Utility functions for loading CDK instance configurations intended for use
 within the CDK as well as unit and integration tests.
 """
 import yaml

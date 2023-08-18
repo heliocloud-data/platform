@@ -17,6 +17,8 @@ import secrets as pysecrets
 from constructs import Construct
 from base_aws.base_aws_stack import BaseAwsStack
 
+import os
+
 
 class PortalStack(Stack):
     """
@@ -208,13 +210,24 @@ class PortalStack(Stack):
             secret_string_value=aws_cdk.SecretValue(pysecrets.token_hex(16)),
         )
 
+        build_args = {}
+        for k, v in os.environ.items():
+            if k.startswith("PORTAL_DOCKER_BUILD_ARG_"):
+                build_arg_key = k.replace("PORTAL_DOCKER_BUILD_ARG_", "PORTAL_")
+                build_args[build_arg_key] = v
+        print(build_args)
+
         ##############################################
         #          Cluster and Load Balancer         #
         ##############################################
         portal_cluster = ecs.Cluster(self, "PortalCluster", vpc=base_aws.heliocloud_vpc)
         portal_cluster.add_default_cloud_map_namespace(name="portal.local")
         portal_asset = ecr_assets.DockerImageAsset(
-            self, "PortalDocker", directory="./portal", file="./portal/Dockerfile"
+            self,
+            "PortalDocker",
+            directory="./portal",
+            file="./portal/Dockerfile",
+            build_args=build_args,
         )
         portal_task = ecs.FargateTaskDefinition(
             self, "PortalFargateTask", cpu=256, memory_limit_mib=512

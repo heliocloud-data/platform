@@ -25,6 +25,7 @@ userSharedBucket:
 # Only working on the registry right now
 enabled:
   registry: True
+  portal: False
 
 # Simple bucket names
 registry:
@@ -40,3 +41,9 @@ registry:
   destroyOnRemoval: True
   layers:
     pandas: "arn:aws:lambda:${AWS_DEFAULT_REGION}:336392948345:layer:AWSSDKPandas-Python39:6"
+
+portal:
+  domain_url: "aplscicloud.org"
+  domain_record: "portal-${CI_COMMIT_REF_SLUG}"
+  domain_certificate_arn: "arn:aws:acm:${AWS_DEFAULT_REGION}:${HC_AWS_ACCOUNT}:certificate/${HC_PORTAL_CERT_ARN}"
+

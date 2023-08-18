@@ -1,10 +1,12 @@
-# build and send new container to ECR registry
 default:
   image: python:3.9
+  services:
+  - docker:19.03.12-dind
 
 stages:
   - test
   - integration
+  - staging
 
 # At the momemnt, there are a subset of unit tests that require nodejs
 # to be installed.
@@ -122,8 +124,6 @@ integration-cdk-deploy:
     on_stop: integration-cdk-destroy-on_stop_hook
     auto_stop_in: 8 hours
   script:
-    - export AWS_DEFAULT_REGION=us-east-2
-    - printenv
     - python -m pip install -r requirements.txt
     - python -m pip install -r requirements-dev.txt
     - curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
@@ -146,7 +146,6 @@ integration-test:
     name: testing/$CI_COMMIT_REF_SLUG
     action: verify
   script:
-    - printenv
     - export PYTHONPATH=.:test/integration
     - export HC_INSTANCE=gitlab-integration-${CI_COMMIT_REF_SLUG}
     - python -m pip install -r requirements.txt
@@ -208,6 +207,50 @@ integration-cdk-destroy-on_stop_hook:
   needs: ['integration-cdk-deploy', 'integration-test']
 
 
-# NOTES:
-# CI_COMMIT_BRANCH -> The branch name
-#     - PYLINT_CODE_QUALITY=$(cat pylint.txt | grep 'Your code has been rated at' | sed 's/^Your code has been rated at \([-0-9.]*\)\/.*/\1/g')
+staging-cdk-deploy:
+  stage: staging
+  environment:
+    name: staging
+    url: https://portal-dev.aplscicloud.org
+    on_stop: staging-cdk-destroy-on_stop_hook
+  script:
+    - python -m pip install -r requirements.txt
+    - python -m pip install -r requirements-dev.txt
+    - curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
+    - apt-get install -y nodejs
+    - npm install -g npm
+    - npm install -g aws-cdk
+    - cdk --version
+    - curl -sSL https://get.docker.com/ | sh
+    - apt-get update && apt-get install -y gettext
+    - envsubst < instance/staging.yaml > instance/staging-${CI_COMMIT_REF_SLUG}.yaml
+    - echo cdk deploy --all -c instance=staging-${CI_COMMIT_REF_SLUG} --require-approval never -v
+  artifacts:
+    when: always
+    paths:
+      - instance/staging-${CI_COMMIT_REF_SLUG}.yaml
+  rules:
+    - if: $CI_COMMIT_BRANCH == "develop"
+
+
+staging-cdk-destroy-on_stop_hook:
+  stage: staging
+  when: manual
+  environment:
+    name: staging
+    action: stop
+  script:
+    - python -m pip install -r requirements.txt
+    - python -m pip install -r requirements-dev.txt
+    - curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
+    - apt-get install -y nodejs
+    - npm install -g npm
+    - npm install -g aws-cdk
+    - cdk --version
+    - apt-get update && apt-get install -y gettext
+    - cdk destroy --all -c instance=staging-${CI_COMMIT_REF_SLUG} --force -v
+  dependencies:
+    - staging-cdk-deploy
+  needs: ['staging-cdk-deploy']
+  rules:
+    - if: $CI_COMMIT_BRANCH == "develop"

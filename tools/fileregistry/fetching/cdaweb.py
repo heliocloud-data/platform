@@ -33,7 +33,7 @@ Move-over code: go from helio-data-staging to TOPS
      a) move files to appropriate s3destination
      b) take new fileRegistry and add to canonical fileRegistry
      c) update db:catalog.json with any change in
-        stopDate, modificationdate, startdate
+        stop, modification, start
      d) optionally, S3 Inventory or other check that
         files were copied over successfully
      e) write destination catalog.json from DB:catalog.json
@@ -42,10 +42,12 @@ Move-over code: go from helio-data-staging to TOPS
 
 Note that fileRegistries are named [id]_YYYY.csv and
 consist of a CSV header + lines:
-   startdate,s3key,size,any additional items,,,
+   start,s3key,size,any additional items,,,
 They reside in the sub-bucket for that [id]
 Also, the 'catalog.json' list of holdings is in
 the root directory of s3destination
+
+A note on date formats, the HAPI spec we use is yyyy-mm-ddThh:mm:ss.sssZs
 
 Tried using 's3fs' for more elegant writes, but it kept hanging on .close()
 so switched to straightforward but less direct boto3 .upload_file()
@@ -84,13 +86,13 @@ def get_CDAWEB_filelist(dataid, time1, time2):
         stat = -1
     if stat == 200:
         j = res.json()
-        # need to provide the local keys for 'key', 'startDate' and 'filesize'
+        # need to provide the local keys for 'key', 'start' and 'filesize'
         # plus any extra keys plus the actual 'data'
         # hapiurl = "https://cdaweb.gsfc.nasa.gov/hapi/info?id="+dataid
         retset = {
             "key": "Name",
-            "startDate": "StartTime",
-            "stopDate": "EndTime",
+            "start": "StartTime",
+            "stop": "EndTime",
             "checksum": None,
             "checksum_algorithm": None,
             "filesize": "Length",
@@ -156,25 +158,25 @@ def cdaweb_json_to_cloudme_meta(jdata):
     Label -> title
     PiName -> contact
     SpaseResourceID -> contactID
-    Notes -> aboutURL
+    Notes -> about
     all items in DatasetLink concaternated -> description?
     """
     mymeta = {}
     mymetamap = {
         "id": "Id",
         "title": "Label",
-        "resourceURL": "Notes",
+        "resource": "Notes",
         "contact": "PiName",
         "contactID": "SpaseResourceID",
-        "aboutURL": "Notes",
+        "about": "Notes",
         "TimeInterval": "TimeInterval",
     }
 
     for k, v in mymetamap.items():
         if v in jdata:
             if k == "TimeInterval":
-                mymeta["startDate"] = jdata[v]["Start"]
-                mymeta["stopDate"] = jdata[v]["End"]
+                mymeta["start"] = jdata[v]["Start"]
+                mymeta["stop"] = jdata[v]["End"]
             else:
                 mymeta[k] = jdata[v]
     return mymeta
@@ -200,9 +202,9 @@ def fetchCDAWebsinglet(dataid, time1=None, time2=None):
     # Generic setup
     catmeta = s3s.getmeta(dataid, sinfo, allIDs_meta)
     if time1 == None:
-        time1 = catmeta["startDate"]
+        time1 = catmeta["start"]
     if time2 == None:
-        time2 = catmeta["stopDate"]
+        time2 = catmeta["stop"]
     s3s.logme(dataid + " Getting timerange", time1 + " - " + time2 + " at", "status")
 
     # CDAWeb-specific fetch (rewrite for each new source/dataset)
@@ -291,27 +293,26 @@ def load_cdaweb_params(dataid=None, webfetch=False):
     use webfetch=True to grab and make local cached copy,
         webfetch=False to use local cached copy
     """
-    # Set dataset staging-specific items
-    s3destination = "s3://gov-nasa-hdrl-data1/cdaweb/"
 
-    s3staging = "s3://helio-data-staging/cdaweb/"
-
-    """ 'local' means copy TO a local disk rather than S3
+    """ 'savelocal' means copy TO a local disk rather than S3
         'fetchlocal' means fetch FROM a local disk instead of a URI
     """
-    local = False  # False # test case toggle
-    if local:
-        s3staging = "./cdaweb/"
+    rt = runtimeparams()
+    savelocal = rt["savelocal"]  # False  # False # test case toggle
+    fetchlocal = rt["fetchlocal"]  # False  # False # test case toggle
+    stripuri = rt["stripuri"]
+    s3destination = rt["s3destination"]
+    s3staging = rt["s3staging"]
 
-    # fetchlocal = '/Users/antunak1/gits/heliocloud/tools/fileregistry/fetching/storage2/'
-    fetchlocal = None  # 'None' for default URI fetch, disk loc otherwise
+    if savelocal:
+        s3staging = "./cdaweb/"
 
     localcopy_cdaweblist = "datasets_all.json"
     allIDs, allIDs_meta = get_CDAWEB_IDs(localcopy_cdaweblist, dataid=dataid, webfetch=webfetch)
 
     # more configs
     movelogdir = s3staging + "movelogs/"
-    stripuri = "https://cdaweb.gsfc.nasa.gov/sp_phys/data/"
+
     extrameta = None  # optional extra metadata to include in CSV
 
     sinfo = s3s.bundleme(s3staging, s3destination, movelogdir, stripuri, extrameta, fetchlocal)
@@ -326,53 +327,86 @@ error out, every time you re-run you will still be calling those same
 errored ones.
 """
 
-PRODUCTION = False
 
-if PRODUCTION:
-    # lname="cdaweb_log.txt", or None to log to screen
-    lname = "cdaweb_log.txt"
-    # stat='error' to only log errors, 'info' as most useful, or 'debug' as verbose
-    loglevel = "info"  # info
-    # test=True is quick test on a subset, False=everything for production
-    test = False  # False #True
-    # refreshIDs=False is use local copy, True=possibly iffy webfetch
-    refreshIDs = False
-    # tcount is tunable, 1 = single thread, >1 = multiprocessing
-    tcount = 8
-    # limit=N, fetch only N IDs, default None aka get all cdaweb
-    limit = None  # None # 20
-    # retries, repeat fetch to try unfetched/errored items again, in case network was temporarily down
-    retries = 3
-    # also edit 'local' and 'fetchlocal' in load_cdaweb_params()
-else:
-    # test mode
-    lname = "cdaweb_log.txt"
-    loglevel = "info"
-    test = True
-    refreshIDs = False
-    tcount = 1
-    limit = 20
-    retries = 3
-    # also edit 'local' and 'fetchlocal' in load_cdaweb_params()
+def runtimeparams():
+    PRODUCTION = False
+    mirror = False
+    savelocal = True  # False # test case toggle
+    # mirror = False uses web fetch of data files
+    # mirror = True copies data files from the given 'fetchlocal' local disk
+
+    rt = {}
+
+    # Set dataset staging-specific items
+    rt["s3destination"] = "s3://gov-nasa-hdrl-data1/cdaweb/"
+    rt["s3staging"] = "s3://helio-data-staging/cdaweb/"
+    rt["savelocal"] = savelocal
+
+    # cdaweb repository goes here
+    # $(ls -dt /tower8/zdata/.zfs/snapshot/*monthly/spdf_archive/public/pub/ | tail -1)
+    # somehow in python format
+    # fetchlocal = '/Users/antunak1/gits/heliocloud/tools/fileregistry/fetching/storage2/'
+    if mirror:
+        rt[
+            "fetchlocal"
+        ] = "/tower8/zdata/.zfs/snapshot/autosnap_2023-04-01_00:20:01_monthly/spdf_archive/public/pub/"
+    else:
+        rt["fetchlocal"] = None  # 'None' for default URI fetch, disk loc otherwise
+
+    if mirror:
+        rt["stripuri"] = "https://cdaweb.gsfc.nasa.gov/sp_phys/"
+    else:
+        rt["stripuri"] = "https://cdaweb.gsfc.nasa.gov/sp_phys/data/"
 
     # new schema is to loop it in batches so it updates the logs and caches
-# even when several runs time out
+    # even when several runs time out
 
+    if PRODUCTION:
+        # lname="cdaweb_log.txt", or None to log to screen
+        rt["lname"] = "cdaweb_log.txt"
+        # loglevel='error' to only log errors, 'info' as most useful, or 'debug' as verbose
+        rt["loglevel"] = "info"  # info
+        # test=True is quick test on a subset, False=everything for production
+        rt["test"] = False  # False #True
+        # refreshIDs=False is use local copy, True=possibly iffy webfetch
+        rt["refreshIDs"] = False
+        # tcount is tunable, 1 = single thread, >1 = multiprocessing
+        rt["tcount"] = 8
+        # limit=N, fetch only N IDs, default None aka get all cdaweb
+        rt["limit"] = None  # None # 20
+        # retries, repeat fetch to try unfetched/errored items again, in case network was temporarily down
+        rt["retries"] = 3
+        rt["stripmms"] = True
+    else:
+        # test mode
+        rt["lname"] = None  # "cdaweb_log.txt"
+        rt["loglevel"] = "debug"  # "info"
+        rt["test"] = True
+        rt["refreshIDs"] = False
+        rt["tcount"] = 1
+        rt["limit"] = 20
+        rt["retries"] = 3
+        rt["stripmms"] = True
+
+    return rt
+
+
+rt = runtimeparams()
 gather = False  # if runs foobarred and left partials, this does a cleanup
 if gather:
     sinfo, allIDs, allIDs_meta = load_cdaweb_params(webfetch=False)
     s3s.mastermovelog(sinfo["movelogdir"], allIDs)
 
 
-for i in range(retries):
+for i in range(rt["retries"]):
     cdaweb_prod(
-        threads=tcount,
-        logfile=lname,
-        loglevel=loglevel,
-        refreshIDs=refreshIDs,
-        limit=limit,
-        test=test,
-        stripMMS=True,
+        threads=rt["tcount"],
+        logfile=rt["lname"],
+        loglevel=rt["loglevel"],
+        refreshIDs=rt["refreshIDs"],
+        limit=rt["limit"],
+        test=rt["test"],
+        stripMMS=rt["stripmms"],
     )
 """
     except:
@@ -386,19 +420,22 @@ for i in range(retries):
 """
 Notes for testing vs production
 
+All parameters are now set in runtimeparams()
+
 Testing:
-   1) set 'PRODUCTION = False' at line 312
-   2) If copying to a local directory, set 'local = True' at line 284
-      otherwise if copying to S3, keep 'local = False' at line 284
-   3) If fetching from the web like usual, set 'fetchlocal = None' at line 288
-      otherwise, if fetching from a locally mounted disk on storage 2, edit
-      'fetchlocal' at line 288 to point to the storage2 drives
+   1) line 333: set 'PRODUCTION = False'
+   2) line 334: If fetching from the web like usual, set 'mirror = False'
+      otherwise, if fetching from a locally mounted disk on storage 2,
+      set 'mirror = True'
+      (note line 351 sets the actual directory to pull from)
+   3) line 335; If copying to a local directory, set 'savelocal = True'
+      otherwise if copying to S3, keep 'savelocal = False'
 
 Production:
-   1) set 'PRODUCTION = True' at line 312
-      optionally, edit 'tcount' at line 324 for the # of threads to run simo
-   2) Set 'local = False' at line 284 so it writes to S3
-   3) If fetching from the web like usual, set 'fetchlocal = None' at line 288
-      otherwise, if fetching from a locally mounted disk on storage 2, edit
-      'fetchlocal' at line 288 to point to the storage2 drives
+   1) line 333: set 'PRODUCTION = False'
+   2) line 334: If fetching from the web like usual, set 'mirror = False'
+      otherwise, if fetching from a locally mounted disk on storage 2,
+      set 'mirror = True'
+      (note line 351 sets the actual directory to pull from)
+   3) line 335; copying to S3 so set 'savelocal = False'
 """

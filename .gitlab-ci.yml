@@ -7,6 +7,7 @@ stages:
   - test
   - integration
   - staging
+  - deploy
 
 # At the momemnt, there are a subset of unit tests that require nodejs
 # to be installed.
@@ -232,7 +233,6 @@ staging-cdk-deploy:
   rules:
     - if: $CI_COMMIT_BRANCH == "develop"
 
-
 staging-cdk-destroy-on_stop_hook:
   stage: staging
   when: manual
@@ -252,5 +252,33 @@ staging-cdk-destroy-on_stop_hook:
   dependencies:
     - staging-cdk-deploy
   needs: ['staging-cdk-deploy']
+  rules:
+    - if: $CI_COMMIT_BRANCH == "develop"
+
+
+production-jhuapl-cdk-deploy:
+  stage: deploy
+  when: manual
+  environment:
+    name: production/jhuapl
+    url: https://portal.aplscicloud.org
+  script:
+    - python -m pip install -r requirements.txt
+    - python -m pip install -r requirements-dev.txt
+    - curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
+    - apt-get install -y nodejs
+    - npm install -g npm
+    - npm install -g aws-cdk
+    - cdk --version
+    - curl -sSL https://get.docker.com/ | sh
+    - apt-get update && apt-get install -y gettext
+    - envsubst < instance/production.yaml > instance/production-jhuapl.yaml
+    # Skip the actual deployment as docker/docker-in-docker services are unavailable in the current
+    # git
+    - echo cdk deploy --all -c instance=production-jhuapl --require-approval never -v
+  artifacts:
+    when: always
+    paths:
+      - instance/production-jhuapl.yaml
   rules:
     - if: $CI_COMMIT_BRANCH == "develop"

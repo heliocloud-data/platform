@@ -15,5 +15,9 @@
   "hosted-zone:account=006885615091:domainName=aplscicloud.org:region=us-east-2": {
     "Id": "/hostedzone/Z02398903PTSEN0E8HUES",
     "Name": "aplscicloud.org."
+  },
+  "hosted-zone:account=006885615091:domainName=aplscicloud.org:region=us-east-1": {
+    "Id": "/hostedzone/Z02398903PTSEN0E8HUES",
+    "Name": "aplscicloud.org."
   }
 }

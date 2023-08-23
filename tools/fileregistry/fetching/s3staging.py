@@ -31,14 +31,14 @@ Move-over code: go from helio-data-staging to TOPS
 2) for each ID:
      a) move files to appropriate s3destination
      b) take new fileRegistry and add to canonical fileRegistry
-     c) update db:catalog.json with any change in stopDate, modificationdate, startdate
+     c) update db:catalog.json with any change in stop, modification, start
      d) optionally, S3 Inventory or other check that files were copied over successfully
      e) write destination catalog.json from DB:catalog.json
      f) clean out staging area once safely done
      g) delete and deregister obsolete files from 'deleteme' list
 
 Note that fileRegistries are named [id]_YYYY.csv and consist of a CSV header + lines:
-   startdate,s3key,size,any additional items,,,
+   start,s3key,size,any additional items,,,
 They reside in the sub-bucket for that [id]
 Also, the 'catalog.json' list of holdings is in the root directory of s3destination
 
@@ -95,7 +95,7 @@ def bundleme(
         "movelogdir": movelogdir,
         "stripuri": stripuri,
         "extrameta": extrameta,
-        "fileFormat": None,
+        "filetype": None,
         "registryloc": None,
         "fetchlocal": fetchlocal,
     }
@@ -212,13 +212,13 @@ def fetch_and_register(
     :param filelist: A dictionary containing the file descriptions.
         - "data": A list of dictionaries containing the file descriptions.
             - "URI": The URL of the file to fetch.
-            - "startDate": The start date of the file.
+            - "start": The start date of the file.
             - "filesize": The size of the file.
             - Other optional metadata keys.
         - "key": The key to use in the file description dictionaries for the URI.
-        - "startDate": The key to use in the file description dictionaries for the start date.
+        - "start": The key to use in the file description dictionaries for the start date.
         - "filesize": The key to use in the file description dictionaries for the file size.
-        - Other optional metadata keys (stopDate, checksum, checksum_algorithm) or None values if none exist.
+        - Other optional metadata keys (stop, checksum, checksum_algorithm) or None values if none exist.
     :param sinfo: A dictionary containing the S3 staging and destination bucket information and the URI prefix to strip from S3 keys.
                   Need keys: stripuri (fetching URL to replace with s3staging), s3staging, s3destination, and optionally extrameta and fetchlocal
           "fetchlocal": mode made initially for CDAWeb to fetch data via networked disk rathe than URI; field represents the path to replace the 'https://.*/' with
@@ -230,7 +230,7 @@ def fetch_and_register(
     logfsize = 0
     csvregistry = []
 
-    startkey = filelist["startDate"]
+    startkey = filelist["start"]
     filesizekey = filelist["filesize"]
 
     if sinfo["s3staging"].startswith("s3://"):
@@ -269,8 +269,9 @@ def fetch_and_register(
             (a) copy adjascent disk file to our local disk destination
             (b) copy adjascent disk file to S3 destination
             """
-            localfile = sinfo["fetchlocal"] + urllib.parse.urlparse(url_to_fetch).path
-            localfile = re.sub(r"//", "/", localfile)  # cleanup
+            # localfile = sinfo["fetchlocal"] + urllib.parse.urlparse(url_to_fetch).path
+            # localfile = re.sub(r"//", "/", localfile)  # cleanup
+            localfile = sinfo["fetchlocal"] + re.sub(sinfo["stripuri"], "", url_to_fetch)
 
             if stagingkey.startswith("s3://"):
                 tempfile = localfile  # will later be staged
@@ -330,8 +331,8 @@ def fetch_and_register(
             logme("Failed to fetch", url_to_fetch, "error")
             continue
 
-        if sinfo["fileFormat"] == None:  # define from 1st fetch
-            sinfo["fileFormat"] = filetype(tempfile)
+        if sinfo["filetype"] == None:  # define from 1st fetch
+            sinfo["filetype"] = filetype(tempfile)
 
         if stagingkey.startswith("s3://"):
             mys3.upload_file(tempfile, mybucket, myfilekey)
@@ -339,8 +340,8 @@ def fetch_and_register(
 
         csvitem = item[startkey] + "," + s3key + "," + str(item[filesizekey])
         logfsize += item[filesizekey]
-        if filelist["stopDate"] != None:
-            csvitem += "," + item[filelist["stopDate"]]
+        if filelist["stop"] != None:
+            csvitem += "," + item[filelist["stop"]]
         if filelist["checksum"] != None:
             csvitem += "," + item[filelist["checksum"]]
         if filelist["checksum_algorithm"] != None:
@@ -497,13 +498,13 @@ def replaceIsotime(catData: Dict[str, Any], mykey: str, maybetime: str) -> Dict[
 
 def cda2iso(timey: str) -> str:
     """
-    Converts a datetime string in ISO format to our specific string format (YYYY:MM:DDTHH:MM:SSZ).
+    Converts a datetime string in ISO format to our specific string format (YYYY-MM-DDTHH:MM:SSZ).
 
     :param timey: The ISO datetime string to convert.
     :returns: The datetime string in our specific format.
     """
     # converts most any isotime to our specific string format
-    # annoying reformat of YYYYMMDDTHHMMSSZ to YYYY:MM:DDTHH:MM:SSZ
+    # annoying reformat of YYYYMMDDTHHMMSSZ to YYYY-MM-DDTHH:MM:SSZ
     r = parser.parse(timey)
     timey = r.strftime("%Y-%m-%dT%H:%M:%SZ")
     # timey=datetime.datetime.fromisoformat(timey).isoformat() # only for python>3.11
@@ -532,14 +533,14 @@ def write_registries(id: str, sinfo: Dict[str, Any], csvregistry: List[str]) -> 
     """
     Creates files <id>_YYYY.csv with designated entries in the temporary directory s3staging+id/,
     which will later be moved (by the separate staging-to-production code) to the location as defined in catalog.csv
-    as the field 'loc'.
+    as the field 'index'.
 
     :param id: The identifier for the registry file.
     :param registryloc: The directory where the registry file will be created.
     :param csvregistry: The list of entries to be included in the registry file.
     :param extrameta: (Optional) A list of extra metadata fields to include in the registry file.
     """
-    keyset = ["startDate", "key", "filesize"]
+    keyset = ["start", "key", "filesize"]
     if sinfo["extrameta"] != None:
         keyset += sinfo["extrameta"]
 
@@ -568,19 +569,19 @@ def write_registries(id: str, sinfo: Dict[str, Any], csvregistry: List[str]) -> 
 def fetch_catalogkeys():
     catalogkeys = [
         "id",
-        "loc",
+        "index",
         "title",
-        "startDate",
-        "stopDate",
-        "modificationDate",
-        "indexformat",
-        "fileformat",
+        "start",
+        "stop",
+        "modification",
+        "indextype",
+        "filetype",
         "description",
-        "resourceURL",
-        "creationDate",
+        "resource",
+        "creation",
         "citation",
         "contact",
-        "aboutURL",
+        "about",
     ]
     return catalogkeys
 
@@ -600,19 +601,19 @@ def create_catalog_stub(dataid, sinfo, catmeta, startDate, stopDate, appendflag=
     typical optional catmeta are from the spec, e.g.:
     "catalog": [
             "id": "euvml",
-            "loc": "gov-nasa-helio-public/euvml/",
+            "index": "gov-nasa-helio-public/euvml/",
             "title": "EUV-ML dataset",
-            "startDate": "1995-01-01T00:00Z",
-            "stopDate": "2022-01-01T00:00Z",
-            "modificationDate": "2022-01-01T00:00Z",
-            "indexformat": "csv",
-            "fileformat": "fits",
+            "start": "1995-01-01T00:00Z",
+            "stop": "2022-01-01T00:00Z",
+            "modification": "2022-01-01T00:00Z",
+            "indextype": "csv",
+            "filetype": "fits",
             "description": "Optional description for dataset",
-            "resourceURL": "optional identifier e.g. SPASE ID",
-            "creationDate": "optional ISO 8601 date/time of the dataset creation",
+            "resource": "optional identifier e.g. SPASE ID",
+            "creation": "optional ISO 8601 date/time of the dataset creation",
             "citation": "optional how to cite this dataset, DOI or similar",
             "contact": "optional contact info, SPASE ID, email, or ORCID",
-            "aboutURL": "optional website URL for info, team, etc"
+            "about": "optional website URL for info, team, etc"
     """
 
     catalogkeys = fetch_catalogkeys()
@@ -626,15 +627,15 @@ def create_catalog_stub(dataid, sinfo, catmeta, startDate, stopDate, appendflag=
 
     dstub = sinfo["registryloc"]
     dstub = re.sub(sinfo["s3staging"], sinfo["s3destination"], dstub)
-    catmeta["loc"] = dstub  # defined at runtime
-    catmeta["fileFormat"] = sinfo["fileFormat"]  # defined at runtime
+    catmeta["index"] = dstub  # defined at runtime
+    catmeta["filetype"] = sinfo["filetype"]  # defined at runtime
 
     for mykey in catalogkeys:
         if mykey in catmeta:
             catData["catalog"].append({mykey: catmeta[mykey]})
 
-    catData = replaceIsotime(catData, "startDate", startDate)
-    catData = replaceIsotime(catData, "stopDate", stopDate)
+    catData = replaceIsotime(catData, "start", startDate)
+    catData = replaceIsotime(catData, "stop", stopDate)
 
     datadump(fstub, catData, jsonflag=True)
     logme("Wrote catalog stub ", fstub, "status")
@@ -675,8 +676,8 @@ def hapi_info_to_catdata(dataid, hapiurl):
 def gatherkeys(sinfo, flist):
     # THIS IS TERRIBLE CODE
     optkeys = []
-    if flist["stopDate"] != None:
-        optkeys.append("stopDate")
+    if flist["stop"] != None:
+        optkeys.append("stop")
     if flist["checksum"] != None:
         optkeys.append("checksum")
     if flist["checksum_algorithm"] != None:
@@ -730,9 +731,9 @@ def getmeta(dataid, sinfo, allIDs_meta):
         except:
             catmeta = blank_catalog(dataid)
 
-    catmeta["loc"] = None
-    catmeta["fileFormat"] = None
-    catmeta["indexFormat"] = "csv"  # hard-coded, for now
+    catmeta["index"] = None
+    catmeta["filetype"] = None
+    catmeta["indextype"] = "csv"  # hard-coded, for now
 
     return catmeta
 
@@ -840,7 +841,7 @@ def migrate_staging_to_s3():
     The later actual migration will involve
      a) move files to appropriate s3destination
      b) take new fileRegistry and add to canonical fileRegistry
-     c) update db:catalog.json with any change in stopDate, modificationdate, startdate
+     c) update db:catalog.json with any change in stop, modification, start
      d) optionally, S3 Inventory or other check that files were copied over successfully
      e) write destination catalog.json from DB:catalog.json
      f) clean out staging area once safely done

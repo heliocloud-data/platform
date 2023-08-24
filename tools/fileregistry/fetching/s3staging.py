@@ -336,7 +336,8 @@ def fetch_and_register(
 
         if stagingkey.startswith("s3://"):
             mys3.upload_file(tempfile, mybucket, myfilekey)
-            os.remove(tempfile)
+            if sinfo["fetchlocal"] == None:
+                os.remove(tempfile)
 
         csvitem = item[startkey] + "," + s3key + "," + str(item[filesizekey])
         logfsize += item[filesizekey]

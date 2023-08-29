@@ -1,0 +1,29 @@
+# Overrides for cjeschke's dev environment
+env:
+  account: 006885615091
+  region: us-east-1
+
+# new VPC every time
+vpc:
+  type: new
+
+# Destroying so we can clean up dev
+userSharedBucket:
+  destroyOnRemoval: True
+
+# Only working on the registry right now
+enabled:
+  registry: True
+
+# Simple bucket names
+registry:
+  datasetBucketNames: [
+    "cjeschke-dev-datasets"
+  ]
+  ingestBucketName: "cjeschke-dev-uploads"
+  requesterPays: True
+  catalog:
+    masterUser: master
+    name: "Chris Jeschke"
+    contact: "chris.jeschke@jhuapl.edu"
+  destroyOnRemoval: False

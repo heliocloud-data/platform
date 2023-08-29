@@ -1,0 +1,49 @@
+# The following file is used for integration testing on GitLab.
+#
+# To run w/ this instance locally, type the following commands:
+#   export CI_COMMIT_SHORT_SHA=<something>
+#   envsubst < instance/gitlab-integration.yaml > instance/gitlab-integration-${CI_COMMIT_SHORT_SHA}.yaml
+#
+# Per-commit configurations should use: CI_COMMIT_SHORT_SHA
+# Per-branch configurations should use: CI_COMMIT_REF_SLUG
+#
+#  See:
+#   https://docs.gitlab.com/ee/ci/variables/predefined_variables.html
+
+env:
+  account: ${HC_AWS_ACCOUNT}
+  region: ${AWS_DEFAULT_REGION}
+
+# new VPC every time
+vpc:
+  type: new
+
+# Destroying so we can clean up dev
+userSharedBucket:
+  destroyOnRemoval: True
+
+# Only working on the registry right now
+enabled:
+  registry: True
+  portal: False
+
+# Simple bucket names
+registry:
+  datasetBucketNames: [
+    "gitlab-integration-datasets-${CI_COMMIT_REF_SLUG}",
+  ]
+  ingestBucketName: "gitlab-integration-uploads-${CI_COMMIT_REF_SLUG}"
+  requesterPays: True
+  catalog:
+    masterUser: master
+    name: "Chris Jeschke"
+    contact: "chris.jeschke@jhuapl.edu"
+  destroyOnRemoval: True
+  layers:
+    pandas: "arn:aws:lambda:${AWS_DEFAULT_REGION}:336392948345:layer:AWSSDKPandas-Python39:6"
+
+portal:
+  domain_url: "aplscicloud.org"
+  domain_record: "portal-${CI_COMMIT_REF_SLUG}"
+  domain_certificate_arn: "arn:aws:acm:${AWS_DEFAULT_REGION}:${HC_AWS_ACCOUNT}:certificate/${HC_PORTAL_CERT_ARN}"
+

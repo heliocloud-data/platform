@@ -1,0 +1,284 @@
+default:
+  image: python:3.9
+  services:
+  - docker:19.03.12-dind
+
+stages:
+  - test
+  - integration
+  - staging
+  - deploy
+
+# At the momemnt, there are a subset of unit tests that require nodejs
+# to be installed.
+unit-test:
+  stage: test
+  before_script:
+    - mkdir -p public/badges
+  script:
+    - export PYTHONPATH=.
+    - python -m pip install -r requirements.txt
+    - python -m pip install -r requirements-dev.txt
+    - curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
+    - apt-get install -y nodejs
+    - pytest -c pytest-unit.ini --junit-xml=TEST-HelioCloud-platform.xml --junit-prefix=HelioCloud-platform
+  artifacts:
+    when: always
+    paths:
+      - TEST-HelioCloud-platform.xml
+    reports:
+      junit: TEST-HelioCloud-platform.xml
+
+# See
+# * https://docs.gitlab.com/ee/ci/testing/test_coverage_visualization.html
+coverage:
+  stage: test
+  script:
+    - export PYTHONPATH=.
+    - python -m pip install -r requirements.txt
+    - python -m pip install -r requirements-dev.txt
+    - curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
+    - apt-get install -y nodejs
+    - coverage run -m pytest -c pytest-unit.ini
+    - coverage report
+    - coverage xml
+    - coverage html
+  coverage: '/(?i)TOTAL.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/'
+  artifacts:
+    when: always
+    paths:
+      - coverage.xml
+      - htmlcov
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage.xml
+
+# For static-analysis, we're going to run the analysis once for badge generation
+# and once for generating the codeclimate report, which is required integration
+# with the gitlab pull request.
+#
+# This configuration only runs pylint on the main source files of the project,
+# it excludes the unit and integration test folders as well as the cdk output
+# build folder.
+#
+# See:
+#  * https://pypi.org/project/pylint-gitlab/
+static-analysis:
+  stage: test
+  variables:
+    PYLINT_TEXT_OUTPUT_FILE: 'pylint.txt'
+    PYLINT_SCORE_OUTPUT_FILE: public/pylint.score
+    PYLINT_BADGE_OUTPUT_FILE: 'public/pylint.svg'
+    CODE_CLIMATE_OUTPUT_FILE: 'codeclimate.json'
+  before_script:
+    - mkdir -p public  
+  script:
+    - export PYTHONPATH=.
+    - python -m pip install -r requirements.txt
+    - python -m pip install -r requirements-dev.txt
+    - pylint --exit-zero --output-format=text $(find -type f -name "*.py" ! -path "**/.venv/**" | grep -v '/test/' | grep -v '/cdk.out/') | tee ${PYLINT_TEXT_OUTPUT_FILE}
+    - sed -n 's/^Your code has been rated at \([-0-9.]*\)\/.*/\1/p' ${PYLINT_TEXT_OUTPUT_FILE} > ${PYLINT_SCORE_OUTPUT_FILE}
+    - anybadge --value=$(cat ${PYLINT_SCORE_OUTPUT_FILE}) --file=${PYLINT_BADGE_OUTPUT_FILE} pylint
+    - pylint --exit-zero --load-plugins=pylint_gitlab --output-format=gitlab-codeclimate $(find -type f -name "*.py" ! -path "**/.venv/**" | grep -v '/test/' | grep -v '/cdk.out/') > ${CODE_CLIMATE_OUTPUT_FILE}
+  artifacts:
+    when: always
+    paths:
+      - ${CODE_CLIMATE_OUTPUT_FILE}
+      - ${PYLINT_TEXT_OUTPUT_FILE}
+      - ${PYLINT_SCORE_OUTPUT_FILE}
+      - ${PYLINT_BADGE_OUTPUT_FILE}
+    reports:
+      codequality: ${CODE_CLIMATE_OUTPUT_FILE}
+
+black:
+  stage: test
+  script:
+    - export PYTHONPATH=.
+    - python -m pip install -r requirements-dev.txt
+    - black --check .
+
+
+# The integration stage will deploy parts of the heliocloud system and test
+# it using the "black-box" interface of the system component under test.  In
+# the current configuration, the environment is retained between runs.
+#
+# These jobs presume valid AWS variables are set, specifically:
+# * AWS_ACCESS_KEY_ID
+# * AWS_SECRET_ACCESS_KEY
+# * AWS_DEFAULT_REGION
+#
+# All jobs executing at this stage will create per-branch environments in
+# GitLab by using the CI_COMMIT_REF_SLUG environment variable.
+#
+# Per-commit environments are also possible using the CI_COMMIT_SHORT_SHA
+# environment variable.
+#
+# See:
+#   https://docs.gitlab.com/ee/ci/environments/
+#   https://docs.gitlab.com/ee/ci/variables/predefined_variables.html
+integration-cdk-deploy:
+  stage: integration
+  environment:
+    name: testing/$CI_COMMIT_REF_SLUG
+    url: https://portal-${CI_COMMIT_REF_SLUG}.aplscicloud.org
+    on_stop: integration-cdk-destroy-on_stop_hook
+    auto_stop_in: 8 hours
+  script:
+    - python -m pip install -r requirements.txt
+    - python -m pip install -r requirements-dev.txt
+    - curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
+    - apt-get install -y nodejs
+    - npm install -g npm
+    - npm install -g aws-cdk
+    - cdk --version
+    - apt-get update && apt-get install -y gettext
+    - envsubst < instance/gitlab-integration.yaml > instance/gitlab-integration-${CI_COMMIT_REF_SLUG}.yaml
+    # Modify the cdk.json file to run in coverage mode.
+    - cdk --app "coverage run app.py" deploy --all -c instance=gitlab-integration-${CI_COMMIT_REF_SLUG} --require-approval never -v
+  artifacts:
+    when: always
+    paths:
+      - instance/gitlab-integration-${CI_COMMIT_REF_SLUG}.yaml
+
+integration-test:
+  stage: integration
+  environment:
+    name: testing/$CI_COMMIT_REF_SLUG
+    action: verify
+  script:
+    - export PYTHONPATH=.:test/integration
+    - export HC_INSTANCE=gitlab-integration-${CI_COMMIT_REF_SLUG}
+    - python -m pip install -r requirements.txt
+    - python -m pip install -r requirements-dev.txt
+    - pytest -c pytest-integration.ini --junit-xml=IT-HelioCloud-platform.xml --junit-prefix=IT-HelioCloud-platform
+  artifacts:
+    when: always
+    paths:
+      - IT-HelioCloud-platform.xml
+    reports:
+      junit: IT-HelioCloud-platform.xml
+  dependencies:
+    - integration-cdk-deploy
+  needs: ['integration-cdk-deploy']
+
+integration-cdk-destroy:
+  stage: integration
+  environment:
+    name: testing/$CI_COMMIT_REF_SLUG
+    action: stop
+  script:
+    - python -m pip install -r requirements.txt
+    - python -m pip install -r requirements-dev.txt
+    - curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
+    - apt-get install -y nodejs
+    - npm install -g npm
+    - npm install -g aws-cdk
+    - cdk --version
+    - apt-get update && apt-get install -y gettext
+    # Modify the cdk.json file to run in coverage mode.
+    - cdk --app "coverage run app.py" destroy --all -c instance=gitlab-integration-${CI_COMMIT_REF_SLUG} --force -v
+  dependencies:
+    - integration-cdk-deploy
+    - integration-test
+  needs: ['integration-cdk-deploy', 'integration-test']
+  rules:
+    - if: $CI_COMMIT_BRANCH == "develop" || $CI_COMMIT_BRANCH == "main"
+
+integration-cdk-destroy-on_stop_hook:
+  stage: integration
+  when: manual
+  environment:
+    name: testing/$CI_COMMIT_REF_SLUG
+    action: stop
+  script:
+    - python -m pip install -r requirements.txt
+    - python -m pip install -r requirements-dev.txt
+    - curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
+    - apt-get install -y nodejs
+    - npm install -g npm
+    - npm install -g aws-cdk
+    - cdk --version
+    - apt-get update && apt-get install -y gettext
+    # Modify the cdk.json file to run in coverage mode.
+    - cdk --app "coverage run app.py" destroy --all -c instance=gitlab-integration-${CI_COMMIT_REF_SLUG} --force -v
+  dependencies:
+    - integration-cdk-deploy
+    - integration-test
+  needs: ['integration-cdk-deploy', 'integration-test']
+
+
+staging-cdk-deploy:
+  stage: staging
+  environment:
+    name: staging
+    url: https://portal-dev.aplscicloud.org
+    on_stop: staging-cdk-destroy-on_stop_hook
+  script:
+    - python -m pip install -r requirements.txt
+    - python -m pip install -r requirements-dev.txt
+    - curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
+    - apt-get install -y nodejs
+    - npm install -g npm
+    - npm install -g aws-cdk
+    - cdk --version
+    - curl -sSL https://get.docker.com/ | sh
+    - apt-get update && apt-get install -y gettext
+    - envsubst < instance/staging.yaml > instance/staging-${CI_COMMIT_REF_SLUG}.yaml
+    - echo cdk deploy --all -c instance=staging-${CI_COMMIT_REF_SLUG} --require-approval never -v
+  artifacts:
+    when: always
+    paths:
+      - instance/staging-${CI_COMMIT_REF_SLUG}.yaml
+  rules:
+    - if: $CI_COMMIT_BRANCH == "develop"
+
+staging-cdk-destroy-on_stop_hook:
+  stage: staging
+  when: manual
+  environment:
+    name: staging
+    action: stop
+  script:
+    - python -m pip install -r requirements.txt
+    - python -m pip install -r requirements-dev.txt
+    - curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
+    - apt-get install -y nodejs
+    - npm install -g npm
+    - npm install -g aws-cdk
+    - cdk --version
+    - apt-get update && apt-get install -y gettext
+    - cdk destroy --all -c instance=staging-${CI_COMMIT_REF_SLUG} --force -v
+  dependencies:
+    - staging-cdk-deploy
+  needs: ['staging-cdk-deploy']
+  rules:
+    - if: $CI_COMMIT_BRANCH == "develop"
+
+
+production-jhuapl-cdk-deploy:
+  stage: deploy
+  when: manual
+  environment:
+    name: production/jhuapl
+    url: https://portal.aplscicloud.org
+  script:
+    - python -m pip install -r requirements.txt
+    - python -m pip install -r requirements-dev.txt
+    - curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
+    - apt-get install -y nodejs
+    - npm install -g npm
+    - npm install -g aws-cdk
+    - cdk --version
+    - curl -sSL https://get.docker.com/ | sh
+    - apt-get update && apt-get install -y gettext
+    - envsubst < instance/production.yaml > instance/production-jhuapl.yaml
+    # Skip the actual deployment as docker/docker-in-docker services are unavailable in the current
+    # git
+    - echo cdk deploy --all -c instance=production-jhuapl --require-approval never -v
+  artifacts:
+    when: always
+    paths:
+      - instance/production-jhuapl.yaml
+  rules:
+    - if: $CI_COMMIT_BRANCH == "develop"

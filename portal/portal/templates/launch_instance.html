@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% block content %}
+
+
+
+<h2>Launch New Instance</h2>
+
+<form method="post">
+
+<!---- Launch from Custom Tab ---->
+<div class="container-fluid">
+  <h5>Select Image</h5>
+    <ul class="nav nav-pills" id="select-image-tab" role="tablist">
+        {% for os in allowed_images.keys() %}
+            {% set os_clean = os.replace(' ', '-') %}
+            {% set tab_data_target = "#"+os_clean %}
+            {% set tab_id = os_clean +"tab" %}
+            {% if loop.index == 1 %}
+              <li class="nav-item" role="presentation">
+                <button class="nav-link active" id={{tab_id}} data-bs-toggle="pill" data-bs-target={{tab_data_target}} type="button" role="tab" aria-controls={{use_case_clean}} aria-selected="false">{{ os }}</button>
+              </li>
+            {% else %}
+              <li class="nav-item" role="presentation">
+                <button class="nav-link" id={{tab_id}} data-bs-toggle="pill" data-bs-target={{tab_data_target}} type="button" role="tab" aria-controls={{use_case_clean}} aria-selected="false">{{ os }}</button>
+              </li>
+            {% endif %}
+        {% endfor %}
+    </ul>
+    <div class="tab-content mb-5" id="select-image-tabContent">
+        {% for os, os_images in allowed_images.items() %}
+            {% set os_clean = os.replace(' ', '-') %}
+            {% set tab_id = os_clean +"tab" %}
+            {% if loop.index == 1 %}
+                <div class="tab-pane fade show active" id={{os_clean}} role="tabpanel" aria-labelledby={{tab_id}}>
+            {% else %}
+                <div class="tab-pane fade" id={{os_clean}} role="tabpanel" aria-labelledby={{tab_id}}>
+            {% endif %}
+            {% for image_id, image_info in os_images.items() %}
+              <div class="form-check">
+                {% set image_output = image_id + ',' + image_info.DeviceName + ',' + image_info.VolumeType + ',' + image_info.VolumeSize|string %}
+                <input class="form-check-input" type="radio" name="image_output" id={{image_id}} value={{image_output}} required>
+                  <label class="form-check-label" for={{image_id}}>
+                    <b>Name</b>: {{image_info.Name}}, </b><b>Description</b>: {{image_info.Description}}
+                  </label>
+              </div>
+            {% endfor %}
+            </div>
+          {% endfor %}
+    </div>
+
+        <h5>Select Instance Type</h5>
+        <ul class="nav nav-pills" id="pills-tab" role="tablist">
+          {% for use_case in instance_types.keys() %}
+
+            {% set use_case_clean = use_case.replace(' ', '-') %}
+            {% set tab_data_target = "#"+use_case_clean %}
+            {% set tab_id = use_case_clean +"tab" %}
+            {% if loop.index == 1 %}
+              <li class="nav-item" role="presentation">
+                <button class="nav-link active" id={{tab_id}} data-bs-toggle="pill" data-bs-target={{tab_data_target}} type="button" role="tab" aria-controls={{use_case_clean}} aria-selected="true">{{ use_case }}</button>
+              </li>
+            {% else %}
+              <li class="nav-item" role="presentation">
+                <button class="nav-link" id={{tab_id}} data-bs-toggle="pill" data-bs-target={{tab_data_target}} type="button" role="tab" aria-controls={{use_case_clean}} aria-selected="false">{{ use_case }}</button>
+              </li>
+            {% endif %}
+          {% endfor %}
+        </ul>
+        <div class="tab-content mb-5" id="pills-tabContent">
+          {% for use_case, use_case_dict in instance_types.items() %}
+            {% set use_case_clean = use_case.replace(' ', '-') %}
+            {% set tab_id = use_case_clean+"tab" %}
+            {% if loop.index == 1 %}
+                <div class="tab-pane fade show active" id={{use_case_clean}} role="tabpanel" aria-labelledby={{tab_id}}>
+            {% else %}
+                <div class="tab-pane fade" id={{use_case_clean}} role="tabpanel" aria-labelledby={{tab_id}}>
+            {% endif %}
+            <p>{{use_case_dict.description}}</p>
+            {% for instance_type, val in use_case_dict.types.items() %}
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="instance_type" id={{instance_type}} value={{instance_type}} required>
+                  <label class="form-check-label" for={{instance_type}}>
+                    <b>Type</b>: {{instance_type}}, <b>Size</b>: {{val.cpu}} CPU, {{val.memory}}, <b>Cost</b>: ${{val.price}}/hour
+                  </label>
+              </div>
+            {% endfor %}
+            </div>
+          {% endfor %}
+          </div>
+        </div>
+
+  <!-- Storage size-->
+  <div class="form-group row mb-5">
+      <label for="volume_size" class="form-label"><b>Volume Size (GB)</b></label>
+      <div class="col-sm-10">
+        <input type="number" name="volume_size" min="8" max="256" step="1" value="8" class="form-control" id="volume_size">
+        <span id="volume_size_help" class="form-text">
+            Must be between 8-256 GB.
+        </span>
+      </div>
+  </div>
+  <!-- Keypairs-->
+
+  <div class="form-group row mb-5">
+    <label for="key_pair"><b>Select Key Pair</b></label>
+    <div class="col-sm-10">
+        {% if key_pair_names|length > 0 %}
+        <select class="form-control" name="key_pair" id="key_pair" required>
+          {% for name in key_pair_names %}
+           <option>{{ name }}</option>
+          {% endfor %}
+        </select>
+        {% endif %}
+        <a class="btn btn-primary" href="keypairs" role="button">Create New Key Pair</a>
+    </div>
+  </div>
+
+  <!-- Name -->
+  <div class="form-group row mb-5">
+    <label for="instance_name_for_custom" class="col-sm-2 col-form-label"><b>Instance Name</b></label>
+    <div class="col-sm-10">
+        <input type="text" class="form-control" name="instance_name_for_custom" id="instance_name_for_custom" placeholder="Name">
+    </div>
+  </div>
+    <p style="text-align:center"><button type="submit" name="launch_type" class="btn btn-success" value='custom'>Launch Instance</button></p>
+</div>
+
+</div>
+
+</form>
+
+{% endblock %}

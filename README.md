@@ -1,92 +1,549 @@
-# HelioCloud Services
+[![Coverage](https://gitlab.smce.nasa.gov/heliocloud/platform/badges/develop/coverage.svg)](https://gitlab.smce.nasa.gov/api/v4/projects/139/jobs/artifacts/develop/download?job=coverage)
+[![pylint](https://gitlab.smce.nasa.gov/heliocloud/platform/-/jobs/artifacts/develop/raw/public/pylint.svg?job=static-analysis)](https://gitlab.smce.nasa.gov/api/v4/projects/139/jobs/artifacts/develop/raw/pylint.txt?job=static-analysis)
 
-Services comprising the full HelioCloud stack.  Installation of all of these packages allows one to stand up a fully functional HelioCloud instance., with the option to selectively install only those services you are interested in. 
+# HelioCloud
 
-## Getting started
+- [Overview](#overview)
+- [Deployment](#deployment)
+  - [Environment Preparation](#1-environment-preparation)
+  - [Configuration](#2-configuration)
+  - [Deploy](#3-deploy)
+  - [Validate](#4-validate)
+- [Operations](#operations)
+  - [Ingester](#ingester)
+- [Development](#development)
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
+# Overview
+This repository contains the core codebase, installer and associated tools for instantiating and managing a HelioCloud
+instance in AWS. 
 
-## Add your files
+The HelioCloud instantiation process is implemented as an AWS CDK project that - when provided an instance configuration 
+pulls in the necessary CDK Stack definitions and instantiates/updates a HelioCloud instance in a configured AWS account.
 
-- [ ] [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-- [ ] [Add files using the command line](https://docs.gitlab.com/ee/gitlab-basics/add-file.html#add-a-file-using-the-command-line) or push an existing Git repository with the following command:
+---
+# Deployment
+Deploying a HelioCloud instance is a simple matter of ensuring your local and AWS environments support the installation, 
+setting a few configuration options to fine tune your deployment to your needs, running the CDK application and finally
+doing a few quick checks to confirm your HelioCloud instance is operating correctly. 
 
+## 1 Environment Preparation
+A HelioCloud deployment requires certain pre-requisite steps be taken in your AWS and local environments to enable the CDK app to run to completion.  Please work through the following:
+
+### 1.1 Local Environment Setup & cloning HelioCloud repository
+- Install [Python 3.9](#https://www.python.org/downloads/release/python-390/) or later
+- Install the [AWS Command Line Interface](#https://docs.aws.amazon.com/cli/index.html)
+- Install and setup AWS CDK (see [AWS install instructions](https://aws.amazon.com/getting-started/guides/setup-cdk/module-two/), 
+note the requirement for `npm` and `Node.js`; currently nvm == 18.0.0 stable but currently 20.* fails).  You have AWS credentials set either with environment variables or 
+`aws configure` to push anything to AWS account.
+- Do a `git clone` of this repository
+- `cd` into the repository and instantiate a Python virtual environment:
+```shell
+pip install virtualenv
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
 ```
-cd existing_repo
-git remote add origin https://git.smce.nasa.gov/heliocloud/heliocloud-services.git
-git branch -M main
-git push -uf origin main
+
+#### VPN Warning
+
+If you are using a VPN, you may need to turn off the VPN for the environment setup steps (ex. the AWS bootstrap CDK installation step: `cdk bootstrap aws://[account]/[region] -c instance=[something]`). However, generally you should be able to run cdk commands on VPN.
+
+#### TLS/Self-signed certificates
+On certain networks with self-signed certificates, you may see the following error message (`Error: self-signed certificate in certificate chain`) when running `cdk` commands in verbose mode (`-v`).
+
+CDK assumes the node TLS settings.  The following command will disable all TLS validation.  This should is a brute force approach to get past this issue and should not be .
+```
+export NODE_TLS_REJECT_UNAUTHORIZED=0
 ```
 
-## Integrate with your tools
+### 1.2 AWS Environment
+#### IAM Role
+Your AWS permissions must allow you to create/modify/delete IAM roles and AWS resources, so verify that you have these permissions before beginning.  Our development roles are set such that our policy is:
 
-- [ ] [Set up project integrations](https://git.smce.nasa.gov/heliocloud/heliocloud-services/-/settings/integrations)
+- <details><summary>IAM Policy</summary><blockquote>
+  
+    ~~~
+    {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Effect": "Allow",
+                "NotAction": [
+                    "iam:*",
+                    "organizations:*",
+                    "account:*"
+                ],
+                "Resource": "*"
+            },
+            {
+                "Effect": "Allow",
+                "Action": [
+                    "iam:List*",
+                    "iam:Get*",
+                    "iam:Tag*",
+                    "iam:Attach*",
+                    "iam:Detach*",
+                    "iam:Put*"
+                ],
+                "Resource": "*"
+            },
+            {
+                "Effect": "Allow",
+                "Action": [
+                    "iam:CreateServiceLinkedRole",
+                    "iam:DeleteServiceLinkedRole",
+                    "iam:ListInstanceProfilesForRole",
+                    "organizations:DescribeOrganization",
+                    "account:ListRegions"
+                ],
+                "Resource": "*"
+            },
+            {
+                "Effect": "Allow",
+                "Action": [
+                    "iam:CreatePolicy",
+                    "iam:CreatePolicyVersion",
+                    "iam:CreateRole",
+                    "iam:DeleteRole",
+                    "iam:CreateInstanceProfile",
+                    "iam:AddRoleToInstanceProfile",
+                    "iam:PassRole",
+                    "iam:RemoveRoleFromInstanceProfile",
+                    "iam:DeleteAccountPasswordPolicy",
+                    "iam:DeleteGroupPolicy",
+                    "iam:DeletePolicy",
+                    "iam:DeletePolicyVersion",
+                    "iam:DeleteRolePermissionsBoundary",
+                    "iam:DeleteRolePolicy",
+                    "iam:DeleteUserPermissionsBoundary",
+                    "iam:DeleteUserPolicy",
+                    "iam:DeleteInstanceProfile",
+                    "iam:UpdateAssumeRolePolicy"
+                ],
+                "Resource": "*"
+            }
+        ]
+    }
+    ~~~
+   </blockquote></details>
+This is a very open role and not necessarily what you should set for your default user.  However, in order to run these instructions you must have IAM roles that allow creation/deletion of both IAM roles and policies.
 
-## Collaborate with your team
+#### Region
+A HelioCloud instance runs within a single AWS region. The availability of individual AWS services 
+and various images or configurations they can be deployed within can vary from region to region. 
 
-- [ ] [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-- [ ] [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-- [ ] [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-- [ ] [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-- [ ] [Automatically merge when pipeline succeeds](https://docs.gitlab.com/ee/user/project/merge_requests/merge_when_pipeline_succeeds.html)
+Currently, all HelioCloud development and testing has been done using `us-east-1`, however that isn't
+to say you can't _try_ to deploy it into another. Should you encounter any issues doing so, 
+please reach out to the HelioCloud development team and let us know.  We are actively working to 
+ensure HelioCloud is deployable to any/all AWS regions.
 
-## Test and Deploy
+## 2 Configuration
+A single HelioCloud deployment into an AWS account is referred to as a HelioCloud **instance**, in keeping with the idea
+that you are _instantiating_ a HelioCloud using a certain set of parameters as provided by your instance's configuration file. 
+Instance configuration files are stored in `instance/` of this installation project. There you will find the following:
+- instance/default.yaml - A default configuration file used for ALL HelioCloud instance deployments. You can refer to this file to understand how you can fine tune your instance configuration. This file should not be altered as it is the base for deployment (add on YAML files override these settings)
+- instance/example.yaml - An example configuration file showing the typical override settings that would be used when deploying a production HelioCloud instance.
 
-Use the built-in continuous integration in GitLab.
+The following steps will guide you through the process of creating your own instance configuration file in preparation for a deployment.
 
-- [ ] [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/index.html)
-- [ ] [Analyze your code for known vulnerabilities with Static Application Security Testing(SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-- [ ] [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-- [ ] [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-- [ ] [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
+### 2.1 Creating instance configuration
+Make your own copy of the instance configuration example file found at `instance/example.yaml` using a name
+you think appropriate for identifying your instance. In this example, we will call our instance `heliocloud`:
+```commandline
+cp instance/example.yaml instance/heliocloud.yaml
+```
 
-***
+### 2.2 AWS Account ID & Region
+First you need to obtain and specify the AWS Account ID and Region you want to deploy your HelioCloud instance into in your configuration file. In many cases, this is likely to be the Account ID and Region used when during your installation of the AWS CLI. However, the Account ID and Region is configurable to account for cases wherein you may deploy to other accounts/regions.
 
-# Editing this README
+Obtaining your AWS Account ID can be accomplished via one of the following:
+- Login to the AWS Console. Click on your username in the upper right hand corner. Select "Account". Your account id
+will be presented on the billing screen.
+- If have you installed and configured the AWS CLI, you can use the `sts` service to obtain your account id.  On the 
+command line, run:
+    ```commandline
+    aws sts get-caller-identity
+    ```
+  This should return a response like:
+    ```commandline
+    {
+        "UserId": "XYZ.......",
+        "Account": "00.....",
+        "Arn": "arn:aws:iam::00....."
+    }
+    ```
+  The Account field is your AWS Account Id.
 
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!).  Thank you to [makeareadme.com](https://www.makeareadme.com/) for this template.
+A valid region can be obtained by looking at the list of valid regions for HelioCloud deployment cited above. Additionally,
+you can obtain your default AWS region via the AWS config file generated during installation of the AWS CLI. Run the 
+following command on the command line:
+```commandline
+cat ~/.aws/credentials
+```
+You should get a response like:
+```commandline
+[default]
+region = us-east-1
+```
 
-## Suggestions for a good README
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
+Now modify your instance configuration file to set the following from the above steps:
+- AWS Account ID &  Region:
+    ```yaml
+    env:
+      account: 12345678
+      region: us-east-1
+    ```
 
-## Name
-Choose a self-explaining name for your project.
+### 2.3 Modify instance configuration
 
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
+Modify your newly created instance configuration to suit your HelioCloud instance. The following are common configuration changes that you either must alter or may want to consider altering:
 
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
+- Your preference for VPC settings. Here we allow the AWS CDK to create a new VPC for our HelioCloud instance:
+    ```yaml
+    vpc:
+      type: new
+    ```
+- Which HelioCloud modules you want activated. Here we will activate all of them:
+    ```yaml
+    enabled:
+      registry: True
+      portal: True
+      daskhub: True
+    ```
+- The User Portal and Daskhub will require the Auth stack be installed, so we must provide an authentication domain prefix (this prefix must be unique across AWS for the entire region you are deploying into, if they already exist the deploy will partially fail and you will need to change to unique names, can only contain alphanumeric or hyphen characters:
+    ```yaml
+    auth:
+      domain_prefix: "myorganization-helio"
+    ```
+- Registry module will require names for its public S3 buckets (these buckets must be unique across AWS for the entire region you are deploying into, if they already exist the deploy will partially fail and you will need to change to unique names, can only contain alphanumeric, hyphen, or period characters):
+    ```yaml
+    registry:
+      bucketNames: [
+                     "edu-myorganization-helio1",
+                     "edu-myorganization-helio2"
+                   ]
+    ```
+  
+- The User Portal requires a domain URL, record, and the ARN corresponding to an active SSL certificate. 
+    ```yaml
+    portal:
+      domain_url: "myorganization-domain.org"
+      domain_record: "portal"
+      domain_certificate_arn: "arn:aws:acm:[region]:[account]:certificate/[certificate-id]"
+    ```
+  For how to request a public certificate for your domain, see [here](https://docs.aws.amazon.com/acm/latest/userguide/gs-acm-request-public.html#:~:text=Sign%20in%20to%20the%20AWS,name%20such%20as%20example.com%20.). 
+  The user portal will be hosted at `[domain_record].[domain_url]` (e.g. `portal.myorganization-domain.org`). Make sure this is globally unique, otherwise deployment will not complete.
 
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
+You may also refer to `instance/default.yaml` to gain a full understanding of all the configurable elements of your HelioCloud instance deployment. 
 
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
+Finally, note that multiple instances of a HelioCloud can be deployed into a single AWS account by creating additional
+instance config files stored in the `instance/` directory. This is especially useful when collaboratively developing
+the platform within one AWS account, or allowing individual (sub)departments within an organization to have their own
+HelioCloud instance deployed into an organization wide AWS account.
 
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
+### 2.4 Storing your instance configuration 
+If multiple individuals will be managing the deployment and update of a single HelioCloud instance,
+you will want to make the instance configuration in `instance/` available to them. Possible ways to 
+do this are:
+- Store the instance configuration in your own clone of the HelioCloud platform git repository
+and check it in to whatever Git compatible source control system you are using/familiar with
+- Store the instance configuration in an AWS S3 bucket in the AWS account your HelioCloud instance
+has been deployed into.
 
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
 
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
 
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
+## 3 Deploy
+Deployment of a HelioCloud instance is potentially a 2 step process consisting of:
+- Running the CDK to install the CloudFormation stacks for your HelioCloud instance into your AWS account
+- (if deploying the DaskHub) Executing the DaskHub follow up deployment steps
+- (if deploying the User Portal) Make sure your machine is running Docker and that you are logged in. To set up, see [here](https://www.docker.com).
 
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
+### 3.1 Check via AWS CDK
+Deploying your configured HelioCloud instance is done via the AWS CDK, passing in your instance name as a context
+variable. Getting started, it is useful to run the `cdk ls` command to see the names of the CloudFormation Stacks
+that will be installed based on your instance configuration. 
 
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
+Assuming your instance name is `heliocloud` and it is configured per the example in the previous section, try running:
+```commandline
+cdk ls -c instance=heliocloud
+```
+The following should appear:
+```commandline
+Using instance configured AWS account 12345678 and region us-east-1
+Using newly created vpc: ${Token[TOKEN.608]}.
+Deploying buckets: ['edu-myorganization-helio1', 'edu-myorganization-helio2']
+heliocloud/Base
+heliocloud/Auth
+heliocloud/Registry
+heliocloud/Daskhub
+heliocloud/Portal
+```
+Note that the names of each CDK Stack representing HelioCloud components have been returned with a prefix of `heliocloud/`, 
+per the name of the HelioCloud instance being installed. This helps uniquely name and identify these Stacks should you 
+install multiple HelioCloud instances in one AWS account. 
 
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
+NOTE: This does not deploy your HelioCloud instance, it is verification that the project has compiled correctly.
 
-## License
-For open source projects, say how it is licensed.
+(You can also use 'cdk synth' to see if everything will compile first, or just go right to the deploy.)
 
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+### 3.2 Deploy via AWS CDK
+
+You can deploy your configured HelioCloud instance by running `cdk deploy` from the root of the `install` directory,
+passing in the name of your instance as a context variable, along with the `-all` flag to tell CDK to deploy all the 
+CloudFormation stacks required based on your instance's configuration. The following command would deploy a 
+HelioCloud instance using the configuration at `instance/heliocloud.yaml`:
+
+NOTE: deployment can take 10+ minutes depending on your configurations.
+
+```commandline
+cdk deploy --all -c instance=heliocloud
+```
+
+Subsequent an initial installation, you may want to (re)install some of the individual modules following a configuration
+change or update. You can (re)deploy a single component in CDK by providing its FULL stack name to the deploy command.
+Note that the full Stack name includes the instance name prefix (e.g. `heliocloud/`), as we saw when running `cdk ls`:
+
+```commandline
+cdk deploy heliocloud/Registry -c instance=heliocloud
+```
+
+
+### 3.3 Daskhub Installation
+DaskHub has the initial infrastructure instantiated with this CDK project but currently requires the user to perform 
+additional steps after logging into an admin EC2 instance.  The DaskHub installation assumes you have followed the above deployment instructions and builds upon this infrastructure. For the remainder of the installation instructions see the DaskHub 
+installation instructions [here](daskhub/README.md).
+
+----
+# Operations: Using your HelioCloud
+
+## Registering DataSets
+The HelioCloud's registry component is capable of ingesting and registering heliophysics data sets within your HelioCloud 
+instance, thereby making them available via the registry's public S3 buckets and via the HelioCloud data sets API.  
+This also makes said datasets available to other deployed HelioCloud instances. There are two steps to execute to 
+register a new or updated data set within a HelioCloud:
+- Execute an ingest job
+- Run a catalog update
+
+### Executing an ingest job
+New or updated datasets are ingested into a HelioCloud registry via that Heliocloud's Ingest service - an AWS Lambda
+deployed and configured as part of a HelioCloud. The ingest service executes a _job_, which is constructed by putting
+your dataset files and accompanying metadata in a subfolder within the ingest service's s3 bucket, then running the 
+ingest service via a commandline tool. The process of constructing and executing an ingest job is as follows:
+
+1. Create a sub-folder in the ingest s3 bucket. For example, if your bucket was named `my.upload.bucket` in your 
+instance configuration, a valid ingest job location would be `s3://my.upload.bucket/my_job`.
+
+2. Upload the dataset files with an accompanying manifest CSV `manifest.csv` listing those
+files along with the relevant metadata. The manifest file should sit at the root of the subfolder in the 
+S3 bucket: `s3://my.upload.bucket/my_job/manifest.csv`. Example manifest file:
+    ```text
+    test, test, test
+    more data
+    ```
+3. Create and upload a dataset entry file `entry.json` to provide the necessary meta-data about the data set in 
+Registry this ingest job should update.  Example:
+    ```json
+    {
+      "id" : "MyDataSet",
+      "loc": "s3://my.public.heliocloud.bucket/mds",
+      "title" : "My DataSet",
+      "ownership" : {
+        "description" : "Something about the data I want to upload ",
+        "resource_id" : "SPASE-XYZ-124",
+        "creation_date" : "2015-09-01T00:00:00",
+        "citation": ".....",
+        "contact": "Dr. Me, ephemerus.me@my_institution.edu",
+        "about_url": "..."
+      }
+    }
+    ```
+   Fields should be filled out as follows:
+   
+    - **id** - the Registry identifier of the Data Set to add this data to.  Should be unique to this HelioCloud instance.
+    - **loc** - the public s3 bucket and subfolder for the Data Set to add this data to (should be 1-to-1 with the **id**)
+    - **title** - a short, human readable, descriptive name for the Data Set
+    - **ownership** - this is a block of additional descriptive metadata about the DataSet (optional)
+
+    The `entry.json` file should be placed adjacent to the `manifest.csv` at the root of the s3 upload bucket sub-folder.
+    Example `s3://my.upload.bucket/my_job/entry.json`
+
+4. Once the upload package is in place, the Ingest service can be invoked using the Python script
+at `tools/ingest.py`, providing it the name of the HelioCloud instance and the sub-folder in 
+in the S3 ingest bucket that the job is in:
+    ```commandline
+   python tools/ingest.py my_instance my_job
+    
+    ```
+5. Completion of the ingest job can be confirmed by looking at either the ingest job sub-folder 
+to confirm it is empty, or by checking the public S3 buckets in the HelioCloud registry to
+confirm the new data was incorporated. 
+
+### Updating the Catalog
+After running an ingest job (or several), updating the HelioCloud's Registry catalog is necessary to make the data 
+available through the HelioCloud data API. Simply run the Python script at `tools/catalog.py`with the name of your 
+Heliocloud instance:
+```shell
+python tools/catalog.py my_instance
+```
+You can then check the `catalog.json` file(s) at the root of the public S3 buckets in your HelicoCloud's registry:
+```shell
+aws s3 cp s3://my.registry.bucket/catalog.json .
+cat catalog.json
+```
+Read the catalog entries to see that your ingest job incorporated the data correctly. 
+
+
+-------
+# Development 
+HelioCloud is an open source offering and as such, we encourage community participation in its continued development. 
+If you want to contribute to the HelioCloud installation CDK codebase, you will need to have a solid base of skills 
+in the following:
+- Amazon Web Services 
+- The [AWS Cloud Development Kit](#https://docs.aws.amazon.com/cdk/v2/guide/work-with-cdk-python.html)
+- [Python 3](#https://docs.python.org/3.9/index.html)
+- [AWS SDK for Python (Boto3)](#https://boto3.amazonaws.com/v1/documentation/api/latest/index.html)
+- Git
+
+Provided below are instructions for setting up your Python environment, familiarizing yourself with AWS CDK and 
+understanding the layout of the codebase.
+
+## 1. Development Environment Setup
+You can begin by following the steps in [Environment Preparation](#1-environment-preparation) as if 
+you were preparing to do your own HelioCloud instance setup and deployment. This will initialize a 
+proper Python3 virtual environment with the correct dependencies installed.  Following that,
+you should install the development dependencies as well so you have access to the proper tools:
+
+```shell
+$ pip install -r requirements-dev.txt
+```
+
+You may use whatever Python IDE you are comfortable with it,
+though the core development team has preferred [PyCharm](https://www.jetbrains.com/pycharm/).
+
+After installing your IDE and dev dependencies, you should be ready to go about making your changes.
+
+## 2. Understanding an AWS CDK project
+
+### 2.1 Platform codebase layout
+The HelioCloud platform has been implemented as an AWS CDK project and sticks closely to the 
+best practices and conventions for one. The following files & subdirectories comprise the CDK
+app implementation:
+- `app.py` contains the HelioCloud CDK App definition. It is required by the CDK commandline tool, 
+containing all the specifics of how each CDK Stack comprising the platform is to be configured and
+deployed via AWS CloudFormation templates. CDK Stacks are used to decompose the deployment of a
+CDK app into manageable components that can be defined and deployed individually if you so chose - 
+with some stacks referencing dependencies on others.
+- `base_aws` is the foundational CDK stack for HelioCloud. It handles AWS VPC creation, as well as 
+creating IAM accounts & roles used across multiple HelioCloud components.
+- `base_auth` defines the instantiation of AWS Cognito to provide use authentication and 
+authorization services for other HelioCloud components: Daskhub & User Portal.
+- `daskhub` defines the instantiation of HelioCloud`s version of a Daskhub cluster. More details
+can be found in the Daskhub [README.md](daskhub/README.md).
+- `portal` defines the instantiation of and supporting resources for installing HelioCloud`s
+User Portal module. More details can be found in the Portal [README.md](portal/README.md).
+- `registry` contains the implementation for and CDK definition of HelioCloud`s Registry module.
+More details can be found in the Registry's [README.md](registry/README.md).
+
+Each stack directory contains its own `_stack.py` Python file containing the CDK stack implementation
+for that particular stack.
+
+
+Additionally, you will note several other directories that comprise important part`s of the 
+codebase:
+- `test` contains unit and integration tests for HelioCloud platform. _Note_: Using integration tests
+will require you to have deployed a development instance of HelioCloud to AWS.
+- `tools` contains client side tools for administering and operating a HelioCloud instance.
+- `instance` contains the default configuration file `default.yaml`, which you will want to refer
+to and update if making any changes that impact HelioCloud's configurability. 
+
+
+The vast majority your changes will probably go in one of `app.py`, a `_stack.py` file, or to the 
+resources within the stack directories.
+
+
+### 2.2 CDK Command line
+You will need to develop a sound understanding of the AWS CDK command line utility in order to review
+and test your changes. There are multiple CDK commands to become familiar with to aid in testing
+changes locally, and deploying your updates to your HelioCloud development instance:
+
+ * `cdk ls`          list all stacks in the app
+ * `cdk synth`       emits the synthesized CloudFormation template
+ * `cdk deploy`      deploy this stack to your default AWS account/region
+ * `cdk diff`        compare deployed stack with current state
+ * `cdk docs`        open CDK documentation
+
+The `cdk.json` file tells the CDK Toolkit how to execute your app.
+
+Typically, deploying a development HelioCloud instance using the codebase you are actively developing on means (re)deploying
+using an instance configuration you have created for development purposes:
+```commandline
+% cdk deploy --all -c instance=my_dev_instance_name
+```
+.....where you have an instance configuration created at `instance/my_dev_instance_name.yaml`.
+
+
+
+## 3 Testing
+All HelioCloud test fixtures and tooling are present under `test`.  Go here for adding
+unit tests, integration tests and any related code or tools.
+
+### 3.1 Unit Testing
+The `test/unit` directory contains a collection of unit and integration tests for exercising the HelioCloud codebase,
+with the subdirectories within organized to match the top-level directories containing the 
+code to test:
+- `test/unit/registry` contains unit test code for the registry module
+- `test/unit/tools` contains unit test code for the tools module
+...and so forth.
+
+You can run the unit tests for a particular module via the Python interpreter:
+```shell
+python test/unit/registry
+python test/unit/tools
+```
+
+All of these tests can by run locally, with no requirement of a deployed HelioCloud instance or
+AWS account.
+
+
+### 3.1 Integration Testing
+Integration tests have been developed in `test/integration` to exercise certain features of a 
+deployed HelioCloud 
+development instance. These are very effect for ensuring that AWS services are being configured
+correctly by the CDK, and that any module specific features leveraging AWS resources (e.g. S3) 
+are working correctly.
+
+Integration tests are invoked the same way as unit tests:
+```shell
+python test/integration
+```
+
+### 4 Prepping your changes as a pull or merge request
+After completing and testing your changes, you will want to take some additional steps to maximize
+the potential that the pull or merge request you put together is accepted. We recommend you:
+- Run `black` to format all of your changes in keeping with HelioCloud's code formatting conventions
+```shell
+black .
+```
+- Run `pylint` to conduct a static code analysis of the codebase and see if you introduced any errors,
+deviations from coding standards, etc. 
+```shell
+pylint *
+```
+
+Provided you get clean feedback from black & pylint and your tests pass, you should feel
+pretty comfortable any merge request you post would get rejected for not adhering to the 
+codebase conventions.
+
+
+
+
+
+
+
+
+
+
+
+
+

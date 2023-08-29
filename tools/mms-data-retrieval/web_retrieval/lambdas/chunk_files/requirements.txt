@@ -1,0 +1,7 @@
+--trusted-host files.pythonhosted.org 
+--trusted-host pypi.org 
+--trusted-host pypi.python.org
+
+pandas==1.5.3
+fsspec==2023.1.0
+s3fs==2023.1.0

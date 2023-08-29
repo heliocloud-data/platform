@@ -1,0 +1,7 @@
+venv/*
+*.json
+*.txt
+run.sh
+*.log
+*.csv
+logs/*

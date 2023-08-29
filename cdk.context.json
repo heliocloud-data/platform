@@ -1,0 +1,23 @@
+{
+  "availability-zones:account=006885615091:region=us-east-1": [
+    "us-east-1a",
+    "us-east-1b",
+    "us-east-1c",
+    "us-east-1d",
+    "us-east-1e",
+    "us-east-1f"
+  ],
+  "availability-zones:account=006885615091:region=us-east-2": [
+    "us-east-2a",
+    "us-east-2b",
+    "us-east-2c"
+  ],
+  "hosted-zone:account=006885615091:domainName=aplscicloud.org:region=us-east-2": {
+    "Id": "/hostedzone/Z02398903PTSEN0E8HUES",
+    "Name": "aplscicloud.org."
+  },
+  "hosted-zone:account=006885615091:domainName=aplscicloud.org:region=us-east-1": {
+    "Id": "/hostedzone/Z02398903PTSEN0E8HUES",
+    "Name": "aplscicloud.org."
+  }
+}

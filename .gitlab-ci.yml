@@ -222,7 +222,11 @@ staging-cdk-deploy:
     - npm install -g npm
     - npm install -g aws-cdk
     - cdk --version
+    # Dependencies for Portal
     - curl -sSL https://get.docker.com/ | sh
+    # Dependencies for Daskhub
+    - curl "https://s3.amazonaws.com/session-manager-downloads/plugin/latest/ubuntu_64bit/session-manager-plugin.deb" -o "session-manager-plugin.deb"
+    - dpkg -i session-manager-plugin.deb
     - apt-get update && apt-get install -y gettext
     - envsubst < instance/staging.yaml > instance/staging-${CI_COMMIT_REF_SLUG}.yaml
     - echo cdk deploy --all -c instance=staging-${CI_COMMIT_REF_SLUG} --require-approval never -v
@@ -270,7 +274,11 @@ production-jhuapl-cdk-deploy:
     - npm install -g npm
     - npm install -g aws-cdk
     - cdk --version
+    # Dependencies for Portal
     - curl -sSL https://get.docker.com/ | sh
+    # Dependencies for Daskhub
+    - curl "https://s3.amazonaws.com/session-manager-downloads/plugin/latest/ubuntu_64bit/session-manager-plugin.deb" -o "session-manager-plugin.deb"
+    - dpkg -i session-manager-plugin.deb
     - apt-get update && apt-get install -y gettext
     - envsubst < instance/production.yaml > instance/production-jhuapl.yaml
     # Skip the actual deployment as docker/docker-in-docker services are unavailable in the current

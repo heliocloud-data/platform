@@ -93,7 +93,7 @@ See more details on [DNS routing](https://saturncloud.io/blog/jupyterhub_securit
 
 
 5. Execute `02-deploy-daskhub.sh` by running `./02-deploy-daskhub.sh`
-    - This script  generates copies and fills in configurable values of 3 Daskhub configuration files (can alter manually if have alternate configurations, but NOTE if you change the .yaml files they will be overwritten when these are copied from the .yaml.template files):
+    - This script generates copies and fills in configurable values of 3 Daskhub configuration files (can alter manually if have alternate configurations, but NOTE if you change the .yaml files they will be overwritten when these are copied from the .yaml.template files):
         <details>
         <summary>dh-config.yaml </summary>
 
@@ -117,7 +117,7 @@ See more details on [DNS routing](https://saturncloud.io/blog/jupyterhub_securit
         - this file contains authentication components of the Daskhub.  This is optional but highly recommended and done by default in this set-up. 
 
         </details>
-    - This will use Helm (a K8s package manager) to get Daskhub running on our cluster
+    - This will use Helm (a K8s package manager) to get Daskhub running on our cluster, and as such you need to ensure that at least one node is available.
     - Default deploys with Authentication and Authorization then gets the URL for our DNS routing and reruns with Authentication and Authorization specified in `dh-auth.yaml`, can alter `02-deploy-daskhub.sh` according to comments to run without authentication
     - If you receive an error on executing the helm chart see this [link](https://stackoverflow.com/questions/72126048/circleci-message-error-exec-plugin-invalid-apiversion-client-authentication)
     - Can take 10 minutes or more to execute
@@ -228,7 +228,7 @@ NOTE: If you get a FAIL from any above commands, you may want to go to AWS conso
 
 4. Rebuild nodegroups
    - Alter version in `cluster-config.yaml` files so the yaml version matches version changed to in EKS AWS Console
-   - `eksctl upgrade cluster --name=<CLUSTER_NAME> --config-file cluster-config.yaml`
+   - `eksctl upgrade cluster --config-file cluster-config.yaml`
 
 5. Update helm chart  
    - `helm install --version 2022.8.2 myrelease dask/dask`

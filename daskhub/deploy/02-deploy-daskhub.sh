@@ -59,19 +59,20 @@ sed -i "s|<INSERT_CONTACT_EMAIL>|$ADMIN_USER_EMAIL|g" dh-auth.yaml
 # Add helm repo
 echo ------------------------------
 echo Adding Dask helm repo...
-helm repo add dask https://helm.dask.org/
+helm repo add dask https://helm.dask.org/ || (echo "error: Failed to add helm repository."; exit 1)
 
 # Changes the Cognito user pool app client URLs to match what is being put in the daskhub configs
 # Must re-specify client configurations because if value not set, will use default values (do not want this)
 echo ------------------------------
 echo Amending cognito user pool app client urls...
+# There's no way this works.
 NO_OUTPUT=$(aws cognito-idp update-user-pool-client --user-pool-id $COGNITO_USER_POOL_ID --client-id $COGNITO_CLIENT_ID --callback-urls https://$ROUTE53_DASKHUB_PREFIX.$ROUTE53_HOSTED_ZONE/hub/oauth_callback --logout-urls https://$ROUTE53_DASKHUB_PREFIX.$ROUTE53_HOSTED_ZONE/logout --allowed-o-auth-flows "code" --allowed-o-auth-scopes "phone" "email" "openid" "profile" "aws.cognito.signin.user.admin" --supported-identity-providers "COGNITO" --allowed-o-auth-flows-user-pool-client)
 
 
 # Deploy with auth (can deploy without)
 echo ------------------------------
 echo Deploying Daskhub helm chart with auth
-helm upgrade daskhub dask/daskhub --namespace=$KUBERNETES_NAMESPACE --values=dh-config.yaml --values=dh-secrets.yaml --values=dh-auth.yaml --version=2022.8.2 --install
+helm upgrade daskhub dask/daskhub --namespace=$KUBERNETES_NAMESPACE --values=dh-config.yaml --values=dh-secrets.yaml --values=dh-auth.yaml --version=2022.8.2 --install --timeout 10m30s --debug || (echo "error: Failed to install/upgrade daskhub from helm repository." ; exit 1)
 #### To deploy without Authentication & Authorization comment out line above and use this one instead without of the lines below it
 #helm upgrade daskhub dask/daskhub --namespace=$KUBERNETES_NAMESPACE --values=dh-config.yaml --values=dh-secrets.yaml --version=2022.8.2 --install
 
@@ -102,6 +103,7 @@ if [[ $LOADBALANCER_URL != $FINAL_LOADBALANCER_URL ]]; then
     echo $LOADBALANCER_URL
     echo $FINAL_LOADBALANCER_URL
     echo Exit, something wrong has occurred, may be a timing issue and should retry script
+    exit 1
 else
     # Copy and alter Route 53 record file
     echo ------------------------------

@@ -33,6 +33,10 @@ HELIO_S3_POLICY_ARN=$(aws cloudformation describe-stacks --stack-name $CLOUDFORM
 ADMIN_ROLE_ARN=$(aws cloudformation describe-stacks --stack-name $CLOUDFORMATION_NAME --query 'Stacks[0].Outputs[?OutputKey==`AdminRoleArn`].OutputValue' --output text)
 EFS_ID=$(aws cloudformation describe-stacks --stack-name $CLOUDFORMATION_NAME --query 'Stacks[0].Outputs[?OutputKey==`EFSId`].OutputValue' --output text)
 
+# Create the kubeconfig, this is a required configuration file for
+# kubectl commands.
+aws eks update-kubeconfig --region ${AWS_REGION} --name ${EKS_NAME}
+
 echo ------------------------------
 echo Checking cluster status...
 init_cluster_query=$(aws eks list-clusters | jq -r '.clusters[]')
@@ -125,10 +129,35 @@ if [[ " ${final_cluster_query[*]} " =~ " ${EKS_NAME} " ]]; then
     aws efs create-mount-target \
         --file-system-id $EFS_ID \
         --subnet-id $SUBNET_ID \
-        --security-groups $SG_ID 
+        --security-groups $SG_ID
 
     echo ------------------------------
     echo Setting up persistent volume configuration...
+
+    # Deployements of EKS version 1.23 (or higher) require the following commands
+    # to enable support of PersistentVolumeClaims.
+    #
+    # See:
+    # https://stackoverflow.com/questions/75758115/persistentvolumeclaim-is-stuck-waiting-for-a-volume-to-be-created-either-by-ex
+    eksctl utils associate-iam-oidc-provider --region=${AWS_REGION} --cluster=${EKS_NAME} --approve
+
+    EBS_CSI_CONTROLLER_SA_ROLE_NAME=AmazonEKS_EBS_CSI_DriverRole-${AWS_REGION}-${EKS_NAME}
+    eksctl create iamserviceaccount \
+        --name ebs-csi-controller-sa \
+        --namespace kube-system \
+        --cluster ${EKS_NAME} \
+        --attach-policy-arn arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy \
+        --approve \
+        --role-only \
+        --role-name ${EBS_CSI_CONTROLLER_SA_ROLE_NAME} \
+        --override-existing-serviceaccounts
+
+    eksctl create addon \
+        --name aws-ebs-csi-driver \
+        --cluster ${EKS_NAME} \
+        --service-account-role-arn arn:aws:iam::$(aws sts get-caller-identity --query Account --output text):role/${EBS_CSI_CONTROLLER_SA_ROLE_NAME} \
+        --force
+
     cp efs-pv.yaml.template efs-pv.yaml
 
     sed -i "s|<INSERT_EKS_DNS_NAME>|$EFS_ID.efs.$AWS_REGION.amazonaws.com|g" efs-pv.yaml
@@ -147,7 +176,7 @@ if [[ " ${final_cluster_query[*]} " =~ " ${EKS_NAME} " ]]; then
         cluster-autoscaler.kubernetes.io/safe-to-evict="false"
 
     ##### Below this specific to namespace #####
-    kubectl create namespace $KUBERNETES_NAMESPACE
+    kubectl create namespace $KUBERNETES_NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
 
     echo ------------------------------ 
     echo Attaching same service role of default namespace to desired namespace

@@ -12,7 +12,7 @@ echo "complete -C '/usr/local/bin/aws_completer' aws" >> /home/ssm-user/.bashrc
 echo "PATH=$PATH:/usr/local/bin" >> /home/ssm-user/.bashrc
 . /home/ssm-user/.bashrc
 
-sudo curl --location -o /usr/local/bin/kubectl https://s3.us-west-2.amazonaws.com/amazon-eks/1.22.6/2022-03-09/bin/linux/amd64/kubectl
+sudo curl --location -o /usr/local/bin/kubectl https://s3.us-west-2.amazonaws.com/amazon-eks/1.23.17/2023-08-16/bin/linux/amd64/kubectl
 sudo chmod +x /usr/local/bin/kubectl
 
 curl --silent --location "https://github.com/weaveworks/eksctl/releases/download/v0.111.0/eksctl_Linux_amd64.tar.gz" | tar xz -C /tmp

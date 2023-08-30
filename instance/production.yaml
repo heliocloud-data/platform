@@ -24,6 +24,7 @@ userSharedBucket:
 # Only working on the registry right now
 enabled:
   registry: True
+  daskhub: True
   portal: True
 
 # Simple bucket names

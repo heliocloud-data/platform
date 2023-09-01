@@ -1,4 +1,10 @@
+"""
+This file contains the CDK stack for deploying Daskhub.
+"""
+
 import os
+import re
+import yaml
 
 import aws_cdk as cdk
 from aws_cdk import (
@@ -18,7 +24,13 @@ class DaskhubStack(Stack):
     CDK stack for installing DaskHub for a HelioCloud instance
     """
 
-    def __init__(
+    FILES_TO_OMIT = {"daskhub/deploy/app.config", "daskhub/deploy/app.config.template"}
+
+    # URL to download the SSM_AGENT
+    SSM_AGENT_RPM = "https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm"  # pylint: disable=line-too-long
+
+    # fmt: off
+    def __init__(# pylint: disable=too-many-arguments, too-many-locals
         self,
         scope: Construct,
         construct_id: str,
@@ -26,8 +38,12 @@ class DaskhubStack(Stack):
         base_aws: BaseAwsStack,
         base_auth: Stack,
         **kwargs,
-    ) -> None:  # pylint disable=too-many-arguments
+    ) -> None:
+    # fmt: on
         super().__init__(scope, construct_id, **kwargs)
+
+        self.__daskhub_config = DaskhubStack.load_configurations(config)
+        DaskhubStack.generate_app_config_from_template(self.__daskhub_config)
 
         #############################
         # Create EC2 Admin instance #
@@ -59,27 +75,37 @@ class DaskhubStack(Stack):
         )
 
         # What to install on instance on startup
-        SSM_AGENT_RPM = "https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm"
         ec2_user_data = ec2.UserData.for_linux()
 
         with open("daskhub/deploy/00-tools.sh", encoding="UTF-8") as file:
             bash_lines = file.read()
 
         init_file_args = []
-        deploy_dir = "daskhub/deploy"
-        config_deploy_file_list = [
-            f for f in os.listdir(deploy_dir) if os.path.isfile(os.path.join(deploy_dir, f))
-        ]
-        for i, f in enumerate(config_deploy_file_list):
-            if f.split(".")[-1] == "sh":
+        deploy_dirs = ["daskhub/deploy", "temp/daskhub/deploy"]
+        config_deploy_file_list = []
+
+        for deploy_dir in deploy_dirs:
+            for file in os.listdir(deploy_dir):
+                file_rel = os.path.join(deploy_dir, file)
+                if os.path.isfile(file_rel):
+                    if file_rel in DaskhubStack.FILES_TO_OMIT:
+                        continue
+
+                    config_deploy_file_list.append(file_rel)
+
+        for i, file_rel in enumerate(config_deploy_file_list):
+            if file_rel.split(".")[-1] == "sh":
                 mode = "000777"  # All levels read/write/execute
             else:
                 mode = "000666"  # All levels read/write
+            file = os.path.basename(file_rel)
             init_file_args.append(
                 ec2.InitFile.from_existing_asset(
-                    f"/home/ssm-user/{f}",
+                    f"/home/ssm-user/{file}",
                     s3_assets.Asset(
-                        self, f"K8sAssets{i}", path=os.path.join(os.getcwd(), f"daskhub/deploy/{f}")
+                        self,
+                        f"K8sAssets{i}",
+                        path=os.path.join(os.getcwd(), file_rel),
                     ),
                     owner="ssm-user",
                     mode=mode,
@@ -88,10 +114,11 @@ class DaskhubStack(Stack):
 
         init_data = ec2.CloudFormationInit.from_elements(*init_file_args)
 
+        # pylint: disable=line-too-long
         ec2_user_data.add_commands(
             "sudo yum -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm",
             "sudo yum -y install jq gettext bash-completion moreutils docker unzip nano git",
-            f"sudo yum install -y {SSM_AGENT_RPM}",
+            f"sudo yum install -y {DaskhubStack.SSM_AGENT_RPM}",
             "restart amazon-ssm-agent",
             "adduser -m ssm-user",
             'echo "ssm-user ALL=(ALL) NOPASSWD:ALL" | tee  /etc/sudoers.d/ssm-agent-users',
@@ -99,6 +126,7 @@ class DaskhubStack(Stack):
             bash_lines,
             "sudo chown -R ssm-user:ssm-user /home/ssm-user",
         )
+        # pylint: enable=line-too-long
 
         # Create admin instance and attach role
         instance = ec2.Instance(
@@ -124,10 +152,15 @@ class DaskhubStack(Stack):
                         "autoscaling:DescribeAutoScalingGroups",
                         "autoscaling:DescribeAutoScalingInstances",
                         "autoscaling:DescribeLaunchConfigurations",
+                        "autoscaling:DescribeScalingActivities",
                         "autoscaling:DescribeTags",
+                        "ec2:DescribeInstanceTypes",
+                        "ec2:DescribeLaunchTemplateVersions",
                         "autoscaling:SetDesiredCapacity",
                         "autoscaling:TerminateInstanceInAutoScalingGroup",
-                        "ec2:DescribeLaunchTemplateVersions",
+                        "ec2:DescribeImages",
+                        "ec2:GetInstanceTypesFromInstanceRequirements",
+                        "eks:DescribeNodegroup"
                     ],
                     resources=["*"],
                 )
@@ -185,3 +218,81 @@ class DaskhubStack(Stack):
         cdk.CfnOutput(self, "CognitoClientId", value=daskhub_client_id)
         cdk.CfnOutput(self, "CognitoDomainPrefix", value=domain_prefix)
         cdk.CfnOutput(self, "CognitoUserPoolId", value=base_auth.userpool.user_pool_id)
+
+    @staticmethod
+    def load_configurations(config: dict) -> dict:
+        """
+        This method will load the daskhub configurations from the heliocloud instance
+        configurations and the defaults.
+        :param config: the heliocloud instance configurations
+        :return: the daskhub configurations
+        """
+
+        default_cfg = None
+        with open(
+            f"{os.path.dirname(os.path.abspath(__file__))}/default-constants.yaml",
+            "r",
+            encoding="UTF-8",
+        ) as stream:
+            try:
+                default_cfg = yaml.safe_load(stream)
+            except yaml.YAMLError as exc:
+                print(exc)
+
+        daskhub_config = config["daskhub"]
+        if daskhub_config is None:
+            daskhub_config = {}
+
+        if default_cfg is not None:
+            for key, value in default_cfg.items():
+                if key not in daskhub_config:
+                    daskhub_config[key] = value
+
+        print("Preparing daskhub environment with the following settings:")
+        for key, value in daskhub_config.items():
+            print(f"{key}: {value}")
+
+        return daskhub_config
+
+    @staticmethod
+    def generate_app_config_from_template(
+        daskhub_config: dict,
+        src_file: str = "daskhub/deploy/app.config.template",
+        dest_file: str = "temp/daskhub/deploy/app.config",
+    ):
+        """
+        This method will generate the 'app.config' file to be deployed to the
+        ec2 instance from the template.
+        :param daskhub_config: the dictionary containing the 'daskhub' values from
+                               the heliocloud instance configuration
+        :param src_file:       the source file
+        :param dest_file:      the destination file
+        """
+        with open(src_file, encoding="UTF-8") as file:
+            app_config_lines = file.read()
+
+        keys_to_add = []
+        for key, value in daskhub_config.items():
+            new_app_config_lines = re.sub(
+                rf"^{key}=.*$", f"{key}='{value}'", app_config_lines, flags=re.MULTILINE
+            )
+            if new_app_config_lines == app_config_lines:
+                keys_to_add.append(key)
+            else:
+                app_config_lines = new_app_config_lines
+
+        if len(keys_to_add) > 0:
+            app_config_lines = app_config_lines + "\n\n"
+            app_config_lines = (
+                app_config_lines + "# Custom variables injected via heliocloud instance.yaml"
+            )
+            app_config_lines = app_config_lines + "\n"
+
+        for key in keys_to_add:
+            value = daskhub_config[key]
+            app_config_lines = app_config_lines + f"{key}='{value}'\n"
+
+        os.makedirs(os.path.dirname(dest_file), exist_ok=True)
+
+        with open(dest_file, "w", encoding="UTF-8") as text_file:
+            text_file.write(app_config_lines)

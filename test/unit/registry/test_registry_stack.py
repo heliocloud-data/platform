@@ -6,28 +6,7 @@ from registry.lambdas.app.core.constants import (
     DEFAULT_PANDA_LAYERS_ARN,
 )
 
-
-def which(program):
-    """
-    This function provides the location of an executable that *should be on the
-    path.  This is ultimately used to determine if 'node' is installed in the
-    environment, which is a requirement for all tests within this file.
-    """
-    import os
-
-    def is_exe(fpath):
-        return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
-
-    fpath, fname = os.path.split(program)
-    if fpath:
-        if is_exe(program):
-            return program
-    else:
-        for path in os.environ["PATH"].split(os.pathsep):
-            exe_file = os.path.join(path, program)
-            if is_exe(exe_file):
-                return exe_file
-    return None
+from utils import which
 
 
 class TestRegistryStack(unittest.TestCase):

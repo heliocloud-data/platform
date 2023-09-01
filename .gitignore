@@ -1,6 +1,7 @@
 .idea/
 .venv/
 cdk.out/
+temp/
 *~
 
 # Python files to ignore

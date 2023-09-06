@@ -54,6 +54,7 @@ so switched to straightforward but less direct boto3 .upload_file()
 
 
 """
+import glob
 import s3staging as s3s
 import requests
 import re
@@ -123,7 +124,7 @@ def get_CDAWEB_IDs(fname, dataid=None, webfetch=True):
             try:
                 j = res.json()
                 if len(j) > 0:
-                    s3s.datadump(fname, j, None, jsonflag=True)
+                    s3s.datadump(fname, j, jsonflag=True)
             except:
                 s3s.logme(
                     "Invalid or incomplete json in request, using earlier copy.", fname, "error"
@@ -134,7 +135,7 @@ def get_CDAWEB_IDs(fname, dataid=None, webfetch=True):
         s3s.logme("Using local copy of IDs (no web fetch)", fname, "log")
 
     ids_meta = {}
-    j = s3s.dataingest(fname, None, jsonflag=True)
+    j = s3s.dataingest(fname, jsonflag=True)
     if dataid == None:
         ids = [item["Id"] for item in j["DatasetDescription"]]
     else:
@@ -265,7 +266,7 @@ def cdaweb_prod(
         s3s.logme("Test set is ", allIDs, "log")
 
     tally1 = len(allIDs)
-    allIDs = s3s.remove_processed(sinfo["movelogdir"], allIDs, sinfo)
+    allIDs = s3s.remove_processed(sinfo["movelogdir"], allIDs)
     tally2 = len(allIDs)
     s3s.logme(f"CDAWeb IDS: total {tally1}, unprocessed {tally2}", "", "log")
 
@@ -285,7 +286,7 @@ def cdaweb_prod(
             else:
                 fetchCDAWebsinglet(dataid)
 
-    s3s.mastermovelog(sinfo["movelogdir"], allIDs, sinfo)
+    s3s.mastermovelog(sinfo["movelogdir"], allIDs)
 
 
 def load_cdaweb_params(dataid=None, webfetch=False):
@@ -315,13 +316,7 @@ def load_cdaweb_params(dataid=None, webfetch=False):
 
     extrameta = None  # optional extra metadata to include in CSV
 
-    credentials = "~/.aws/temp.json"  # None = no AWS keys needed, session set in terminal
-
-    sinfo = s3s.bundleme(
-        s3staging, s3destination, movelogdir, stripuri, extrameta, fetchlocal, credentials
-    )
-
-    sinfo["key"], sinfo["secret"], sinfo["token"] = s3s.fetchtokens(sinfo, refetch=True)
+    sinfo = s3s.bundleme(s3staging, s3destination, movelogdir, stripuri, extrameta, fetchlocal)
 
     return sinfo, allIDs, allIDs_meta
 
@@ -335,9 +330,9 @@ errored ones.
 
 
 def runtimeparams():
-    PRODUCTION = False
-    mirror = False
-    savelocal = True  # False # test case toggle
+    PRODUCTION = True
+    mirror = True
+    savelocal = False  # False # test case toggle
     # mirror = False uses web fetch of data files
     # mirror = True copies data files from the given 'fetchlocal' local disk
 
@@ -345,7 +340,7 @@ def runtimeparams():
 
     # Set dataset staging-specific items
     rt["s3destination"] = "s3://gov-nasa-hdrl-data1/cdaweb/"
-    rt["s3staging"] = "s3://helio-data-staging/cdaweb/"
+    rt["s3staging"] = "s3://helio-data-staging/cdaweb-prod/"
     rt["savelocal"] = savelocal
 
     # cdaweb repository goes here
@@ -353,9 +348,11 @@ def runtimeparams():
     # somehow in python format
     # fetchlocal = '/Users/antunak1/gits/heliocloud/tools/fileregistry/fetching/storage2/'
     if mirror:
-        rt[
-            "fetchlocal"
-        ] = "/tower8/zdata/.zfs/snapshot/autosnap_2023-04-01_00:20:01_monthly/spdf_archive/public/pub/"
+        directories = "/tower8/zdata/.zfs/snapshot/autosnap_*_monthly/spdf_archive/public/pub/"
+        dirs = glob.glob(directories)
+
+        rt["fetchlocal"] = dirs[-1]
+        # ] = "/tower8/zdata/.zfs/snapshot/autosnap_2023-04-01_00:20:01_monthly/spdf_archive/public/pub/"
     else:
         rt["fetchlocal"] = None  # 'None' for default URI fetch, disk loc otherwise
 
@@ -377,7 +374,7 @@ def runtimeparams():
         # refreshIDs=False is use local copy, True=possibly iffy webfetch
         rt["refreshIDs"] = False
         # tcount is tunable, 1 = single thread, >1 = multiprocessing
-        rt["tcount"] = 8
+        rt["tcount"] = 4  # 8->2->4
         # limit=N, fetch only N IDs, default None aka get all cdaweb
         rt["limit"] = None  # None # 20
         # retries, repeat fetch to try unfetched/errored items again, in case network was temporarily down

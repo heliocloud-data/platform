@@ -51,7 +51,6 @@ so switched to straightforward but less direct boto3 .upload_file()
 import requests
 import re
 import os
-import time
 import json
 import shutil
 import urllib
@@ -76,7 +75,6 @@ def bundleme(
     stripuri: str,
     extrameta: Optional[Dict[str, str]] = None,
     fetchlocal=None,
-    credentials=None,
 ):
     """
     Bundles the core parameters required for any run.
@@ -87,7 +85,6 @@ def bundleme(
     :param stripuri: The URI prefix to strip from S3 keys when moving files.
     :param extrameta: (Optional) A dictionary of extra metadata to include in the run.
     :param fetchlocal: (Optional) A path to locally avail files rather than a URI
-    :param credentials: (Optional) File with credentials, set None if anon
 
     :returns: A dictionary containing the bundled parameters.
     """
@@ -101,8 +98,6 @@ def bundleme(
         "filetype": None,
         "registryloc": None,
         "fetchlocal": fetchlocal,
-        "credentials": credentials,
-        "timestamp": time.time(),
     }
     return sinfo
 
@@ -239,7 +234,7 @@ def fetch_and_register(
     filesizekey = filelist["filesize"]
 
     if sinfo["s3staging"].startswith("s3://"):
-        mys3 = botoclientwrap(sinfo)
+        mys3 = boto3.client("s3")
 
     # start a Session object for efficiency
     mysession = requests.Session()
@@ -284,7 +279,6 @@ def fetch_and_register(
                 if exists_anywhere(localfile, sinfo):
                     shutil.copy2(localfile, tempfile)
                 else:
-                    # despite being promised as a local file, it does not exist
                     continue
             remaining_download_tries = 0  # skips the later URI download step
         else:
@@ -380,7 +374,7 @@ def registryname(id, year):
     return f"{id}_{year}.csv"
 
 
-def exists_anywhere(fname, sinfo) -> bool:
+def exists_anywhere(fname: str) -> bool:
     """
     Checks if a file exists in S3 or locally.
 
@@ -389,7 +383,7 @@ def exists_anywhere(fname, sinfo) -> bool:
     :returns: True if the file exists, False otherwise.
     """
     if fname.startswith("s3://"):
-        s3_client = botoclientwrap(sinfo)
+        s3_client = boto3.client("s3")
         mybucket, myfilekey = s3url_to_bucketkey(fname)
         try:
             s3_client.get_object(Bucket=mybucket, Key=myfilekey)
@@ -403,34 +397,7 @@ def exists_anywhere(fname, sinfo) -> bool:
             return False
 
 
-def fetchtokens(sinfo, refetch=False):
-    if sinfo == None:
-        key, secret, token = "", "", ""
-    elif refetch:
-        print(sinfo)
-        fname = os.path.expanduser(sinfo["credentials"])
-        try:
-            with open(fname, "r") as f:
-                tempdata = json.load(f)
-                key = tempdata["AccessKeyId"]
-                secret = tempdata["SecretAccessKey"]
-                token = tempdata["SessionToken"]
-            # non-pythonic hack, rewriting the structure globally here
-            sinfo["key"] = key
-            sinfo["secret"] = secret
-            sinfo["token"] = token
-            sinfo["timestamp"] = time.time()
-        except:
-            logme("Could not fetch session keys ", fname, "error")
-    else:
-        key = sinfo["key"]
-        secret = sinfo["secret"]
-        token = sinfo["token"]
-
-    return key, secret, token
-
-
-def dataingest(fname, sinfo, jsonflag=False):  # : str, jsonflag: bool = False) -> Union[str, dict]:
+def dataingest(fname: str, jsonflag: bool = False) -> Union[str, dict]:
     """
     Reads data from a file or S3 object and optionally parses it as JSON.
 
@@ -440,7 +407,7 @@ def dataingest(fname, sinfo, jsonflag=False):  # : str, jsonflag: bool = False) 
     :returns: The data read from the file/object, either as a string or dictionary depending on the value of jsonflag.
     """
     if fname.startswith("s3://"):
-        s3 = botoresourcewrap(sinfo)
+        s3 = boto3.resource("s3")
         mybucket, myfilekey = s3url_to_bucketkey(fname)
         s3object = s3.Object(mybucket, myfilekey)
         # tempdata = s3object.get()["Body"].read().decode("utf-8")
@@ -457,35 +424,7 @@ def dataingest(fname, sinfo, jsonflag=False):  # : str, jsonflag: bool = False) 
     return tempdata
 
 
-def botoclientwrap(sinfo, refetch=False):
-    if sinfo == None or sinfo["credentials"] == None:
-        mys3 = boto3.client("s3")
-    else:
-        if refetch or (time.time() - sinfo["timestamp"] > 60 * 60 * 19):
-            # every 19 hours, refetch keys
-            key, secret, token = fetchtokens(sinfo, refetch=True)
-        else:
-            key, secret, token = fetchtokens(sinfo, refetch)
-        mys3 = boto3.client(
-            "s3", aws_access_key_id=key, aws_secret_access_key=secret, aws_session_token=token
-        )
-    return mys3
-
-
-def botoresourcewrap(sinfo, refetch=False):
-    if sinfo == None or sinfo["credentials"] == None:
-        s3_res = boto3.resource("s3")
-    else:
-        key, secret, token = fetchtokens(sinfo, refetch)
-        s3_res = boto3.resource(
-            "s3", aws_access_key_id=key, aws_secret_access_key=secret, aws_session_token=token
-        )
-    return s3_res
-
-
-def datadump(
-    fname, tempdata, sinfo, jsonflag=False
-):  #: str, tempdata: Union[str, dict], jsonflag: bool = False) -> None:
+def datadump(fname: str, tempdata: Union[str, dict], jsonflag: bool = False) -> None:
     """
     Writes data to a file, either locally or on S3.
 
@@ -496,7 +435,8 @@ def datadump(
     # works for local or S3
     # later, debate adding open(fname,"w",encoding="utf-8")
     if fname.startswith("s3://"):
-        mys3 = botoclientwrap(sinfo)
+        mys3 = boto3.client("s3")
+
         mybucket, myfilekey = s3url_to_bucketkey(fname)
         tempfile = "/tmp/" + re.sub(r"/|:", "_", fname)
         with open(tempfile, "w") as fout:
@@ -617,7 +557,7 @@ def write_registries(id: str, sinfo: Dict[str, Any], csvregistry: List[str]) -> 
         year = line[0:4]
         if year != currentyear:
             try:
-                datadump(fname, tempdata, sinfo)
+                datadump(fname, tempdata)
             except:
                 pass
             currentyear = year
@@ -627,7 +567,7 @@ def write_registries(id: str, sinfo: Dict[str, Any], csvregistry: List[str]) -> 
             tempdata = header
         line += "\n"
         tempdata += line
-    datadump(fname, tempdata, sinfo)
+    datadump(fname, tempdata)
 
 
 def fetch_catalogkeys():
@@ -683,8 +623,8 @@ def create_catalog_stub(dataid, sinfo, catmeta, startDate, stopDate, appendflag=
     catalogkeys = fetch_catalogkeys()
 
     fstub = sinfo["registryloc"] + "catalog_stub.json"
-    if appendflag and exists_anywhere(fstub, sinfo):
-        catData = dataingest(fstub, sinfo, jsonflag=True)
+    if appendflag and exists_anywhere(fstub):
+        catData = dataingest(fstub, jsonflag=True)
     else:
         # new catalog
         catData = {"catalog": []}
@@ -701,7 +641,7 @@ def create_catalog_stub(dataid, sinfo, catmeta, startDate, stopDate, appendflag=
     catData = replaceIsotime(catData, "start", startDate)
     catData = replaceIsotime(catData, "stop", stopDate)
 
-    datadump(fstub, catData, sinfo, jsonflag=True)
+    datadump(fstub, catData, jsonflag=True)
     logme("Wrote catalog stub ", fstub, "status")
 
 
@@ -753,7 +693,7 @@ def gatherkeys(sinfo, flist):
     return extrameta
 
 
-def remove_processed(movelogdir, allIDs, sinfo):  #: str, allIDs: List[str]) -> List[str]:
+def remove_processed(movelogdir: str, allIDs: List[str]) -> List[str]:
     """
     Remove the IDs that are already completed by checking the move log files.
 
@@ -766,17 +706,17 @@ def remove_processed(movelogdir, allIDs, sinfo):  #: str, allIDs: List[str]) -> 
     processed IDs; anything not in there, it checks if a per-dataset movelog
     exists.
     """
-    if exists_anywhere(movelogdir, sinfo):
+    if exists_anywhere(movelogdir):
         delist = []
 
         mcache = name_movelog(movelogdir)
         try:
-            tj = dataingest(mcache, sinfo, jsonflag=True)
+            tj = dataingest(mcache, jsonflag=True)
             delist = [item["dataid"] for item in tj["movelist"]]
         except:
             for dataid in allIDs:
                 movelog = name_movelog(movelogdir, dataid)
-                if exists_anywhere(movelog, sinfo):
+                if exists_anywhere(movelog):
                     delist.append(dataid)
 
         allIDs = [id for id in allIDs if id not in delist]
@@ -807,7 +747,7 @@ def name_movelog(movelogdir, dataid="mastercache"):
     return f"{movelogdir}movelog_{dataid}.json"
 
 
-def move_to_arch(fname, basedir, sinfo):
+def move_to_arch(fname, basedir):
     """Moves file to an 'arch' subdir below its current location
     fname is {basedir}stuff and we want {basedir}arch/stuff
     """
@@ -815,8 +755,7 @@ def move_to_arch(fname, basedir, sinfo):
     if fname.startswith("s3://"):
         mybucket, fnamekey = s3url_to_bucketkey(fname)
         mybucket, altfnamekey = s3url_to_bucketkey(altfname)
-        s3_res = botoresourcewrap(sinfo)
-
+        s3_res = boto3.resource("s3")
         copy_source = {"Bucket": mybucket, "Key": fnamekey}
         s3_res.meta.client.copy(copy_source, mybucket, altfnamekey)
         s3_res.meta.client.delete_object(Bucket=mybucket, Key=fnamekey)
@@ -825,7 +764,7 @@ def move_to_arch(fname, basedir, sinfo):
         os.rename(fname, altfname)
 
 
-def mastermovelog(movelogdir, allIDs, sinfo):
+def mastermovelog(movelogdir, allIDs):
     """
     Assembles all the individual movelogs into a single file.
     """
@@ -833,24 +772,24 @@ def mastermovelog(movelogdir, allIDs, sinfo):
     mcache = name_movelog(movelogdir)
 
     try:
-        tj = dataingest(mcache, sinfo, jsonflag=True)
+        tj = dataingest(mcache, jsonflag=True)
     except:
         pass
 
     flist = [name_movelog(movelogdir, id) for id in allIDs]
     for fname in flist:
-        if exists_anywhere(fname, sinfo):
-            tempdata = dataingest(fname, sinfo, jsonflag=True)
+        if exists_anywhere(fname):
+            tempdata = dataingest(fname, jsonflag=True)
             try:
                 tj["movelist"].extend(tempdata["movelist"])
             except:
                 tj = tempdata
     try:
         tj = uniquejson(tj, "movelist", "dataid")
-        datadump(mcache, tj, sinfo, jsonflag=True)
+        datadump(mcache, tj, jsonflag=True)
         for fname in flist:
-            if exists_anywhere(fname, sinfo):
-                move_to_arch(fname, movelogdir, sinfo)
+            if exists_anywhere(fname):
+                move_to_arch(fname, movelogdir)
     except:
         logme("Unable to collate movelogs to ", mcache, "error")
 
@@ -889,16 +828,16 @@ def ready_migrate(dataid, sinfo, startDate, stopDate, catmeta={}):
     }
 
     movelog = name_movelog(sinfo["movelogdir"], dataid)
-    if exists_anywhere(movelog, sinfo):
+    if exists_anywhere(movelog):
         logme("Updating movelog ", movelog + " with " + dataid, "status")
-        movelist = dataingest(movelog, sinfo, jsonflag=True)
+        movelist = dataingest(movelog, jsonflag=True)
     else:
         logme("Creating movelog ", movelog + " with " + dataid, "status")
         movelist = {"movelist": []}
 
     movelist["movelist"].append(entry)
     movelist = uniquejson(movelist, "movelist", "dataid")
-    datadump(movelog, movelist, sinfo, jsonflag=True)
+    datadump(movelog, movelist, jsonflag=True)
 
 
 def migrate_staging_to_s3():

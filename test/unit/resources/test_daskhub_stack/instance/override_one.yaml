@@ -1,0 +1,21 @@
+# This file is used to support unit tests for
+# test_config.py.
+auth:
+  domain_prefix: "apl-helio"
+
+portal:
+  domain_url:
+  domain_record:
+  domain_certificate_arn:
+
+daskhub:
+  ROUTE53_HOSTED_ZONE: "ludicolo.org"
+
+
+
+
+
+
+
+
+

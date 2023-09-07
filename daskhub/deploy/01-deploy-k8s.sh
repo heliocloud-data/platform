@@ -38,46 +38,48 @@ EFS_ID=$(aws cloudformation describe-stacks --stack-name $CLOUDFORMATION_NAME --
 aws eks update-kubeconfig --region ${AWS_REGION} --name ${EKS_NAME}
 
 echo ------------------------------
+echo Setting up cluster configuration...
+cp cluster-config.yaml.template cluster-config.yaml
+
+sed -i "s|<INSERT_EKS_NAME>|$EKS_NAME|g" cluster-config.yaml
+sed -i "s|<INSERT_KMS_ARN>|$KMS_ARN|g" cluster-config.yaml
+sed -i "s|<INSERT_REGION>|$AWS_REGION|g" cluster-config.yaml
+sed -i "s|<INSERT_PRIMARY_AVAILABILITY_ZONE>|$AWS_AZ_PRIMARY|g" cluster-config.yaml
+sed -i "s|<INSERT_SECONDARY_AVAILABILITY_ZONE>|$AWS_AZ_SECONDARY|g" cluster-config.yaml
+sed -i "s|<INSERT_helio-s3-policy_ARN>|$HELIO_S3_POLICY_ARN|g" cluster-config.yaml
+sed -i "s|<INSERT_k8s-asg-policy_ARN>|$K8S_ASG_POLICY_ARN|g" cluster-config.yaml
+
+echo ------------------------------
+echo Removing instance types not present in $AWS_REGION from cluster configuration...
+all_config_instance_types=$(grep -n "instanceTypes" cluster-config.yaml | cut -d':' -f 3 | tr '\n' ','| tr -d "]" | tr -d "[" | tr "," "|" | tr -d ' ' | tr -d '"' | tr "|" " ")
+IFS=' ' read -a arr <<< "$all_config_instance_types"
+sorted_unique_instance_types=($(echo "${arr[@]}" | tr ' ' '\n' | sort -u | tr '\n' ' '))
+
+all_aws_region_instance_types=$(aws ec2 describe-instance-types --query InstanceTypes[].InstanceType | tr "," "|" | tr -d "\n" | tr -d '"' | tr -d "[" | tr -d "]" | tr -d " " | tr "|" " ")
+IFS=' ' read -a aws_arr <<< "$all_aws_region_instance_types"
+sorted_unique_aws_instance_types=($(echo "${aws_arr[@]}" | tr ' ' '\n' | sort -u | tr '\n' ' '))
+
+missing_instance_types=$(echo ${sorted_unique_aws_instance_types[@]} ${sorted_unique_instance_types[@]} | sed 's/ /\n/g' | sort | uniq -d | xargs echo ${sorted_unique_instance_types[@]} | sed 's/ /\n/g' | sort | uniq -u)
+instances_to_replace=($missing_instance_types)
+
+for i in "${instances_to_replace[@]}"
+do
+    echo Removing instance type $i from cluster-config.yaml does not exist in $AWS_REGION
+    sed -i "s|\"$i\"\,||g" cluster-config.yaml
+    sed -i "s|\"$i\"||g" cluster-config.yaml
+done
+
+echo ------------------------------
 echo Checking cluster status...
 init_cluster_query=$(aws eks list-clusters | jq -r '.clusters[]')
 if [[ " ${init_cluster_query[*]} " =~ " ${EKS_NAME} " ]]; then
     echo Cluster - $EKS_NAME - already exists, skipping cluster creation
+    echo ------------------------------
+    echo Updating Kubernetes cluster...  
+    eksctl upgrade cluster -f cluster-config.yaml
 else
     echo ------------------------------
     echo Cluster - $EKS_NAME - needs to be created, starting process...
-
-    echo ------------------------------
-    echo Setting up cluster configuration...
-    cp cluster-config.yaml.template cluster-config.yaml
-
-    sed -i "s|<INSERT_EKS_NAME>|$EKS_NAME|g" cluster-config.yaml
-    sed -i "s|<INSERT_KMS_ARN>|$KMS_ARN|g" cluster-config.yaml
-    sed -i "s|<INSERT_REGION>|$AWS_REGION|g" cluster-config.yaml
-    sed -i "s|<INSERT_PRIMARY_AVAILABILITY_ZONE>|$AWS_AZ_PRIMARY|g" cluster-config.yaml
-    sed -i "s|<INSERT_SECONDARY_AVAILABILITY_ZONE>|$AWS_AZ_SECONDARY|g" cluster-config.yaml
-    sed -i "s|<INSERT_helio-s3-policy_ARN>|$HELIO_S3_POLICY_ARN|g" cluster-config.yaml
-    sed -i "s|<INSERT_k8s-asg-policy_ARN>|$K8S_ASG_POLICY_ARN|g" cluster-config.yaml
-
-    echo ------------------------------
-    echo Removing instance types not present in $AWS_REGION from cluster configuration...
-    all_config_instance_types=$(grep -n "instanceTypes" cluster-config.yaml | cut -d':' -f 3 | tr '\n' ','| tr -d "]" | tr -d "[" | tr "," "|" | tr -d ' ' | tr -d '"' | tr "|" " ")
-    IFS=' ' read -a arr <<< "$all_config_instance_types"
-    sorted_unique_instance_types=($(echo "${arr[@]}" | tr ' ' '\n' | sort -u | tr '\n' ' '))
-
-    all_aws_region_instance_types=$(aws ec2 describe-instance-types --query InstanceTypes[].InstanceType | tr "," "|" | tr -d "\n" | tr -d '"' | tr -d "[" | tr -d "]" | tr -d " " | tr "|" " ")
-    IFS=' ' read -a aws_arr <<< "$all_aws_region_instance_types"
-    sorted_unique_aws_instance_types=($(echo "${aws_arr[@]}" | tr ' ' '\n' | sort -u | tr '\n' ' '))
-
-    missing_instance_types=$(echo ${sorted_unique_aws_instance_types[@]} ${sorted_unique_instance_types[@]} | sed 's/ /\n/g' | sort | uniq -d | xargs echo ${sorted_unique_instance_types[@]} | sed 's/ /\n/g' | sort | uniq -u)
-    instances_to_replace=($missing_instance_types)
-
-    for i in "${instances_to_replace[@]}"
-    do
-        echo Removing instance type $i from cluster-config.yaml does not exist in $AWS_REGION
-    	sed -i "s|\"$i\"\,||g" cluster-config.yaml
-        sed -i "s|\"$i\"||g" cluster-config.yaml
-    done
-
     echo ------------------------------
     echo Creating Kubernetes cluster...  
     eksctl create cluster -f cluster-config.yaml

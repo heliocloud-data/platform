@@ -10,21 +10,21 @@
 # Ex. for ROUTE53_HOSTED_ZONE='example.com' and ROUTE53_DASKHUB_PREFIX='hub'
 # will be able to access Daskhub at DNS of hub.example.com
 # after deploy
-ROUTE53_HOSTED_ZONE='<REPLACE>' # Ex. 'example.com'
-ROUTE53_DASKHUB_PREFIX='daskhub'
+ROUTE53_HOSTED_ZONE='' # Ex. 'example.com'
+ROUTE53_DASKHUB_PREFIX=''
 
 # Names of resources (typically only need to be changed if running multiple versions within same region)
-KUBERNETES_NAMESPACE='daskhub'
-EKS_NAME='eks-helio'
+KUBERNETES_NAMESPACE=''
+EKS_NAME=''
 
 # Admin information for OAuth and Certs within the Daskhub 
 # TODO: modify if there is more than one admin
-DASKHUB_ADMIN_USER='<REPLACE>' # User in AWS Cognito userpool that is the admin, ex. 'jsmith'
-ADMIN_USER_EMAIL='<REPLACE>' # Email to send cert validation emails to, ex. 'jsmith@gmail.com'
+DASKHUB_ADMIN_USER='' # User in AWS Cognito userpool that is the admin, ex. 'jsmith'
+ADMIN_USER_EMAIL='' # Email to send cert validation emails to, ex. 'jsmith@gmail.com'
 
 # HelioCloud docker containers
-GENERIC_DOCKER_LOCATION='public.ecr.aws/q3h7b4o8/helio-notebook'
-GENERIC_DOCKER_VERSION='20230421'
+GENERIC_DOCKER_LOCATION=''
+GENERIC_DOCKER_VERSION=''
 # Only relevant for GPU servers, can ignore if not hosting these types of servers
-ML_DOCKER_LOCATION='public.ecr.aws/q3h7b4o8/helio-ml-notebook'
-ML_DOCKER_VERSION='20230421'
+ML_DOCKER_LOCATION=''
+ML_DOCKER_VERSION=''

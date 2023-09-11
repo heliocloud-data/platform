@@ -18,11 +18,15 @@ class AuthStack(Stack):
     File Registration, etc"
     """
 
-    def __init__(self, scope: Construct, construct_id: str, config: dict, **kwargs) -> None:
+    def __init__(
+        self, scope: Construct, construct_id: str, config: dict, base_identity: Stack, **kwargs
+    ) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
         auth = config["auth"]
         domain_prefix = auth.get("domain_prefix", "")
+
+        email = None if not base_identity else base_identity.email
 
         self.userpool = cognito.UserPool(
             self,
@@ -35,6 +39,7 @@ class AuthStack(Stack):
             removal_policy=RemovalPolicy.RETAIN,
             auto_verify=cognito.AutoVerifiedAttrs(email=True),
             self_sign_up_enabled=False,
+            email=email,
         )
         self.userpool.add_domain(
             "CognitoDomain",

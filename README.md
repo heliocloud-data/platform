@@ -416,7 +416,11 @@ you should install the development dependencies as well so you have access to th
 
 ```shell
 $ pip install -r requirements-dev.txt
+$ pre-commit install
+$ pre-commit autoupdate # ensures that pre-commit tools are using up-to-date versions
 ```
+
+The [pre-commit](https://pre-commit.com) is required to ensure that linting and formatting tools are run against your code before committing to your local repository.
 
 You may use whatever Python IDE you are comfortable with it,
 though the core development team has preferred [PyCharm](https://www.jetbrains.com/pycharm/).
@@ -519,6 +523,9 @@ python test/integration
 ```
 
 ### 4 Prepping your changes as a pull or merge request
+
+*The following is performed automatically by `pre-commit`.*
+
 After completing and testing your changes, you will want to take some additional steps to maximize
 the potential that the pull or merge request you put together is accepted. We recommend you:
 - Run `black` to format all of your changes in keeping with HelioCloud's code formatting conventions
@@ -534,16 +541,3 @@ pylint *
 Provided you get clean feedback from black & pylint and your tests pass, you should feel
 pretty comfortable any merge request you post would get rejected for not adhering to the 
 codebase conventions.
-
-
-
-
-
-
-
-
-
-
-
-
-

@@ -3,3 +3,4 @@ coverage
 pylint
 pylint-gitlab
 black
+pre-commit

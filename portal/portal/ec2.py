@@ -1,3 +1,7 @@
+"""
+Functions for managing EC2 instances created via the Portal.
+"""
+
 import datetime
 from dateutil.tz import tzutc
 from config import region
@@ -10,7 +14,7 @@ from ec2_config import (
 from aws import create_user_tag, get_ec2_pricing
 
 
-### keypairs
+# keypairs
 def create_key_pair(aws_session, username, keypair_name):
     ec2_client = aws_session.client("ec2", region_name=region)
     response = ec2_client.create_key_pair(
@@ -48,7 +52,7 @@ def get_running_instances(aws_session, username):
     return running_instances
 
 
-### instance actions
+# instance actions
 def create_instance(aws_session, username, instance_launch_info):
     ec2_client = aws_session.client("ec2", region_name=region)
     tag_specifications = [
@@ -108,7 +112,7 @@ def terminate_instance(aws_session, instance_id):
     return response
 
 
-### list instances
+# list instances
 def list_instance_types(aws_session):
     instance_types = {}
     all_it = []
@@ -155,13 +159,13 @@ def get_instances(aws_session, username):
                 time_since_start = "Just Launched"
                 time_color_indicator = "bg-light"
             elif time_since_start_seconds < 60 * 60 * 5:  # less than 5 hours
-                time_since_start = f"{int(time_since_start_seconds/60.)} minutes"
+                time_since_start = f"{int(time_since_start_seconds / 60.)} minutes"
                 time_color_indicator = "bg-light"
             elif time_since_start_seconds < 60 * 60 * 24 * 2:  # less than 2 days
-                time_since_start = f"{int(time_since_start_seconds/(60*60))} hours"
+                time_since_start = f"{int(time_since_start_seconds / (60 * 60))} hours"
                 time_color_indicator = "bg-warning"
             else:
-                time_since_start = f"{int(time_since_start_seconds/(60*60*24))} days"
+                time_since_start = f"{int(time_since_start_seconds / (60 * 60 * 24))} days"
                 time_color_indicator = "bg-danger"
             instance_dict["time_since_start"] = time_since_start
             instance_dict["time_color_indicator"] = time_color_indicator

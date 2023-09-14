@@ -9,3 +9,6 @@ pandas~=1.5.3
 botocore~=1.29.114
 aws-cdk.aws-cognito-identitypool-alpha==2.65.0a0
 pymongo==4.3.3
+
+# Install Portal requirements
+-r portal/portal/requirements.txt

@@ -1,3 +1,7 @@
+"""
+HelioCloud's Portal module UI & services.  Implements the main interface of the Portal
+"""
+
 from flask import (
     Flask,
     render_template,
@@ -89,6 +93,12 @@ jwt = JWTManager(app)
 
 @app.route("/", methods=["POST", "GET"])
 def index():
+    """
+    Implements the main landing page of the Portal, where it will display:
+    - The username of the user interacting w/ the portal
+    - The running & stopped EC instances associated with that user
+    - The costs associated with the user
+    """
     verify_jwt_in_request(optional=True)
     if get_jwt_identity():
         access_token = request.cookies.get("access_token_cookie")
@@ -139,6 +149,9 @@ def index():
 
 @app.route("/instance_action")
 def instance_action():
+    """
+    Allows a Portal user to start, stop or terminate their AWS EC2 instances.
+    """
     verify_jwt_in_request(optional=True)
     if get_jwt_identity():
         id_token = session.get("id_token", None)

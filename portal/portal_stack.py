@@ -1,3 +1,9 @@
+"""
+CDK Stack definition for deploying the Portal module of a HelioCloud instance.
+"""
+
+import os
+import secrets as pysecrets
 import aws_cdk.custom_resources
 from aws_cdk import (
     Stack,
@@ -13,11 +19,8 @@ from aws_cdk import (
     aws_certificatemanager as cm,
     aws_ec2 as ec2,
 )
-import secrets as pysecrets
 from constructs import Construct
 from base_aws.base_aws_stack import BaseAwsStack
-
-import os
 
 
 class PortalStack(Stack):
@@ -25,6 +28,8 @@ class PortalStack(Stack):
     Stack to install HelioCloud user portal.
     """
 
+    # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-locals
     def __init__(
         self,
         scope: Construct,
@@ -44,9 +49,8 @@ class PortalStack(Stack):
         auth_config = config.get("auth")
         env_config = config.get("env")
 
-        ##############################################
-        # Authentication and Authorization (Cognito) #
-        ##############################################
+        # Add the Portal as a client of the Cognito user pool for this HelioCloud
+        # pylint: disable=duplicate-code
         portal_client = base_auth.userpool.add_client(
             "heliocloud-portal",
             generate_secret=True,
@@ -65,7 +69,9 @@ class PortalStack(Stack):
             supported_identity_providers=[cognito.UserPoolClientIdentityProvider.COGNITO],
             prevent_user_existence_errors=True,
         )
-        ## Create identity pool
+        # pylint: enable=duplicate-code
+
+        # Create identity pool
         portal_identity_pool = identity_pool.IdentityPool(
             self,
             "IdentityPool",
@@ -79,7 +85,7 @@ class PortalStack(Stack):
             ),
         )
 
-        ## Create IAM auth/unauth Roles
+        # Create IAM auth/unauth Roles
         authenticated_policy_document = iam.PolicyDocument.from_json(
             {
                 "Version": "2012-10-17",
@@ -153,7 +159,7 @@ class PortalStack(Stack):
         #    Create Portal Resources and Secrets     #
         ##############################################
 
-        #### Create default EC2 security group
+        # Create default EC2 security group
         portal_ec2_default_sg = ec2.SecurityGroup(
             self,
             "PortalEc2SecurityGroup",
@@ -167,7 +173,7 @@ class PortalStack(Stack):
         portal_ec2_default_sg.add_ingress_rule(ec2.Peer.ipv4("0.0.0.0/0"), ec2.Port.tcp(8000))
         portal_ec2_default_sg.add_egress_rule(ec2.Peer.ipv4("0.0.0.0/0"), ec2.Port.tcp(8000))
 
-        ### Create default EC2 policy
+        # Create default EC2 policy
         shared_policy = base_aws.s3_managed_policy
         portal_ec2_default_role = iam.Role(
             self,
@@ -181,6 +187,8 @@ class PortalStack(Stack):
             "PortalEc2InstanceProfile",
             roles=[portal_ec2_default_role.role_name],
         )
+
+        # Create EC2 Admin role
         ec2_admin_role = iam.Role(
             self,
             "EC2AdminRole",
@@ -188,7 +196,8 @@ class PortalStack(Stack):
                 iam.ServicePrincipal("ec2.amazonaws.com"), iam.AccountRootPrincipal()
             ),
         )
-        ### Create Secrets
+
+        # Create Secrets
         identity_pool_id_secret = sm.Secret(
             self,
             "portal_identity_pool_id",
@@ -211,10 +220,10 @@ class PortalStack(Stack):
         )
 
         build_args = {}
-        for k, v in os.environ.items():
-            if k.startswith("PORTAL_DOCKER_BUILD_ARG_"):
-                build_arg_key = k.replace("PORTAL_DOCKER_BUILD_ARG_", "PORTAL_")
-                build_args[build_arg_key] = v
+        for key, value in os.environ.items():
+            if key.startswith("PORTAL_DOCKER_BUILD_ARG_"):
+                build_arg_key = key.replace("PORTAL_DOCKER_BUILD_ARG_", "PORTAL_")
+                build_args[build_arg_key] = value
         print(build_args)
 
         ##############################################
@@ -297,3 +306,6 @@ class PortalStack(Stack):
             path="/health",
             healthy_http_codes="200-499",
         )
+
+    # pylint: enable=too-many-arguments
+    # pylint: enable=too-many-locals

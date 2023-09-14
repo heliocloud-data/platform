@@ -1,3 +1,8 @@
+"""
+Defines the EC2 host profiles that will be displayed and made available for instantiation
+in the Portal.
+"""
+
 import os
 
 instance_types_master_dict = {

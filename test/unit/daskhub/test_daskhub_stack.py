@@ -1,3 +1,4 @@
+from aws_cdk import Duration
 import yaml
 
 import pytest
@@ -113,6 +114,10 @@ class TestDaskhubStack(unittest.TestCase):
     @patch("aws_cdk.aws_ec2.CloudFormationInit.from_elements")
     @patch("aws_cdk.aws_efs.FileSystem")
     @patch("aws_cdk.aws_efs.FileSystem.__init__")
+    @patch("aws_cdk.aws_route53")
+    @patch("aws_cdk.aws_route53.__init__")
+    @patch("aws_cdk.aws_route53.PublicHostedZone")
+    @patch("aws_cdk.aws_route53.CnameRecord")
     @patch("aws_cdk.CfnOutput")
     @patch("aws_cdk.CfnOutput.__init__")
     @patch("aws_cdk.aws_s3_assets.Asset")
@@ -123,6 +128,10 @@ class TestDaskhubStack(unittest.TestCase):
         s3_assets_output,
         cfn_output_constructor,
         cfn_output,
+        route53_cname_record,
+        route53_public_hosted_zone,
+        route53_package_constructor,
+        route53_package,
         efs_instance_constructor,
         efs_instance,
         ec2_cloud_formation_init_from_elements_method,
@@ -197,4 +206,17 @@ class TestDaskhubStack(unittest.TestCase):
         self.assertEqual(cfn_output.call_args_list[idx][0][1], "CognitoUserPoolId")
         self.assertEqual(
             cfn_output.call_args_list[idx][1]["value"], base_auth.userpool.user_pool_id
+        )
+
+        self.assertEqual(route53_cname_record.call_count, 1)
+        self.assertEqual(route53_cname_record.call_args_list[0][0][0], rs)
+        self.assertEqual(route53_cname_record.call_args_list[0][0][1], "CnameRecord")
+        self.assertEqual(route53_cname_record.call_args_list[0][1]["domain_name"], "0.0.0.0")
+        self.assertEqual(
+            route53_cname_record.call_args_list[0][1]["ttl"].to_string(),
+            Duration.seconds(300).to_string(),
+        )
+        self.assertEqual(
+            route53_cname_record.call_args_list[0][1]["comment"],
+            "Initial provisioning from CDK, overridded by EKSCTL deployment.",
         )

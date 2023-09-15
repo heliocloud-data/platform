@@ -14,6 +14,9 @@ from aws_cdk import (
     aws_efs as efs,
     aws_s3_assets as s3_assets,
     aws_cognito as cognito,
+    aws_route53 as route53,
+    Duration,
+    RemovalPolicy,
 )
 from constructs import Construct
 from base_aws.base_aws_stack import BaseAwsStack
@@ -200,9 +203,12 @@ class DaskhubStack(Stack):
             supported_identity_providers=[cognito.UserPoolClientIdentityProvider.COGNITO],
             prevent_user_existence_errors=True,
         )
+        self.build_route53_settings()
+
         daskhub_client_id = daskhub_client.user_pool_client_id
         auth = config["auth"]
         domain_prefix = auth.get("domain_prefix", "")
+
 
         ##########################
         # CloudFormation Outputs #
@@ -296,3 +302,30 @@ class DaskhubStack(Stack):
 
         with open(dest_file, "w", encoding="UTF-8") as text_file:
             text_file.write(app_config_lines)
+
+    def build_route53_settings(self):
+        """
+        This method will configure the Route53 settings for daskhub.  These settings
+        will be subsequently updated during the EKSCTL portions of the deployment.  It's safe
+        to run this deployment from a live system.
+        """
+
+        domain_url = self.__daskhub_config['ROUTE53_HOSTED_ZONE']
+        hosted_zone = route53.PublicHostedZone.from_lookup(
+            self, "HostedZone", domain_name=domain_url
+        )
+        if hosted_zone.is_resource(self):
+            hosted_zone = route53.PublicHostedZone(
+                self, "HostedZone", zone_name=domain_url
+            )
+
+        cname_record = route53.CnameRecord(
+            self,
+            "CnameRecord",
+            record_name=self.__daskhub_config['ROUTE53_DASKHUB_PREFIX'],
+            zone=hosted_zone,
+            ttl=Duration.seconds(300),
+            domain_name="0.0.0.0",
+            comment="Initial provisioning from CDK, overridded by EKSCTL deployment."
+        )
+        cname_record.apply_removal_policy(RemovalPolicy.DESTROY)

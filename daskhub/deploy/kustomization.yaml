@@ -1,0 +1,14 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# There must be agreement w/ the input resource name
+# and the file produces within the post-renderer script
+# (kustomize-post-renderer-hook.sh).
+resources:
+- all.yaml
+
+patches:
+  - path: patch-jupyterhub-autohttps-startup-delay.yaml
+    target:
+      kind: Deployment
+      name: autohttps

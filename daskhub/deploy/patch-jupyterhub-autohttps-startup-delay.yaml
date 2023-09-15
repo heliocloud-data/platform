@@ -1,0 +1,13 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: not-important
+  labels:
+    kustomization: patch-jupyterhub-autohttps-startup-delay
+spec:
+  template:
+    spec:
+      initContainers:
+        - name: startup-delay
+          image: busybox:stable
+          command: ["sh", "-c", "sleep 300"]

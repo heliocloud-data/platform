@@ -72,7 +72,7 @@ NO_OUTPUT=$(aws cognito-idp update-user-pool-client --user-pool-id $COGNITO_USER
 # Deploy with auth (can deploy without)
 echo ------------------------------
 echo Deploying Daskhub helm chart with auth
-helm upgrade daskhub dask/daskhub --namespace=$KUBERNETES_NAMESPACE --values=dh-config.yaml --values=dh-secrets.yaml --values=dh-auth.yaml --version=2022.8.2 --install --timeout 10m30s --debug || (echo "error: Failed to install/upgrade daskhub from helm repository." ; exit 1)
+helm upgrade daskhub dask/daskhub --namespace=$KUBERNETES_NAMESPACE --values=dh-config.yaml --values=dh-secrets.yaml --values=dh-auth.yaml --version=2022.8.2 --post-renderer=./kustomize-post-renderer-hook.sh --install --timeout 30m30s --debug || (echo "error: Failed to install/upgrade daskhub from helm repository." ; exit 1)
 #### To deploy without Authentication & Authorization comment out line above and use this one instead without of the lines below it
 #helm upgrade daskhub dask/daskhub --namespace=$KUBERNETES_NAMESPACE --values=dh-config.yaml --values=dh-secrets.yaml --version=2022.8.2 --install
 

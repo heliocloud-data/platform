@@ -20,6 +20,18 @@ echo "PATH=$PATH:/usr/local/bin" >> /home/ssm-user/.bashrc
 sudo curl --location -o /usr/local/bin/kubectl https://s3.us-west-2.amazonaws.com/amazon-eks/1.24.16/2023-08-16/bin/linux/amd64/kubectl
 sudo chmod +x /usr/local/bin/kubectl
 
+
+# Install kustomize.  This is maybe used to patch some 3rd party charts.
+#
+# See:
+#  https://www.tecmint.com/extract-tar-files-to-specific-or-different-directory-in-linux/
+#  https://github.com/kubernetes-sigs/kustomize/releases/tag/kustomize%2Fv5.1.1
+curl https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv5.1.1/kustomize_v5.1.1_linux_amd64.tar.gz --silent --location --remote-name
+tar zxvf kustomize_v5.1.1_linux_amd64.tar.gz
+sudo mv kustomize /usr/local/bin/
+rm -rf kustomize_v5.1.1_linux_amd64.tar.gz
+
+
 # Install eksctl.
 #
 # See:
@@ -29,6 +41,7 @@ sudo mv /tmp/eksctl /usr/local/bin
 
 curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 > get_helm.sh
 bash get_helm.sh -v v3.9.4
+rm -rf get_helm.sh
 
 for command in kubectl jq envsubst aws eksctl helm; do which $command &>/dev/null && echo "OK - $command" || echo "****NOT FOUND IN PATH**** - $command"; done
 

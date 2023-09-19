@@ -1,16 +1,23 @@
 """AWS commands via boto3."""
 
-import boto3
-import datetime
-from config import region, user_pool_id, identity_pool_id
 import json
+import datetime
+import boto3
+from config import region, user_pool_id, identity_pool_id
 
 
 def create_user_tag(username):
+    """
+    Creates an AWS Tag derived from a specific username.
+    """
     return {"Name": "tag:Owner", "Values": [username]}
 
 
-def get_ec2_pricing(aws_session, instance_types):
+def get_ec2_pricing(aws_session, instance_types) -> dict:
+    """
+    Returns a dictionary of EC2 instance prices for the list of instances
+    provided in instance_types.
+    """
     pricing_client = aws_session.client(
         "pricing", region_name="us-east-1"
     )  # pricing tool is only available through us-east-1
@@ -56,7 +63,10 @@ def get_ec2_pricing(aws_session, instance_types):
     return instance_out_dict
 
 
-def start_aws_session(id_token):
+def start_aws_session(id_token) -> boto3.Session:
+    """
+    Returns a boto3.Session instance created from an AWS Cognito id token.
+    """
     identity_client = boto3.client("cognito-identity", region_name=region)
     identity_id = identity_client.get_id(
         IdentityPoolId=identity_pool_id,
@@ -74,7 +84,17 @@ def start_aws_session(id_token):
     return aws_session
 
 
-def get_weekly_overall_cost(aws_session, username):
+def get_weekly_overall_cost(aws_session, username) -> dict[str, int]:
+    """
+    Returns a dictionary containing the weekly and overall costs associated
+    with a specific HelioCloud username as can be deduced via Tags associated
+    to that user's EC2 instances.
+
+    The dictionary contains two keys:
+    - week: a rolling weekly cost (past 7 days) for the user
+    - overall: total cost accumulated for the user
+    """
+
     time_end = (datetime.datetime.now() + datetime.timedelta(days=1)).strftime("%Y-%m-%d")
     week_start = (datetime.datetime.now() - datetime.timedelta(days=7)).strftime("%Y-%m-%d")
     overall_start = (datetime.datetime.now() - datetime.timedelta(days=365)).strftime("%Y-%m-%d")

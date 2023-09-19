@@ -1,5 +1,7 @@
-from flask_jwt_extended.config import config as jwt_config
-import requests
+"""
+Provides authorization implementation for the Portal module.
+"""
+import json
 from base64 import b64encode
 from config import (
     aws_cognito_domain,
@@ -9,17 +11,24 @@ from config import (
     user_pool_id,
     region,
 )
-import json
+import requests
 
 
 def get_cognito_public_keys():
+    """
+    Gets the AWS Cognito public keys pertaining to the user pool created for this
+    HelioCloud instance.
+    """
     url = f"https://cognito-idp.{region}.amazonaws.com/{user_pool_id}/.well-known/jwks.json"
     resp = requests.get(url)
     return json.dumps(json.loads(resp.text)["keys"][1])
 
 
 def get_tokens(request_args):
-    """Get access and ID tokens."""
+    """
+    Returns access and id tokens via a call to AWS Cognito using elements of the provided
+    request_args collection.
+    """
     code = request_args.get("code")
     token_url = f"{aws_cognito_domain}/oauth2/token"
     data = {
@@ -40,6 +49,9 @@ def get_tokens(request_args):
 
 
 def set_token_cookie(resp, token_name, token_value, max_age=30 * 60):
+    """
+    Sets a cookie in a response containing a users token.
+    """
     resp.set_cookie(
         token_name,
         value=token_value,
@@ -54,6 +66,10 @@ def set_token_cookie(resp, token_name, token_value, max_age=30 * 60):
 
 
 def get_user_info(access_token):
+    """
+    Retrieves profile information about a particular user associated with the provided access
+    token.
+    """
     user_url = f"{aws_cognito_domain}/oauth2/userInfo"
     header = {"Authorization": f"Bearer {access_token}"}
     response = requests.post(user_url, headers=header)

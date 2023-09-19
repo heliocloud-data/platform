@@ -1,10 +1,14 @@
-# Tool for running ingest jobs on a HelioCloud instance
+"""
+A tool for running a HelioCloud instance's Ingester service from the command line.
+"""
 import argparse
-import boto3
 import json
+import sys
+import boto3
 
 
-class IngestRunner(object):
+# pylint: disable=too-few-public-methods
+class IngestRunner:
     """
     Runner class to encapsulate invoking the Ingester AWS Lambda installed in a HelioCloud instance.
     Parameters needed are:
@@ -16,7 +20,8 @@ class IngestRunner(object):
         # Get the instance name and job folder from the args
         parser = argparse.ArgumentParser(
             prog="HelioCloud Ingest Runner",
-            description="Enables manual invocation of the HelioCloud ingest service against a specified folder in a "
+            description="Enables manual invocation of the HelioCloud ingest service against a "
+            "specified folder in a"
             "HelioCloud instance's ingest S3 bucket.",
         )
         parser.add_argument(
@@ -38,10 +43,10 @@ class IngestRunner(object):
         self.__job_folder = args.job_folder
         self.__lambda_client = boto3.Session().client("lambda")
 
-    def __get_function_name(self) -> str:
+    def __get_function_name(self) -> str | None:
         """
-        Get the handle of the lamdda function to invoke
-        :return: the function name of the lambda
+        Get the handle of the lambda function to invoke
+        :return: the function name of the lambda, else None
         """
 
         response = self.__lambda_client.list_functions()
@@ -50,24 +55,36 @@ class IngestRunner(object):
             if ("Ingest" in function_name) and function_name.startswith(self.__instance):
                 return function_name
 
+        # Couldn't find the function name
+        return None
+
     def execute(self) -> None:
         """
         Executes the Ingester Lambda on a specific HelioCloud instance
         :return: nothing
         """
         print(
-            f"Invoking the Ingester service on HelioCloud {self.__instance} against folder {self.__job_folder}."
+            f"Invoking the Ingester service on HelioCloud {self.__instance} against folder "
+            f"{self.__job_folder}."
         )
+
+        # Find the ingester lambda function
+        function_name = self.__get_function_name()
+        if function_name is None:
+            sys.exit(
+                "Could not resolve Ingester lambda name from AWS. Is the HelioCloud"
+                "deployed correctly?"
+            )
 
         # Run the Ingester as requested and get the response
         payload = {"job_folder": self.__job_folder}
         response = self.__lambda_client.invoke(
-            FunctionName=self.__get_function_name(), Payload=json.dumps(payload)
+            FunctionName=function_name, Payload=json.dumps(payload)
         )
         status_code = response["StatusCode"]
 
-        # 200 indicates successful invocation of the lambda, but we have to pick apart the response to figure out if
-        # the ingester itself ran to completion
+        # 200 indicates successful invocation of the lambda, but we have to pick apart the
+        # response to figure out if the ingester itself ran to completion
         if status_code == 200:
             # There was an error
             if "FunctionError" in response:

@@ -1,12 +1,16 @@
+"""
+Retrieves key configuration information for the HelioCloud Portal module.
+"""
+
 import os
 
-### site config
+# site config
 site_url = os.getenv("SITE_URL")
 
-### aws config
+# aws config
 region = os.getenv("REGION")
 
-### cognito config
+# cognito config
 app_name = os.getenv("APP_NAME")
 aws_cognito_domain = f"https://{app_name}.auth.{region}.amazoncognito.com"
 identity_pool_id = os.getenv("IDENTITY_POOL_ID")

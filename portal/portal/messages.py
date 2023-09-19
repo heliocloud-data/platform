@@ -1,3 +1,6 @@
+"""
+Messages used in various Portal interactions.
+"""
 keypair_message = "Created new key pair {}. Download then change permissions `chmod 400 {}.pem`."
 
 access_key_message = r"<p>Your new access key was successfully created.</p><p><b>AWS Access Key ID</b>: {}</p><p><b>AWS Secret Access Key</b>: {}</p>"

@@ -33,24 +33,21 @@ class DaskhubStack(Stack):
     SSM_AGENT_RPM = "https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm"  # pylint: disable=line-too-long
 
     # fmt: off
-    def __init__(# pylint: disable=too-many-arguments, too-many-locals
-        self,
-        scope: Construct,
-        construct_id: str,
-        config: dict,
-        base_aws: BaseAwsStack,
-        base_auth: Stack,
-        **kwargs,
+    def __init__(  # pylint: disable=too-many-arguments, too-many-locals
+            self,
+            scope: Construct,
+            construct_id: str,
+            config: dict,
+            base_aws: BaseAwsStack,
+            base_auth: Stack,
+            **kwargs,
     ) -> None:
-    # fmt: on
+        # fmt: on
         super().__init__(scope, construct_id, **kwargs)
 
         self.__daskhub_config = DaskhubStack.load_configurations(config)
         DaskhubStack.generate_app_config_from_template(self.__daskhub_config)
 
-        #############################
-        # Create EC2 Admin instance #
-        #############################
         # EC2 admin instance can create AWS resources needed to control
         # EKS (Kubernetes) backing Daskhub, can access through SSM opposed to SSH
         # for tighter control
@@ -182,9 +179,8 @@ class DaskhubStack(Stack):
             enable_automatic_backups=True,
         )
 
-        ##############################################
-        # Authentication and Authorization (Cognito) #
-        ##############################################
+        # Add Daskhub as a client to the Cognito user pool
+        # pylint: disable=duplicate-code
         daskhub_client = base_auth.userpool.add_client(
             "heliocloud-daskhub",
             generate_secret=True,
@@ -208,12 +204,9 @@ class DaskhubStack(Stack):
         daskhub_client_id = daskhub_client.user_pool_client_id
         auth = config["auth"]
         domain_prefix = auth.get("domain_prefix", "")
+        # pylint: enable=duplicate-code
 
-
-        ##########################
-        # CloudFormation Outputs #
-        ##########################
-
+        # Cloudformation outputs
         # Return instance ID to make logging into admin instance easier
         cdk.CfnOutput(self, "Instance ID", value=instance.instance_id)
         cdk.CfnOutput(self, "ASGArn", value=autoscaling_managed_policy.managed_policy_arn)
@@ -236,9 +229,9 @@ class DaskhubStack(Stack):
 
         default_cfg = None
         with open(
-            f"{os.path.dirname(os.path.abspath(__file__))}/default-constants.yaml",
-            "r",
-            encoding="UTF-8",
+                f"{os.path.dirname(os.path.abspath(__file__))}/default-constants.yaml",
+                "r",
+                encoding="UTF-8",
         ) as stream:
             try:
                 default_cfg = yaml.safe_load(stream)
@@ -262,9 +255,9 @@ class DaskhubStack(Stack):
 
     @staticmethod
     def generate_app_config_from_template(
-        daskhub_config: dict,
-        src_file: str = "daskhub/deploy/app.config.template",
-        dest_file: str = "temp/daskhub/deploy/app.config",
+            daskhub_config: dict,
+            src_file: str = "daskhub/deploy/app.config.template",
+            dest_file: str = "temp/daskhub/deploy/app.config",
     ):
         """
         This method will generate the 'app.config' file to be deployed to the
@@ -290,7 +283,7 @@ class DaskhubStack(Stack):
         if len(keys_to_add) > 0:
             app_config_lines = app_config_lines + "\n\n"
             app_config_lines = (
-                app_config_lines + "# Custom variables injected via heliocloud instance.yaml"
+                    app_config_lines + "# Custom variables injected via heliocloud instance.yaml"
             )
             app_config_lines = app_config_lines + "\n"
 

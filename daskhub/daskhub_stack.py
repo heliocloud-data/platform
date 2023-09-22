@@ -318,6 +318,7 @@ class DaskhubStack(Stack):
             record_name=self.__daskhub_config['ROUTE53_DASKHUB_PREFIX'],
             zone=hosted_zone,
             ttl=Duration.seconds(300),
+            delete_existing=True,
             domain_name="0.0.0.0",
             comment="Initial provisioning from CDK, overridded by EKSCTL deployment."
         )

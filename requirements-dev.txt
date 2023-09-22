@@ -1,6 +1,9 @@
 pytest==6.2.5
+pytest-snapshot
 coverage
 pylint
 pylint-gitlab
 black
 pre-commit
+ruamel.yaml
+dpath

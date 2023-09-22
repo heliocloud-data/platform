@@ -1,3 +1,6 @@
+import dpath
+from ruamel.yaml import YAML
+
 """
 Contains utility functions to support unit testing.
 """
@@ -24,3 +27,35 @@ def which(program):
             if is_exe(exe_file):
                 return exe_file
     return None
+
+
+def sanitize_snapshots(input_file, output_file, values_to_remove_from_snapshot):
+    with open(input_file, "r") as f:
+        with open(output_file, "w") as of:
+            contents = f.read()
+            contents_arr = contents.split("---")
+
+            for doc_as_string in contents_arr:
+                if doc_as_string is None:
+                    continue
+
+                yaml = YAML()
+
+                elem_as_yaml = yaml.load(doc_as_string)
+                if elem_as_yaml is None:
+                    continue
+
+                # 4 spaces
+                # then 8 spaces
+                # if 'data' in elem_as_yaml and 'hub.config.JupyterHub.cookie_secret' in elem_as_yaml['data']:
+                #     elem_as_yaml['data']['hub.config.JupyterHub.cookie_secret'] = "__REMOVED_FROM_OUTPUT__"
+                for value_to_remove_from_snapshot in values_to_remove_from_snapshot:
+                    try:
+                        obj = dpath.get(elem_as_yaml, value_to_remove_from_snapshot)
+                        dpath.delete(elem_as_yaml, value_to_remove_from_snapshot)
+                    except:
+                        pass
+
+                of.write("---\n")
+                yaml.indent(mapping=2, sequence=4, offset=2)
+                yaml.dump(elem_as_yaml, of)

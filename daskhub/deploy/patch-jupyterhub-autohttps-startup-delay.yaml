@@ -10,4 +10,4 @@ spec:
       initContainers:
         - name: startup-delay
           image: busybox:stable
-          command: ["sh", "-c", "sleep 300"]
+          command: ["sh", "-c", "sleep 30"]

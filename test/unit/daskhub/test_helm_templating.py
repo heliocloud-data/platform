@@ -10,6 +10,21 @@ from utils import (
 PATH_TO_RESOURCES = f"{os.path.dirname(__file__)}/../resources/test_helm_templating"
 
 
+@pytest.fixture(scope="function", autouse=True)
+def before():
+    """
+    Update the helm repositories prior to executing the tests, this ensures that the required
+    dependent helm charts are already installed on the system.
+    """
+    os.system("helm repo add jupyterhub https://hub.jupyter.org/helm-chart/")
+    os.system("helm repo update")
+    os.system("helm pull jupyterhub/jupyterhub --version=1.2.0")
+
+    os.system("helm repo add dask https://helm.dask.org/")
+    os.system("helm repo update")
+    os.system("helm pull dask/daskhub --version=2022.08.02")
+
+
 @pytest.mark.skipif(which("helm") is None, reason="kustomize not installed")
 def test_with_values_no_kustomize_jupyterhub_deployment_autohttps_enabled(snapshot):
     """
@@ -17,6 +32,7 @@ def test_with_values_no_kustomize_jupyterhub_deployment_autohttps_enabled(snapsh
     consistent w/ what we expect.  It's also a living document intended
     to show how kustomize fits into our chain.
     """
+
     values_to_remove_from_snapshot = [
         "/data/hub.config.ConfigurableHTTPProxy.auth_token",
         "/data/hub.config.JupyterHub.cookie_secret",
@@ -26,7 +42,6 @@ def test_with_values_no_kustomize_jupyterhub_deployment_autohttps_enabled(snapsh
         "/spec/template/metadata/annotations/checksum?auth-token",
         "/spec/template/metadata/annotations/checksum?proxy-secret",
     ]
-
     name = "jupyterhub"
     chart = "jupyterhub/jupyterhub"
     version = "1.2.0"

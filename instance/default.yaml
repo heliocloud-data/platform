@@ -30,6 +30,16 @@ userSharedBucket:
   # Override to True to delete this S3 bucket when destroying the HelioCloud instance (via cdk destroy)
   destroyOnRemoval: False
 
+# Email settings
+# Configuration for HelioCloud distributed emails.
+email:
+  # If False, the rest of the email settings are not considered
+  use_custom_email_domain: False
+  # Designates the username in "username@domain.com"
+  user: "no-reply"
+  # Designates the email sender name
+  from_name: "APL HelioCloud"
+  
 
 # Authorization Settings (Required - if using Daskhub, User Dashboard)
 # Configuration of the authorization services for a HelioCloud instance.

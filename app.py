@@ -11,6 +11,7 @@ import aws_cdk as cdk
 from constructs import Construct
 
 from app_config import load_configs
+from base_auth.identity_stack import IdentityStack
 from base_auth.authorization_stack import AuthStack
 from base_aws.base_aws_stack import BaseAwsStack
 from registry.registry_stack import RegistryStack
@@ -86,6 +87,21 @@ class MyHelioCloud(Construct):
         # Next, determine if the Auth module is needed
         enabled_modules = self.__config.get("enabled")
         if enabled_modules.get("daskhub") or enabled_modules.get("portal"):
+            identity_stack = None
+
+            use_custom_email_domain = self.__config["email"]["use_custom_email_domain"]
+
+            if use_custom_email_domain:
+                identity_stack = IdentityStack(
+                    self,
+                    "Identity",
+                    description="Optional custom email domain identity for a HelioCloud instance.",
+                    config=self.__config,
+                    env=self.__env,
+                )
+
+                cdk.Tags.of(identity_stack).add("Product", "heliocloud-identity")
+
             # We need the services of an AuthStack
             auth_stack = AuthStack(
                 self,
@@ -93,8 +109,11 @@ class MyHelioCloud(Construct):
                 description="End-user authentication and authorization for a HelioCloud instance.",
                 config=self.__config,
                 env=self.__env,
+                base_identity=identity_stack,
             )
             auth_stack.add_dependency(base_stack)
+            if use_custom_email_domain:
+                auth_stack.add_dependency(identity_stack)
             cdk.Tags.of(auth_stack).add("Product", "heliocloud-auth")
 
             # Should the User Portal module be deployed

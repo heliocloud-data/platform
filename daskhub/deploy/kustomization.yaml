@@ -14,6 +14,10 @@ patches:
     target:
       kind: Deployment
       name: autohttps
+  - path: patch-jupyterhub-user-scheduler-clusterRole.yaml
+    target:
+      kind: ClusterRole
+      name: daskhub-user-scheduler
   - target:
       kind: Deployment
       name: autohttps

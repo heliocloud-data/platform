@@ -4,7 +4,7 @@ kind: ClusterConfig
 metadata:
   name: <INSERT_EKS_NAME>
   region: <INSERT_REGION>
-  version: "1.24"
+  version: "1.25"
   tags:
       Product: heliocloud-daskhub
       Project: heliocloud

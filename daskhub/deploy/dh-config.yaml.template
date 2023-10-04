@@ -12,6 +12,11 @@ rbac:
   enabled: true  # Create and use roles and service accounts on an RBAC-enabled cluster.
 
 jupyterhub:
+  scheduling:
+    userScheduler:
+      image:
+        tag: v1.22.17
+
   debug:
     enabled: true
   cull:

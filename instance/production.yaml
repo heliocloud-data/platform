@@ -21,6 +21,11 @@ vpc:
 userSharedBucket:
   destroyOnRemoval: False
 
+email:
+  use_custom_email_domain: True
+  user: "no-reply"
+  from_name: "APL HelioCloud"
+
 # Only working on the registry right now
 enabled:
   registry: True

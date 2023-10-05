@@ -30,7 +30,7 @@ userSharedBucket:
   # Override to True to delete this S3 bucket when destroying the HelioCloud instance (via cdk destroy)
   destroyOnRemoval: False
 
-# Email settings
+# Email settings (Required - if using a custom email domain)
 # Configuration for HelioCloud distributed emails.
 email:
   # If False, the rest of the email settings are not considered

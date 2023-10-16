@@ -1,7 +1,7 @@
 # syntax = docker/dockerfile:1.2
 
 # Set base image (host OS)
-FROM --platform=linux/amd64 python:3.8
+FROM --platform=linux/amd64 python:3.9
 
 # The path to the local directory where the CA certificate should be saved.
 ARG PORTAL_LOCAL_CERT_PATH="/usr/local/share/ca-certificates"

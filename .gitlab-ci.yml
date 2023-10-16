@@ -1,7 +1,32 @@
 default:
   image: python:3.9
   services:
-  - docker:19.03.12-dind
+  - docker:20.10.23-dind
+
+variables:
+  # When using dind service, you must instruct Docker to talk with
+  # the daemon started inside of the service. The daemon is available
+  # with a network connection instead of the default
+  # /var/run/docker.sock socket.
+  DOCKER_HOST: tcp://docker:2376
+  #
+  # The 'docker' hostname is the alias of the service container as described at
+  # https://docs.gitlab.com/ee/ci/services/#accessing-the-services.
+  # If you're using GitLab Runner 12.7 or earlier with the Kubernetes executor and Kubernetes 1.6 or earlier,
+  # the variable must be set to tcp://localhost:2376 because of how the
+  # Kubernetes executor connects services to the job container
+  # DOCKER_HOST: tcp://localhost:2376
+  #
+  # Specify to Docker where to create the certificates. Docker
+  # creates them automatically on boot, and creates
+  # `/certs/client` to share between the service and job
+  # container, thanks to volume mount from config.toml
+  DOCKER_TLS_CERTDIR: "/certs"
+  # These are usually specified by the entrypoint, however the
+  # Kubernetes executor doesn't run entrypoints
+  # https://gitlab.com/gitlab-org/gitlab-runner/-/issues/4125
+  DOCKER_TLS_VERIFY: 1
+  DOCKER_CERT_PATH: "$DOCKER_TLS_CERTDIR/client"
 
 stages:
   - test
@@ -123,6 +148,8 @@ black:
 #   https://docs.gitlab.com/ee/ci/variables/predefined_variables.html
 integration-cdk-deploy:
   stage: integration
+  tags:
+    - dind # set to run on specific runer
   environment:
     name: testing/$CI_COMMIT_REF_SLUG
     url: https://portal-${CI_COMMIT_REF_SLUG}.aplscicloud.org
@@ -136,6 +163,8 @@ integration-cdk-deploy:
     - npm install -g npm
     - npm install -g aws-cdk
     - cdk --version
+    # Dependencies for Portal
+    - curl -sSL https://get.docker.com/ | sh
     - apt-get update && apt-get install -y gettext
     - envsubst < instance/gitlab-integration.yaml > instance/gitlab-integration-${CI_COMMIT_REF_SLUG}.yaml
     # Modify the cdk.json file to run in coverage mode.
@@ -214,6 +243,8 @@ integration-cdk-destroy-on_stop_hook:
 
 staging-cdk-deploy:
   stage: staging
+  tags:
+    - dind # set to run on specific runer
   environment:
     name: staging
     url: https://portal-dev.aplscicloud.org
@@ -221,6 +252,7 @@ staging-cdk-deploy:
   script:
     - python -m pip install -r requirements.txt
     - python -m pip install -r requirements-dev.txt
+    # Dependencies for CDK
     - curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
     - apt-get install -y nodejs
     - npm install -g npm
@@ -233,7 +265,13 @@ staging-cdk-deploy:
     - dpkg -i session-manager-plugin.deb
     - apt-get update && apt-get install -y gettext
     - envsubst < instance/staging.yaml > instance/staging-${CI_COMMIT_REF_SLUG}.yaml
-    - echo cdk deploy --all -c instance=staging-${CI_COMMIT_REF_SLUG} --require-approval never -v
+    # For an incremental deployment, we must deploy each stack, but not Daskhub.  That one
+    # has must be done via eksctl/kubect.
+    - cdk deploy staging-${CI_COMMIT_REF_SLUG}/Base -c instance=staging-${CI_COMMIT_REF_SLUG} --require-approval never -v
+    - cdk deploy staging-${CI_COMMIT_REF_SLUG}/Identity -c instance=staging-${CI_COMMIT_REF_SLUG} --require-approval never -v
+    - cdk deploy staging-${CI_COMMIT_REF_SLUG}/Auth -c instance=staging-${CI_COMMIT_REF_SLUG} --require-approval never -v
+    - cdk deploy staging-${CI_COMMIT_REF_SLUG}/Portal -c instance=staging-${CI_COMMIT_REF_SLUG} --require-approval never -v
+    - cdk deploy staging-${CI_COMMIT_REF_SLUG}/Registry -c instance=staging-${CI_COMMIT_REF_SLUG} --require-approval never -v
   artifacts:
     when: always
     paths:
@@ -266,6 +304,8 @@ staging-cdk-destroy-on_stop_hook:
 
 production-jhuapl-cdk-deploy:
   stage: deploy
+  tags:
+    - dind # set to run on specific runer
   when: manual
   environment:
     name: production/jhuapl
@@ -273,6 +313,7 @@ production-jhuapl-cdk-deploy:
   script:
     - python -m pip install -r requirements.txt
     - python -m pip install -r requirements-dev.txt
+    # Dependencies for CDK
     - curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
     - apt-get install -y nodejs
     - npm install -g npm
@@ -285,9 +326,13 @@ production-jhuapl-cdk-deploy:
     - dpkg -i session-manager-plugin.deb
     - apt-get update && apt-get install -y gettext
     - envsubst < instance/production.yaml > instance/production-jhuapl.yaml
-    # Skip the actual deployment as docker/docker-in-docker services are unavailable in the current
-    # git
-    - echo cdk deploy --all -c instance=production-jhuapl --require-approval never -v
+    # For an incremental deployment, we must deploy each stack, but not Daskhub.  That one
+    # has must be done via eksctl/kubect.
+    - cdk deploy production-jhuapl/Base -c instance=production-jhuapl --require-approval never -v
+    - cdk deploy production-jhuapl/Identity -c instance=production-jhuapl --require-approval never -v
+    - cdk deploy production-jhuapl/Auth -c instance=production-jhuapl --require-approval never -v
+    - cdk deploy production-jhuapl/Portal -c instance=production-jhuapl --require-approval never -v
+    - cdk deploy production-jhuapl/Registry -c instance=production-jhuapl --require-approval never -v
   artifacts:
     when: always
     paths:

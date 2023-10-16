@@ -44,8 +44,7 @@ unit-test:
     - export PYTHONPATH=.
     - python -m pip install -r requirements.txt
     - python -m pip install -r requirements-dev.txt
-    - curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
-    - apt-get install -y nodejs
+    - bash .gitlab-ci/scripts/install-deps.sh
     - curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 > get_helm.sh && bash get_helm.sh -v v3.9.4 && rm -rf get_helm.sh
     - curl https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv5.1.1/kustomize_v5.1.1_linux_amd64.tar.gz --silent --location --remote-name && tar zxvf kustomize_v5.1.1_linux_amd64.tar.gz && mv kustomize /usr/local/bin/ && rm -rf kustomize_v5.1.1_linux_amd64.tar.gz
     - pytest -c pytest-unit.ini --junit-xml=TEST-HelioCloud-platform.xml --junit-prefix=HelioCloud-platform
@@ -64,8 +63,7 @@ coverage:
     - export PYTHONPATH=.
     - python -m pip install -r requirements.txt
     - python -m pip install -r requirements-dev.txt
-    - curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
-    - apt-get install -y nodejs
+    - bash .gitlab-ci/scripts/install-deps.sh
     - curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 > get_helm.sh && bash get_helm.sh -v v3.9.4 && rm -rf get_helm.sh
     - curl https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv5.1.1/kustomize_v5.1.1_linux_amd64.tar.gz --silent --location --remote-name && tar zxvf kustomize_v5.1.1_linux_amd64.tar.gz && mv kustomize /usr/local/bin/ && rm -rf kustomize_v5.1.1_linux_amd64.tar.gz
     - coverage run -m pytest -c pytest-unit.ini
@@ -158,8 +156,7 @@ integration-cdk-deploy:
   script:
     - python -m pip install -r requirements.txt
     - python -m pip install -r requirements-dev.txt
-    - curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
-    - apt-get install -y nodejs
+    - bash .gitlab-ci/scripts/install-deps.sh
     - npm install -g npm
     - npm install -g aws-cdk
     - cdk --version
@@ -203,8 +200,7 @@ integration-cdk-destroy:
   script:
     - python -m pip install -r requirements.txt
     - python -m pip install -r requirements-dev.txt
-    - curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
-    - apt-get install -y nodejs
+    - bash .gitlab-ci/scripts/install-deps.sh
     - npm install -g npm
     - npm install -g aws-cdk
     - cdk --version
@@ -227,8 +223,7 @@ integration-cdk-destroy-on_stop_hook:
   script:
     - python -m pip install -r requirements.txt
     - python -m pip install -r requirements-dev.txt
-    - curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
-    - apt-get install -y nodejs
+    - bash .gitlab-ci/scripts/install-deps.sh
     - npm install -g npm
     - npm install -g aws-cdk
     - cdk --version
@@ -253,8 +248,7 @@ staging-cdk-deploy:
     - python -m pip install -r requirements.txt
     - python -m pip install -r requirements-dev.txt
     # Dependencies for CDK
-    - curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
-    - apt-get install -y nodejs
+    - bash .gitlab-ci/scripts/install-deps.sh
     - npm install -g npm
     - npm install -g aws-cdk
     - cdk --version
@@ -288,8 +282,7 @@ staging-cdk-destroy-on_stop_hook:
   script:
     - python -m pip install -r requirements.txt
     - python -m pip install -r requirements-dev.txt
-    - curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
-    - apt-get install -y nodejs
+    - bash .gitlab-ci/scripts/install-deps.sh
     - npm install -g npm
     - npm install -g aws-cdk
     - cdk --version
@@ -314,8 +307,7 @@ production-jhuapl-cdk-deploy:
     - python -m pip install -r requirements.txt
     - python -m pip install -r requirements-dev.txt
     # Dependencies for CDK
-    - curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
-    - apt-get install -y nodejs
+    - bash .gitlab-ci/scripts/install-deps.sh
     - npm install -g npm
     - npm install -g aws-cdk
     - cdk --version

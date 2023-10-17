@@ -53,3 +53,25 @@ class TestDataSet(unittest.TestCase):
         self.assertEqual(dataset.filetype, restored_dataset.filetype)
         self.assertEqual(dataset.indextype, restored_dataset.indextype)
         self.assertEqual(dataset.start, restored_dataset.start)
+
+    def test_filetype_normalize(self):
+        ext_list = [
+            ["fits", "fts", "fit"],
+            ["csv"],
+            ["cdf"],
+            ["netcdf3", "ncd", "netcdf", "ncdf"],
+            ["hdf5", "h5", "hdf"],
+            ["datamap"],
+            ["other"],
+        ]
+        for exts in ext_list:
+            # Create a FileType for each extension
+            # Convert map to set - removes duplicates
+            ext_enum_set = set(map(FileType, exts))
+
+            self.assertEqual(len(ext_enum_set), 1)
+
+            # Set upack
+            (ext_enum,) = ext_enum_set
+
+            self.assertEqual(ext_enum.value, exts[0])

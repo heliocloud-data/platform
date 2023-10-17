@@ -207,12 +207,18 @@ class Ingester:  # pylint: disable=too-few-public-methods, too-many-instance-att
                 "Bucket": self.__ingest_bucket,
                 "Key": self.__ingest_folder + uploaded_file,
             }
-            destination_key = self.__destination_folder + uploaded_file
+
+            # format destination file name to all lowercase and normalize extension
+            filename_split = uploaded_file.rsplit(".", 1)
+            extension = filename_split[-1].lower()
+            destination_file = ".".join([filename_split[0], FileType(extension).value])
+
+            destination_key = self.__destination_folder + destination_file
             self.__s3_client.copy(
                 CopySource=copy_source,
                 Bucket=self.__destination_bucket,
                 Key=destination_key,
-                Callback=get_copy_callback(uploaded_file, destination_key),
+                Callback=get_copy_callback(destination_file, destination_key),
             )
 
             # Final file name in the destination bucket

@@ -77,21 +77,13 @@ class RegistryStack(Stack):  # pylint: disable=too-many-instance-attributes
             else (RemovalPolicy.RETAIN, False)
         )
 
-        if bucket_name is None:
-            self.__ingest_bucket = s3.Bucket(
-                self,
-                id="Ingest-Bucket",
-                removal_policy=removal_policy,
-                auto_delete_objects=auto_delete_objects,
-            )
-        else:
-            self.__ingest_bucket = s3.Bucket(
-                self,
-                id="Ingest-Bucket",
-                bucket_name=bucket_name,
-                removal_policy=removal_policy,
-                auto_delete_objects=auto_delete_objects,
-            )
+        self.__ingest_bucket = s3.Bucket(
+            self,
+            id="Ingest-Bucket",
+            bucket_name=bucket_name,
+            removal_policy=removal_policy,
+            auto_delete_objects=auto_delete_objects,
+        )
 
     def __build_registry_buckets(self):
         """

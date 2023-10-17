@@ -11,16 +11,27 @@ from datetime import datetime
 
 class FileType(enum.Enum):
     """
-    Valid file formats for data set files stored in public s3 buckets
+    Valid file formats for data set files stored in public s3 buckets.
+    File formats are normalized on creation to first listed value.
     """
 
-    FITS = "fits"
+    FITS = "fits", "fts", "fit"
     CSV = "csv"
     CDF = "cdf"
-    NETCDF3 = "netcdf3"
-    HDF5 = "hdf5"
+    NETCDF3 = "netcdf3", "ncd", "netcdf", "ncdf"
+    HDF5 = "hdf5", "h5", "hdf"
     DATAMAP = "datamap"
     OTHER = "other"
+
+    # Allows multi value enum on object creation
+    def __new__(cls, *values):
+        obj = object.__new__(cls)
+        # _value_ sets the enum returned value
+        obj._value_ = values[0]
+        for other_value in values[1:]:
+            # secondary values reference to main obj
+            cls._value2member_map_[other_value] = obj
+        return obj
 
 
 class IndexType(enum.Enum):

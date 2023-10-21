@@ -76,7 +76,7 @@ if [[ " ${init_cluster_query[*]} " =~ " ${EKS_NAME} " ]]; then
     echo Cluster - $EKS_NAME - already exists, skipping cluster creation
     echo ------------------------------
     echo Updating Kubernetes cluster...  
-    eksctl upgrade cluster -f cluster-config.yaml
+    eksctl upgrade cluster -f cluster-config.yaml --approve
 else
     echo ------------------------------
     echo Cluster - $EKS_NAME - needs to be created, starting process...

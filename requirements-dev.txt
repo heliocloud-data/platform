@@ -7,3 +7,6 @@ black
 pre-commit
 ruamel.yaml
 dpath
+behave
+selenium
+webdriver-manager

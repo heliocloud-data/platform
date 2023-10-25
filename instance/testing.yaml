@@ -1,4 +1,4 @@
-# The following file is used for production deployments on GitLab.
+# The following file is used for deploying to the staging environment on GitLab.
 #
 # To run w/ this instance locally, type the following commands:
 #   export CI_COMMIT_SHORT_SHA=<something>
@@ -18,38 +18,35 @@ env:
 vpc:
   type: new
 
+# Destroying so we can clean up dev
 userSharedBucket:
-  destroyOnRemoval: False
-
-email:
-  use_custom_email_domain: True
-  user: "no-reply"
-  from_name: "APL HelioCloud"
+  destroyOnRemoval: True
 
 # Only working on the registry right now
 enabled:
   registry: True
   daskhub: True
-  portal: True
+  portal: False
 
 # Simple bucket names
 registry:
   datasetBucketNames: [
-    "heliocloud-production-${AWS_DEFAULT_REGION}-datasets-1",
+     "heliocloud-testing-${AWS_DEFAULT_REGION}-datasets-1",
   ]
-  ingestBucketName: "heliocloud-production-${AWS_DEFAULT_REGION}-uploads-1"
+
+  ingestBucketName: "heliocloud-testing-${AWS_DEFAULT_REGION}-uploads-1"
   requesterPays: True
   catalog:
     masterUser: master
     name: "Chris Jeschke"
     contact: "chris.jeschke@jhuapl.edu"
-  destroyOnRemoval: False
+  destroyOnRemoval: True
   layers:
     pandas: "arn:aws:lambda:${AWS_DEFAULT_REGION}:336392948345:layer:AWSSDKPandas-Python39:6"
 
 portal:
   domain_url: "aplscicloud.org"
-  domain_record: "portal"
+  domain_record: "portal-testing"
   domain_certificate_arn: "arn:aws:acm:${AWS_DEFAULT_REGION}:${HC_AWS_ACCOUNT}:certificate/${HC_PORTAL_CERT_ARN}"
 
 daskhub:
@@ -57,7 +54,7 @@ daskhub:
   # that will be used to allow AWS Console users full access to the EKS cluster.
   EKS_CONSOLE_DASHBOARD_FULL_ACCESS_ROLE_ARN: "arn:aws:iam::${HC_AWS_ACCOUNT}:role/${HC_EKS_ROLE_ARN}"
   ROUTE53_HOSTED_ZONE: "aplscicloud.org"
-  ROUTE53_DASKHUB_PREFIX: daskhub
+  ROUTE53_DASKHUB_PREFIX: daskhub-testing
   KUBERNETES_NAMESPACE: daskhub
   EKS_NAME: 'eks-helio'
   DASKHUB_ADMIN_USER: lenzinm1

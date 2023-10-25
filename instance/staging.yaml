@@ -55,6 +55,9 @@ portal:
   domain_certificate_arn: "arn:aws:acm:${AWS_DEFAULT_REGION}:${HC_AWS_ACCOUNT}:certificate/${HC_PORTAL_CERT_ARN}"
 
 daskhub:
+  # This is the IAM Role ARN that will be added to the aws-auth ConfigMap
+  # that will be used to allow AWS Console users full access to the EKS cluster.
+  EKS_CONSOLE_DASHBOARD_FULL_ACCESS_ROLE_ARN: "arn:aws:iam::${HC_AWS_ACCOUNT}:role/${HC_EKS_ROLE_ARN}"
   ROUTE53_HOSTED_ZONE: "aplscicloud.org"
   ROUTE53_DASKHUB_PREFIX: daskhub-dev
   KUBERNETES_NAMESPACE: daskhub

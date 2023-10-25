@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# The name of the kubernetes group.
+EKS_CONSOLE_DASHBOARD_FULL_ACCESS_GROUP_NAME="eks-console-dashboard-full-access-group"
+
 AWS_REGION=$(aws ec2 describe-availability-zones --output text --query 'AvailabilityZones[0].[RegionName]')
 
 aws configure set output json
@@ -93,8 +96,20 @@ if [[ " ${final_cluster_query[*]} " =~ " ${EKS_NAME} " ]]; then
 
     echo ------------------------------
     echo Creating cluster admin user...
-    # TODO check if need a tag for this
     eksctl create iamidentitymapping --cluster $EKS_NAME --arn $ADMIN_ROLE_ARN --group system:masters --username admin --region $AWS_REGION
+
+    # Configure RBAC
+    echo ------------------------------
+    echo "Deploying the ClusterRole and ClusterRoleBindings for RBAC Group: ${EKS_CONSOLE_DASHBOARD_FULL_ACCESS_GROUP_NAME}"
+    kubectl apply -f eks-console-full-access.yaml
+
+    echo Attaching IAM Role ${EKS_CONSOLE_DASHBOARD_FULL_ACCESS_ROLE_ARN} to RBAC Group ${EKS_CONSOLE_DASHBOARD_FULL_ACCESS_GROUP_NAME}...
+    eksctl create iamidentitymapping \
+        --cluster ${EKS_NAME} \
+        --arn ${EKS_CONSOLE_DASHBOARD_FULL_ACCESS_ROLE_ARN} \
+        --group ${EKS_CONSOLE_DASHBOARD_FULL_ACCESS_GROUP_NAME} \
+        --region ${AWS_REGION} \
+        --no-duplicate-arns
 
     echo ------------------------------
     echo Creating EFS with mounted target...

@@ -81,12 +81,15 @@ def find_element_by_text_type_page(driver, text, element_type, page):
 
     ret = None
     if element_type == "button":
-        if text == "Sign in":
+        if text == "Close":
+            if page == PORTAL_KEYPAIRS_PAGE_ID:
+                ret = driver.find_element(By.XPATH, "/html/body/div/div[1]/button")
+        elif text == "Sign in":
             ret = driver.find_element(By.NAME, "signInSubmitButton")
         elif text == "Create Key Pair":
             ret = driver.find_element(By.NAME, "create_keypair")
         elif text == "Download Keypair File":
-            ret = driver.find_element(By.XPATH, "/html/body/div/div[1]/button")
+            ret = driver.find_element(By.XPATH, "/html/body/div/div[1]/a")
         elif text == "Launch Instance":
             ret = driver.find_element(By.NAME, "launch_type")
         elif page == PORTAL_LAUNCHINSTANCE_PAGE_ID:

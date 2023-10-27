@@ -145,7 +145,9 @@ def find_ec2_instances_by_name(client, name):
             DryRun=False,
         )
 
-        print(resp)
+        if len(resp["Reservations"]) == 0:
+            return []
+
         return resp["Reservations"][0]["Instances"]
     except ClientError as err:
         if err.response["Error"]["Code"] == "InvalidKeyPair.NotFound":

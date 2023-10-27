@@ -20,11 +20,13 @@ Feature: Log into portal and launch an EC2 instance
     Given a fully deployed instance of HelioCloud
       And the user is logged in
       And no existing keypair named "the-key-to-my-heart" exists
+      And no existing sshkey named "the-key-to-my-heart.pem" exists
      Then go to the "portal-keypairs-page"
       And verify the "portal-keypairs-page"
       And enter "the-key-to-my-heart" in the "key-pair-name" field
       And click "Create Key Pair"
       And click "Download Keypair File"
+      And confirm file "the-key-to-my-heart.pem" exists in the Downloads directory
 
   Scenario:  Launch an EC2 instance
     Given a fully deployed instance of HelioCloud

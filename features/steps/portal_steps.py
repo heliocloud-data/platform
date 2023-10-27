@@ -1,9 +1,11 @@
 """
 Cucumber step definition file for portal.
 """
+import os
 
 from selenium.webdriver.common.by import By
 
+from utils.common_utils import wait_until
 from utils.heliocloud_utils import get_portal_url
 from utils.selector_utils import (
     PORTAL_KEYPAIRS_PAGE_ID,
@@ -35,6 +37,13 @@ def step_impl(context):
     webdriver_get(context.browser, url, None, f"temp/feature-tests/{full_page}.png")
 
     context.current_page = full_page
+
+
+@given('no existing sshkey named "{sshkey}" exists')
+def step_impl(context, sshkey):
+    loc = os.path.expanduser(f"~/Downloads/{sshkey}")
+    if os.path.isfile(loc):
+        os.remove(loc)
 
 
 @then('go to the "portal-{page}"')
@@ -92,6 +101,18 @@ def step_impl(context, text):
             f"temp/feature-tests/{context.current_page}.png",
         )
     do_click(context.browser, text, context.current_page)
+
+
+@then('confirm file "{name}" exists in the Downloads directory')
+def step_impl(context, name):
+    max_wait_time = 10
+    loc = os.path.expanduser(f"~/Downloads/{name}")
+
+    if wait_until(lambda: os.path.isfile(loc), max_wait_time):
+        return
+
+    if os.path.isfile(loc) is False:
+        raise ValueError(f"File {loc} was not found")
 
 
 @then('select "{text}" in the "{field}" dropdown')

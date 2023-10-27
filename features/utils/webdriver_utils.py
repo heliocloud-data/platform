@@ -27,8 +27,20 @@ def create_webdriver():
     options.add_argument("--disable-software-rasterizer")
     options.add_argument("--ignore-certificate-errors")
     options.add_argument("--window-size=320,2840")
+    options.add_experimental_option(
+        "prefs",
+        {
+            "download.prompt_for_download": False,  # To auto download the file
+            "download.directory_upgrade": True,
+            "safebrowsing_for_trusted_sources_enabled": False,
+            "safebrowsing.enabled": False,
+        },
+    )
 
-    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
+    driver = webdriver.Chrome(
+        service=Service(executable_path=ChromeDriverManager().install(), log_output="browser.log"),
+        options=options,
+    )
     return driver
 
 

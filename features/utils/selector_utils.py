@@ -5,6 +5,7 @@ in our application.
 
 import time
 
+from selenium.webdriver import ActionChains
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoSuchElementException
 
@@ -15,9 +16,15 @@ PORTAL_MAIN_PAGE_ID = "portal-main-page"
 PORTAL_KEYPAIRS_PAGE_ID = "portal-keypairs-page"
 PORTAL_LAUNCHINSTANCE_PAGE_ID = "portal-launch_instance-page"
 
+DASKHUB_LOGIN_PAGE_ID = "daskhub-login-page"
+DASKHUB_SERVERSPAWN_PAGE_ID = "daskhub-server_spawn-page"
+DASKHUB_MAIN_PAGE_ID = "daskhub-main-page"
+DASKHUB_HOME_PAGE_ID = "daskhub-home-page"
+
 # pylint: disable=too-many-branches
 # pylint: disable=unused-argument
 # pylint: disable=too-many-arguments
+# pylint: disable=too-many-statements
 
 
 def get_url(base_url, page):
@@ -32,6 +39,12 @@ def get_url(base_url, page):
         return f"{base_url}/keypairs"
     if page == PORTAL_LAUNCHINSTANCE_PAGE_ID:
         return f"{base_url}/launch_instance"
+
+    if page == DASKHUB_LOGIN_PAGE_ID:
+        return base_url
+    if page == DASKHUB_HOME_PAGE_ID:
+        return f"{base_url}/hub/home"
+
     raise NotImplementedError(f"page {page} not supported")
 
 
@@ -41,6 +54,7 @@ def do_enter_text(driver, text, field, page):
     """
     input_element = find_element_by_text_type_page(driver, field, "input", page)
     try:
+        print(input_element.get_attribute("innerHTML"))
         input_element.send_keys(text)
     except:
         print(input_element.get_attribute("innerHTML"))
@@ -52,6 +66,9 @@ def do_click(driver, text, page):
     Find a button and click it.
     """
     button = find_element_by_text_type_page(driver, text, "button", page)
+
+    # Some links require mouse over before clicking.
+    ActionChains(driver).move_to_element(button).perform()
 
     try:
         button.click()
@@ -106,6 +123,36 @@ def find_element_by_text_type_page(driver, text, element_type, page):
                 #  Amazon Linux -> Amazon-Linuxtab
                 button_id = f"{text.replace(' ', '-')}tab"
                 ret = driver.find_element(By.ID, button_id)
+        elif page == DASKHUB_SERVERSPAWN_PAGE_ID:
+            if text == "Server":
+                value_text = "server"
+                xpath = f"//input[@value='{value_text}' and @type='radio']"
+                ret = driver.find_element(By.XPATH, xpath)
+            elif text == "Large Server":
+                value_text = "large-server"
+                xpath = f"//input[@value='{value_text}' and @type='radio']"
+                ret = driver.find_element(By.XPATH, xpath)
+            elif text == "GPU Server - X-Large":
+                value_text = "gpu-server-x-large"
+                xpath = f"//input[@value='{value_text}' and @type='radio']"
+                ret = driver.find_element(By.XPATH, xpath)
+            elif text == "Start":
+                xpath = f"//input[@value='{text}' and @type='submit']"
+                ret = driver.find_element(By.XPATH, xpath)
+        elif page == DASKHUB_MAIN_PAGE_ID:
+            if text == "File":
+                xpath = "//div[text() = 'File']"
+                ret = driver.find_element(By.XPATH, xpath)
+            elif text == "Log Out":
+                xpath = "//div[text() = 'Log Out']"
+                ret = driver.find_element(By.XPATH, xpath)
+        elif page == DASKHUB_HOME_PAGE_ID:
+            if text == "Stop My Server":
+                xpath = "//a[@id='stop']"
+                ret = driver.find_element(By.XPATH, xpath)
+            elif text == "Logout":
+                xpath = "//a[@id='logout']"
+                ret = driver.find_element(By.XPATH, xpath)
 
     if element_type == "input":
         if text == "username":
@@ -124,7 +171,9 @@ def find_element_by_text_type_page(driver, text, element_type, page):
             ret = driver.find_element(By.ID, "key_pair")
 
     if ret is None:
-        raise NotImplementedError(f'Selecting {type} with "{text}" is not implemented')
+        raise NotImplementedError(
+            f'Selecting {element_type} with "{text}" on page {page} is not implemented'
+        )
     return ret
 
 
@@ -136,6 +185,9 @@ def get_timeout_for_field(text, element_type, page):
     ret = None
     if element_type == "button":
         if text == "Download Keypair File":
+            ret = 10
+    if element_type == "button":
+        if text == "Log Out":
             ret = 10
     return ret
 

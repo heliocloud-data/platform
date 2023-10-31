@@ -28,3 +28,7 @@ IT-*.xml
 # Output files from deployments
 instance/staging-*
 instance/production-*
+
+# Output files from the feature tests
+reports/*
+TESTS-*.xml

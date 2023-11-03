@@ -281,7 +281,7 @@ staging-test:
   script:
     - python -m pip install -r requirements.txt
     - python -m pip install -r requirements-dev.txt
-    - wget -nc https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb 
+    - 'wget --header="JOB-TOKEN: $CI_JOB_TOKEN" ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/google-chrome/118.0.5993.88/google-chrome-stable_current_amd64.deb'
     - apt-get update && apt install -f ./google-chrome-stable_current_amd64.deb -y
     - apt-get update && apt-get install -y gettext
     - export CI_COMMIT_REF_SLUG=develop && export export HC_INSTANCE=staging-${CI_COMMIT_REF_SLUG}
@@ -291,6 +291,7 @@ staging-test:
     when: always
     paths:
       - reports/*.xml
+      - temp/feature-tests/*
     reports:
       junit: reports/*.xml
   dependencies:

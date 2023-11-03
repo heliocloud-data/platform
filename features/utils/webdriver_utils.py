@@ -13,9 +13,10 @@ from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
 
 DEBUG = True
+CAPTURE_STREENSHOTS = False
 
 
-def create_webdriver():
+def create_webdriver(window_size, log_output):
     """
     Create the webdriver.
     """
@@ -26,7 +27,7 @@ def create_webdriver():
     options.add_argument("--disable-gpu")
     options.add_argument("--disable-software-rasterizer")
     options.add_argument("--ignore-certificate-errors")
-    options.add_argument("--window-size=320,2840")
+    options.add_argument(f"--window-size={window_size}")
     options.add_experimental_option(
         "prefs",
         {
@@ -37,8 +38,11 @@ def create_webdriver():
         },
     )
 
+    # Create the log directory if it doesn't already exist
+    os.makedirs(Path(log_output).parent.absolute(), 777, True)
+
     driver = webdriver.Chrome(
-        service=Service(executable_path=ChromeDriverManager().install(), log_output="browser.log"),
+        service=Service(executable_path=ChromeDriverManager().install(), log_output=log_output),
         options=options,
     )
     return driver
@@ -64,7 +68,7 @@ def webdriver_get(driver, url, time_to_wait, screenshot_file):
     if DEBUG:
         print(f"Request took {end_time - start_time} second(s)")
 
-    if screenshot_file is not None:
+    if screenshot_file is not None and CAPTURE_STREENSHOTS:
         if DEBUG:
             print(f"Capturing a screenshot and saving to {screenshot_file}")
         path = Path(screenshot_file)
@@ -77,7 +81,7 @@ def webdriver_screenshot(driver, screenshot_file):
     """
     Capture a screenshot.
     """
-    if screenshot_file is not None:
+    if screenshot_file is not None and CAPTURE_STREENSHOTS:
         if DEBUG:
             print(f"Capturing a screenshot and saving to {screenshot_file}")
         path = Path(screenshot_file)

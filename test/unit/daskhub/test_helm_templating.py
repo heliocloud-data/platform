@@ -79,6 +79,7 @@ def test_with_values_with_kustomize_jupyterhub_deployment_autohttps_enabled(snap
     to show how kustomize fits into our chain.
     """
     values_to_remove_from_snapshot = [
+        "/data/checksum_hook-image-puller",
         "/data/hub.config.ConfigurableHTTPProxy.auth_token",
         "/data/hub.config.JupyterHub.cookie_secret",
         "/data/hub.config.CryptKeeper.keys",
@@ -128,6 +129,7 @@ def test_with_values_with_kustomize_daskhub_deployment(snapshot):
     to show how kustomize fits into our chain.
     """
     values_to_remove_from_snapshot = [
+        "/data/checksum_hook-image-puller",
         "/data/hub.config.ConfigurableHTTPProxy.auth_token",
         "/data/hub.config.JupyterHub.cookie_secret",
         "/data/hub.config.CryptKeeper.keys",
@@ -178,6 +180,7 @@ def test_with_values_no_kustomize_daskhub_deployment_next(snapshot):
     to show how kustomize fits into our chain.
     """
     values_to_remove_from_snapshot = [
+        "/data/checksum_hook-image-puller",
         "/data/hub.config.ConfigurableHTTPProxy.auth_token",
         "/data/hub.config.JupyterHub.cookie_secret",
         "/data/hub.config.CryptKeeper.keys",

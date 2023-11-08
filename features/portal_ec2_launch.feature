@@ -35,7 +35,7 @@ Feature: Log into portal and launch an EC2 instance
      Then go to the "portal-launch_instance-page"
       And verify the "portal-launch_instance-page"
       And click "Amazon Linux"
-       And click "ami-02d1e544b84bf7502"
+       And click "amzn2-ami-kernel-5.10-hvm-2.0.20220606.1-x86_64-gp2"
       And click "General Purpose"
        And click "t2.micro"
       And select "the-key-to-my-heart" in the "Select Key Pair" dropdown

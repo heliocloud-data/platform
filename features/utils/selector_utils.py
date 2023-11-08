@@ -114,6 +114,11 @@ def find_element_by_text_type_page(driver, text, element_type, page):
                 # It's an AMI, the identifier of the radio button
                 # will match
                 ret = driver.find_element(By.ID, text)
+            elif "-ami-" in text:
+                # It's an AMI by name, we need to select the previous
+                # sibling element.
+                xpath = f"//*[text()[contains(.,'{text}')]]/../input"
+                ret = driver.find_element(By.XPATH, xpath)
             elif text.startswith("t2."):
                 # It's an Instance type, the identifier of the radio button
                 xpath = f"//input[@id='{text}' and @value='{text}' and @type='radio']"

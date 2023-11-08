@@ -115,6 +115,17 @@ jupyterhub:
         - sh
         - -c
         - (chmod 0775 /efs; chown 1000:100 /efs)
+      - name: deploy-science-tutorials
+        image: public.ecr.aws/q3h7b4o8/helio-science-tutorials:latest
+        securityContext:
+          runAsUser: 0
+        command:
+        - sh
+        - -c
+        - (cp -R /heliocloud/. /home/jovyan || echo "warning files already exist") && (chown 1000:100 -R /home/jovyan || echo "warning failed to update permissions")
+        volumeMounts:
+        - name: volume-{username}{servername}
+          mountPath: /home/jovyan
     profileList:
     - display_name: "Server"
       description: "Regular notebook server. 8 GB RAM/2 CPU."

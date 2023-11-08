@@ -30,6 +30,7 @@ Feature: Log into daskhub, launch a server and do stuff
     Given a fully deployed instance of HelioCloud
       And the user is logged in
     Then go to the "daskhub-home-page"
+      And wait 2 seconds
       And click "Stop My Server"
       And wait 30 seconds
       And click "Logout"

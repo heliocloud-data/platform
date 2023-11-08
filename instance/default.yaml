@@ -47,6 +47,16 @@ auth:
   # Cognito domain name prefix must be unique for all of AWS region
   domain_prefix: "apl-helio"
 
+  # Indicates if deletion protection should be applied to this AWS resource,
+  # it's recommended that this property be set to `True` for all Production
+  # deployments.
+  deletion_protection: True
+
+  # Indicates the removal policy for this AWS resource when the stack is torn
+  # down.  It's recommended that this property be set to `RETAIN` or `SNAPSHOT`
+  # for all Production deployments.
+  removal_policy: RETAIN
+
 # HelioCloud Modules (Required)
 # Enable/disable the installation of end-user modules in the HelioCloud instance.
 # Defaulting to false, requiring deployers explicitly enable modules in their override config.

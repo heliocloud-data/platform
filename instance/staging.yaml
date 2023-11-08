@@ -33,6 +33,11 @@ enabled:
   daskhub: True
   portal: True
 
+auth:
+  domain_prefix: "apl-helio"
+  deletion_protection: True
+  removal_policy: RETAIN
+
 # Simple bucket names
 registry:
   datasetBucketNames: [

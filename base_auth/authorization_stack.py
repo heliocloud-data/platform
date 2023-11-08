@@ -26,6 +26,9 @@ class AuthStack(Stack):
         auth = config["auth"]
         domain_prefix = auth.get("domain_prefix", "")
 
+        deletion_protection = bool(auth.get("deletion_protection", "False"))
+        removal_policy = RemovalPolicy[auth.get("removal_policy", "RETAIN")]
+
         email = None if not base_identity else base_identity.email
 
         self.userpool = cognito.UserPool(
@@ -33,10 +36,11 @@ class AuthStack(Stack):
             "Pool",
             account_recovery=cognito.AccountRecovery.EMAIL_ONLY,
             sign_in_case_sensitive=False,
+            deletion_protection=deletion_protection,
             standard_attributes=cognito.StandardAttributes(
                 email=cognito.StandardAttribute(required=True, mutable=True)
             ),
-            removal_policy=RemovalPolicy.RETAIN,
+            removal_policy=removal_policy,
             auto_verify=cognito.AutoVerifiedAttrs(email=True),
             self_sign_up_enabled=False,
             email=email,

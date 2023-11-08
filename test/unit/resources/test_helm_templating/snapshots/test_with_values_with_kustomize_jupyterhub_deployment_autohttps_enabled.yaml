@@ -418,7 +418,6 @@ metadata:
 apiVersion: v1
 data:
   autohttps: autohttps
-  checksum_hook-image-puller: 92a0003d753fa036527da0cdd3f36375e1f7168bccc146b1dc44bc4d415da0b4
   continuous-image-puller: continuous-image-puller
   fullname: ''
   fullname-dash: ''

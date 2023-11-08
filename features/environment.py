@@ -40,7 +40,7 @@ def before_feature(context, feature):
     if context.app == "portal":
         window_size = "320,2840"
     elif context.app == "daskhub":
-        window_size = "320,1420"
+        window_size = "320,710"
     else:
         window_size = "1024,768"
         log_output = "temp/feature-tests/browser.log"

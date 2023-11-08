@@ -828,7 +828,6 @@ apiVersion: v1
 data:
   autohttps: autohttps
   autohttps-serviceaccount: autohttps
-  checksum_hook-image-puller: 6a05cfe8261c845a950111cf47eb5240f3b638195c2578f99477bf810db53cc4
   continuous-image-puller: continuous-image-puller
   fullname: ''
   fullname-dash: ''
@@ -2497,6 +2496,16 @@ spec:
             - /bin/sh
             - -c
             - echo "Pulling complete"
+          image: public.ecr.aws/q3h7b4o8/helio-science-tutorials:latest
+          name: image-pull-singleuser-init-and-extra-containers-1
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsGroup: 65534
+            runAsUser: 65534
+        - command:
+            - /bin/sh
+            - -c
+            - echo "Pulling complete"
           image: <ML_DOCKER_LOCATION>:<ML_DOCKER_VERSION>
           name: image-pull-singleuser-profilelist-4
           securityContext:
@@ -3032,6 +3041,16 @@ spec:
             allowPrivilegeEscalation: false
             runAsGroup: 65534
             runAsUser: 65534
+        - name: image-pull-singleuser-init-and-extra-containers-1
+          image: public.ecr.aws/q3h7b4o8/helio-science-tutorials:latest
+          command:
+            - /bin/sh
+            - -c
+            - echo "Pulling complete"
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsGroup: 65534
+            runAsUser: 65534
         - name: image-pull-singleuser-profilelist-4
           image: <ML_DOCKER_LOCATION>:<ML_DOCKER_VERSION>
           command:
@@ -3094,7 +3113,7 @@ spec:
     # prePuller.hook.enabled=true
     # prePuller.hook.pullOnlyOnChanges=true
     # post-upgrade checksum != pre-upgrade checksum (of the hook-image-puller DaemonSet)
-    # "6a05cfe8261c845a950111cf47eb5240f3b638195c2578f99477bf810db53cc4" != ""
+    # "3c70a50e7f0d1a404bebcbe2fddc207c021500c3e5ed832cbfeac8dbfaef84ba" != ""
     #
     metadata:
       labels:

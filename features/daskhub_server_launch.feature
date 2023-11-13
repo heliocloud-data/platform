@@ -25,6 +25,7 @@ Feature: Log into daskhub, launch a server and do stuff
       And click "Start"
       And verify the "daskhub-main-page"
       And wait 30 seconds
+      And take a screenshot with name "daskhub-main-page-server-spawn.png"
 
   Scenario: Stop My Server and Logout of Daskhub
     Given a fully deployed instance of HelioCloud

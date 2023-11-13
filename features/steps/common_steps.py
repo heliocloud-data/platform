@@ -34,8 +34,14 @@ def step_impl(context):
     url = get_url(base_url, full_page)
 
     webdriver_get(context.browser, url, None, f"temp/feature-tests/{full_page}.png")
-
     context.current_page = full_page
+
+    if context.new_login_required:
+        do_enter_text(context.browser, "helioptile", "username", context.current_page)
+        do_enter_text(context.browser, context.user_password, "password", context.current_page)
+        do_click(context.browser, "Sign in", context.current_page)
+
+        context.current_page = full_page
 
 
 @then("wait {time_in_sec} seconds")

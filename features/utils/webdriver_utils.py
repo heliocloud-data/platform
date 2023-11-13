@@ -13,7 +13,7 @@ from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
 
 DEBUG = True
-CAPTURE_STREENSHOTS = False
+CAPTURE_STREENSHOTS = True
 
 
 def create_webdriver(window_size, log_output):
@@ -25,9 +25,13 @@ def create_webdriver(window_size, log_output):
     options.add_argument("--remote-allow-origins=*")
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-gpu")
+    options.add_argument("--disable-extensions")
+    options.add_argument("--disable-notifications")
+    options.add_argument("--disable-dev-shm-usage")
     options.add_argument("--disable-software-rasterizer")
     options.add_argument("--ignore-certificate-errors")
     options.add_argument(f"--window-size={window_size}")
+    options.add_argument("--log-level=1")
     options.add_experimental_option(
         "prefs",
         {

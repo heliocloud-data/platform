@@ -284,7 +284,7 @@ staging-test:
     - 'wget --header="JOB-TOKEN: $CI_JOB_TOKEN" ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/google-chrome/118.0.5993.88/google-chrome-stable_current_amd64.deb'
     - apt-get update && apt install -f ./google-chrome-stable_current_amd64.deb -y
     - apt-get update && apt-get install -y gettext
-    - export CI_COMMIT_REF_SLUG=develop && export export HC_INSTANCE=staging-${CI_COMMIT_REF_SLUG}
+    - export HC_INSTANCE=staging-${CI_COMMIT_REF_SLUG}
     - envsubst < instance/staging.yaml > instance/${HC_INSTANCE}.yaml
     - behave --junit
   artifacts:

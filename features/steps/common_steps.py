@@ -33,11 +33,11 @@ def step_impl(context):
     base_url = get_base_url(context.hc_instance, context.app)
     url = get_url(base_url, full_page)
 
-    webdriver_get(context.browser, url, None, f"temp/feature-tests/{full_page}.png")
+    webdriver_get(context.browser, url, None, None)  # f"temp/feature-tests/{full_page}.png")
     context.current_page = full_page
 
     if context.new_login_required:
-        do_enter_text(context.browser, "helioptile", "username", context.current_page)
+        do_enter_text(context.browser, context.user_name, "username", context.current_page)
         do_enter_text(context.browser, context.user_password, "password", context.current_page)
         do_click(context.browser, "Sign in", context.current_page)
 
@@ -62,6 +62,9 @@ def step_impl(context, msg):
 @then('enter "{text}" in the "{field}" field')
 def step_impl(context, field, text):
     do_enter_text(context.browser, text, field, context.current_page)
+
+    if field == "username":
+        context.user_name = text
 
 
 @then('enter the password in the "{field}" field')

@@ -20,6 +20,7 @@ DASKHUB_LOGIN_PAGE_ID = "daskhub-login-page"
 DASKHUB_SERVERSPAWN_PAGE_ID = "daskhub-server_spawn-page"
 DASKHUB_MAIN_PAGE_ID = "daskhub-main-page"
 DASKHUB_HOME_PAGE_ID = "daskhub-home-page"
+DASKHUB_CLASSIC_PAGE_ID = "daskhub-classic-page"
 
 # pylint: disable=too-many-branches
 # pylint: disable=unused-argument
@@ -61,11 +62,11 @@ def do_enter_text(driver, text, field, page):
         raise
 
 
-def do_click(driver, text, page):
+def do_click(driver, text, page, element_type="button"):
     """
     Find a button and click it.
     """
-    button = find_element_by_text_type_page(driver, text, "button", page)
+    button = find_element_by_text_type_page(driver, text, element_type, page)
 
     # Some links require mouse over before clicking.
     ActionChains(driver).move_to_element(button).perform()
@@ -97,6 +98,10 @@ def find_element_by_text_type_page(driver, text, element_type, page):
     """
 
     ret = None
+    if element_type == "daskhub-folder-item":
+        xpath = f"//span[text() = '{text}']/.."
+        ret = driver.find_element(By.XPATH, xpath)
+
     if element_type == "button":
         if text == "Close":
             if page == PORTAL_KEYPAIRS_PAGE_ID:
@@ -158,6 +163,13 @@ def find_element_by_text_type_page(driver, text, element_type, page):
             elif text == "Logout":
                 xpath = "//a[@id='logout']"
                 ret = driver.find_element(By.XPATH, xpath)
+        # Classic Jupyter Notebook Page
+        elif text == "restart the kernel, then re-run the whole notebook (with dialog)":
+            xpath = f"//button[@title = '{text}']"
+            ret = driver.find_element(By.XPATH, xpath)
+        elif text == "Restart and Run All Cells":
+            xpath = f"//button[text() = '{text}']"
+            ret = driver.find_element(By.XPATH, xpath)
 
     if element_type == "input":
         if text == "username":
@@ -187,7 +199,7 @@ def get_timeout_for_field(text, element_type, page):
     Get the time in second we should wait before giving up
     when selecting a specific field.
     """
-    ret = None
+    ret = 5
     if element_type == "button":
         if text == "Download Keypair File":
             ret = 10
@@ -216,3 +228,25 @@ def do_wait_for_element(driver, text, element_type, page, timeout, screenshot_fi
             webdriver_screenshot(driver, screenshot_file)
 
     return find_element_by_text_type_page(driver, text, element_type, page)
+
+
+def do_wait_for_element_not_present(driver, xpath, page, timeout, screenshot_file):
+    """
+    Wait for an element to appear and return it.
+    """
+    start_time = time.time()
+
+    if screenshot_file is not None:
+        webdriver_screenshot(driver, screenshot_file)
+
+    while (time.time() - start_time) < timeout:
+        try:
+            ret = driver.find_element(By.XPATH, xpath)
+            time.sleep(0.5)
+        except NoSuchElementException:
+            return True
+
+        if screenshot_file is not None:
+            webdriver_screenshot(driver, screenshot_file)
+
+    return False

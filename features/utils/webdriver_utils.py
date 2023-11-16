@@ -43,7 +43,7 @@ def create_webdriver(window_size, log_output):
     )
 
     # Create the log directory if it doesn't already exist
-    os.makedirs(Path(log_output).parent.absolute(), 777, True)
+    os.makedirs(Path(log_output).parent.absolute(), 0o777, True)
 
     driver = webdriver.Chrome(
         service=Service(executable_path=ChromeDriverManager().install(), log_output=log_output),
@@ -77,7 +77,7 @@ def webdriver_get(driver, url, time_to_wait, screenshot_file):
             print(f"Capturing a screenshot and saving to {screenshot_file}")
         path = Path(screenshot_file)
 
-        os.makedirs(path.parent.absolute(), 777, True)
+        os.makedirs(path.parent.absolute(), 0o777, True)
         driver.get_screenshot_as_file(screenshot_file)
 
 
@@ -90,5 +90,5 @@ def webdriver_screenshot(driver, screenshot_file):
             print(f"Capturing a screenshot and saving to {screenshot_file}")
         path = Path(screenshot_file)
 
-        os.makedirs(path.parent.absolute(), 777, True)
+        os.makedirs(path.parent.absolute(), 0o777, True)
         driver.get_screenshot_as_file(screenshot_file)

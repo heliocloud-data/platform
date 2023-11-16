@@ -9,7 +9,7 @@ from utils.webdriver_utils import create_webdriver
 # pylint: disable=missing-function-docstring
 # pylint: disable=unused-argument
 
-CREATE_NEW_WEBDRIVER_PER_SCENARIO = False
+CREATE_NEW_WEBDRIVER_PER_SCENARIO = True
 
 
 def init_heliocloud_context(context):
@@ -30,7 +30,7 @@ def get_window_size(context):
     if context.app == "portal":
         window_size = "320,2840"
     elif context.app == "daskhub":
-        window_size = "320,710"
+        window_size = "320,2840"
     else:
         window_size = "1024,768"
     return window_size
@@ -54,6 +54,7 @@ def get_log_output(context, scenario=None):
 def before_all(context):
     init_heliocloud_context(context)
 
+    context.user_name = "helioptile"
     context.user_password = "pAssword123!!"
 
 
@@ -98,4 +99,5 @@ def after_scenario(context, scenario):
 
 
 def after_all(context):
+    context.user_name = None
     context.user_password = None

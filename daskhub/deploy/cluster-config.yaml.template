@@ -172,3 +172,7 @@ managedNodeGroups:
         efs: true
         awsLoadBalancerController: true
         cloudWatch: true
+
+cloudWatch:
+  clusterLogging:
+    enableTypes: ["*"]

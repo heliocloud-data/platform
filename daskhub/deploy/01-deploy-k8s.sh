@@ -216,3 +216,12 @@ else
     echo ------------------------------
     echo ERROR: Cluster - $EKS_NAME - was not created, skipped all subsequent steps, debug required!
 fi
+
+# Deploy the Cloudwatch namespace for exporting logs.
+kubectl apply -f cloudwatch-namespace.yaml
+
+export EKS_NAME=${EKS_NAME}
+export AWS_REGION=${AWS_REGION}
+cat cloudwatch-fluent-bit-cluster-info.yaml | envsubst | kubectl apply -f -
+
+kubectl apply -f cloudwatch-fluent-bit.yaml

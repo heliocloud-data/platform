@@ -181,6 +181,8 @@ integration-test:
     - export HC_INSTANCE=gitlab-integration-${CI_COMMIT_REF_SLUG}
     - python -m pip install -r requirements.txt
     - python -m pip install -r requirements-dev.txt
+    - apt-get update && apt-get install -y gettext
+    - envsubst < instance/gitlab-integration.yaml > instance/${HC_INSTANCE}.yaml
     - pytest -c pytest-integration.ini --junit-xml=IT-HelioCloud-platform.xml --junit-prefix=IT-HelioCloud-platform
   artifacts:
     when: always

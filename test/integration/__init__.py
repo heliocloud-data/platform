@@ -1,1 +1,1 @@
-print("SUP")
+print("")

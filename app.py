@@ -12,7 +12,7 @@ from constructs import Construct
 
 from app_config import load_configs
 from base_auth.identity_stack import IdentityStack
-from base_auth.authorization_stack import AuthStack
+from base_auth.auth_stack import AuthStack
 from base_aws.base_aws_stack import BaseAwsStack
 from registry.registry_stack import RegistryStack
 from portal.portal_stack import PortalStack
@@ -122,10 +122,10 @@ class MyHelioCloud(Construct):
                     self,
                     "Portal",
                     description="User Portal module for a HelioCloud instance.",
-                    config=self.__config,
+                    config=self.__config.get("portal"),
+                    auth_stack=auth_stack,
+                    aws_stack=base_stack,
                     env=self.__env,
-                    base_auth=auth_stack,
-                    base_aws=base_stack,
                 )
                 portal_stack.add_dependency(auth_stack)
                 cdk.Tags.of(portal_stack).add("Product", "heliocloud-portal")

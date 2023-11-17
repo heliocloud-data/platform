@@ -107,7 +107,7 @@ class TestDaskhubStack(unittest.TestCase):
 
     @pytest.mark.skipif(which("node") is None, reason="node not installed")
     @patch("base_aws.base_aws_stack.BaseAwsStack")
-    @patch("base_auth.authorization_stack.AuthStack")
+    @patch("base_auth.auth_stack.AuthStack")
     @patch("aws_cdk.aws_ec2.Instance")
     @patch("aws_cdk.aws_ec2.Instance.__init__")
     @patch("aws_cdk.aws_ec2.InitFile.from_existing_asset")

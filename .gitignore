@@ -1,7 +1,6 @@
 .idea/
 .venv/
 cdk.out/
-temp/
 *~
 
 # Python files to ignore
@@ -11,6 +10,7 @@ __pycache__/
 
 # Output files from pytest
 TEST-*.xml
+temp/
 
 # Output files from code coverage
 .coverage

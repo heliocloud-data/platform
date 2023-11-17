@@ -30,6 +30,7 @@ class TestCatalogRunner(unittest.TestCase):
             }
         )
         client.invoke = Mock(return_value={"StatusCode": 201})
+        client.close = Mock(return_value=None)
         session.client = Mock(return_value=client)
 
         # Failed run
@@ -58,6 +59,7 @@ class TestCatalogRunner(unittest.TestCase):
                 "Payload": io.BytesIO(b"""{"test_instance_bucket":2}"""),
             }
         )
+        client.close = Mock(return_value=None)
         session.client = Mock(return_value=client)
 
         # Successful run

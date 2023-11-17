@@ -7,12 +7,12 @@ from registry.lambdas.app.core.exceptions import IngesterException
 
 class TestEntry(unittest.TestCase):
     def test_upload_entry_not_json(self):
-        filename = "test/registry/resources/ingest/entry/not_json.txt"
+        filename = "test/unit/resources/test_registry/ingest/entry/not_json.txt"
         with self.assertRaises(IngesterException) as raised:
             entry = get_entry_from_fs(filename=filename)
 
     def test_upload_entry_valid(self):
-        filename = "test/unit/registry/resources/ingest/entry/valid.json"
+        filename = "test/unit/resources/test_registry/ingest/entry/valid.json"
         dataset = get_entry_from_fs(filename=filename)
         self.assertEqual(dataset.dataset_id, "MMS")
         self.assertEqual(

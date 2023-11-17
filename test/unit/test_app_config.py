@@ -1,6 +1,4 @@
-import pytest
 import unittest
-import sys
 
 from app_config import load_configs
 

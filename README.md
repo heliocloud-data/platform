@@ -32,6 +32,7 @@ A HelioCloud deployment requires certain pre-requisite steps be taken in your AW
 
 ### 1.1 Local Environment Setup & cloning HelioCloud repository
 - Install [Python 3.9](#https://www.python.org/downloads/release/python-390/) or later
+- Install [Docker](#https://docs.docker.com/get-docker/)
 - Install the [AWS Command Line Interface](#https://docs.aws.amazon.com/cli/index.html)
 - Install and setup AWS CDK (see [AWS install instructions](https://aws.amazon.com/getting-started/guides/setup-cdk/module-two/), 
 note the requirement for `npm` and `Node.js`; currently nvm == 18.0.0 stable but currently 20.* fails).  You have AWS credentials set either with environment variables or 

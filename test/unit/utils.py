@@ -1,9 +1,11 @@
-import dpath
-from ruamel.yaml import YAML
-
 """
 Contains utility functions to support unit testing.
 """
+import os
+from pathlib import Path
+
+import dpath
+from ruamel.yaml import YAML
 
 
 def which(program):
@@ -45,10 +47,9 @@ def sanitize_snapshots(input_file, output_file, values_to_remove_from_snapshot):
                 if elem_as_yaml is None:
                     continue
 
-                # 4 spaces
-                # then 8 spaces
-                # if 'data' in elem_as_yaml and 'hub.config.JupyterHub.cookie_secret' in elem_as_yaml['data']:
-                #     elem_as_yaml['data']['hub.config.JupyterHub.cookie_secret'] = "__REMOVED_FROM_OUTPUT__"
+                # 4 spaces then 8 spaces if 'data' in elem_as_yaml and
+                # 'hub.config.JupyterHub.cookie_secret' in elem_as_yaml['data']: elem_as_yaml[
+                # 'data']['hub.config.JupyterHub.cookie_secret'] = "__REMOVED_FROM_OUTPUT__"
                 for value_to_remove_from_snapshot in values_to_remove_from_snapshot:
                     try:
                         obj = dpath.get(elem_as_yaml, value_to_remove_from_snapshot)
@@ -59,3 +60,19 @@ def sanitize_snapshots(input_file, output_file, values_to_remove_from_snapshot):
                 of.write("---\n")
                 yaml.indent(mapping=2, sequence=4, offset=2)
                 yaml.dump(elem_as_yaml, of)
+
+
+def create_dumpfile(test_class: str, test_name: str, data: str, dump_dir=None) -> None:
+    """
+    Creates a dumpfile named for the test_class and test_testname provided, stored in dump_dir.
+    File will be named:  dumpdir/test_class/test_name.dump
+
+    If dump_dir is left None (default),  it will be placed in /temp of the platform codebase.
+    """
+    if dump_dir is None:
+        dump_dir = "temp/test/unit/dumpfiles/"
+
+    dump_file = f"{dump_dir}/{test_class}/{test_name}.dump"
+    os.makedirs(os.path.dirname(dump_file), exist_ok=True)
+    with open(dump_file, mode="w") as df_handle:
+        df_handle.write(data)

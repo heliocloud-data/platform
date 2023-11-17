@@ -9,7 +9,7 @@ class TestManifest(unittest.TestCase):
     Various tests for correct manifest parsing.
     """
 
-    resource_path = "test/unit/registry/resources/ingest/manifest/"
+    resource_path = "test/unit/resources/test_registry/ingest/manifest/"
 
     def test_unrecognized_manifest(self):
         manifest_file = TestManifest.resource_path + "manifest.txt"

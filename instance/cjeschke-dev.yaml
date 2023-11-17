@@ -1,4 +1,6 @@
 # Overrides for cjeschke's dev environment
+# Domain to use  @ APL:  portal.aplscicloud.org
+
 env:
   account: 006885615091
   region: us-east-1
@@ -11,9 +13,20 @@ vpc:
 userSharedBucket:
   destroyOnRemoval: True
 
+# Authorization Settings (Required - if using Daskhub, User Dashboard)
+# Configuration of the authorization services for a HelioCloud instance.
+auth:
+  # Cognito domain name prefix must be unique for all of AWS region
+  domain_prefix: "cjeschke-dev"
+  # Remove the pool when we tear down this instance
+  delete_protection: False
+  removal_policy: DESTROY
+
+
 # Only working on the registry right now
 enabled:
-  registry: True
+  registry: False
+  portal: True
 
 # Simple bucket names
 registry:
@@ -27,3 +40,18 @@ registry:
     name: "Chris Jeschke"
     contact: "chris.jeschke@jhuapl.edu"
   destroyOnRemoval: False
+
+portal:
+  # Typically deploying to JHUAPL cloud environment
+  domain_url: "aplscicloud.org"
+  domain_record: "portal-cjeschke-dev"
+  domain_certificate_arn:  arn:aws:acm:us-east-1:006885615091:certificate/fcdaa56d-909d-4edc-8189-95a37d3a2919
+
+  # The Portal's dockerfile has to be provided with a ca_cert & extra pip flags
+  # to permit pip to run successfully within the JHUAPL network (behind an https proxy)
+  docker:
+    build_args:
+      ca_cert_url: https://apllinuxdepot.jhuapl.edu/linux/APL-root-cert/JHUAPL-MS-Root-CA-05-21-2038-B64-text.cer
+      pip_extra_args: --timeout 100
+
+

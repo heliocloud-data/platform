@@ -36,7 +36,7 @@ class TestCataloger(unittest.TestCase):
         results = cataloger.execute()
 
         # Check the results
-        self.assertEquals(len(results), 2)
+        self.assertEqual(len(results), 2)
         for result in results:
             if result.endpoint == """s3://bucket1""":
                 self.assertEqual(result.num_datasets, 1)
@@ -51,21 +51,21 @@ class TestCataloger(unittest.TestCase):
                 lambda args: args.kwargs["Bucket"] == "bucket2", client.put_object.call_args_list
             )
         )
-        self.assertEquals(len(args), 1)
+        self.assertEqual(len(args), 1)
         body = args[0].kwargs["Body"]
         catalog_json = json.loads(body.decode())
         self.assertIsNotNone(catalog_json, "Catalog.json was not produced correctly for bucket2.")
-        self.assertEquals(catalog_json["endpoint"], "s3://bucket2")
-        self.assertEquals(catalog_json["name"], "tester")
-        self.assertEquals(catalog_json["region"], "us-east-1")
-        self.assertEquals(catalog_json["contact"], "tester@domain.org")
-        self.assertEquals(len(catalog_json["catalog"]), 2)
+        self.assertEqual(catalog_json["endpoint"], "s3://bucket2")
+        self.assertEqual(catalog_json["name"], "tester")
+        self.assertEqual(catalog_json["region"], "us-east-1")
+        self.assertEqual(catalog_json["contact"], "tester@domain.org")
+        self.assertEqual(len(catalog_json["catalog"]), 2)
 
         # Check for dataset c in the catalog.json and check its contents
         set_c = list(
             filter(lambda dataset: dataset["dataset_id"] == "Set_c", catalog_json["catalog"])
         )
-        self.assertEquals(len(set_c), 1)
+        self.assertEqual(len(set_c), 1)
         set_c = set_c[0]
-        self.assertEquals(c_dataset.title, "Dataset c")
-        self.assertEquals(c_dataset.index, "s3://bucket2/set_c")
+        self.assertEqual(c_dataset.title, "Dataset c")
+        self.assertEqual(c_dataset.index, "s3://bucket2/set_c")

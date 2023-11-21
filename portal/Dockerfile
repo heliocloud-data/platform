@@ -31,7 +31,7 @@ RUN if [ "$ca_cert_url" != "" ]; \
     then pip install --upgrade pip ${pip_extra_args} --cert /etc/ssl/certs/ca-certificates.crt && \
          pip install -r requirements.txt ${pip_extra_args} --cert /etc/ssl/certs/ca-certificates.crt; \
     else pip install --upgrade pip ${pip_extra_args} && \
-         pip install -r requirments.txt ${pip_extra_args}; \
+         pip install -r requirements.txt ${pip_extra_args}; \
     fi
 
 # 3: Setup the portal app to run

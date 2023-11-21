@@ -1,5 +1,5 @@
 """
-Helper methods for creating a DataSet instance from an entry.json file stored on AWS s3
+Helper methods for creating a DataSet instance from an entries.json file stored on AWS s3
 or the local file system.
 """
 import json
@@ -11,7 +11,7 @@ from ..model.dataset import DataSet
 
 def get_entry_from_s3(s3client: boto3.client, bucket_name: str, entry_key: str) -> DataSet:
     """
-    Load the entry.json file from an S3 location, returning a DataSet instance.
+    Load the entries.json file from an S3 location, returning a DataSet instance.
     """
     if not entry_key.endswith(".json"):
         raise IngesterException(f"Expecting .csv extension for manifest file: {entry_key}.")

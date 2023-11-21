@@ -49,8 +49,8 @@ class Ingester:  # pylint: disable=too-few-public-methods, too-many-instance-att
 
     Invoking an Ingester requires a dataset be uploaded to the HelioCloud instance's Ingest bucket
     (provisioned during installation). This dataset must be comprised of:
-    - an entry.json file containing the details of the  HelioCloud instance DataSet this data should
-        be incorporated in
+    - an entries.json file containing the details of the  HelioCloud instance DataSet this data
+        should be incorporated in
     - a manifest.csv file containing a list of all the files comprising the dataset, along with
         start times & sizes
     - the dataset files themselves
@@ -148,13 +148,13 @@ class Ingester:  # pylint: disable=too-few-public-methods, too-many-instance-att
             }
 
             # Check that the file exists and has the correct size
-            s3key = self.__ingest_folder + row.s3key
+            s3key = os.path.join(self.__ingest_folder, self.__entry_dataset.dataset_id, row.s3key)
             try:
                 response = self.__s3_client.head_object(Bucket=self.__ingest_bucket, Key=s3key)
             except botocore.exceptions.ClientError:
                 # File wasn't found
                 record["status"] = FileStatus.NOT_FOUND.name
-                print(f"Manifest file s3://{self.__ingest_bucket}/{s3key} not found.")
+                print(f"File s3://{self.__ingest_bucket}/{s3key} not found.")
             else:
                 content_length = response["ContentLength"]
                 if row.filesize != content_length:
@@ -191,7 +191,7 @@ class Ingester:  # pylint: disable=too-few-public-methods, too-many-instance-att
 
         # Callback function to print transfer progress
         def get_copy_callback(source_key, dest_key):
-            source_s3 = f"s3://{self.__ingest_bucket}/{self.__ingest_folder}{source_key}"
+            source_s3 = f"s3://{self.__ingest_bucket}/{source_key}"
             dest_s3 = f"s3://{self.__destination_bucket}/{dest_key}"
 
             def callback(transferred):
@@ -205,7 +205,9 @@ class Ingester:  # pylint: disable=too-few-public-methods, too-many-instance-att
             # copy the file over to the destination bucket in the correct sub folder
             copy_source = {
                 "Bucket": self.__ingest_bucket,
-                "Key": self.__ingest_folder + uploaded_file,
+                "Key": os.path.join(
+                    self.__ingest_folder, self.__entry_dataset.dataset_id, uploaded_file
+                ),
             }
 
             # format destination file name to all lowercase and normalize extension
@@ -218,7 +220,7 @@ class Ingester:  # pylint: disable=too-few-public-methods, too-many-instance-att
                 CopySource=copy_source,
                 Bucket=self.__destination_bucket,
                 Key=destination_key,
-                Callback=get_copy_callback(destination_file, destination_key),
+                Callback=get_copy_callback(copy_source["Key"], destination_key),
             )
 
             # Final file name in the destination bucket
@@ -234,7 +236,7 @@ class Ingester:  # pylint: disable=too-few-public-methods, too-many-instance-att
         """
         Generate one index file for each year of the data being ingested.
         - Index files are deposited in data set destination bucket location,
-        per the entry.json provided.
+        per the entries.json provided.
         - Naming convention is <id>_YYYY.csv
         """
 
@@ -310,7 +312,7 @@ class Ingester:  # pylint: disable=too-few-public-methods, too-many-instance-att
 
         # Delete data files
         def delete_file(row):
-            key = self.__ingest_folder + row.s3key
+            key = os.path.join(self.__ingest_folder, self.__entry_dataset.dataset_id, row.s3key)
             print(f"Deleting key {key}")
             self.__s3_client.delete_object(Bucket=self.__ingest_bucket, Key=key)
 

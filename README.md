@@ -336,45 +336,48 @@ ingest service via a commandline tool. The process of constructing and executing
 instance configuration, a valid ingest job location would be `s3://my.upload.bucket/my_job`.
 
 2. Upload the dataset files with an accompanying manifest CSV `manifest.csv` listing those
-files along with the relevant metadata. The manifest file should sit at the root of the subfolder in the 
-S3 bucket: `s3://my.upload.bucket/my_job/manifest.csv`. Example manifest file:
+files along with the relevant metadata. The manifest file should sit at the root of an index subfolder in the 
+S3 bucket: `s3://my.upload.bucket/my_job/MDS/manifest.csv`. Example manifest file:
     ```text
     test, test, test
     more data
     ```
-3. Create and upload a dataset entry file `entry.json` to provide the necessary meta-data about the data set in 
+3. Create and upload a dataset entry file `entries.json` to provide the necessary meta-data about the data set in 
 Registry this ingest job should update.  Example:
     ```json
-    {
-      "id" : "MyDataSet",
-      "loc": "s3://my.public.heliocloud.bucket/mds",
-      "title" : "My DataSet",
-      "ownership" : {
-        "description" : "Something about the data I want to upload ",
-        "resource_id" : "SPASE-XYZ-124",
-        "creation_date" : "2015-09-01T00:00:00",
-        "citation": ".....",
-        "contact": "Dr. Me, ephemerus.me@my_institution.edu",
-        "about_url": "..."
+    [
+      {
+        "id" : "MyDataSet",
+        "index": "s3://my.public.heliocloud.bucket/MDS",
+        "title" : "My DataSet",
+        "creation": "2015-09-01T00:00:00",
+        "resource": "SPASE-1234567",
+        "contact": "Dr. Soandso, ephemerus.sosandso@nasa.gov",
+        "description": "Data from the Magnetospheric Multiscale Mission run by NASA."
       }
-    }
+    ]
     ```
    Fields should be filled out as follows:
    
     - **id** - the Registry identifier of the Data Set to add this data to.  Should be unique to this HelioCloud instance.
     - **loc** - the public s3 bucket and subfolder for the Data Set to add this data to (should be 1-to-1 with the **id**)
     - **title** - a short, human readable, descriptive name for the Data Set
-    - **ownership** - this is a block of additional descriptive metadata about the DataSet (optional)
 
-    The `entry.json` file should be placed adjacent to the `manifest.csv` at the root of the s3 upload bucket sub-folder.
-    Example `s3://my.upload.bucket/my_job/entry.json`
+    Block of additional descriptive metadata about the DataSet (optional).
+    - **creation**
+    - **resource**
+    - **contact**
+    - **description**
+
+
+    The `entries.json` file should be placed at the root of the s3 upload bucket sub-folder.
+    Example `s3://my.upload.bucket/my_job/entries.json`
 
 4. Once the upload package is in place, the Ingest service can be invoked using the Python script
 at `tools/ingest.py`, providing it the name of the HelioCloud instance and the sub-folder in 
 in the S3 ingest bucket that the job is in:
     ```commandline
    python tools/ingest.py my_instance my_job
-    
     ```
 5. Completion of the ingest job can be confirmed by looking at either the ingest job sub-folder 
 to confirm it is empty, or by checking the public S3 buckets in the HelioCloud registry to

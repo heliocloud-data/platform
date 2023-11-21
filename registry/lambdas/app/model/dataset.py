@@ -223,6 +223,9 @@ class DataSet:  # pylint: disable=too-many-instance-attributes
         Instantiate and return a DataSet instance from its serialized dictionary
         representation.
         """
+        dataset_dict["dataset_id"] = (
+            dataset_dict["id"] if "id" in dataset_dict else dataset_dict["dataset_id"]
+        )
         # Remove any null fields.  These will just be the default values
         # from dataset instantiation
         for key, value in list(dataset_dict.items()):

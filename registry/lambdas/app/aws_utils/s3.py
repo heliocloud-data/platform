@@ -10,9 +10,11 @@ from ..model.dataset import DataSet
 from ..core.exceptions import RegistryException
 
 
-def get_dataset_entry_from_s3(session: Session, bucket_name: str, entry_key: str) -> DataSet:
+def get_dataset_entries_from_s3(
+    session: Session, bucket_name: str, entry_key: str
+) -> list[DataSet]:
     """
-    Load the entry.json file from an S3 location, returning a DataSet instance
+    Load the entries.json file from an S3 location, returning a DataSet instance
     :param session: boto3.Session to use for accessing AWS S3
     :param bucket_name: name of the AWS S3 bucket
     :param entry_key: AWS S3 key of the entry dataset file
@@ -25,8 +27,17 @@ def get_dataset_entry_from_s3(session: Session, bucket_name: str, entry_key: str
     data = json.load(response["Body"])
 
     # Correction for id field used in the JSON form
-    data["dataset_id"] = data["id"]
-    return DataSet.from_serialized_dict(data)
+    dataset_list = []
+    for i, dataset in enumerate(data):
+        try:
+            dataset["dataset_id"] = dataset["id"] if "id" in dataset else dataset["dataset_id"]
+            dataset_list.append(DataSet.from_serialized_dict(dataset))
+        except KeyError as err:
+            raise RegistryException(
+                f"Unable to read index {i} in in dataset file: {entry_key}"
+            ) from err
+
+    return dataset_list
 
 
 def get_manifest_from_s3(session: Session, bucket_name: str, manifest_key: str) -> pd.DataFrame:

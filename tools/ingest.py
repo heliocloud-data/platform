@@ -97,10 +97,12 @@ class IngestRunner:
             else:
                 payload_str = response["Payload"].read().decode()
                 results = json.loads(payload_str)
-                print(
-                    f"Ingester service incorporated {results['files_contributed']} "
-                    f"files into dataset {results['dataset_updated']}."
-                )
+                print("Ingester service incorporated:")
+                for i in range(len(results["files_contributed"])):
+                    print(
+                        f"{results['files_contributed'][i]} "
+                        f"files into dataset {results['datasets_updated'][i]}."
+                    )
 
         # Different problem in Lambda invocation
         else:

@@ -4,14 +4,14 @@ Utility methods for tests that may use the local file system.
 import json
 
 from ..model.dataset import DataSet
-from ..core.exceptions import IngesterException
+from ..core.exceptions import IngesterException, RegistryException
 
 
-def get_entry_from_fs(filename: str) -> DataSet:
+def get_entries_from_fs(filename: str) -> list[DataSet]:
     """
-    Load the entry.json file from the local file system, returning a Dataset instance.
-    :param filename: fully qualified path to entry.json
-    :return: a DataSet instance created from the contents of entry.json
+    Load the entries.json file from the local file system, returning a Dataset instance.
+    :param filename: fully qualified path to entries.json
+    :return: a DataSet instance created from the contents of entries.json
     """
 
     # Check file extension
@@ -23,6 +23,11 @@ def get_entry_from_fs(filename: str) -> DataSet:
     with open(filename, encoding="UTF-8") as entry_f:
         data = json.load(entry_f)
 
-    # Correction for id field used in the JSON form
-    data["dataset_id"] = data["id"]
-    return DataSet.from_serialized_dict(data)
+    dataset_list = []
+    for dataset in data:
+        try:
+            dataset_list.append(DataSet.from_serialized_dict(dataset))
+        except KeyError as err:
+            raise RegistryException from err
+
+    return dataset_list

@@ -36,8 +36,12 @@ class TestRegistryAWS(unittest.TestCase):
 
     ingest_bucket = get_ingest_s3_bucket_name(hc_instance=hc_instance)
 
+    ingest_folder = "upload/"
+
     # Ingest job path
     ingest_job_subfolder = "upload"
+
+    mms_local_manifest_path = "test/integration/resources/s3/to_upload/MMS/manifest.csv"
 
     # Get the function names
     ingest_function_name = get_lambda_function_name(
@@ -52,43 +56,29 @@ class TestRegistryAWS(unittest.TestCase):
         s3client = TestRegistryAWS.session.client("s3")
 
         # Upload the manifest file to the ingest bucket
-        manifest_file = "test/integration/resources/s3/manifest.csv"
-        key = TestRegistryAWS.ingest_job_subfolder + "/manifest.csv"
+        key = TestRegistryAWS.ingest_job_subfolder + "/MMS/manifest.csv"
         print(
-            f"Uploading manifest file: {manifest_file} to key: {key} in bucket: {TestRegistryAWS.ingest_bucket}"
+            f"Uploading manifest file: {TestRegistryAWS.mms_local_manifest_path} to key: {key} in bucket: {TestRegistryAWS.ingest_bucket}"
         )
-        s3client.upload_file(Filename=manifest_file, Bucket=TestRegistryAWS.ingest_bucket, Key=key)
-
-        # Upload test files to the ingest bucket
-        for entry in os.scandir("test/integration/resources/s3"):
-            key = TestRegistryAWS.ingest_job_subfolder
-
-            # Only process mms1 files & the valid manifest
-            if entry.name.startswith("mms1_fgm") and entry.is_file():
-                if entry.name.startswith("mms1_fgm_brst_l2_20150901"):
-                    key += "/mms1/fgm/brst/l2/2015/09/01/"
-                if entry.name.startswith("mms1_fgm_brst_l2_20150902"):
-                    key += "/mms1/fgm/brst/l2/2015/09/02/"
-                if entry.name.startswith("mms1_fgm_brst_l2_20191130"):
-                    key += "/mms1/fgm/brst/l2/2019/11/30/"
-                key += entry.name
-
-                # Upload the file
-                print(f"Uploading file: {entry.name} to key: {key}")
-                s3client.upload_file(
-                    Filename=entry.path, Bucket=TestRegistryAWS.ingest_bucket, Key=key
-                )
-
-        # Upload entry and manifest files to the ingest bucket
-        key = TestRegistryAWS.ingest_job_subfolder + "/manifest.csv"
-        print(f"Uploading file: manifest.csv to key: {key}")
         s3client.upload_file(
-            Filename="test/integration/resources/s3/manifest.csv",
+            Filename=TestRegistryAWS.mms_local_manifest_path,
             Bucket=TestRegistryAWS.ingest_bucket,
             Key=key,
         )
 
-        # Create the entry.json to upload (w/ the bucket name)
+        # Upload test files to the ingest bucket
+        to_upload_path = "test/integration/resources/s3/to_upload/"
+        for root, dirs, files in os.walk(to_upload_path):
+            for filename in files:
+                local_path = os.path.join(root, filename)
+                key = TestRegistryAWS.ingest_folder + local_path.split(to_upload_path)[1]
+                s3client.upload_file(
+                    Filename=local_path, Bucket=TestRegistryAWS.ingest_bucket, Key=key
+                )
+                print(f"\tUploaded file s3://{TestRegistryAWS.ingest_bucket}/{key}.")
+
+        # Create the entries.json to upload (w/ the bucket name)
+        # Overwrite the existing entries with existing index
         entry_dataset = DataSet(
             dataset_id="MMS",
             index="s3://" + TestRegistryAWS.registry_bucket + "/MMS",
@@ -100,10 +90,13 @@ class TestRegistryAWS(unittest.TestCase):
         entry_dataset.resource = "SPASE-12345678"
         entry_dataset.contact = "Dr. Soandso, ephemerus.soandso@nasa.gov"
         entry_dataset.description = "Data from the Magnetospheric Multiscale Mission run by NASA"
-        key = TestRegistryAWS.ingest_job_subfolder + "/entry.json"
-        print(f"Creating entry.json at key: {key}")
+        key = TestRegistryAWS.ingest_job_subfolder + "/entries.json"
+
+        print(f"Creating entries.json at key: {key}")
         s3client.put_object(
-            Bucket=TestRegistryAWS.ingest_bucket, Key=key, Body=entry_dataset.to_json()
+            Bucket=TestRegistryAWS.ingest_bucket,
+            Key=key,
+            Body=json.dumps([entry_dataset.to_serializable_dict()]),
         )
         s3client.close()
 
@@ -186,6 +179,8 @@ class TestRegistryAWS(unittest.TestCase):
             f"{TestRegistryAWS.ingest_job_subfolder} is empty."
         )
 
+        response = s3_client.list_objects_v2(Bucket=TestRegistryAWS.registry_bucket)
+
         # (2) Check registry bucket for the dataset
         # (2a) Open the index file & check the line count
         s3_client.download_file(
@@ -217,7 +212,7 @@ class TestRegistryAWS(unittest.TestCase):
         )
 
         # (2b) Does every file exist that should?
-        manifest_file = open("test/integration/resources/s3/manifest.csv")
+        manifest_file = open(TestRegistryAWS.mms_local_manifest_path)
         files = [line.split(",")[1] for line in manifest_file if line.startswith("2015")]
         for file in files:
             key = "MMS/" + file

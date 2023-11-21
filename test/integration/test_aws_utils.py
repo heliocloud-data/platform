@@ -2,7 +2,7 @@ import boto3
 import os.path
 import random
 import unittest
-from registry.lambdas.app.aws_utils.s3 import get_dataset_entry_from_s3, get_manifest_from_s3
+from registry.lambdas.app.aws_utils.s3 import get_dataset_entries_from_s3, get_manifest_from_s3
 
 from utils import (
     new_boto_session,
@@ -19,10 +19,10 @@ class TestAWSUtils(unittest.TestCase):
     pem_file = "registry/lambdas/app/resources/global-bundle.pem"
     bucket = "heliocloud-test-integration-" + str(random.randint(0, 1000))
 
-    entry_dataset_file = os.path.dirname(__file__) + "/resources/s3/entry.json"
-    entry_dataset_key = "entry.json"
+    entry_dataset_file = os.path.dirname(__file__) + "/resources/s3/to_upload/entries.json"
+    entry_dataset_key = "entries.json"
 
-    manifest_file = os.path.dirname(__file__) + "/resources/s3/manifest.csv"
+    manifest_file = os.path.dirname(__file__) + "/resources/s3/to_upload/MMS/manifest.csv"
     manifest_key = "manifest.csv"
 
     def setUp(self) -> None:
@@ -31,6 +31,7 @@ class TestAWSUtils(unittest.TestCase):
 
         # put the test file up on S3
         s3client = boto3.client("s3")
+        print(f"\n\n\n{self.__location_constraint}\n\n\n")
         s3client.create_bucket(
             Bucket=TestAWSUtils.bucket,
             CreateBucketConfiguration={
@@ -61,15 +62,15 @@ class TestAWSUtils(unittest.TestCase):
         s3client.delete_bucket(Bucket=TestAWSUtils.bucket)
         s3client.close()
 
-    def test_entry_json_s3(self):
+    def test_entriesx_json_s3(self):
         s3client = boto3.client("s3")
-        dataset = get_dataset_entry_from_s3(
+        dataset_list = get_dataset_entries_from_s3(
             session=self.__session,
             bucket_name=TestAWSUtils.bucket,
             entry_key=TestAWSUtils.entry_dataset_key,
         )
-        self.assertEqual(dataset.dataset_id, "MMS")
-        self.assertEqual(dataset.resource, "SPASE-1234567")
+        self.assertEqual(dataset_list[0].dataset_id, "MMS")
+        self.assertEqual(dataset_list[0].resource, "SPASE-1234567")
         s3client.close()
 
     def test_manifest_s3(self):

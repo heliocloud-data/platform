@@ -26,6 +26,7 @@ class FileStatus(Enum):
 
     NOT_FOUND = "NOT_FOUND"
     WRONG_SIZE = "WRONG_SIZE"
+    BAD_EXTENSION = "BAD_EXTENSION"
     VALID = "VALID"
 
 
@@ -147,7 +148,7 @@ class Ingester:  # pylint: disable=too-few-public-methods, too-many-instance-att
                 "filename": None,
             }
 
-            # Check that the file exists and has the correct size
+            # Check that the file exists, has the correct size, and has a correct file extension
             s3key = os.path.join(self.__ingest_folder, self.__entry_dataset.dataset_id, row.s3key)
             try:
                 response = self.__s3_client.head_object(Bucket=self.__ingest_bucket, Key=s3key)
@@ -161,7 +162,18 @@ class Ingester:  # pylint: disable=too-few-public-methods, too-many-instance-att
                     # File was the wrong size
                     record["status"] = FileStatus.WRONG_SIZE.name
                     print(f"Manifest file s3://{self.__ingest_bucket}/{s3key} wrong size.")
-                else:
+
+                # Get file extension from s3 key
+                filename_split = s3key.rsplit(".", 1)
+                extension = filename_split[-1].lower()
+
+                if not FileType.is_valid_file_type(extension):
+                    record["status"] = (
+                        record["status"] + ", " if record["status"] else ""
+                    ) + FileStatus.BAD_EXTENSION.name
+                    print(f"Manifest file s3://{self.__ingest_bucket}/{s3key} bad extension.")
+
+                if not record["status"]:
                     record["status"] = FileStatus.VALID.name
                     print(f"Manifest file s3://{self.__ingest_bucket}/{s3key} validated.")
             # results of check

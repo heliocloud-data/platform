@@ -172,6 +172,55 @@ class TestIngesterAWS(unittest.TestCase):
                 ingester.execute()
 
     @patch("registry.lambdas.app.catalog.dataset_repository.DataSetRepository")
+    def test_bad_extension(self, ds_repo):
+        # Check that the Ingester throws an exception if a file with a bad extension is found while
+        # validating the manifest
+
+        # Need a mock repository to inject into the Ingester
+        ds_repo.save.return_value = 1
+
+        # Update the entry JSON with the real destination bucket
+        entry_ds_list = get_dataset_entries_from_s3(
+            session=self.__session,
+            bucket_name=TestIngesterAWS.ingest_bucket,
+            entry_key=TestIngesterAWS.entry_key,
+        )
+
+        # Get the manifest with a missing file
+        manifest_df = get_manifest_from_fs(
+            manifest_file="test/integration/resources/s3/manifest_bad_extension.csv"
+        )
+
+        local_path = "test/integration/resources/s3/to_upload_bad_extension/MMS/"
+
+        file_name = (
+            "mms1/fgm/brst/l2/2015/09/01/mms1_fgm_brst_l2_20150901121114_v4.18.0.notanextension"
+        )
+
+        key = os.path.join(TestIngesterAWS.ingest_folder, "MMS", file_name)
+        s3client = self.__session.client(service_name="s3")
+        s3client.upload_file(
+            Filename=os.path.join(local_path, file_name),
+            Bucket=TestIngesterAWS.ingest_bucket,
+            Key=key,
+        )
+
+        # Run Ingester and validate it fails
+        for entry_ds in entry_ds_list:
+            entry_ds.index = entry_ds.index.replace(
+                get_bucket_name(entry_ds.index), TestIngesterAWS.dataset_bucket
+            )
+            with self.assertRaises(expected_exception=IngesterException) as raised:
+                ingester = Ingester(
+                    ingest_bucket=TestIngesterAWS.ingest_bucket,
+                    ingest_folder=TestIngesterAWS.ingest_folder,
+                    entry_dataset=entry_ds,
+                    manifest_df=manifest_df,
+                    ds_repo=ds_repo,
+                )
+                ingester.execute()
+
+    @patch("registry.lambdas.app.catalog.dataset_repository.DataSetRepository")
     def test_ingester_aws(self, ds_repo) -> None:
         # Test the Ingester implementation with an AWS account
 
@@ -228,7 +277,6 @@ class TestIngesterAWS(unittest.TestCase):
             response = s3client.list_objects(
                 Bucket=TestIngesterAWS.dataset_bucket, Prefix=f"{index}/{index.lower()}1"
             )
-            print(f"\n\nresponse: {response}\n\n")
             self.assertEqual(len(response["Contents"]), 6, msg="Contents wrong length")
 
             # Make sure the upload bucket was cleaned up

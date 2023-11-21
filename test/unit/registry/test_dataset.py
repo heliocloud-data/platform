@@ -13,6 +13,15 @@ class TestDataSet(unittest.TestCase):
     modification = datetime(year=2023, month=5, day=17, minute=30, second=5)
     filetype = [FileType.CSV, FileType.CDF]
     indextype = IndexType.CSV
+    ext_list = [
+        ["fits", "fts", "fit"],
+        ["csv"],
+        ["cdf"],
+        ["netcdf3", "ncd", "netcdf", "ncdf"],
+        ["hdf5", "h5", "hdf"],
+        ["datamap"],
+        ["other"],
+    ]
 
     def test_invalid_id(self):
         with self.assertRaises(ValueError) as raised:
@@ -55,16 +64,7 @@ class TestDataSet(unittest.TestCase):
         self.assertEqual(dataset.start, restored_dataset.start)
 
     def test_filetype_normalize(self):
-        ext_list = [
-            ["fits", "fts", "fit"],
-            ["csv"],
-            ["cdf"],
-            ["netcdf3", "ncd", "netcdf", "ncdf"],
-            ["hdf5", "h5", "hdf"],
-            ["datamap"],
-            ["other"],
-        ]
-        for exts in ext_list:
+        for exts in self.ext_list:
             # Create a FileType for each extension
             # Convert map to set - removes duplicates
             ext_enum_set = set(map(FileType, exts))
@@ -75,3 +75,15 @@ class TestDataSet(unittest.TestCase):
             (ext_enum,) = ext_enum_set
 
             self.assertEqual(ext_enum.value, exts[0])
+
+    def test_filetype_valid(self):
+        for exts in self.ext_list:
+            for ext in exts:
+                self.assertTrue(FileType.is_valid_file_type(ext))
+
+    def test_filetype_bad_ext(self):
+        bad_extension = "badextension"
+        with self.assertRaises(ValueError) as raised:
+            FileType(bad_extension)
+
+        self.assertFalse(FileType.is_valid_file_type(bad_extension))

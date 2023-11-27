@@ -4,6 +4,9 @@ AWS_REGION=$(aws ec2 describe-availability-zones --output text --query 'Availabi
 
 source ./app.config
 
+helm uninstall prometheus --namespace monitoring
+helm uninstall grafana --namespace monitoring
+
 helm uninstall daskhub --namespace $KUBERNETES_NAMESPACE
 
 LOADBALANCER_URL=$(kubectl --namespace=$KUBERNETES_NAMESPACE get svc proxy-public --output jsonpath='{.status.loadBalancer.ingress[0].hostname}')

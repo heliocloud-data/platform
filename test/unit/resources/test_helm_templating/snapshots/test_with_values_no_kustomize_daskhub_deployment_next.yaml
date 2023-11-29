@@ -2506,6 +2506,16 @@ spec:
             - /bin/sh
             - -c
             - echo "Pulling complete"
+          image: alpine:3
+          name: image-pull-singleuser-init-and-extra-containers-2
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsGroup: 65534
+            runAsUser: 65534
+        - command:
+            - /bin/sh
+            - -c
+            - echo "Pulling complete"
           image: <ML_DOCKER_LOCATION>:<ML_DOCKER_VERSION>
           name: image-pull-singleuser-profilelist-4
           securityContext:
@@ -3051,6 +3061,16 @@ spec:
             allowPrivilegeEscalation: false
             runAsGroup: 65534
             runAsUser: 65534
+        - name: image-pull-singleuser-init-and-extra-containers-2
+          image: alpine:3
+          command:
+            - /bin/sh
+            - -c
+            - echo "Pulling complete"
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsGroup: 65534
+            runAsUser: 65534
         - name: image-pull-singleuser-profilelist-4
           image: <ML_DOCKER_LOCATION>:<ML_DOCKER_VERSION>
           command:
@@ -3113,7 +3133,7 @@ spec:
     # prePuller.hook.enabled=true
     # prePuller.hook.pullOnlyOnChanges=true
     # post-upgrade checksum != pre-upgrade checksum (of the hook-image-puller DaemonSet)
-    # "3c70a50e7f0d1a404bebcbe2fddc207c021500c3e5ed832cbfeac8dbfaef84ba" != ""
+    # "775863f8e2d600b0fd8666eb578f1c75a5f64c4895bdf32254140e199aab1e9e" != ""
     #
     metadata:
       labels:

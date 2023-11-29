@@ -94,7 +94,7 @@ jupyterhub:
             medium: Memory
       extraVolumeMounts:
         - name: dh-helio-efs
-          mountPath: /home/jovyan/efs
+          mountPath: /home/jovyan/scratch_space
         - name: dh-helio-efs
           mountPath: /efs
         - name: shm-volume
@@ -123,6 +123,20 @@ jupyterhub:
         - sh
         - -c
         - (cp -R /heliocloud/. /home/jovyan || echo "warning files already exist") && (chown 1000:100 -R /home/jovyan || echo "warning failed to update permissions")
+        volumeMounts:
+        - name: volume-{username}{servername}
+          mountPath: /home/jovyan
+      # This initContainer is responsible some basic file cleanup by removing the old
+      # mount point (/home/jovyan/efs) which has been replaced with
+      # (/home/jovyan/scratch_space).
+      - name: remove-old-efs-mount-folder
+        image: alpine:3
+        securityContext:
+          runAsUser: 0
+        command:
+        - sh
+        - -c
+        - (rm -rf /home/jovyan/efs || echo "warning unable to delete old mount directory /home/jovyan/efs")
         volumeMounts:
         - name: volume-{username}{servername}
           mountPath: /home/jovyan

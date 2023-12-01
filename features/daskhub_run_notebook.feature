@@ -39,14 +39,11 @@ Feature: Log into daskhub, launch a server and do stuff
       |      folder       |         notebook           | max_wait_time |
       | science-tutorials | 01-Intro-Tutorial.ipynb    |            15 |
       | science-tutorials | CloudCatalog-Demo.ipynb    |            60 |
+      | science-tutorials | Dask-Gateway-Example.ipynb |           300 |
+      | science-tutorials | HelioCloud-SDO-Demo.ipynb  |          1200 |
       | science-tutorials | MMS-Catalog-Demo.ipynb     |            30 |
       | science-tutorials | S3-Access-Demo.ipynb       |            30 |
-# Disabled for now, it appears that it takes much
-# longer than 5 minutes.
-#      | science-tutorials | HelioCloud-SDO-Demo.ipynb  |           600 |
-#      | science-tutorials | Dask-Gateway-Example.ipynb |            60 |
-#      | science-tutorials | S3-Dask-Demo.ipynb         |            60 |
-# 
+      | science-tutorials | S3-Dask-Demo.ipynb         |           300 |
 
   Scenario: Stop My Server and Logout of Daskhub
     Given a fully deployed instance of HelioCloud

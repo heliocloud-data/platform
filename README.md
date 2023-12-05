@@ -212,11 +212,22 @@ Modify your newly created instance configuration to suit your HelioCloud instanc
       portal: True
       daskhub: True
     ```
-- The User Portal and Daskhub will require the Auth stack be installed, so we must provide an authentication domain prefix (this prefix must be unique across AWS for the entire region you are deploying into, if they already exist the deploy will partially fail and you will need to change to unique names, can only contain alphanumeric or hyphen characters:
+- The User Portal and Daskhub will require the Auth stack be installed, so we must provide an authentication `domain_prefix` (this prefix must be unique across AWS for the entire region you are deploying into, if they already exist the deploy will partially fail and you will need to change to unique names, can only contain alphanumeric or hyphen characters).  Additional settings include `deletion_protection`, which prevents this resource from being deleted (`True` is recommended for production deployments) and `removal_policy`, which specifies what should happen to the underlying cogniot resources when this stack is destroyed (`RETAIN` is recommended for production deployements, valid values are `DESTROY`, `RETAIN` and, `SNAPSHOT`):
     ```yaml
     auth:
       domain_prefix: "myorganization-helio"
+      deletion_protection: True
+      removal_policy: RETAIN
     ```
+
+- The User Portal and Daskhub can optionally use the Identity stack as a means of notify your users when creating new user accounts.  To enable this feature set `use_custom_email_domain` to `True`:
+    ```yaml
+    email:
+      use_custom_email_domain: False
+      user: "no-reply"
+      from_name: "My Organization"
+    ```
+
 - Registry module will require names for its public S3 buckets (these buckets must be unique across AWS for the entire region you are deploying into, if they already exist the deploy will partially fail and you will need to change to unique names, can only contain alphanumeric, hyphen, or period characters):
     ```yaml
     registry:

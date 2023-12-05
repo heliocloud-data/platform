@@ -68,6 +68,14 @@ enabled:
   portal: False
   daskhub: False
 
+# Identity Stack
+# (OPTIONAL) if email.use_custom_email_domain is True
+email:
+  # Indicates if the identity stack should be enabled.
+  use_custom_email_domain: False
+  user: "no-reply"
+  from_name: "APL HelioCloud"
+
 # REGISTRY
 # The registry is responsible for storing and accessible datasets stored in this HelioCloud instance.
 # (REQUIRED) if enabled.registry is True

@@ -17,12 +17,22 @@ vpc:
 # Configure per the domain of your respective organization
 auth:
   domain_prefix: "edu-myorganization"
+  deletion_protection: True
+  removal_policy: RETAIN
 
 # Enabling all available HelioCloud modules
 enabled:
   registry: True
   portal: True
   daskhub: True
+
+# Identity Stack
+# (OPTIONAL) if email.use_custom_email_domain is True
+email:
+  # Indicates if the identity stack should be enabled.
+  use_custom_email_domain: False
+  user: "no-reply"
+  from_name: "My Organization"
 
 # Registry buckets are named in association with your organization
 registry:

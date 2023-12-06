@@ -69,7 +69,7 @@ daskhub:
   EKS_NAME: 'eks-helio'
   DASKHUB_ADMIN_USER: lenzinm1
   ADMIN_USER_EMAIL: nicholas.lenzi@jhuapl.edu
-  GENERIC_DOCKER_LOCATION: 'public.ecr.aws/q3h7b4o8/helio-notebook'
-  GENERIC_DOCKER_VERSION: '20230421'
-  ML_DOCKER_LOCATION: 'public.ecr.aws/q3h7b4o8/helio-ml-notebook'
-  ML_DOCKER_VERSION: '20230421'
+  GENERIC_DOCKER_LOCATION: 'public.ecr.aws/q3h7b4o8/heliocloud/helio-notebook'
+  GENERIC_DOCKER_VERSION: '2023.12.04'
+  ML_DOCKER_LOCATION: 'public.ecr.aws/q3h7b4o8/heliocloud/helio-notebook-mltf'
+  ML_DOCKER_VERSION: '2023.12.04'

@@ -12,6 +12,14 @@ rbac:
   enabled: true  # Create and use roles and service accounts on an RBAC-enabled cluster.
 
 jupyterhub:
+  prePuller:
+    hook:
+      enabled: true
+      nodeSelector:
+        hub.jupyter.org/node-purpose: user
+    continuous:
+      enabled: false
+
   scheduling:
     userScheduler:
       image:
@@ -82,7 +90,7 @@ jupyterhub:
             print("dask-gateway service not found. Did you set jupyterhub.hub.services.dask-gateway.apiToken?")
 
   singleuser:
-    startTimeout: 600
+    startTimeout: 900
     storage:
       capacity: 100Gi
       extraVolumes:

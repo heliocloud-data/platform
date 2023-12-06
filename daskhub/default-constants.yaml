@@ -17,8 +17,8 @@ DASKHUB_ADMIN_USER: '<REPLACE>'
 ADMIN_USER_EMAIL: '<REPLACE>'
 
 # HelioCloud docker containers
-GENERIC_DOCKER_LOCATION: 'public.ecr.aws/q3h7b4o8/helio-notebook'
-GENERIC_DOCKER_VERSION: '20230421'
+GENERIC_DOCKER_LOCATION: 'public.ecr.aws/q3h7b4o8/heliocloud/helio-notebook'
+GENERIC_DOCKER_VERSION: '2023.12.04'
 # Only relevant for GPU servers, can ignore if not hosting these types of servers
-ML_DOCKER_LOCATION: 'public.ecr.aws/q3h7b4o8/helio-ml-notebook'
-ML_DOCKER_VERSION: '20230421'
+ML_DOCKER_LOCATION: 'public.ecr.aws/q3h7b4o8/heliocloud/helio-notebook-mltf'
+ML_DOCKER_VERSION: '2023.12.04'

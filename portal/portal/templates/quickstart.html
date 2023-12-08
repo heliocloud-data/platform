@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h2>HelioCloud User Portal Quickstart</h2>
+
+<p>Welcome to the HelioCloud AWS User Portal! This portal is a way for you to monitor your EC2 instances, key pairs, and accumulated spending.</p>
+
+<h4>Launch an Instance</h4>
+<p>An <b>instance</b> is a virtual server in Amazon's Elastic Compute Cloud (EC2).
+You can launch an instance either from the home page or from the <a href="launch_instance">"Launch an Instance"</a> page.
+You can choose from different images (operating systems) and types (compute power and size) according to your needs.
+You can also specify how much volume storage you want to attach to your instance (default 8 GB).
+Be sure to attach a key pair that you have access to, or create a new key pair, in order to connect to it via SSH.</p>
+
+<p>Once an instance is launched, it can be tracked under the "Running Instances" section on the home page.
+To SSH into an instance, use the "Connect via SSH" command in the same directory that your private key is stored.
+You can have 5 running instances at a time.</p>
+
+<p>When you have finished using your instance, be sure to click "Stop Instance" so that you do not waste computing resources and money.
+Like shutting down a computer, stopped instances can be restarted, and the instance will be restored to the state it was in when it was stopped.
+Stopped instances will appear in the "Previously Stopped Instances" section on the home page.
+To restart an instance, click on "Actions >> Start Instance" under the instance you want to restart.</p>
+
+<p>If you no longer need an instance, you can delete that instance.
+Make sure that instance is stopped, then click on "Actions >> Terminate Instance" under the instance you want to delete.
+<b>A deleted instance cannot be restored.</b></p>
+
+<p>It is always best practice to launch an instance with only as much compute power and storage that you need.
+Click <a href="https://aws.amazon.com/premiumsupport/knowledge-center/ec2-instance-choose-type-for-workload/">here</a> to learn more about choosing the most appropriate instance type for your application.</p>
+
+
+<h4>Managing Key Pairs</h4>
+<p>A <b>key pair </b> is a set of security credentials consisting of a public key and private key that you use to prove your identity when connecting to an AWS EC2 instance.
+AWS stores the public key and you store the private key. This allows you to securely SSH into your instance.
+When creating a key pair, download and save the private key file on your computer.
+<b>You will not be able to download the private key again</b>.
+If you lose the private key to a key pair, delete the key pair and create a new one.</p>
+
+<p>You can generate new keys and see a list of existing key pairs on through the <a href="secrets">"Manage Key Pairs"</a> page.
+Once you download your private key, change the permissions on the private key file like so: `chmod 400 {keypair_name}.pem`.
+To SSH into an instance using your private key, make sure you are in the same directory as your private key and use the "Connect via SSH" command provided for your instance on the home page.</p>
+
+<p>The portal will allow you to manage 5 active key pairs at a time.
+If you no longer need a key pair, or lose access to the private key of a pair, please delete the key pair by clicking "Delete" next to the key pair name.</p>
+
+<h4>Managing AWS Access Keys</h4>
+<p><b>AWS access keys</b> are long-term credentials for a user to access AWS through the CLI or API.
+Access keys consist of two parts: an access key ID and a secret access key.
+Like a user name and password, you must use both the access key ID and secret access key together to authenticate your requests.
+AWS access through your user account also requires a short-term session key, which can be refreshed with your MFA.
+</p>
+
+<p>Through the <a href="access">"Manage Access Keys"</a> page, you can create, delete, and set active/inactive access keys.
+You can also refresh your short-term tokens with your multi-factor authentication device.
+Not every user will have access keys to their username.
+If you would like to set up access keys for your account, please contact a system administrator.
+</p>
+
+<p>To create a new key, click on the "Create a new long-term access key" button.
+After creating an access key ID, you will be shown your secret access key.
+Be sure to download the CSV file containing your secret key.
+<b>You will not be able to see the secret key associated with that access key ID again.</b>
+If you are not using a key, you can set the status to "Inactive."
+If you will not need the key again, you can delete the key.
+Each user can have at most 2 access keys (either active or inactive) at one time.
+</p>
+
+<p><b>Never</b> share your access keys with any other user.
+    It is best practice to rotate your keys every 90 keys and delete any keys you are not using.</p>
+
+
+
+
+<h4>Monitoring Accumulated Spending</h4>
+
+<p>AWS resources cost money, and the accumulated and weekly spending tabs on the home are a reminder of that.
+The costs are summed over all resources tagged with your username, regardless of if the resource was launched from this portal.
+Costs are not real time: your usage today will show up in your accumulated spending amount tomorrow.</p>
+
+{% endblock %}

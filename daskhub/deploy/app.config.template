@@ -28,3 +28,5 @@ GENERIC_DOCKER_VERSION=''
 # Only relevant for GPU servers, can ignore if not hosting these types of servers
 ML_DOCKER_LOCATION=''
 ML_DOCKER_VERSION=''
+
+AWS_LOAD_BALANCER_SSL_CERT=''

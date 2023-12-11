@@ -30,6 +30,7 @@ email:
 enabled:
   registry: True
   daskhub: True
+  daskhub_metrics: True
   portal: True
 
 auth:
@@ -71,3 +72,9 @@ daskhub:
   GENERIC_DOCKER_VERSION: '2023.12.06'
   ML_DOCKER_LOCATION: 'public.ecr.aws/q3h7b4o8/heliocloud/helio-notebook-mltf'
   ML_DOCKER_VERSION: '2023.12.06'
+  AWS_LOAD_BALANCER_SSL_CERT: "arn:aws:acm:${AWS_DEFAULT_REGION}:${HC_AWS_ACCOUNT}:certificate/${HC_PORTAL_CERT_ARN}"
+
+daskhub_metrics:
+  domain_url: "aplscicloud.org"
+  grafana_domain_prefix: grafana
+  prometheus_domain_prefix: prometheus

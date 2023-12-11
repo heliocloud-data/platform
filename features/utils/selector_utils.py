@@ -241,7 +241,7 @@ def do_wait_for_element_not_present(driver, xpath, page, timeout, screenshot_fil
 
     while (time.time() - start_time) < timeout:
         try:
-            ret = driver.find_element(By.XPATH, xpath)
+            driver.find_element(By.XPATH, xpath)
             time.sleep(0.5)
         except NoSuchElementException:
             return True

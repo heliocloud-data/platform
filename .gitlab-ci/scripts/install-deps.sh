@@ -16,3 +16,5 @@ if [[ $? != 0 ]]; then
     echo "error: failed to install nodejs"
     exit 1
 fi
+
+npm --version

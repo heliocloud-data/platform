@@ -13,7 +13,6 @@ import boto3
 PROJECT_DIR = str((Path(__file__)).parent.parent)
 sys.path.append(PROJECT_DIR)
 from registry.lambdas.client.invoke import CatalogerResponse, get_cataloger_function
-
 # pylint: enable=import-error, wrong-import-position
 
 # pylint: disable-duplicate-code
@@ -71,5 +70,4 @@ if __name__ == "__main__":
     print("Received response:\n" f"\t{response}")
 
     # If then for Cataloger running successfully
-
 # pylint: enable=duplicate-code

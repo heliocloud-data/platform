@@ -14,7 +14,6 @@ import boto3
 PROJECT_DIR = str((Path(__file__)).parent.parent)
 sys.path.append(PROJECT_DIR)
 from registry.lambdas.client.invoke import get_ingester_function, IngestResponse
-
 # pylint: enable=import-error, wrong-import-position
 
 # pylint: disable=duplicate-code

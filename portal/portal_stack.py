@@ -18,7 +18,6 @@ from aws_cdk import (
     aws_route53 as route53,
     aws_certificatemanager as cm,
     aws_ec2 as ec2,
-    NestedStack,
 )
 from constructs import Construct
 

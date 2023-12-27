@@ -39,7 +39,9 @@ registry:
     masterUser: master
     name: "Chris Jeschke"
     contact: "chris.jeschke@jhuapl.edu"
-  destroyOnRemoval: False
+
+  # Helps w/ redeployment
+  destroyOnRemoval: True
 
 portal:
   # Typically deploying to JHUAPL cloud environment

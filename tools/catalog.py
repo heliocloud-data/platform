@@ -1,6 +1,5 @@
 """
-This module contains a tool for running a HelioCloud instance's Cataloger service from the command
-line.
+Simple script for invoking the HelioCloud registry's Cataloger service from the command line.
 """
 import argparse
 import sys
@@ -13,80 +12,11 @@ import boto3
 # thus importing it requires updating the sys.path with the project directory.
 PROJECT_DIR = str((Path(__file__)).parent.parent)
 sys.path.append(PROJECT_DIR)
-from registry.lambdas.app.catalog_lambda import lambda_execute
+from registry.lambdas.client.invoke import CatalogerResponse, get_cataloger_function
 
 # pylint: enable=import-error, wrong-import-position
 
-
-class CatalogRunner:  # pylint: disable=too-few-public-methods
-    """
-    Runner class to encapsulate invoking the Cataloger AWS Lambda installed in a HelioCloud.
-    Parameters needed are:
-    - instance
-    """
-
-    def __init__(self, instance: str, session: boto3.Session):
-        """
-        Initialize a new CatalogRunner.
-        :param instance: name of the HelioCloud instance to invoke the Cataloger service on
-        :param session: boto3 session to use for calling the AWS API
-        """
-
-        self.__instance = instance
-        self.__boto_session = session
-
-    def __get_function_name(self) -> str:
-        """
-        Get the handle of the lambda function to invoke based on the HelioCloud instance name
-        :return: the AWS function name of the Cataloger lambda
-        """
-
-        client = self.__boto_session.client("lambda")
-        response = client.list_functions()
-
-        # find the name
-        name = ""
-        for function in response["Functions"]:
-            function_name = str(function["FunctionName"])
-            # AWS CDK/Cloudformation removes hyphens from instance names
-            instance_aws_name = self.__instance.replace("-", "")
-            if ("Cataloger" in function_name) and function_name.startswith(instance_aws_name):
-                name = function_name
-
-        client.close()
-        # need to remove any hyphens because of how AWS id generation works
-        return name
-
-    def execute(self) -> bool:
-        """
-        Executtes the Cataloger lambda on a specified HelioCloud instance
-        :return: True if successful, else False
-        """
-        print(f"Invoking the Cataloger service on HelioCloud {self.__instance}.")
-
-        # Execute the lambda for the Cataloger service
-        response = lambda_execute(
-            function_name=self.__get_function_name(), session=self.__boto_session
-        )
-
-        # Successful lambda invocation
-        if response.is_success:
-            if len(response.results) == 0:
-                print("No dataset entry updates in catalog.json were necessary.")
-            else:
-                for result in response.results:
-                    print(
-                        f"S3 bucket {result.endpoint} updated {result.num_datasets} dataset "
-                        f"entries."
-                    )
-            return True
-
-        # Something failed
-        print(f"Function error: {response.function_error}")
-        print(f"Error message: {response.error_message}")
-        return False
-
-
+# pylint: disable-duplicate-code
 if __name__ == "__main__":
     # Require an instance name argument
     parser = argparse.ArgumentParser(
@@ -95,17 +25,51 @@ if __name__ == "__main__":
         "files for the registry S3 buckets.",
     )
     parser.add_argument(
+        "region",
+        type=str,
+        help="Name of the AWS region in which the HelioCloud instance resides. This should "
+        "match the region value configured in the HelioCloud's instance configuration.",
+    )
+    parser.add_argument(
         "instance",
         type=str,
         help="Name of the HelioCloud instance whose Cataloger service should be run. "
         "This should match the instance configuration used to deploy the "
         "HelioCloud to AWS.",
     )
-    args = parser.parse_args()
 
-    # Run the Cataloger service
-    runner = CatalogRunner(instance=args.instance, session=boto3.Session())
-    if runner.execute():
-        print("Cataloger service ran successfully.")
-    else:
-        print("Cataloger service failed!")
+    # Get the args out.  Note that heliocloud instance names need any hyphens stripped
+    # because of how
+    args = parser.parse_args()
+    region = args.region
+    instance = args.instance
+
+    # Get the name of the Cataloger AWS Lambda
+    # Note: Already tested elsewhere
+    FUNCTION = get_cataloger_function(hc_instance=instance, region=region)
+    if FUNCTION is None or FUNCTION == "":
+        print(
+            f"No AWS Lambda function name found for the Cataloger service in the {instance} "
+            f"HelioCloud instance.\n"
+            "Are you sure the parameters are correct and/or the HelioCloud instance is "
+            "correctly deployed?"
+        )
+        sys.exit()
+
+    print(
+        f"Invoking HelioCloud Cataloger service with parameters\n"
+        f"\tAWS Region: {region}\n"
+        f"\tInstance: {instance}\n"
+        f"\tLambda function name: {FUNCTION}\n"
+    )
+
+    # Get a lambda client and run the function
+    client = boto3.Session(region_name=region).client("lambda")
+    inv_response = client.invoke(FunctionName=FUNCTION, Payload=bytes({}))
+    response = CatalogerResponse(invoke_response=inv_response)
+
+    print("Received response:\n" f"\t{response}")
+
+    # If then for Cataloger running successfully
+
+# pylint: enable=duplicate-code

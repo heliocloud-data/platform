@@ -385,10 +385,10 @@ Registry this ingest job should update.  Example:
     Example `s3://my.upload.bucket/my_job/entries.json`
 
 4. Once the upload package is in place, the Ingest service can be invoked using the Python script
-at `tools/ingest.py`, providing it the name of the HelioCloud instance and the sub-folder in 
-in the S3 ingest bucket that the job is in:
+at `tools/ingest.py`, providing it the name of the HelioCloud instance, the AWS region it is 
+deployed within and the sub-folder in the S3 ingest bucket that the job is in:
     ```commandline
-   python tools/ingest.py my_instance my_job
+   python tools/ingest.py my_instance us-east-1 my_job
     ```
 5. Completion of the ingest job can be confirmed by looking at either the ingest job sub-folder 
 to confirm it is empty, or by checking the public S3 buckets in the HelioCloud registry to
@@ -397,9 +397,9 @@ confirm the new data was incorporated.
 ### Updating the Catalog
 After running an ingest job (or several), updating the HelioCloud's Registry catalog is necessary to make the data 
 available through the HelioCloud data API. Simply run the Python script at `tools/catalog.py`with the name of your 
-Heliocloud instance:
+HelioCloud instance and the AWS region it is deployed within:
 ```shell
-python tools/catalog.py my_instance
+python tools/catalog.py us-east-1 my_instance
 ```
 You can then check the `catalog.json` file(s) at the root of the public S3 buckets in your HelicoCloud's registry:
 ```shell

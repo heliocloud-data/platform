@@ -10,6 +10,8 @@ from typing import Any
 
 import boto3
 
+from features.utils.aws_utils import find_cloudformation_stack_name_starts_with
+
 
 class RegistryServiceType(enum.Enum):
     """
@@ -114,19 +116,20 @@ def get_function_name(
     :return: the function name of the lambda from AWS, empty string if one is not found
     """
 
-    # Get a list of the functions
-    client = session.client("lambda")
-    response = client.list_functions()
-    client.close()
+    cfn_client = session.client("cloudformation")
 
-    # Hyphens have to be stripped from the instance name
-    # because of how CloudFormation generates resource names
-    instance = hc_instance.replace("-", "")
+    stack_name = find_cloudformation_stack_name_starts_with(
+        cfn_client, hc_instance.replace("-", "")
+    )["StackName"]
 
-    for function in response["Functions"]:
-        function_name = str(function["FunctionName"])
-        if (service_type.value in function_name) and function_name.startswith(instance):
-            return function_name
+    resources = cfn_client.describe_stack_resources(StackName=stack_name)
+
+    for resource in resources["StackResources"]:
+        if (
+            resource["LogicalResourceId"].startswith(service_type.value)
+            and resource["ResourceType"] == "AWS::Lambda::Function"
+        ):
+            return resource["PhysicalResourceId"]
 
     # Couldn't find the function name
     return ""

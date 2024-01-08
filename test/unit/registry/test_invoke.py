@@ -1,6 +1,7 @@
 import io
 import json
 import unittest
+import datetime
 from unittest.mock import patch, Mock
 
 import boto3
@@ -127,15 +128,37 @@ class TestResponses(unittest.TestCase):
         """
 
         # Setup to only have the Ingester lambda listed
-        lambda_client = boto3.client("lambda", config=self.config)
-        stubber = Stubber(lambda_client)
-        response = {"Functions": [{"FunctionName": "instancetestIngester"}]}
+        cfn_client = boto3.client("cloudformation", config=self.config)
+        stubber = Stubber(cfn_client)
+        # Create mocked responses. Some values are required per boto3 validation
+        stacks_response = {
+            "StackSummaries": [
+                {
+                    "StackName": "instancetest",
+                    "CreationTime": datetime.datetime(1234, 1, 1),
+                    "StackStatus": "NOT_CHECKED_BUT_REQUIRED",
+                }
+            ]
+        }
+        resources_response = {
+            "StackResources": [
+                {
+                    "LogicalResourceId": "Ingester",
+                    "PhysicalResourceId": "instancetestIngester",
+                    "ResourceType": "AWS::Lambda::Function",
+                    "Timestamp": datetime.datetime(1234, 1, 1),
+                    "ResourceStatus": "NOT_CHECKED_BUT_REQUIRED",
+                }
+            ]
+        }
 
-        # Need 2 responses for our test
-        stubber.add_response("list_functions", service_response=response)
-        stubber.add_response("list_functions", service_response=response)
+        # Need 2 responses for each call for our test
+        stubber.add_response("list_stacks", service_response=stacks_response)
+        stubber.add_response("describe_stack_resources", service_response=resources_response)
+        stubber.add_response("list_stacks", service_response=stacks_response)
+        stubber.add_response("describe_stack_resources", service_response=resources_response)
         stubber.activate()
-        session.client = Mock(return_value=lambda_client)
+        session.client = Mock(return_value=cfn_client)
 
         # Should find the Ingester function, but not the Cataloger
         ingester_name = get_function_name(RegistryServiceType.INGESTER, "instance-test", session)

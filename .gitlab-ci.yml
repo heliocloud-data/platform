@@ -248,7 +248,6 @@ staging-cdk-deploy:
     on_stop: staging-cdk-destroy-on_stop_hook
   script:
     - python -m pip install -r requirements.txt
-    - python -m pip install -r requirements-dev.txt
     # Dependencies for CDK
     - bash .gitlab-ci/scripts/install-deps.sh
     - npm install -g npm
@@ -275,6 +274,37 @@ staging-cdk-deploy:
   rules:
     - if: $CI_COMMIT_BRANCH == "develop"
 
+staging-eksctl-deploy:
+  stage: staging
+  environment:
+    name: staging
+  dependencies:
+    - staging-cdk-deploy
+  script:
+    - python -m pip install -r requirements.txt
+    # Dependencies for CDK
+    - bash .gitlab-ci/scripts/install-deps.sh
+    - npm install -g npm
+    - npm install -g aws-cdk
+    - cdk --version
+    - apt-get update && apt-get install -y gettext
+    - envsubst < instance/staging.yaml > instance/staging-${CI_COMMIT_REF_SLUG}.yaml
+    # Dependencies for Kubernetes
+    - bash .gitlab-ci/scripts/install-deps-kube.sh
+    - aws eks  update-kubeconfig --name eks-helio
+    # Generate the 'app.config', which is used for deployment and place it in the deployment
+    # area.
+    - cdk synth staging-${CI_COMMIT_REF_SLUG}/Daskhub -c instance=staging-${CI_COMMIT_REF_SLUG} -v
+    - mv temp/daskhub/deploy/app.config daskhub/deploy/app.config
+    # Do the deployment
+    - kubectl get nodes
+    - kubectl --namespace daskhub get pods
+    - cd daskhub/deploy && bash 02-deploy-daskhub-from-ext-cloud.sh staging${CI_COMMIT_REF_SLUG} ${AWS_DEFAULT_REGION}
+    - sleep 60
+  needs: ['staging-cdk-deploy']
+  rules:
+    - if: $CI_COMMIT_BRANCH == "develop"
+
 staging-test:
   stage: staging
   environment:
@@ -298,7 +328,8 @@ staging-test:
       junit: reports/*.xml
   dependencies:
     - staging-cdk-deploy
-  needs: ['staging-cdk-deploy']
+    - staging-eksctl-deploy
+  needs: ['staging-cdk-deploy','staging-eksctl-deploy']
   rules:
     - if: $CI_COMMIT_BRANCH == "develop"
 
@@ -319,7 +350,9 @@ staging-cdk-destroy-on_stop_hook:
     - cdk destroy --all -c instance=staging-${CI_COMMIT_REF_SLUG} --force -v
   dependencies:
     - staging-cdk-deploy
-  needs: ['staging-cdk-deploy']
+    - staging-eksctl-deploy
+    - staging-test
+  needs: ['staging-cdk-deploy', 'staging-eksctl-deploy', 'staging-test']
   rules:
     - if: $CI_COMMIT_BRANCH == "develop"
 
@@ -334,7 +367,6 @@ production-jhuapl-cdk-deploy:
     url: https://portal.aplscicloud.org
   script:
     - python -m pip install -r requirements.txt
-    - python -m pip install -r requirements-dev.txt
     # Dependencies for CDK
     - bash .gitlab-ci/scripts/install-deps.sh
     - npm install -g npm
@@ -358,5 +390,67 @@ production-jhuapl-cdk-deploy:
     when: always
     paths:
       - instance/production-jhuapl.yaml
+  rules:
+    - if: $CI_COMMIT_BRANCH == "develop"
+
+
+production-jhuapl-eksctl-deploy:
+  stage: deploy
+  environment:
+    name: production/jhuapl
+  when: manual
+  script:
+    - python -m pip install -r requirements.txt
+    # Dependencies for CDK
+    - bash .gitlab-ci/scripts/install-deps.sh
+    - npm install -g npm
+    - npm install -g aws-cdk
+    - cdk --version
+    - apt-get update && apt-get install -y gettext
+    - envsubst < instance/production.yaml > instance/production-jhuapl.yaml
+    # Dependencies for Kubernetes
+    - bash .gitlab-ci/scripts/install-deps-kube.sh
+    - aws eks  update-kubeconfig --name eks-helio
+    # Generate the 'app.config', which is used for deployment and place it in the deployment
+    # area.
+    - cdk synth production-jhuapl/Daskhub -c instance=production-jhuapl -v
+    - mv temp/daskhub/deploy/app.config daskhub/deploy/app.config
+    # Do the deployment
+    - kubectl get nodes
+    - kubectl --namespace daskhub get pods
+    - cd daskhub/deploy && bash 02-deploy-daskhub-from-ext-cloud.sh productionjhuapl ${AWS_DEFAULT_REGION}
+    - sleep 60
+  dependencies:
+    - production-jhuapl-cdk-deploy
+  needs: ['production-jhuapl-cdk-deploy']
+  rules:
+    - if: $CI_COMMIT_BRANCH == "develop"
+
+production-jhuapl-test:
+  stage: deploy
+  when: manual
+  environment:
+    name: production/jhuapl
+    action: verify
+  script:
+    - python -m pip install -r requirements.txt
+    - python -m pip install -r requirements-dev.txt
+    - 'wget --header="JOB-TOKEN: $CI_JOB_TOKEN" ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/google-chrome/118.0.5993.88/google-chrome-stable_current_amd64.deb'
+    - apt-get update && apt install -f ./google-chrome-stable_current_amd64.deb -y
+    - apt-get update && apt-get install -y gettext
+    - export HC_INSTANCE=production-jhuapl
+    - envsubst < instance/production.yaml > instance/${HC_INSTANCE}.yaml
+    - behave --junit
+  artifacts:
+    when: always
+    paths:
+      - reports/*.xml
+      - temp/feature-tests/*
+    reports:
+      junit: reports/*.xml
+  dependencies:
+    - production-jhuapl-cdk-deploy
+    - production-jhuapl-eksctl-deploy
+  needs: ['production-jhuapl-cdk-deploy','production-jhuapl-eksctl-deploy']
   rules:
     - if: $CI_COMMIT_BRANCH == "develop"

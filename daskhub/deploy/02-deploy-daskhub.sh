@@ -2,13 +2,23 @@
 
 source ./app.config
 
-AWS_REGION=$(curl -s curl http://169.254.169.254/latest/meta-data/placement/region)
+if [[ "$1" != "" ]]; then
+   echo "CloudFormation Stack Name specified, assuming it's running outside of the AWS environment."
+   CLOUDFORMATION_NAME=$1
+   AWS_REGION=$2
+else
+   echo "No argument specified, assuming it's running in an AWS environment."
+   AWS_REGION=$(curl -s curl http://169.254.169.254/latest/meta-data/placement/region)
 
-# Get instance id associated with EC2 instance currently logged into
-INSTANCE_ID=$(wget -q -O - http://169.254.169.254/latest/meta-data/instance-id)
+   # Get instance id associated with EC2 instance currently logged into
+   INSTANCE_ID=$(wget -q -O - http://169.254.169.254/latest/meta-data/instance-id)
 
-CLOUDFORMATION_ARN=$(aws ec2 describe-instances --region $AWS_REGION --instance-id $INSTANCE_ID --query "Reservations[0].Instances[0].Tags[?Key=='aws:cloudformation:stack-id'].Value | [0]" --output text)
-CLOUDFORMATION_NAME=$(echo $CLOUDFORMATION_ARN | sed 's/^.*stack\///' | cut -d'/' -f1)
+   CLOUDFORMATION_ARN=$(aws ec2 describe-instances --region $AWS_REGION --instance-id $INSTANCE_ID --query "Reservations[0].Instances[0].Tags[?Key=='aws:cloudformation:stack-id'].Value | [0]" --output text)
+   CLOUDFORMATION_NAME=$(echo $CLOUDFORMATION_ARN | sed 's/^.*stack\///' | cut -d'/' -f1)
+fi
+
+echo "  Using:"
+echo "   CLOUDFORMATION_NAME: ${CLOUDFORMATION_NAME}"
 
 ########################################
 # 2. Setup Daskhub configuration files #
@@ -28,9 +38,20 @@ sed -i "s|<GENERIC_DOCKER_VERSION>|$GENERIC_DOCKER_VERSION|g" dh-config.yaml
 sed -i "s|<ML_DOCKER_LOCATION>|$ML_DOCKER_LOCATION|g" dh-config.yaml
 sed -i "s|<ML_DOCKER_VERSION>|$ML_DOCKER_VERSION|g" dh-config.yaml
 
-# Generate API keys for daskhub secrets
-API_KEY1=$(openssl rand -hex 32)
-API_KEY2=$(openssl rand -hex 32)
+# Generate API keys for daskhub secrets if necessary
+if [[ "${DASKHUB_API_KEY1}" == "" ]]; then
+    echo "Environment variable DASKHUB_API_KEY1 not specified, generating one randomly..."
+    API_KEY1=$(openssl rand -hex 32)
+else
+    API_KEY1=${DASKHUB_API_KEY1}
+fi
+
+if [[ "${DASKHUB_API_KEY2}" == "" ]]; then
+    echo "Environment variable DASKHUB_API_KEY2 not specified, generating one randomly..."
+    API_KEY2=$(openssl rand -hex 32)
+else
+    API_KEY2=${DASKHUB_API_KEY2}
+fi
 
 echo ------------------------------
 echo Putting API keys in dh-secrets.yaml...
@@ -72,9 +93,18 @@ NO_OUTPUT=$(aws cognito-idp update-user-pool-client --user-pool-id $COGNITO_USER
 # Deploy with auth (can deploy without)
 echo ------------------------------
 echo Deploying Daskhub helm chart with auth
-helm upgrade daskhub dask/daskhub --namespace=$KUBERNETES_NAMESPACE --values=dh-config.yaml --values=dh-secrets.yaml --values=dh-auth.yaml --version=2022.8.2 --post-renderer=./kustomize-post-renderer-hook.sh --install --timeout 30m30s --debug || (echo "error: Failed to install/upgrade daskhub from helm repository." ; exit 1)
+helm upgrade daskhub dask/daskhub --namespace=$KUBERNETES_NAMESPACE --values=dh-config.yaml --values=dh-secrets.yaml --values=dh-auth.yaml --version=2022.8.2 --post-renderer=./kustomize-post-renderer-hook.sh --install --timeout 30m30s --debug
 #### To deploy without Authentication & Authorization comment out line above and use this one instead without of the lines below it
 #helm upgrade daskhub dask/daskhub --namespace=$KUBERNETES_NAMESPACE --values=dh-config.yaml --values=dh-secrets.yaml --version=2022.8.2 --install
+
+RET=$?
+if [[ $RET != 0 ]]; then
+    cat dh-config.yaml
+    cat dh-secrets.yaml
+    cat dh-auth.yaml 
+    echo "error: Failed to install/upgrade daskhub from helm repository."
+    exit 1
+fi
 
 LOADBALANCER_URL=$(kubectl --namespace=$KUBERNETES_NAMESPACE get svc proxy-public --output jsonpath='{.status.loadBalancer.ingress[0].hostname}')
 

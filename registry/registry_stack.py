@@ -43,9 +43,18 @@ class RegistryStack(Stack):  # pylint: disable=too-many-instance-attributes
         # Registry config
         self.__registry_config = config["registry"]
         self.__removal_policy = self.__registry_config["destroyOnRemoval"]
-        self.__pandas_layer_arn = DEFAULT_PANDA_LAYERS_ARN
-        if "layers" in self.__registry_config and "pandas" in self.__registry_config["layers"]:
-            self.__pandas_layer_arn = self.__registry_config["layers"]["pandas"]
+
+        # If we have the ARN in the config, use it - otherwise default
+        def get_pandas_layer_arn():
+            if (
+                "layers" in self.__registry_config
+                and "pandas" in self.__registry_config["layers"]
+                and self.__registry_config["layers"]["pandas"] is not None
+            ):
+                return self.__registry_config["layers"]["pandas"]
+            return DEFAULT_PANDA_LAYERS_ARN
+
+        self.__pandas_layer_arn = get_pandas_layer_arn()
 
         # Hold a reference to the base stack
         self.__base_aws_stack = base_aws_stack
@@ -71,18 +80,15 @@ class RegistryStack(Stack):  # pylint: disable=too-many-instance-attributes
         Users of this HelioCloud instance can upload their datasets here.
         """
         bucket_name = self.__registry_config.get("ingestBucketName", None)
-        removal_policy, auto_delete_objects = (
-            (RemovalPolicy.DESTROY, True)
-            if self.__removal_policy
-            else (RemovalPolicy.RETAIN, False)
-        )
 
+        # The ingest S3 bucket is just for purposes of ingesting datasets, nothing more
+        # Doesn't need to stick around on the tear down fo a HelioCloud instance
         self.__ingest_bucket = s3.Bucket(
             self,
             id="Ingest-Bucket",
             bucket_name=bucket_name,
-            removal_policy=removal_policy,
-            auto_delete_objects=auto_delete_objects,
+            removal_policy=RemovalPolicy.DESTROY,
+            auto_delete_objects=True,
         )
 
     def __build_registry_buckets(self):

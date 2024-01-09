@@ -81,6 +81,11 @@ email:
 # (REQUIRED) if enabled.registry is True
 registry:
 
+  # (Optional) Allows specification of specific AWS Lambda layers ARNs to include as
+  # dependencies for the AWS Lambdas instantiated by the registry
+  layers:
+    pandas: # example:
+
   # (REQUIRED): Names for public s3 buckets storing data sets (Required if enabled.registry is True)
   datasetBucketNames: [
     # example: s3://edu.myinstitution.myorganization
@@ -105,10 +110,10 @@ registry:
     masterUser: master
 
     # (OPTIONAL): Value to use when populating the name field of catalog.json at the root of each public s3 bucket
-    name:
+    name: ""
 
     # (OPTIONAL): Value ot use when populating the contact field of catalog.json at the root of each public s3 bucket
-    contact:
+    contact: ""
 
 
   # (OPTIONAL): Typically, the catalog db and S3 buckets for ingest and data set storage should be retained even

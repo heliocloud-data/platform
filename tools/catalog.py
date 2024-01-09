@@ -71,5 +71,4 @@ if __name__ == "__main__":
     print("Received response:\n" f"\t{response}")
 
     # If then for Cataloger running successfully
-
 # pylint: enable=duplicate-code

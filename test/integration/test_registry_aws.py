@@ -9,6 +9,7 @@ from registry.lambdas.client.invoke import (
     get_cataloger_function,
     CatalogerResponse,
 )
+from features.utils.aws_utils import find_cloudformation_stack_name_starts_with
 from utils import (
     new_boto_session,
     get_hc_instance,
@@ -61,6 +62,7 @@ class TestRegistryAWS(unittest.TestCase):
         print(
             f"Uploading manifest file: {TestRegistryAWS.mms_local_manifest_path} to key: {key} in bucket: {TestRegistryAWS.ingest_bucket}"
         )
+
         s3client.upload_file(
             Filename=TestRegistryAWS.mms_local_manifest_path,
             Bucket=TestRegistryAWS.ingest_bucket,
@@ -148,7 +150,7 @@ class TestRegistryAWS(unittest.TestCase):
             "job_folder": TestRegistryAWS.ingest_job_subfolder,
         }
 
-        if TestRegistryAWS.ingest_function_name is None:
+        if not TestRegistryAWS.ingest_function_name.strip():
             print(f"Unable to locate lambda ingest function for {TestRegistryAWS.hc_instance}")
             list_lambda_function_names(TestRegistryAWS.session)
         else:

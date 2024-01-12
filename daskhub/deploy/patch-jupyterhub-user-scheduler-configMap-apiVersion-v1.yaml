@@ -9,7 +9,7 @@ data:
     apiVersion: kubescheduler.config.k8s.io/v1
     kind: KubeSchedulerConfiguration
     leaderElection:
-      resourceLock: endpointsleases
+      resourceLock: leases
       resourceName: user-scheduler-lock
       resourceNamespace: "daskhub"
     profiles:

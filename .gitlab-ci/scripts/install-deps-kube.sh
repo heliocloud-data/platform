@@ -13,7 +13,7 @@ rm -f /tmp/awscliv2.zip
 #
 # See:
 #  https://docs.aws.amazon.com/eks/latest/userguide/install-kubectl.html
-curl --location -o /usr/local/bin/kubectl https://s3.us-west-2.amazonaws.com/amazon-eks/1.26.10/2023-11-14/bin/linux/amd64/kubectl
+curl --location -o /usr/local/bin/kubectl https://s3.us-west-2.amazonaws.com/amazon-eks/1.27.7/2023-11-14/bin/linux/amd64/kubectl
 chmod +x /usr/local/bin/kubectl
 
 

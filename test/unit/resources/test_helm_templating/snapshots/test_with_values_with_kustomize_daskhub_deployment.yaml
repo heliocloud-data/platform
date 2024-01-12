@@ -2238,7 +2238,7 @@ spec:
             - --config=/etc/user-scheduler/config.yaml
             - --authentication-skip-lookup=true
             - --v=4
-          image: k8s.gcr.io/kube-scheduler:v1.22.17
+          image: registry.k8s.io/kube-scheduler:v1.22.17
           livenessProbe:
             httpGet:
               path: /healthz
@@ -2310,7 +2310,7 @@ spec:
               weight: 100
       automountServiceAccountToken: false
       containers:
-        - image: k8s.gcr.io/pause:3.5
+        - image: registry.k8s.io/pause:3.5
           name: pause
           resources:
             limits:
@@ -2826,7 +2826,7 @@ spec:
             runAsUser: 65534
       containers:
         - name: pause
-          image: k8s.gcr.io/pause:3.5
+          image: registry.k8s.io/pause:3.5
           securityContext:
             allowPrivilegeEscalation: false
             runAsGroup: 65534
@@ -2856,7 +2856,7 @@ spec:
     # prePuller.hook.enabled=true
     # prePuller.hook.pullOnlyOnChanges=true
     # post-upgrade checksum != pre-upgrade checksum (of the hook-image-puller DaemonSet)
-    # "174f263aebb394d40e11a17a05200a37bf2ce7f0313579b5281bf6b43fd4a2be" != ""
+    # "7c1d19c3fbc68763f68b6a7a0e2c23303487e7ca338e4043f85435c244820c33" != ""
     #
     metadata:
       labels:

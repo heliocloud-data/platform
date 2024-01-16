@@ -17,13 +17,20 @@ jupyterhub:
       enabled: true
       nodeSelector:
         hub.jupyter.org/node-purpose: user
+    pause:
+      image:
+        name: registry.k8s.io/pause
     continuous:
       enabled: false
 
   scheduling:
     userScheduler:
       image:
+        name: registry.k8s.io/kube-scheduler
         tag: v1.22.17
+    userPlaceholder:
+      image:
+        name: registry.k8s.io/pause
 
   debug:
     enabled: true

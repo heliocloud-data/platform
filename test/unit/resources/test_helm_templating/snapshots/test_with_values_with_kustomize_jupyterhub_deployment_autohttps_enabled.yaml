@@ -1023,37 +1023,41 @@ metadata:
 apiVersion: v1
 data:
   config.yaml: |
-    apiVersion: kubescheduler.config.k8s.io/v1beta1
+    apiVersion: kubescheduler.config.k8s.io/v1
     kind: KubeSchedulerConfiguration
     leaderElection:
-      resourceLock: endpoints
+      resourceLock: endpointsleases
       resourceName: user-scheduler-lock
       resourceNamespace: "daskhub"
     profiles:
-      - schedulerName: jupyterhub-user-scheduler
+      - schedulerName: daskhub-user-scheduler
         plugins:
           score:
             disabled:
-            - name: SelectorSpread
-            - name: TaintToleration
-            - name: PodTopologySpread
             - name: NodeResourcesBalancedAllocation
-            - name: NodeResourcesLeastAllocated
-            - name: NodePreferAvoidPods
             - name: NodeAffinity
             - name: InterPodAffinity
+            - name: NodeResourcesFit
             - name: ImageLocality
             enabled:
-            - name: NodePreferAvoidPods
-              weight: 161051
             - name: NodeAffinity
               weight: 14631
             - name: InterPodAffinity
               weight: 1331
-            - name: NodeResourcesMostAllocated
+            - name: NodeResourcesFit
               weight: 121
             - name: ImageLocality
               weight: 11
+        pluginConfig:
+        - args:
+            scoringStrategy:
+              resources:
+              - name: cpu
+                weight: 1
+              - name: memory
+                weight: 1
+              type: MostAllocated
+          name: NodeResourcesFit
 kind: ConfigMap
 metadata:
   labels:
@@ -1061,6 +1065,7 @@ metadata:
     chart: jupyterhub-1.2.0
     component: user-scheduler
     heritage: Helm
+    kustomization: patch-jupyterhub-user-scheduler-apiVersion
     release: jupyterhub
   name: user-scheduler
 ---
@@ -1570,13 +1575,15 @@ spec:
           livenessProbe:
             httpGet:
               path: /healthz
-              port: 10251
+              port: 10259
+              scheme: HTTPS
             initialDelaySeconds: 15
           name: kube-scheduler
           readinessProbe:
             httpGet:
               path: /healthz
-              port: 10251
+              port: 10259
+              scheme: HTTPS
           securityContext:
             allowPrivilegeEscalation: false
             runAsGroup: 65534

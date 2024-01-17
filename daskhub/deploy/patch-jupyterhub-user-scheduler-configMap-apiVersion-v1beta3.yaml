@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: ConfigMap
+metadata:
+  name: not-important
+  labels:
+    kustomization: patch-jupyterhub-user-scheduler-apiVersion
+data:
+  config.yaml: |
+    apiVersion: kubescheduler.config.k8s.io/v1beta3
+    kind: KubeSchedulerConfiguration
+    leaderElection:
+      resourceLock: endpointsleases
+      resourceName: user-scheduler-lock
+      resourceNamespace: "daskhub"
+    profiles:
+      - schedulerName: daskhub-user-scheduler
+        plugins:
+          score:
+            disabled:
+            - name: NodeResourcesBalancedAllocation
+            - name: NodeAffinity
+            - name: InterPodAffinity
+            - name: NodeResourcesFit
+            - name: ImageLocality
+            enabled:
+            - name: NodeAffinity
+              weight: 14631
+            - name: InterPodAffinity
+              weight: 1331
+            - name: NodeResourcesFit
+              weight: 121
+            - name: ImageLocality
+              weight: 11
+        pluginConfig:
+        - args:
+            scoringStrategy:
+              resources:
+              - name: cpu
+                weight: 1
+              - name: memory
+                weight: 1
+              type: MostAllocated
+          name: NodeResourcesFit

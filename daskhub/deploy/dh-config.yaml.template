@@ -27,7 +27,25 @@ jupyterhub:
     userScheduler:
       image:
         name: registry.k8s.io/kube-scheduler
-        tag: v1.22.17
+        tag: v1.26.12
+      plugins:
+        score:
+          disabled:
+          - name: NodeResourcesBalancedAllocation
+          - name: NodeAffinity
+          - name: InterPodAffinity
+          - name: NodeResourcesFit
+          - name: ImageLocality
+          enabled:
+          - name: NodeAffinity
+            weight: 14631
+          - name: InterPodAffinity
+            weight: 1331
+          - name: NodeResourcesFit
+            weight: 121
+          - name: ImageLocality
+            weight: 11
+
     userPlaceholder:
       image:
         name: registry.k8s.io/pause

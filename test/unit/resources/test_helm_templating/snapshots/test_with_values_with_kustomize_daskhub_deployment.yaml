@@ -1434,7 +1434,7 @@ data:
     apiVersion: kubescheduler.config.k8s.io/v1
     kind: KubeSchedulerConfiguration
     leaderElection:
-      resourceLock: endpointsleases
+      resourceLock: leases
       resourceName: user-scheduler-lock
       resourceNamespace: "daskhub"
     profiles:
@@ -2243,7 +2243,7 @@ spec:
             - --config=/etc/user-scheduler/config.yaml
             - --authentication-skip-lookup=true
             - --v=4
-          image: registry.k8s.io/kube-scheduler:v1.26.12
+          image: registry.k8s.io/kube-scheduler:v1.27.10
           livenessProbe:
             httpGet:
               path: /healthz

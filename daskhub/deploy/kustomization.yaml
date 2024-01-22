@@ -37,6 +37,11 @@ patches:
   #      this resource as well.  The values included here are the current daskhub
   #      version 2024.1.1.
   #  2.) The health check endpoints have also changed.
+  #
+  # Updated when upgrading to kube-scheduler 1.27
+  #  1.) This version only supports apiVersion v1.
+  #  2.) Name of the leaderElection.resourceLock has changed from endpointleases
+  #      to leases.
   - path: patch-jupyterhub-user-scheduler-configMap-apiVersion-v1.yaml
     target:
       kind: ConfigMap

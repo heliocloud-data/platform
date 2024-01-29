@@ -27,7 +27,7 @@ jupyterhub:
     userScheduler:
       image:
         name: registry.k8s.io/kube-scheduler
-        tag: v1.27.10
+        tag: v1.28.6
       plugins:
         score:
           disabled:

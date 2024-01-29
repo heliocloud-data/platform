@@ -5,7 +5,6 @@ from aws_cdk import (
     Stack,
     aws_s3 as s3,
     aws_ec2 as ec2,
-    aws_kms as kms,
     aws_iam as iam,
     RemovalPolicy,
 )
@@ -32,9 +31,6 @@ class BaseAwsStack(Stack):
         # Local reference to configuration
         self.__config = config
         self.__build_vpc()
-
-        # Single KMS key is generated for encryption needs by subsequent modules
-        self.kms = kms.Key(self, "HelioCloudKMS")
 
         ###############################################
         # Create S3 Bucket for shared user storage #

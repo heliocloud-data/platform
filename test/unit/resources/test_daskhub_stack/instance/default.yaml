@@ -1,17 +1,30 @@
-# This file is used to support unit tests for
-# test_config.py.
+# Supports unit tests for Daskhub
+
+vpc:
+  type: "new"
+
+userSharedBucket:
+  destroyOnRemoval: False
+
+email:
+  user: "no-reply"
+  from_name: "APL HelioCloud"
+
 auth:
   domain_prefix: "apl-helio"
 
+
+registry:
+  datasetBucketNames: [
+    "bucket1", "bucket2"
+  ]
+
 portal:
-  domain_url:
-  domain_record:
-  domain_certificate_arn:
+  domain_url: "heliocloud.org"
+  domain_record: ""
+  domain_certificate_arn: ""
 
 daskhub:
-
-
-
 
 
 

@@ -9,6 +9,7 @@ import yaml
 import aws_cdk as cdk
 from aws_cdk import (
     Stack,
+    aws_kms as kms,
     aws_iam as iam,
     aws_ec2 as ec2,
     aws_efs as efs,
@@ -129,7 +130,7 @@ class DaskhubStack(Stack):
         # pylint: enable=line-too-long
 
         # Create admin instance and attach role
-        instance = ec2.Instance(
+        ec2_instance = ec2.Instance(
             self,
             "DaskhubInstance",
             vpc=base_aws.heliocloud_vpc,
@@ -201,20 +202,22 @@ class DaskhubStack(Stack):
         )
         self.build_route53_settings()
 
-        daskhub_client_id = daskhub_client.user_pool_client_id
+        # AWS KMS key required for K8 to encrypt/decrypt secrets during its deployment
+        kms_key = kms.Key(self, id=construct_id + "-key", removal_policy=RemovalPolicy.DESTROY)
+
         auth = config["auth"]
         domain_prefix = auth.get("domain_prefix", "")
         # pylint: enable=duplicate-code
 
         # Cloudformation outputs
         # Return instance ID to make logging into admin instance easier
-        cdk.CfnOutput(self, "Instance ID", value=instance.instance_id)
+        cdk.CfnOutput(self, "Instance ID", value=ec2_instance.instance_id)
+        cdk.CfnOutput(self, "KMSArn", value=kms_key.key_arn)
         cdk.CfnOutput(self, "ASGArn", value=autoscaling_managed_policy.managed_policy_arn)
-        cdk.CfnOutput(self, "KMSArn", value=base_aws.kms.key_arn)
         cdk.CfnOutput(self, "CustomS3Arn", value=base_aws.s3_managed_policy.managed_policy_arn)
         cdk.CfnOutput(self, "AdminRoleArn", value=ec2_admin_role.role_arn)
         cdk.CfnOutput(self, "EFSId", value=file_system.file_system_id)
-        cdk.CfnOutput(self, "CognitoClientId", value=daskhub_client_id)
+        cdk.CfnOutput(self, "CognitoClientId", value=daskhub_client.user_pool_client_id)
         cdk.CfnOutput(self, "CognitoDomainPrefix", value=domain_prefix)
         cdk.CfnOutput(self, "CognitoUserPoolId", value=base_auth.userpool.user_pool_id)
 
@@ -320,6 +323,6 @@ class DaskhubStack(Stack):
             ttl=Duration.seconds(300),
             delete_existing=True,
             domain_name="0.0.0.0",
-            comment="Initial provisioning from CDK, overridded by EKSCTL deployment."
+            comment="Initial provisioning from CDK, overridden by EKSCTL deployment."
         )
         cname_record.apply_removal_policy(RemovalPolicy.DESTROY)

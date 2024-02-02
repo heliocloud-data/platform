@@ -1,0 +1,16 @@
+prometheus:
+  server:
+    service:
+      annotations:
+{%- if 'monitoring' in config %}
+        service.beta.kubernetes.io/aws-load-balancer-ssl-cert: {{ config['monitoring']['AWS_LOAD_BALANCER_SSL_CERT'] }}
+{%- endif %}
+        service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+
+grafana:
+  service:
+    annotations:
+{%- if 'monitoring' in config %}
+      service.beta.kubernetes.io/aws-load-balancer-ssl-cert: {{ config['monitoring']['AWS_LOAD_BALANCER_SSL_CERT'] }}
+{%- endif %}
+      service.beta.kubernetes.io/aws-load-balancer-type: "nlb"

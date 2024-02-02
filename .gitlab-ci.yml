@@ -274,37 +274,6 @@ staging-cdk-deploy:
   rules:
     - if: $CI_COMMIT_BRANCH == "develop"
 
-staging-eksctl-deploy:
-  stage: staging
-  environment:
-    name: staging
-  dependencies:
-    - staging-cdk-deploy
-  script:
-    - python -m pip install -r requirements.txt
-    # Dependencies for CDK
-    - bash .gitlab-ci/scripts/install-deps.sh
-    - npm install -g npm
-    - npm install -g aws-cdk
-    - cdk --version
-    - apt-get update && apt-get install -y gettext
-    - envsubst < instance/staging.yaml > instance/staging-${CI_COMMIT_REF_SLUG}.yaml
-    # Dependencies for Kubernetes
-    - bash .gitlab-ci/scripts/install-deps-kube.sh
-    - aws eks  update-kubeconfig --name eks-helio
-    # Generate the 'app.config', which is used for deployment and place it in the deployment
-    # area.
-    - cdk synth staging-${CI_COMMIT_REF_SLUG}/Daskhub -c instance=staging-${CI_COMMIT_REF_SLUG} -v
-    - mv temp/daskhub/deploy/app.config daskhub/deploy/app.config
-    # Do the deployment
-    - kubectl get nodes
-    - kubectl --namespace daskhub get pods
-    - cd daskhub/deploy && bash 02-deploy-daskhub-from-ext-cloud.sh staging${CI_COMMIT_REF_SLUG} ${AWS_DEFAULT_REGION}
-    - sleep 60
-  needs: ['staging-cdk-deploy']
-  rules:
-    - if: $CI_COMMIT_BRANCH == "develop"
-
 staging-test:
   stage: staging
   environment:
@@ -328,8 +297,7 @@ staging-test:
       junit: reports/*.xml
   dependencies:
     - staging-cdk-deploy
-    - staging-eksctl-deploy
-  needs: ['staging-cdk-deploy','staging-eksctl-deploy']
+  needs: ['staging-cdk-deploy']
   rules:
     - if: $CI_COMMIT_BRANCH == "develop"
 
@@ -350,9 +318,8 @@ staging-cdk-destroy-on_stop_hook:
     - cdk destroy --all -c instance=staging-${CI_COMMIT_REF_SLUG} --force -v
   dependencies:
     - staging-cdk-deploy
-    - staging-eksctl-deploy
     - staging-test
-  needs: ['staging-cdk-deploy', 'staging-eksctl-deploy', 'staging-test']
+  needs: ['staging-cdk-deploy', 'staging-test']
   rules:
     - if: $CI_COMMIT_BRANCH == "develop"
 
@@ -393,39 +360,6 @@ production-jhuapl-cdk-deploy:
   rules:
     - if: $CI_COMMIT_BRANCH == "develop"
 
-
-production-jhuapl-eksctl-deploy:
-  stage: deploy
-  environment:
-    name: production/jhuapl
-  when: manual
-  script:
-    - python -m pip install -r requirements.txt
-    # Dependencies for CDK
-    - bash .gitlab-ci/scripts/install-deps.sh
-    - npm install -g npm
-    - npm install -g aws-cdk
-    - cdk --version
-    - apt-get update && apt-get install -y gettext
-    - envsubst < instance/production.yaml > instance/production-jhuapl.yaml
-    # Dependencies for Kubernetes
-    - bash .gitlab-ci/scripts/install-deps-kube.sh
-    - aws eks  update-kubeconfig --name eks-helio
-    # Generate the 'app.config', which is used for deployment and place it in the deployment
-    # area.
-    - cdk synth production-jhuapl/Daskhub -c instance=production-jhuapl -v
-    - mv temp/daskhub/deploy/app.config daskhub/deploy/app.config
-    # Do the deployment
-    - kubectl get nodes
-    - kubectl --namespace daskhub get pods
-    - cd daskhub/deploy && bash 02-deploy-daskhub-from-ext-cloud.sh productionjhuapl ${AWS_DEFAULT_REGION}
-    - sleep 60
-  dependencies:
-    - production-jhuapl-cdk-deploy
-  needs: ['production-jhuapl-cdk-deploy']
-  rules:
-    - if: $CI_COMMIT_BRANCH == "develop"
-
 production-jhuapl-test:
   stage: deploy
   when: manual
@@ -450,7 +384,6 @@ production-jhuapl-test:
       junit: reports/*.xml
   dependencies:
     - production-jhuapl-cdk-deploy
-    - production-jhuapl-eksctl-deploy
-  needs: ['production-jhuapl-cdk-deploy','production-jhuapl-eksctl-deploy']
+  needs: ['production-jhuapl-cdk-deploy']
   rules:
     - if: $CI_COMMIT_BRANCH == "develop"

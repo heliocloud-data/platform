@@ -1,0 +1,29 @@
+# See:
+#  https://kubectl.docs.kubernetes.io/references/kustomize/
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+- ../../base/
+
+patches:
+- target:
+    kind: ClusterConfig
+    name: eks-helio
+  patch: |
+    - op: replace
+      path: /metadata/name
+      value: {{ config['eksctl']['metadata']['name'] }}
+    - op: replace
+      path: /metadata/region
+      value: {{ config['eksctl']['metadata']['region'] }}
+    - op: replace
+      path: /iamIdentityMappings/0/arn
+      value: "<<CNF_OUTPUT_AdminRoleArn>>"
+    {%- if 'iamIdentityMappings' in config['eksctl'] and config['eksctl']['iamIdentityMappings'] is not none %}
+    {%- for iamIdentityMapping in config['eksctl']['iamIdentityMappings'] %}
+    - op: add
+      path: /iamIdentityMappings/{{ loop.index }}
+      value: {{ iamIdentityMapping }}
+    {%- endfor %}
+    {%- endif %}

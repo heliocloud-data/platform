@@ -9,7 +9,8 @@ portal:
   domain_certificate_arn:
 
 daskhub:
-  ROUTE53_HOSTED_ZONE: "ludicolo.org"
+  daskhub:
+    domain_url: "ludicolo.org"
 
 
 

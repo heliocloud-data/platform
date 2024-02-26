@@ -90,8 +90,25 @@ fi
 
 echo ------------------------------
 echo Verifying cluster status...
+cluster_found=false
 final_cluster_query=$(aws eks list-clusters | jq -r '.clusters[]')
-if [[ " ${final_cluster_query[*]} " =~ " ${EKS_NAME} " ]]; then
+
+# Iterate over each cluster name in the query result
+for cluster in $final_cluster_query; do
+    if [[ "$cluster" == "${EKS_NAME}" ]]; then
+        echo "Cluster - $EKS_NAME - created, continuing..."
+        cluster_found=true
+        break # Exit the loop once the cluster is found
+    fi
+done
+
+# Check if the cluster was not found
+if [ "$cluster_found" = false ]; then
+    echo ------------------------------
+    echo ERROR: Cluster - $EKS_NAME - was not created, skipped all subsequent steps, debug required!
+fi
+
+if [ "$cluster_found" = true ]; then
     echo Cluster - $EKS_NAME - created, continuing...
 
     echo ------------------------------
@@ -108,8 +125,8 @@ if [[ " ${final_cluster_query[*]} " =~ " ${EKS_NAME} " ]]; then
         --cluster ${EKS_NAME} \
         --arn ${EKS_CONSOLE_DASHBOARD_FULL_ACCESS_ROLE_ARN} \
         --group ${EKS_CONSOLE_DASHBOARD_FULL_ACCESS_GROUP_NAME} \
-        --region ${AWS_REGION} \
         --no-duplicate-arns
+        #--region ${AWS_REGION} \
 
     echo ------------------------------
     echo Creating EFS with mounted target...
@@ -212,9 +229,6 @@ if [[ " ${final_cluster_query[*]} " =~ " ${EKS_NAME} " ]]; then
     # TODO figure out how to tag this resource (elastic block storage)
     kubectl -n $KUBERNETES_NAMESPACE apply -f efs-pvc.yaml
     kubectl -n $KUBERNETES_NAMESPACE apply -f efs-pv.yaml
-else
-    echo ------------------------------
-    echo ERROR: Cluster - $EKS_NAME - was not created, skipped all subsequent steps, debug required!
 fi
 
 # Deploy the Cloudwatch namespace for exporting logs.

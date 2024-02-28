@@ -1,0 +1,58 @@
+#!/bin/bash
+
+AWS_REGION=$(aws ec2 describe-availability-zones --output text --query 'AvailabilityZones[0].[RegionName]')
+
+KUBERNETES_NAMESPACE={{ config['daskhub']['namespace'] }}
+EKS_NAME={{ config['eksctl']['metadata']['name'] }}
+
+helm uninstall heliocloud-monitoring --namespace monitoring
+helm uninstall daskhub --namespace ${KUBERNETES_NAMESPACE}
+
+LOADBALANCER_URL=$(kubectl --namespace=$KUBERNETES_NAMESPACE get svc proxy-public --output jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+
+echo ------------------------------
+echo Ping for loadbalancer address to ensure daskhub uninstalled...
+while [[ $LOADBALANCER_URL == *.com ]]
+do
+    sleep 20s
+    echo Still exists, waiting another 20 seconds
+    LOADBALANCER_URL=$(kubectl --namespace=$KUBERNETES_NAMESPACE get svc proxy-public --output jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+done
+
+echo ------------------------------
+echo Daskhub helm chart uninstalled...
+
+
+# Destroy all mount targets.
+./00-delete-efs-mount-targets.sh
+
+eksctl delete cluster --name $EKS_NAME --region=${AWS_REGION}
+
+echo ------------------------------
+echo Checking cluster status and deleting...
+init_cluster_query=$(aws eks list-clusters | jq -r '.clusters[]')
+
+if [[ " ${init_cluster_query[*]} " =~ " ${EKS_NAME} " ]]; then
+    eksctl delete cluster --name $EKS_NAME --region=${AWS_REGION}
+fi
+
+echo ------------------------------
+echo Checking cluster status after deleting...
+init_cluster_query=$(aws eks list-clusters | jq -r '.clusters[]')
+iterator=0
+while [[ " ${init_cluster_query[*]} " =~ " ${EKS_NAME} " ]]
+do
+    if [[ $iterator -gt 60 ]]; then
+      echo Breaking due to exceeding time, check if cluster actually deleted
+      break
+    fi
+
+    sleep 30s
+    echo Still exists, waiting another 30 seconds
+    init_cluster_query=$(aws eks list-clusters | jq -r '.clusters[]')
+    iterator=$((iterator + 1))
+    echo $iterator
+done
+
+echo ------------------------------
+echo Cluster delete complete!

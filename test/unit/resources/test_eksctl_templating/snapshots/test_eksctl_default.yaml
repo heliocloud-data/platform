@@ -1,0 +1,198 @@
+---
+addons:
+  - name: aws-ebs-csi-driver
+    serviceAccountRoleARN: arn:aws:iam:::role/AmazonEKS_EBS_CSI_DriverRole-us-south-100-eks-helio
+    version: v1.27.0-eksbuild.1
+apiVersion: eksctl.io/v1alpha5
+availabilityZones:
+  - <INSERT_PRIMARY_AVAILABILITY_ZONE>
+  - <INSERT_SECONDARY_AVAILABILITY_ZONE>
+cloudWatch:
+  clusterLogging:
+    enableTypes:
+      - '*'
+iam:
+  serviceAccounts:
+    - attachPolicyARNs:
+        - <<CNF_OUTPUT_CustomS3Arn>>
+      metadata:
+        labels:
+          aws-usage: application
+        name: helio-dh-role
+    - attachPolicyARNs:
+        - <<CNF_OUTPUT_CustomS3Arn>>
+      metadata:
+        name: helio-dh-role
+        namespace: daskhub
+    - attachPolicyARNs:
+        - <<CNF_OUTPUT_ASGArn>>
+      metadata:
+        name: cluster-autoscaler
+        namespace: kube-system
+    - attachPolicyARNs:
+        - <<CNF_OUTPUT_ASGArn>>
+      metadata:
+        name: admin
+        namespace: kube-system
+    - attachPolicyARNs:
+        - arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy
+      metadata:
+        name: ebs-csi-controller-sa
+        namespace: kube-system
+      roleName: AmazonEKS_EBS_CSI_DriverRole-us-south-100-eks-helio
+      roleOnly: true
+  withOIDC: true
+kind: ClusterConfig
+managedNodeGroups:
+  - availabilityZones:
+      - <INSERT_PRIMARY_AVAILABILITY_ZONE>
+    desiredCapacity: 2
+    iam:
+      attachPolicyARNs:
+        - arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM
+        - arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy
+        - arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy
+        - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
+      withAddonPolicies:
+        autoScaler: true
+        awsLoadBalancerController: true
+        cloudWatch: true
+        ebs: true
+        efs: true
+        fsx: true
+    instanceType: t3a.medium
+    labels:
+      lifecycle: OnDemand
+    maxSize: 3
+    minSize: 2
+    name: ng-daskhub-services
+metadata:
+  name: eks-helio
+  region: us-south-100
+  tags:
+    Product: daskhub
+    Project: heliocloud
+  version: '1.29'
+nodeGroups:
+  - availabilityZones:
+      - <INSERT_PRIMARY_AVAILABILITY_ZONE>
+    desiredCapacity: 0
+    iam:
+      attachPolicyARNs:
+        - arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM
+        - arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy
+        - arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy
+        - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
+      withAddonPolicies:
+        autoScaler: true
+        awsLoadBalancerController: true
+        cloudWatch: true
+        ebs: true
+        efs: true
+        fsx: true
+    instanceType: mixed
+    instancesDistribution:
+      instanceTypes:
+        - g4dn.4xlarge
+    labels:
+      hub.jupyter.org/node-purpose: user
+      intent: apps
+      k8s.amazonaws.com/accelerator: nvidia-tesla-t4
+      lifecycle: OnDemand
+      node-purpose: user
+      nvidia.com/gpu: 'true'
+    maxSize: 4
+    minSize: 0
+    name: ng-user-gpu
+    tags:
+      k8s.io/cluster-autoscaler/node-template/label/hub.jupyter.org/node-purpose: user
+      k8s.io/cluster-autoscaler/node-template/label/intent: apps
+      k8s.io/cluster-autoscaler/node-template/label/k8s.amazonaws.com/accelerator: nvidia-tesla-t4
+      k8s.io/cluster-autoscaler/node-template/label/lifecycle: OnDemand
+      k8s.io/cluster-autoscaler/node-template/label/node-purpose: user
+      k8s.io/cluster-autoscaler/node-template/label/nvidia.com/gpu: 'true'
+      k8s.io/cluster-autoscaler/node-template/taint/dedicated: nvidia.com/gpu=true
+    taints:
+      hub.jupyter.org/dedicated: user:NoSchedule
+      nvidia.com/gpu: true:NoSchedule
+  - availabilityZones:
+      - <INSERT_PRIMARY_AVAILABILITY_ZONE>
+    desiredCapacity: 0
+    iam:
+      attachPolicyARNs:
+        - arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM
+        - arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy
+        - arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy
+        - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
+      withAddonPolicies:
+        autoScaler: true
+        awsLoadBalancerController: true
+        cloudWatch: true
+        ebs: true
+        efs: true
+        fsx: true
+    instancesDistribution:
+      instanceTypes:
+        - m5.4xlarge
+        - m5n.4xlarge
+        - m5d.4xlarge
+        - m5dn.4xlarge
+    labels:
+      hub.jupyter.org/node-purpose: user
+      intent: apps
+      lifecycle: OnDemand
+      node-purpose: user
+    maxSize: 15
+    minSize: 0
+    name: ng-user-compute
+    tags:
+      k8s.io/cluster-autoscaler/node-template/label/hub.jupyter.org/node-purpose: user
+      k8s.io/cluster-autoscaler/node-template/label/intent: apps
+      k8s.io/cluster-autoscaler/node-template/label/lifecycle: OnDemand
+      k8s.io/cluster-autoscaler/node-template/label/node-purpose: user
+      k8s.io/cluster-autoscaler/node-template/taint/hub.jupyter.org/dedicated: user:NoSchedule
+    taints:
+      hub.jupyter.org/dedicated: user:NoSchedule
+  - availabilityZones:
+      - <INSERT_PRIMARY_AVAILABILITY_ZONE>
+    desiredCapacity: 0
+    iam:
+      attachPolicyARNs:
+        - arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM
+        - arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy
+        - arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy
+        - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
+      withAddonPolicies:
+        autoScaler: true
+        awsLoadBalancerController: true
+        cloudWatch: true
+        ebs: true
+        efs: true
+        fsx: true
+    instancesDistribution:
+      instanceTypes:
+        - m5n.8xlarge
+        - m5.8xlarge
+        - m4.8xlarge
+        - m5dn.8xlarge
+        - r5n.8xlarge
+        - r5dn.8xlarge
+      onDemandBaseCapacity: 1
+      onDemandPercentageAboveBaseCapacity: 0
+      spotAllocationStrategy: lowest-price
+    labels:
+      aws.amazon.com/spot: 'true'
+      hub.jupyter.org/node-purpose: user
+      intent: apps
+      lifecycle: Ec2Spot
+      node-purpose: user
+    maxSize: 10
+    minSize: 0
+    name: ng-burst-compute-spot
+    tags:
+      k8s.io/cluster-autoscaler/node-template/label/hub.jupyter.org/node-purpose: user
+      k8s.io/cluster-autoscaler/node-template/label/intent: apps
+      k8s.io/cluster-autoscaler/node-template/label/lifecycle: Ec2Spot
+      k8s.io/cluster-autoscaler/node-template/label/node-purpose: user
+secretsEncryption:
+  keyARN: <<CNF_OUTPUT_KMSArn>>

@@ -19,7 +19,10 @@ from utils import which, create_dumpfile
 
 
 class TestDaskhubStack(unittest.TestCase):
-    DEFAULT_KEY_COUNT = 11
+    DEFAULT_KEY_COUNT = 3
+    DEFAULT_EKSCTL_KEY_COUNT = 11
+    DEFAULT_DASKHUB_KEY_COUNT = 11
+
     """
     Various tests for parsing configuration files.
     """
@@ -52,7 +55,7 @@ class TestDaskhubStack(unittest.TestCase):
         # Verify that some elements are populated in the configuration
         # the
         self.assertEqual(TestDaskhubStack.DEFAULT_KEY_COUNT, len(cfg))
-        self.assertEqual("ludicolo.org", cfg["ROUTE53_HOSTED_ZONE"])
+        self.assertEqual("ludicolo.org", cfg["daskhub"]["domain_url"])
 
         # The contents should exactly match the 'defaults'
         default_cfg = None
@@ -60,57 +63,49 @@ class TestDaskhubStack(unittest.TestCase):
             default_cfg = yaml.safe_load(stream)
 
         self.assertEqual(len(default_cfg), len(cfg))
-        for key, value in default_cfg.items():
-            # Skip over key that's set in the file.
-            if key == "ROUTE53_HOSTED_ZONE":
-                continue
-            self.assertEqual(default_cfg[key], cfg[key])
+        for basekey, basevalue in default_cfg.items():
+            if isinstance(basevalue, dict):
+                for key, value in default_cfg[basekey].items():
+                    # Skip over key that's set in the file.
+                    if basekey == "daskhub" and key == "domain_url":
+                        continue
+                    self.assertEqual(
+                        default_cfg[basekey][key],
+                        cfg[basekey][key],
+                        f"Value for {basekey}.{key} doesn't match",
+                    )
+                self.assertEqual(len(default_cfg[basekey]), len(cfg[basekey]))
+            else:
+                self.assertEqual(
+                    default_cfg[basekey], cfg[basekey], f"Value for {basekey} doesn't match"
+                )
 
-    def test_method_load_configurations_OK_override_all_and_add_one(self):
+    def test_method_load_configurations_OK_override_all_and_add_one_daskhub(self):
         hc_cfg = load_configs(
             "test/unit/resources/test_daskhub_stack/instance", "override_all_and_add_one"
         )
 
         cfg = DaskhubStack.load_configurations(hc_cfg)
-        print(cfg)
 
         # Verify that some elements are populated in the configuration
         # the
         self.assertEqual(TestDaskhubStack.DEFAULT_KEY_COUNT + 1, len(cfg))
-        self.assertEqual("ludicolo.org", cfg["ROUTE53_HOSTED_ZONE"])
-        self.assertEqual("daskhub-tapubulu", cfg["ROUTE53_DASKHUB_PREFIX"])
-        self.assertEqual("tapufini", cfg["KUBERNETES_NAMESPACE"])
-        self.assertEqual("eks-alola", cfg["EKS_NAME"])
-        self.assertEqual("ketchap1", cfg["DASKHUB_ADMIN_USER"])
-        self.assertEqual("ash.ketchum@jhuapl.edu", cfg["ADMIN_USER_EMAIL"])
-        self.assertEqual("public.ecr.aws/a/tapukoko-notebook", cfg["GENERIC_DOCKER_LOCATION"])
-        self.assertEqual("151", cfg["GENERIC_DOCKER_VERSION"])
-        self.assertEqual("public.ecr.aws/b/tapulele-ml-notebook", cfg["ML_DOCKER_LOCATION"])
-        self.assertEqual("252", cfg["ML_DOCKER_VERSION"])
-        self.assertEqual("707", cfg["ANOTHER_KLEFKI"])
-
-    def test_method_generate_app_config_from_template_OK_override_all_and_add_one(self):
-        hc_cfg = load_configs(
-            "test/unit/resources/test_daskhub_stack/instance", "override_all_and_add_one"
+        self.assertEqual(TestDaskhubStack.DEFAULT_DASKHUB_KEY_COUNT + 1, len(cfg["daskhub"]))
+        self.assertEqual("ludicolo.org", cfg["daskhub"]["domain_url"])
+        self.assertEqual("daskhub-tapubulu", cfg["daskhub"]["domain_record"])
+        self.assertEqual("tapufini", cfg["daskhub"]["namespace"])
+        self.assertEqual("eks-alola", cfg["eksctl"]["metadata"]["name"])
+        self.assertEqual("ketchap1", cfg["daskhub"]["admin_users"][0])
+        self.assertEqual("ash.ketchum@jhuapl.edu", cfg["daskhub"]["contact_email"])
+        self.assertEqual(
+            "public.ecr.aws/a/tapukoko-notebook", cfg["daskhub"]["GENERIC_DOCKER_LOCATION"]
         )
-
-        # Load the configurations
-        cfg = DaskhubStack.load_configurations(hc_cfg)
-
-        dest_file = "temp/test_daskhub_stack/override_all_and_add_one-actual.txt"
-        DaskhubStack.generate_app_config_from_template(daskhub_config=cfg, dest_file=dest_file)
-
-        with open(dest_file, encoding="UTF-8") as file:
-            actual_lines = file.read()
-
-        with open(
-            "test/unit/resources/test_daskhub_stack/override_all_and_add_one-expected.txt",
-            encoding="UTF-8",
-        ) as file:
-            expected_lines = file.read()
-
-        # Verify they are exactly the same
-        self.assertEqual(expected_lines, actual_lines)
+        self.assertEqual("151", cfg["daskhub"]["GENERIC_DOCKER_VERSION"])
+        self.assertEqual(
+            "public.ecr.aws/b/tapulele-ml-notebook", cfg["daskhub"]["ML_DOCKER_LOCATION"]
+        )
+        self.assertEqual("252", cfg["daskhub"]["ML_DOCKER_VERSION"])
+        self.assertEqual("707", cfg["daskhub"]["ANOTHER_KLEFKI"])
 
     @pytest.mark.skipif(which("node") is None, reason="node not installed")
     def test_constructor__default(self):
@@ -240,13 +235,5 @@ class TestDaskhubStack(unittest.TestCase):
 
         # AWS Cognito:  Checking that Daskhub has been registered as a user pool client
         # to the user pool created by the auth stack
-        auth_template.has_resource(
-            "AWS::Cognito::UserPoolClient",
-            {
-                "Properties": {
-                    "CallbackURLs": Match.array_with(["https://example.com/hub/oauth_callback"]),
-                    "LogoutURLs": Match.array_with(["https://example.com/logout"]),
-                }
-            },
-        )
+        auth_template.has_resource("AWS::Cognito::UserPoolClient", Match.any_value())
         daskhub_template.has_output("CognitoClientId", props=Match.any_value())

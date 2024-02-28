@@ -1,0 +1,62 @@
+daskhub:
+  dask-gateway:
+    gateway:
+      auth:
+        jupyterhub:
+          apiToken: {{ config['daskhub']['api_key2'] }}
+
+  jupyterhub:
+    hub:
+      services:
+        dask-gateway:
+          apiToken: {{ config['daskhub']['api_key2'] }}
+      config:
+        Authenticator:
+          auto_login: true
+        GenericOAuthenticator:
+          # Can specify other admin users, list using "-" for each line
+          admin_users:
+{%- if 'admin_users' in config['daskhub'] and config['daskhub']['admin_users'] is not none %}
+{%- for admin_user in config['daskhub']['admin_users'] %}
+            - {{ admin_user }}
+{%- endfor %}
+{%- endif %}
+          login_service: "AWS Cognito"
+          # Must create an app client for this application and copy those secrets here
+          client_id: <<CNF_OUTPUT_CognitoClientId>>
+          client_secret: <<CNF_OUTPUT_CognitoClientSecret>>
+          # Can use kubernetes public-proxy or your own domain but cannot use HTTPS without using own domain
+          # Must have the same end part of the link as these are specific to JupyterHub (e.g. "/hub/oauth_callback")
+          # This must match what is in the AWS Cognito app client
+{%- if 'domain_record' in config['daskhub'] and config['daskhub']['domain_record'] is not none and 'domain_url' in config['daskhub'] and config['daskhub']['domain_url'] is not none %}
+          oauth_callback_url: https://{{ config['daskhub']['domain_record'] + '.' + config['daskhub']['domain_url'] }}/hub/oauth_callback # Ex. https://example.com/hub/oauth_callback
+{%- else %}
+          oauth_callback_url: # This is a required setting.
+{%- endif %}
+          # Must have the same end part of the link as these are specific to JupyterHub (e.g. "/oauth2/authorize")
+          # Must just replace the AWS Cognito domain (in the examples you replace "example" and the region)
+          authorize_url: https://<<CNF_OUTPUT_CognitoDomainPrefix>>.auth.{{ config['eksctl']['metadata']['region'] }}.amazoncognito.com/oauth2/authorize # Ex. https://example.auth.us-east-1.amazoncognito.com/oauth2/authorize
+          token_url: https://<<CNF_OUTPUT_CognitoDomainPrefix>>.auth.{{ config['eksctl']['metadata']['region'] }}.amazoncognito.com/oauth2/token # Ex. https://example.auth.us-east-1.amazoncognito.com/oauth2/token
+          userdata_url: https://<<CNF_OUTPUT_CognitoDomainPrefix>>.auth.{{ config['eksctl']['metadata']['region'] }}.amazoncognito.com/oauth2/userInfo # Ex. https://example.auth.us-east-1.amazoncognito.com/oauth2/userInfo
+          # Can alter this to fit your scope
+          scope:
+            - openid
+            - phone
+            - profile
+            - email
+        JupyterHub:
+          authenticator_class: generic-oauth
+    proxy:
+      secretToken: {{ config['daskhub']['api_key1'] }}
+      https:
+        enabled: true
+        hosts:
+{%- if 'domain_record' in config['daskhub'] and config['daskhub']['domain_record'] is not none and 'domain_url' in config['daskhub'] and config['daskhub']['domain_url'] is not none %}
+          - {{ config['daskhub']['domain_record'] + '.' + config['daskhub']['domain_url'] }}
+{%- else %}
+          # Missing required keys in HelioCloud instance config daskhub.daskhub.domain_record and daskhub.daskhub.domain_url
+          # autohttps proxy will be disabled
+{%- endif %}
+        letsencrypt:
+          # Insert email for Let's Encrypt to contact about keeping certs valid
+          contactEmail: {{ config['daskhub']['contact_email'] }}

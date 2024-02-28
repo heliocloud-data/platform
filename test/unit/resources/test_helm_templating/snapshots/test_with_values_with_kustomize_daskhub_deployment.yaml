@@ -560,7 +560,7 @@ data:
     # Add this directory to path to support extension modules
     sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
 
-    _PROPERTIES = json.loads("{\"gateway\":{\"affinity\":{},\"annotations\":{},\"auth\":{\"custom\":{\"config\":{}},\"jupyterhub\":{},\"kerberos\":{},\"simple\":{},\"type\":\"jupyterhub\"},\"backend\":{\"environment\":{},\"image\":{\"name\":\"ghcr.io/dask/dask-gateway\",\"pullPolicy\":\"IfNotPresent\",\"tag\":\"2022.6.1\"},\"scheduler\":{\"cores\":{},\"extraContainerConfig\":{},\"extraPodConfig\":{},\"memory\":{}},\"worker\":{\"cores\":{},\"extraContainerConfig\":{},\"extraPodConfig\":{},\"memory\":{}}},\"image\":{\"name\":\"ghcr.io/dask/dask-gateway-server\",\"pullPolicy\":\"IfNotPresent\",\"tag\":\"2022.6.1\"},\"imagePullSecrets\":[],\"livenessProbe\":{\"enabled\":true,\"failureThreshold\":6,\"initialDelaySeconds\":5,\"periodSeconds\":10,\"timeoutSeconds\":2},\"loglevel\":\"INFO\",\"nodeSelector\":{},\"prefix\":\"/services/dask-gateway\",\"readinessProbe\":{\"enabled\":true,\"failureThreshold\":3,\"initialDelaySeconds\":5,\"periodSeconds\":10,\"timeoutSeconds\":2},\"replicas\":1,\"resources\":{},\"service\":{\"annotations\":{}},\"tolerations\":[]}}")
+    _PROPERTIES = json.loads("{}") # CLEANED FOR TESTING
 
     def get_property(key, default=None):
         """Read a property from the configured helm values."""
@@ -723,7 +723,7 @@ data:
           tls:
             certResolver: default
             domains:
-            - main: <INSERT_HOST_NAME>
+            - main: daskhub.stuff.org
             options: default
         insecure:
           entrypoints:
@@ -1675,7 +1675,7 @@ spec:
   template:
     metadata:
       annotations:
-        checksum/configmap: 2bd410363e4d95ce912dc6384f7d26239556387bb98548c82205a36b0b697108
+        checksum/configmap: '0000' # CLEANED FOR TESTING
       labels:
         app.kubernetes.io/component: gateway
         app.kubernetes.io/instance: daskhub
@@ -1879,7 +1879,7 @@ spec:
   template:
     metadata:
       annotations:
-        checksum/configmap: 658266b53f357a3b93bf409c5cca68f0031b905d3365b0cd4115cb0a1df19f9a
+        checksum/configmap: '0000' # CLEANED FOR TESTING
       labels:
         app.kubernetes.io/component: controller
         app.kubernetes.io/instance: daskhub

@@ -1,0 +1,56 @@
+# See:
+#  https://kubectl.docs.kubernetes.io/references/kustomize/
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+- ../../base/
+
+patches:
+- target:
+    kind: PersistentVolume
+    name: efs-persist
+  patch: |
+    - op: replace
+      path: /spec/capacity/storage
+      value: {{ config['daskhub_storage']['efs-persist']['storage'] }}
+    - op: replace
+      path: /spec/nfs/server
+      value: <<CNF_OUTPUT_EFSId>>.efs.{{ config['eksctl']['metadata']['region'] }}.amazonaws.com
+    - op: replace
+      path: /metadata/namespace
+      value: {{ config['daskhub']['namespace'] }}
+- target:
+    kind: PersistentVolumeClaim
+    name: efs-persist
+  patch: |
+    - op: replace
+      path: /spec/resources/requests/storage
+      value: {{ config['daskhub_storage']['efs-persist']['storage'] }}
+    - op: replace
+      path: /metadata/namespace
+      value: {{ config['daskhub']['namespace'] }}
+- target:
+    kind: Namespace
+    name: daskhub
+  patch: |
+    - op: replace
+      path: /metadata/name
+      value: {{ config['daskhub']['namespace'] }}
+    - op: replace
+      path: /metadata/labels/name
+      value: {{ config['daskhub']['namespace'] }}
+- target:
+    kind: Role
+    name: daskhub-admin-access-role
+  patch: |
+    - op: replace
+      path: /metadata/namespace
+      value: {{ config['daskhub']['namespace'] }}
+- target:
+    kind: RoleBinding
+    name: daskhub-admin-access-binding
+  patch: |
+    - op: replace
+      path: /metadata/namespace
+      value: {{ config['daskhub']['namespace'] }}

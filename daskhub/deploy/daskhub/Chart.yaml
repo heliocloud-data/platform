@@ -1,0 +1,13 @@
+apiVersion: v2
+appVersion: jh1.2.0-dg2022.6.1
+dependencies:
+- name: daskhub
+  repository: https://helm.dask.org/
+  version: 2022.8.2
+description: HelioCloud's multi-user JupyterHub and Dask deployment.
+icon: https://avatars3.githubusercontent.com/u/17131925?v=3&s=200
+maintainers:
+- email: nicholas.lenzi@jhuapl.edu
+  name: Nicholas Lenzi
+name: daskhub
+version: 1.0.0

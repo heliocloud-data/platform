@@ -3,17 +3,41 @@ import os
 import pytest
 from utils import (
     which,
-    sanitize_snapshots,
+    do_execute_helm_template,
 )
+
+from daskhub.jinja_utils import apply_jinja_templates_by_dir
 
 PATH_TO_RESOURCES = f"{os.path.dirname(__file__)}/../resources/test_helm_templating"
 
-HELM_OPT_KUBE_VERSION = "1.29"
-HELM_OPT_API_VERSION = "1.29"
+HELM_OPT_KUBE_VERSION = "1.28"
+HELM_OPT_API_VERSION = "1.28"
 
 HELM_OPT_JUPYTERHUB_VERSION = "1.2.0"
-HELM_OPT_DASKHUB_CURR_VERSION = "2022.08.02"
+HELM_OPT_DASKHUB_CURR_VERSION = "2022.8.2"
 HELM_OPT_DASKHUB_NEXT1_VERSION = "2022.11.0"
+
+PREJINJA_DASKHUB_HELM_CHART_PATH = "daskhub/deploy/daskhub"
+POSTJINJA_DASKHUB_HELM_CHART_PATH = "temp/daskhub/deploy/daskhub"
+
+HELIOCLOUD_DASKHUB_RENDER_PARAMS = {
+    "config": {
+        "eksctl": {"metadata": {"name": "eks-helio"}},
+        "daskhub": {
+            "namespace": "daskhub",
+            "api_key1": "<INSERT_API_KEY1>",
+            "api_key2": "<INSERT_API_KEY2>",
+            "admin_users": ["Me!"],
+            "contact_email": "<INSERT_CONTACT_EMAIL>",
+            "GENERIC_DOCKER_LOCATION": "<GENERIC_DOCKER_LOCATION>",
+            "GENERIC_DOCKER_VERSION": "<GENERIC_DOCKER_VERSION>",
+            "ML_DOCKER_LOCATION": "<ML_DOCKER_LOCATION>",
+            "ML_DOCKER_VERSION": "<ML_DOCKER_VERSION>",
+            "domain_record": "daskhub",
+            "domain_url": "stuff.org",
+        },
+    }
+}
 
 
 @pytest.fixture(scope="function", autouse=True)
@@ -26,64 +50,8 @@ def before():
     os.system("helm repo update")
     os.system(f"helm pull jupyterhub/jupyterhub --version={HELM_OPT_JUPYTERHUB_VERSION}")
 
-    os.system("helm repo add dask https://helm.dask.org/")
-    os.system("helm repo update")
-    os.system(f"helm pull dask/daskhub --version={HELM_OPT_DASKHUB_CURR_VERSION}")
 
-    os.system("helm repo add dask https://helm.dask.org/")
-    os.system("helm repo update")
-    os.system(f"helm pull dask/daskhub --version={HELM_OPT_DASKHUB_NEXT1_VERSION}")
-
-
-def do_execute_helm_template(snapshot, params: dict):
-    """
-    This test checks that the output produced by the helm template
-    consistent w/ what we expect.  It's also a living document intended
-    to show how kustomize fits into our chain.
-    """
-    values_to_remove_from_snapshot = params["values_to_remove_from_snapshot"]
-
-    name = params["repo_name"]
-    chart = params["chart"]["name"]
-    version = params["chart"]["version"]
-    namespace = params["namespace"]
-    extra_ops = params["extra_opts"]
-
-    output_filename = params["output_filename"]
-    output_file_original = os.path.abspath(f"temp/test_helm_templating/ORIGINAL-{output_filename}")
-    output_file_cleaned = os.path.abspath(f"temp/test_helm_templating/CLEANED-{output_filename}")
-    values = params["values"]
-
-    helm_cmd = f"helm template {name} {chart} --api-versions={HELM_OPT_API_VERSION} --api-versions={HELM_OPT_KUBE_VERSION} --namespace={namespace} --version={version}"
-
-    if "wd" in params and params["wd"] != "":
-        helm_cmd = f"cd {params['wd']} && pwd && {helm_cmd}"
-    for value in values:
-        helm_cmd = f"{helm_cmd} --values={value}"
-
-    if "post_render_hook" in params and params["post_render_hook"] != "":
-        helm_cmd = f"{helm_cmd} --post-renderer={params['post_render_hook']}"
-
-    helm_cmd = f"{helm_cmd} {extra_ops}"
-
-    # Write the file
-    cmd = f"{helm_cmd} > {output_file_original}"
-    print(cmd)
-
-    os.makedirs(os.path.dirname(output_file_original), exist_ok=True)
-    os.system(cmd)
-
-    # Clean the file, by removing any non-deterministic settings that will change run-to-run
-    sanitize_snapshots(output_file_original, output_file_cleaned, values_to_remove_from_snapshot)
-
-    snapshot.snapshot_dir = f"{PATH_TO_RESOURCES}/snapshots"
-    with open(output_file_cleaned, "r") as f:
-        actual = f.read()
-
-    snapshot.assert_match(actual, output_filename)
-
-
-@pytest.mark.skipif(which("helm") is None, reason="kustomize not installed")
+@pytest.mark.skipif(which("helm") is None, reason="helm not installed")
 def test_with_values_no_kustomize_jupyterhub_deployment_autohttps_enabled(snapshot):
     """
     This test checks that the output produced by the helm template
@@ -119,7 +87,7 @@ def test_with_values_no_kustomize_jupyterhub_deployment_autohttps_enabled(snapsh
 
 
 @pytest.mark.skipif(which("kustomize") is None, reason="kustomize not installed")
-@pytest.mark.skipif(which("helm") is None, reason="kustomize not installed")
+@pytest.mark.skipif(which("helm") is None, reason="helm not installed")
 def test_with_values_with_kustomize_jupyterhub_deployment_autohttps_enabled(snapshot):
     """
     This test checks that the output produced by the helm template
@@ -140,7 +108,7 @@ def test_with_values_with_kustomize_jupyterhub_deployment_autohttps_enabled(snap
                 f"{PATH_TO_RESOURCES}/jupyterhub-letsencrypt-values-{HELM_OPT_JUPYTERHUB_VERSION}.yaml",
             ],
             "post_render_hook": "./kustomize-post-renderer-hook.sh",
-            "wd": "daskhub/deploy",
+            "wd": PREJINJA_DASKHUB_HELM_CHART_PATH,
             "extra_opts": "--debug --dry-run",
             "output_filename": "test_with_values_with_kustomize_jupyterhub_deployment_autohttps_enabled.yaml",
             "values_to_remove_from_snapshot": [
@@ -158,7 +126,7 @@ def test_with_values_with_kustomize_jupyterhub_deployment_autohttps_enabled(snap
 
 
 @pytest.mark.skipif(which("kustomize") is None, reason="kustomize not installed")
-@pytest.mark.skipif(which("helm") is None, reason="kustomize not installed")
+@pytest.mark.skipif(which("helm") is None, reason="helm not installed")
 def test_with_values_with_kustomize_daskhub_deployment(snapshot):
     """
     This test checks that the output produced by the helm template
@@ -166,22 +134,26 @@ def test_with_values_with_kustomize_daskhub_deployment(snapshot):
     to show how kustomize fits into our chain.
     """
 
+    apply_jinja_templates_by_dir(
+        PREJINJA_DASKHUB_HELM_CHART_PATH,
+        POSTJINJA_DASKHUB_HELM_CHART_PATH,
+        HELIOCLOUD_DASKHUB_RENDER_PARAMS,
+    )
+
     do_execute_helm_template(
         snapshot,
         params={
             "repo_name": "daskhub",
             "chart": {
-                "name": "dask/daskhub",
-                "version": HELM_OPT_DASKHUB_CURR_VERSION,
+                "name": "./",
             },
             "namespace": "daskhub",
             "values": [
-                "dh-auth.yaml.template",
-                "dh-config.yaml.template",
-                "dh-secrets.yaml.template",
+                "values.yaml",
+                "values-production.yaml",
             ],
             "post_render_hook": "./kustomize-post-renderer-hook.sh",
-            "wd": "daskhub/deploy",
+            "wd": POSTJINJA_DASKHUB_HELM_CHART_PATH,
             "extra_opts": "--debug --dry-run",
             "output_filename": "test_with_values_with_kustomize_daskhub_deployment.yaml",
             "values_to_remove_from_snapshot": [
@@ -194,13 +166,15 @@ def test_with_values_with_kustomize_daskhub_deployment(snapshot):
                 "/spec/template/metadata/annotations/checksum?secret",
                 "/spec/template/metadata/annotations/checksum?auth-token",
                 "/spec/template/metadata/annotations/checksum?proxy-secret",
+                "/spec/template/metadata/annotations/checksum?proxy-secret",
+                "/spec/strategy/rollingUpdate",  # This guy appears on GitLab CI for some reason
             ],
         },
     )
 
 
 @pytest.mark.skipif(which("kustomize") is None, reason="kustomize not installed")
-@pytest.mark.skipif(which("helm") is None, reason="kustomize not installed")
+@pytest.mark.skipif(which("helm") is None, reason="helm not installed")
 def test_with_values_no_kustomize_daskhub_deployment_next(snapshot):
     """
     This test checks that the output produced by the helm template
@@ -208,22 +182,31 @@ def test_with_values_no_kustomize_daskhub_deployment_next(snapshot):
     to show how kustomize fits into our chain.
     """
 
+    apply_jinja_templates_by_dir(
+        PREJINJA_DASKHUB_HELM_CHART_PATH,
+        POSTJINJA_DASKHUB_HELM_CHART_PATH,
+        HELIOCLOUD_DASKHUB_RENDER_PARAMS,
+    )
+
+    # Update the dependency in the helm chart to be the next version.
+    os.system(
+        f"sed 's#version: {HELM_OPT_DASKHUB_CURR_VERSION}#version: {HELM_OPT_DASKHUB_NEXT1_VERSION}#' -i {POSTJINJA_DASKHUB_HELM_CHART_PATH}/Chart.yaml"
+    )
+
     do_execute_helm_template(
         snapshot,
         params={
             "repo_name": "daskhub",
             "chart": {
-                "name": "dask/daskhub",
-                "version": HELM_OPT_DASKHUB_NEXT1_VERSION,
+                "name": "./",
             },
             "namespace": "daskhub",
             "values": [
-                "dh-auth.yaml.template",
-                "dh-config.yaml.template",
-                "dh-secrets.yaml.template",
+                "values.yaml",
+                "values-production.yaml",
             ],
             "post_render_hook": "./kustomize-post-renderer-hook.sh",
-            "wd": "daskhub/deploy",
+            "wd": POSTJINJA_DASKHUB_HELM_CHART_PATH,
             "extra_opts": "--debug --dry-run",
             "output_filename": "test_with_values_no_kustomize_daskhub_deployment_next.yaml",
             "values_to_remove_from_snapshot": [
@@ -236,6 +219,7 @@ def test_with_values_no_kustomize_daskhub_deployment_next(snapshot):
                 "/spec/template/metadata/annotations/checksum?secret",
                 "/spec/template/metadata/annotations/checksum?auth-token",
                 "/spec/template/metadata/annotations/checksum?proxy-secret",
+                "/spec/strategy/rollingUpdate",  # This guy appears on GitLab CI for some reason
             ],
         },
     )

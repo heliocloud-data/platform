@@ -61,6 +61,23 @@ portal:
   domain_certificate_arn: "arn:aws:acm:${AWS_DEFAULT_REGION}:${HC_AWS_ACCOUNT}:certificate/${HC_PORTAL_CERT_ARN}"
 
 daskhub:
+  eksctl:
+    metadata:
+      name: 'eks-helio'
+      region: '${AWS_DEFAULT_REGION}'
+    availabilityZones:
+    - ${AWS_DEFAULT_REGION}a
+    - ${AWS_DEFAULT_REGION}b
+    eks_console_dashboard_full_access_role_arn: "arn:aws:iam::${HC_AWS_ACCOUNT}:role/${HC_EKS_ROLE_ARN}"
+  daskhub:
+    namespace: daskhub
+    DASKHUB_ADMIN_USER: lenzinm1
+    ADMIN_USER_EMAIL: nicholas.lenzi@jhuapl.edu
+    GENERIC_DOCKER_LOCATION: 'public.ecr.aws/q3h7b4o8/heliocloud/helio-notebook'
+    GENERIC_DOCKER_VERSION: '2023.12.06'
+    ML_DOCKER_LOCATION: 'public.ecr.aws/q3h7b4o8/heliocloud/helio-notebook-mltf'
+    ML_DOCKER_VERSION: '2023.12.06'
+
   # This is the IAM Role ARN that will be added to the aws-auth ConfigMap
   # that will be used to allow AWS Console users full access to the EKS cluster.
   EKS_CONSOLE_DASHBOARD_FULL_ACCESS_ROLE_ARN: "arn:aws:iam::${HC_AWS_ACCOUNT}:role/${HC_EKS_ROLE_ARN}"

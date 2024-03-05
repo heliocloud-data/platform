@@ -238,7 +238,9 @@ class PortalStack(Stack):
         """
         # Construct the Docker image asset that ECR will need
         # Build args have to get turned into strings for DockerImageAsset to accept them
-        args = {key: str(build_args[key]) for key in build_args.keys()}
+        args = {}
+        if build_args is not None:
+            args = {key: str(build_args[key]) for key in build_args.keys()}
         print(f"Portal Docker Image build is using args: {args}")
         directory = os.path.dirname(__file__)
         return ecr_assets.DockerImageAsset(

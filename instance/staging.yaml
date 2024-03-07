@@ -68,32 +68,61 @@ daskhub:
     availabilityZones:
     - ${AWS_DEFAULT_REGION}a
     - ${AWS_DEFAULT_REGION}b
-    eks_console_dashboard_full_access_role_arn: "arn:aws:iam::${HC_AWS_ACCOUNT}:role/${HC_EKS_ROLE_ARN}"
+    iamIdentityMappings:
+      - arn: arn:aws:iam::${HC_AWS_ACCOUNT}:role/CT-PowerUser-HelioCloud
+        groups:
+        - eks-console-dashboard-full-access-group
+      - arn: arn:aws:iam::${HC_AWS_ACCOUNT}:user/CT-PowerUser-HelioCloud-nicholas.lenzi@jhuapl.edu-401
+        groups:
+        - eks-console-dashboard-full-access-group
+        - daskhub-admin-access-group
+        username: lenzinm1
+    nodeGroups:
+      # ng-user-gpu
+      - instancesDistribution:
+          instanceTypes:
+            - "g4dn.4xlarge"
+      # ng-user-compute
+      - instancesDistribution:
+          instanceTypes:
+            - "m5.4xlarge"
+            - "m5n.4xlarge"
+            - "m5d.4xlarge"
+            - "m5dn.4xlarge"
+      # ng-burst-compute-spot
+      - instancesDistribution:
+          instanceTypes:
+            - "m5n.8xlarge"
+            - "m5.8xlarge"
+            - "m4.8xlarge"
+            - "m5dn.8xlarge"
+            - "r5n.8xlarge"
+            - "r5dn.8xlarge"
+  daskhub_storage:
+    efs-persist:
+      storage: 10000Gi
+
   daskhub:
     namespace: daskhub
-    DASKHUB_ADMIN_USER: lenzinm1
-    ADMIN_USER_EMAIL: nicholas.lenzi@jhuapl.edu
+    api_key1: add55be357c8eed7fe79663591cbe41270e51fc2bc6fcb23afc8beb5a29f4acc
+    api_key2: c6a52b9090ea7ce7df6da06bf8f7e882c531441d93e482c1cbb28ad4a401aebe
+    admin_users:
+     - lenzinm1
+    contact_email: nicholas.lenzi@jhuapl.edu
+
     GENERIC_DOCKER_LOCATION: 'public.ecr.aws/q3h7b4o8/heliocloud/helio-notebook'
     GENERIC_DOCKER_VERSION: '2023.12.06'
     ML_DOCKER_LOCATION: 'public.ecr.aws/q3h7b4o8/heliocloud/helio-notebook-mltf'
     ML_DOCKER_VERSION: '2023.12.06'
 
-  # This is the IAM Role ARN that will be added to the aws-auth ConfigMap
-  # that will be used to allow AWS Console users full access to the EKS cluster.
-  EKS_CONSOLE_DASHBOARD_FULL_ACCESS_ROLE_ARN: "arn:aws:iam::${HC_AWS_ACCOUNT}:role/${HC_EKS_ROLE_ARN}"
-  ROUTE53_HOSTED_ZONE: "aplscicloud.org"
-  ROUTE53_DASKHUB_PREFIX: daskhub-dev
-  KUBERNETES_NAMESPACE: daskhub
-  EKS_NAME: 'eks-helio'
-  DASKHUB_ADMIN_USER: lenzinm1
-  ADMIN_USER_EMAIL: nicholas.lenzi@jhuapl.edu
-  GENERIC_DOCKER_LOCATION: 'public.ecr.aws/q3h7b4o8/heliocloud/helio-notebook'
-  GENERIC_DOCKER_VERSION: '2023.12.06'
-  ML_DOCKER_LOCATION: 'public.ecr.aws/q3h7b4o8/heliocloud/helio-notebook-mltf'
-  ML_DOCKER_VERSION: '2023.12.06'
-  AWS_LOAD_BALANCER_SSL_CERT: "arn:aws:acm:${AWS_DEFAULT_REGION}:${HC_AWS_ACCOUNT}:certificate/${HC_PORTAL_CERT_ARN}"
+    domain_url: "aplscicloud.org"
+    domain_record: "daskhub-dev"
+
+  monitoring:
+    AWS_LOAD_BALANCER_SSL_CERT: "arn:aws:acm:${AWS_DEFAULT_REGION}:${HC_AWS_ACCOUNT}:certificate/${HC_PORTAL_CERT_ARN}"
 
 daskhub_metrics:
   domain_url: "aplscicloud.org"
-  grafana_domain_prefix: grafana-dev
-  prometheus_domain_prefix: prometheus-dev
+  grafana_domain_prefix: grafana-dev-${AWS_DEFAULT_REGION}
+  prometheus_domain_prefix: prometheus-dev-${AWS_DEFAULT_REGION}
+  AWS_LOAD_BALANCER_SSL_CERT: "arn:aws:acm:${AWS_DEFAULT_REGION}:${HC_AWS_ACCOUNT}:certificate/${HC_PORTAL_CERT_ARN}"

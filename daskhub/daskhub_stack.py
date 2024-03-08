@@ -29,8 +29,8 @@ from aws_cdk import (
 from constructs import Construct
 from base_aws.base_aws_stack import BaseAwsStack
 
-from .aws_utils import get_instance_types_by_region
-from .jinja_utils import apply_jinja_templates_by_dir
+from daskhub.aws_utils import get_instance_types_by_region
+from daskhub.jinja_utils import apply_jinja_templates_by_dir
 
 SECRET_HEX_IN_BYTES = 32
 WARN_ON_UNSUPPORTED_INSTANCE_TYPE = True

@@ -1,17 +1,12 @@
 """
 This file contains the CDK stack for deploying Daskhub.
 """
+
 import glob
 import os
-import re
-import yaml
-
-from pathlib import Path
-
-import sys
-import shutil
-
 import secrets
+import shutil
+import yaml
 
 import aws_cdk as cdk
 from aws_cdk import (
@@ -48,7 +43,7 @@ class DaskhubStack(Stack):
     SSM_AGENT_RPM = "https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm"  # pylint: disable=line-too-long
 
     # fmt: off
-    def __init__(  # pylint: disable=too-many-arguments, too-many-locals
+    def __init__(  # pylint: disable=too-many-arguments, too-many-locals, too-many-branches, too-many-statements
             self,
             scope: Construct,
             construct_id: str,
@@ -78,22 +73,26 @@ class DaskhubStack(Stack):
                 account = config['env']['account']
         if region is None:
             region = 'us-east-1'
-            print(f"WARN: Unable to detect AWS region for HelioCloud instance, defaulting to {region}")
+            print("WARN: Unable to detect AWS region for HelioCloud instance, "
+                  + f"defaulting to {region}")
         if account is None:
             account = '0123456789'
-            print(f"WARN: Unable to detect AWS account for HelioCloud instance, defaulting to {account}")
+            print("WARN: Unable to detect AWS account for HelioCloud instance, "
+                  + f"defaulting to {account}")
 
         instance_types = get_instance_types_by_region(region)
 
         # Scan the instance types and remove any instance type not supported by
         # the region.
-        for nodeGroup in self.__daskhub_config['eksctl']['nodeGroups']:
-            if 'instancesDistribution' in nodeGroup and 'instanceTypes' in nodeGroup['instancesDistribution']:
+        for nodeGroup in self.__daskhub_config['eksctl']['nodeGroups']: # pylint: disable=invalid-name
+            if ('instancesDistribution' in nodeGroup and
+                'instanceTypes' in nodeGroup['instancesDistribution']):
                 to_remove = []
-                for instanceType in nodeGroup['instancesDistribution']['instanceTypes']:
+                for instanceType in nodeGroup['instancesDistribution']['instanceTypes']: # pylint: disable=invalid-name
                     if instanceType not in instance_types:
                         if WARN_ON_UNSUPPORTED_INSTANCE_TYPE:
-                            print(f"WARN: Unsupported instance type {instanceType}, removing from node group")
+                            print(f"WARN: Unsupported instance type {instanceType},"
+                                  + "removing from node group")
                         to_remove.append(instanceType)
                 for rem in to_remove:
                     nodeGroup['instancesDistribution']['instanceTypes'].remove(rem)
@@ -132,8 +131,6 @@ class DaskhubStack(Stack):
         # Based on the user data.
         with open("daskhub/deploy/00-tools.sh", encoding="UTF-8") as file:
             bash_lines = file.read()
-        # with open("daskhub/deploy/00-install-cnf-outputs-to-k8-templates.sh", encoding="UTF-8") as file:
-        #     bash_lines = "\n" + file.read()
 
         template_src_folder = "daskhub/deploy"
         template_dest_folder = "temp/daskhub/deploy"
@@ -165,7 +162,8 @@ class DaskhubStack(Stack):
                     ec2_dest_abs_path = f"{ec2_dest_folder}/{file_relative_to_src_folder}"
                     if ec2_dest_abs_path in config_deploy_files_to_ec2_dest_abspath:
                         if WARN_ON_DUPLICATE_FILES:
-                            print(f"WARN: Skipping file {file_rel} in {deploy_dir}, already exists {ec2_dest_abs_path}")
+                            print(f"WARN: Skipping file {file_rel} in {deploy_dir}, "
+                                  + f"already exists {ec2_dest_abs_path}")
                         continue
 
                     print(f"  + {file_rel} -> {ec2_dest_abs_path}")
@@ -293,7 +291,8 @@ class DaskhubStack(Stack):
 
         )
 
-        oauth_base_url=f"https://{self.__daskhub_config['daskhub']['domain_record']}.{self.__daskhub_config['daskhub']['domain_url']}"
+        oauth_base_url=(f"https://{self.__daskhub_config['daskhub']['domain_record']}."
+            f"{self.__daskhub_config['daskhub']['domain_url']}")
         callback_url=f"{oauth_base_url}/hub/oauth_callback"
         logout_url=f"{oauth_base_url}/logout"
 
@@ -317,6 +316,39 @@ class DaskhubStack(Stack):
             supported_identity_providers=[cognito.UserPoolClientIdentityProvider.COGNITO],
             prevent_user_existence_errors=True,
         )
+
+        # Add Daskhub Metrics as a client to the Cognito user pool
+        # pylint: disable=duplicate-code
+        if "daskhub_metrics" in config["enabled"] and config["enabled"]["daskhub_metrics"]:
+            oauth_base_url = ("https://"
+                            f"{self.__daskhub_config['monitoring']['cost_analyzer_domain_prefix']}."
+                            f"{self.__daskhub_config['daskhub']['domain_url']}")
+            callback_url = f"{oauth_base_url}/model/oidc/authorize"
+            logout_url = f"{oauth_base_url}/logout"
+
+            kubecost_client = base_auth.userpool.add_client(
+                "heliocloud-kubecost",
+                generate_secret=True,
+                o_auth=cognito.OAuthSettings(
+                    flows=cognito.OAuthFlows(authorization_code_grant=True),
+                    scopes=[
+                        cognito.OAuthScope.PHONE,
+                        cognito.OAuthScope.EMAIL,
+                        cognito.OAuthScope.OPENID,
+                        cognito.OAuthScope.COGNITO_ADMIN,
+                        cognito.OAuthScope.PROFILE,
+                    ],
+                    callback_urls=[callback_url],
+                    logout_urls=[logout_url],
+                ),
+                supported_identity_providers=[cognito.UserPoolClientIdentityProvider.COGNITO],
+                prevent_user_existence_errors=True,
+            )
+
+            # Set conditional output for the kubecost client
+            cdk.CfnOutput(self, "CognitoClientIdKubeCost",
+                          value=kubecost_client.user_pool_client_id)
+
         self.build_route53_settings()
 
         # AWS KMS key required for K8 to encrypt/decrypt secrets during its deployment
@@ -376,6 +408,10 @@ class DaskhubStack(Stack):
         return daskhub_config
 
     def build_hosted_zone(self):
+        """
+        This method creates a CDK route53 construct from a domain lookup under the 
+        assumption it already exists.
+        """
         domain_url = self.__daskhub_config['daskhub']['domain_url']
         self.hosted_zone = route53.PublicHostedZone.from_lookup(
             self, "HostedZone", domain_name=domain_url

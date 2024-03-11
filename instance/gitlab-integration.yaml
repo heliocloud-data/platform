@@ -47,3 +47,11 @@ portal:
   domain_record: "portal-${CI_COMMIT_REF_SLUG}"
   domain_certificate_arn: "arn:aws:acm:${AWS_DEFAULT_REGION}:${HC_AWS_ACCOUNT}:certificate/${HC_PORTAL_CERT_ARN}"
 
+daskhub:
+  daskhub:
+    domain_url: "domain"
+  monitoring:
+    AWS_LOAD_BALANCER_SSL_CERT: "arn:aws:acm:${AWS_DEFAULT_REGION}:${HC_AWS_ACCOUNT}:certificate/${HC_PORTAL_CERT_ARN}"
+    grafana_domain_prefix: "grafana-${CI_COMMIT_REF_SLUG}"
+    cost_analyzer_domain_prefix: "kubecost-${CI_COMMIT_REF_SLUG}"
+    

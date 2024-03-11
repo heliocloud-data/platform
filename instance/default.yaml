@@ -202,3 +202,6 @@ daskhub:
     GENERIC_DOCKER_VERSION: '2023.12.06'
     ML_DOCKER_LOCATION: 'public.ecr.aws/q3h7b4o8/heliocloud/helio-notebook-mltf'
     ML_DOCKER_VERSION: '2023.12.06'
+  monitoring:
+    grafana_domain_prefix: # grafana domain prefix, ex. my_grafana_subdomain.heliocloud.com
+    cost_analyzer_domain_prefix: # kubecost cost analyzer domain prefix, ex. my_kubecost_subdomain.heliocloud.com

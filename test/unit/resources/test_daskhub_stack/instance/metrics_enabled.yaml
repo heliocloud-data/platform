@@ -4,7 +4,7 @@ vpc:
   type: "new"
 
 enabled:
-  daskhub_metrics: false
+  daskhub_metrics: true
 
 userSharedBucket:
   destroyOnRemoval: False
@@ -87,5 +87,9 @@ daskhub:
     GENERIC_DOCKER_VERSION: '2023.12.06'
     ML_DOCKER_LOCATION: 'public.ecr.aws/q3h7b4o8/heliocloud/helio-notebook-mltf'
     ML_DOCKER_VERSION: '2023.12.06'
+  monitoring:
+    AWS_LOAD_BALANCER_SSL_CERT: "acert"
+    grafana_domain_prefix: grafana-test
+    cost_analyzer_domain_prefix: kubecost-test
 
 

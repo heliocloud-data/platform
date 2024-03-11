@@ -31,7 +31,6 @@ email:
 enabled:
   registry: True
   daskhub: True
-  daskhub_metrics: True
   portal: True
 
 auth:
@@ -120,9 +119,5 @@ daskhub:
 
   monitoring:
     AWS_LOAD_BALANCER_SSL_CERT: "arn:aws:acm:${AWS_DEFAULT_REGION}:${HC_AWS_ACCOUNT}:certificate/${HC_PORTAL_CERT_ARN}"
-
-daskhub_metrics:
-  domain_url: "aplscicloud.org"
-  grafana_domain_prefix: grafana-dev-${AWS_DEFAULT_REGION}
-  prometheus_domain_prefix: prometheus-dev-${AWS_DEFAULT_REGION}
-  AWS_LOAD_BALANCER_SSL_CERT: "arn:aws:acm:${AWS_DEFAULT_REGION}:${HC_AWS_ACCOUNT}:certificate/${HC_PORTAL_CERT_ARN}"
+    grafana_domain_prefix: grafana-dev-${AWS_DEFAULT_REGION}
+    cost_analyzer_domain_prefix: kubecost-dev-${AWS_DEFAULT_REGION}

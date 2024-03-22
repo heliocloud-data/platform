@@ -2801,36 +2801,6 @@ spec:
             allowPrivilegeEscalation: false
             runAsGroup: 65534
             runAsUser: 65534
-        - name: image-pull-singleuser-profilelist-4
-          image: <ML_DOCKER_LOCATION>:<ML_DOCKER_VERSION>
-          command:
-            - /bin/sh
-            - -c
-            - echo "Pulling complete"
-          securityContext:
-            allowPrivilegeEscalation: false
-            runAsGroup: 65534
-            runAsUser: 65534
-        - name: image-pull-singleuser-profilelist-5
-          image: <ML_DOCKER_LOCATION>:<ML_DOCKER_VERSION>
-          command:
-            - /bin/sh
-            - -c
-            - echo "Pulling complete"
-          securityContext:
-            allowPrivilegeEscalation: false
-            runAsGroup: 65534
-            runAsUser: 65534
-        - name: image-pull-singleuser-profilelist-6
-          image: <ML_DOCKER_LOCATION>:<ML_DOCKER_VERSION>
-          command:
-            - /bin/sh
-            - -c
-            - echo "Pulling complete"
-          securityContext:
-            allowPrivilegeEscalation: false
-            runAsGroup: 65534
-            runAsUser: 65534
       containers:
         - name: pause
           image: registry.k8s.io/pause:3.5
@@ -2863,7 +2833,7 @@ spec:
     # prePuller.hook.enabled=true
     # prePuller.hook.pullOnlyOnChanges=true
     # post-upgrade checksum != pre-upgrade checksum (of the hook-image-puller DaemonSet)
-    # "7c1d19c3fbc68763f68b6a7a0e2c23303487e7ca338e4043f85435c244820c33" != ""
+    # "0ee0c120b051c3844e0ca35533d0f8a52a423a6bf31505f1b25d1568e1b4bcb1" != ""
     #
     metadata:
       labels:

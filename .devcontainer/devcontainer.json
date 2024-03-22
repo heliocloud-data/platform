@@ -1,0 +1,25 @@
+{
+    "image": "python:3.9",
+
+    // Will want to connect for dind to work, we'll be
+    // installing this container on the local network
+    "runArgs": ["--privileged", "--network", "host"],
+    "mounts": [
+        // Enables docker commands within the dev container to communicate
+        // with the host configuration.
+        {
+            "source": "/var/run/docker.sock",
+            "target": "/var/run/docker.sock",
+            "type": "bind",
+        },
+        {
+            "source": "${env:HOME}${env:USERPROFILE}/.aws",
+            "target": "/root/.aws,type=bind",
+            "type": "bind",
+        },
+    ],
+    "containerEnv": {
+        "POST_START_PIP_INSTALL_REQUIREMENTS": "true",
+    },
+    "postStartCommand": "bash .devcontainer/bin/post-start.sh",
+}

@@ -1,0 +1,9 @@
+# See:
+#  https://kubectl.docs.kubernetes.io/references/kustomize/
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+- cloudwatch-namespace.yaml
+- cloudwatch-fluent-bit-cluster-info.yaml
+- cloudwatch-fluent-bit.yaml

@@ -1,0 +1,73 @@
+# See:
+#  https://kubectl.docs.kubernetes.io/references/kustomize/
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+- ../../base/
+
+patches:
+- target:
+    kind: ClusterConfig
+    name: eks-helio
+  patch: |
+    - op: replace
+      path: /metadata/name
+      value: {{ config['eksctl']['metadata']['name'] }}
+    - op: replace
+      path: /metadata/region
+      value: {{ config['eksctl']['metadata']['region'] }}
+    - op: replace
+      path: /availabilityZones
+      value:
+        - {{ config['eksctl']['availabilityZones'][0] }}
+        - {{ config['eksctl']['availabilityZones'][1] }}
+    - op: replace
+      path: /iam/serviceAccounts/0/attachPolicyARNs/0
+      value: "<<CNF_OUTPUT_CustomS3Arn>>"
+    - op: replace
+      path: /iam/serviceAccounts/1/attachPolicyARNs/0
+      value: "<<CNF_OUTPUT_CustomS3Arn>>"
+    - op: replace
+      path: /iam/serviceAccounts/1/metadata/namespace
+      value: {{ config['daskhub']['namespace'] }}
+    - op: replace
+      path: /iam/serviceAccounts/2/attachPolicyARNs/0
+      value: "<<CNF_OUTPUT_ASGArn>>"
+    - op: replace
+      path: /iam/serviceAccounts/3/attachPolicyARNs/0
+      value: "<<CNF_OUTPUT_ASGArn>>"
+    - op: replace
+      path: /iam/serviceAccounts/4/roleName
+      value: "AmazonEKS_EBS_CSI_DriverRole-{{ config['eksctl']['metadata']['region'] }}-{{ config['eksctl']['metadata']['name'] }}"
+    - op: replace
+      path: /secretsEncryption/keyARN
+      value: "<<CNF_OUTPUT_KMSArn>>"
+    - op: replace
+      path: /nodeGroups/0/availabilityZones
+      value:
+      - {{ config['eksctl']['availabilityZones'][0] }}
+    - op: replace
+      path: /nodeGroups/1/availabilityZones
+      value:
+      - {{ config['eksctl']['availabilityZones'][0] }}
+    - op: replace
+      path: /nodeGroups/2/availabilityZones
+      value:
+      - {{ config['eksctl']['availabilityZones'][0] }}
+    - op: replace
+      path: /managedNodeGroups/0/availabilityZones
+      value:
+      - {{ config['eksctl']['availabilityZones'][0] }}
+    {%- if 'nodeGroups' in config['eksctl'] %}
+    {%- for nodeGroup in config['eksctl']['nodeGroups'] %}
+    {%- if 'instancesDistribution' in nodeGroup and 'instanceTypes' in nodeGroup['instancesDistribution'] %}
+    - op: replace
+      path: /nodeGroups/{{ loop.index - 1 }}/instancesDistribution/instanceTypes
+      value: {{ nodeGroup['instancesDistribution']['instanceTypes'] }}
+    {%- endif %}
+    {%- endfor %}
+    {%- endif %}
+    - op: replace
+      path: /addons/0/serviceAccountRoleARN
+      value: "arn:aws:iam::{{ account }}:role/AmazonEKS_EBS_CSI_DriverRole-{{ config['eksctl']['metadata']['region'] }}-{{ config['eksctl']['metadata']['name'] }}"

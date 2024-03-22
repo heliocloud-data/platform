@@ -2,33 +2,33 @@
 These are instructions about how to install the HelioCloud version of DaskHub in AWS.
 
 - [HelioCloud DaskHub installation instructions](#heliocloud-daskhub-installation-instructions)
-- [Installing Daskhub](#installing-daskhub)
+- [Installing DaskHub](#installing-daskhub)
   - [Requirements](#requirements)
   - [Initial infrastructure](#initial-infrastructure)
   - [Kubernetes Installation](#kubernetes-installation)
     - [Cluster (EKS) Configuration and Deployment](#cluster-eks-configuration-and-deployment)
     - [DaskHub Helm Deployment](#daskhub-helm-deployment)
-  - [Log into Daskhub](#log-into-daskhub)
+  - [Log into DaskHub](#log-into-daskhub)
   - [Create Users](#create-users)
   - [OAuth Notes](#oauth-notes)
   - [Debugging](#debugging)
-- [Updating Daskhub](#updating-daskhub)
+- [Updating DaskHub](#updating-daskhub)
   - [Updating Kubernetes Cluster](#updating-kubernetes-cluster)
-- [Deleting Daskhub](#deleting-daskhub)
-  - [Tearing down HelioCloud Daskhub infrastructure](#tearing-down-heliocloud-daskhub-infrastructure)
+- [Deleting DaskHub](#deleting-daskhub)
+  - [Tearing down HelioCloud DaskHub infrastructure](#tearing-down-heliocloud-daskhub-infrastructure)
 - [Notes](#notes)
   - [Things that persist](#things-that-persist)
 
-# Installing Daskhub
+# Installing DaskHub
 ## Requirements
 Must be able to deploy AWS CDK projects and we recommend but do not require that you have the SSM client set up.
 
 
 ## Initial infrastructure
 
-We will setup an admin machine (an EC2 instance) and other infrastructure via AWS CDK (we assume this has been done in accordance with the HelioCloud framework install). This admin machine is where we run the Kubernetes install and interact with the Daskhub. 
+We will setup an admin machine (an EC2 instance) and other infrastructure via AWS CDK (we assume this has been done in accordance with the HelioCloud framework install). This admin machine is where we run the Kubernetes install and interact with the DaskHub. 
 
-1. Deploy Daskhub through CDK (instructions [here](../README.md))
+1. Deploy DaskHub through CDK (instructions [here](../README.md))
    - Ensure that the DaskHub is being deployed as part of your HelioCloud instance by setting `enabled.daskhub` to `True`
 in your instance configuration file stored at `instance/name_of_instance.yaml`(see [the example instance configuration file for details](../instance/example.yaml))
 1. SSM into EC2 instance either through the AWS CLI command line (recommended method) or using AWS Console EC2 Instance Connect
@@ -37,7 +37,7 @@ in your instance configuration file stored at `instance/name_of_instance.yaml`(s
    - <details><summary>Through SSM</summary><blockquote>
   
      - In order to SSM you must have both the [AWS CLI](https://aws.amazon.com/cli/) and the [Session Manager plugin](https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-install-plugin.html) installed 
-      - Find `<INSERT_EC2_INSTANCE>` by looking at output from your CDK deployment terminal (labeled as `HelioCloud-Daskhub.InstanceID`) or in the AWS Console under CloudFormation, it is under the stack's output under PublicDNS
+      - Find `<INSERT_EC2_INSTANCE>` by looking at output from your CDK deployment terminal (labeled as `HelioCloud-DaskHub.InstanceID`) or in the AWS Console under CloudFormation, it is under the stack's output under PublicDNS
         - ![finding EC2 DNS ADDRESS](instruction_images/get_instance_id_cloudformation.png)
   
       - Run the following command within a local terminal (uses default AWS credentials set up with `aws configure`):
@@ -60,102 +60,171 @@ in your instance configuration file stored at `instance/name_of_instance.yaml`(s
 ## Kubernetes Installation
 
 ### Cluster (EKS) Configuration and Deployment
-3. Move to home directory (either with `cd` or `cd ~`) and alter configuration file `app.config`
-    - Assumes that Daskhub will be deployed to a DNS that is linked in AWS Route 53. Can deploy if this is not the case but these instructions do not support alternative methods.  
-    - Can alter the following variables (`NAMESPACE` - the kubernetes namespace to deploy application to - and `EKS_NAME` - the name of the AWS Elastic Kubernetes Service we are deploying that must be unique: must only be alphanumeric or hyphen characters) at top of file if they already exist or don't reflect your name choice. Generally can leave these if there are no other HelioCloud DaskHubs deployed in the same region
-    - Can alter the HelioCloud docker container to use (assumes location is available publicly)
-    - ROUTE53_HOSTED_ZONE is whatever zone is set up in AWS for you to use, e.g. at APL it is aplscicloud.org. If you do not have a Route 53 Hosted Zone see [instructions](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/CreatingHostedZone.html).
-    - ADMIN_USER_EMAIL should be yourself or the assigned admin
+During this stage, we're going to standup a Kubernetes cluster in EKS using `eksctl` and `kustomize`, deploy some required resources to the `kube-system` namespace and, enable `amazon-cloudwatch`.
+
+Move to home directory (either with `cd` or `cd ~`).  From here, each subdirectory contains a separate logical component of the deployment.  For the purposes of the EKS deployment, see the `eksctl/` directory and for Kubernetes `kube-system` namespace deployment see `kube-system/`.
+
+These projects follow use the **bases** and **overlays** concepts descibed [here](https://kubernetes.io/docs/tasks/manage-kubernetes-objects/kustomization/#bases-and-overlays).
+
+To automatically bring up the Kubernetes cluster w/ the required changes to the `kube-system` namespace, simply type:
+> ./01-deploy-k8s.sh
+
+This task should take around 20 minutes to complete.  Once complete, move on to the DaskHub Storage section.  Advanced users, may decompose these tests, if so, review the following steps:
 
 
-You can keep many of the items filled in app.config as long as another Daskhub is not up in the same region.
+1. Deploy the cluster using `eksctl`
+The base layer of the cluster configuration is defined in `eksctl/base/cluster-config.yaml` with the environment specific settings stored in `eksctl/overlays/production/kustomization.yaml`.  The default configuration shouldn't
+require any modifications to deploy, but can be changed as needed.  For more details how to configure EKS clusters, consult the [eksctl Config File Schema Usage](https://eksctl.io/usage/schema/).
 
-NOTE: EKS deployment can take 20+ minutes.
+Type the following:
+```
+kustomize build eksctl/overlays/production > eksctl/eksctl-kustomize.yaml && \
+    eksctl create cluster -f eksctl/eksctl-kustomize.yaml
+```
 
-1. Setup and deploy Kubernetes (K8s) on EC2 machine
-    - Can alter nodeGroups and managaedNodeGroups in `cluster-config.yaml.template` to suit your cluster (default has master and nodes where uses have spot nodes and users have 3 types of nodes - high compute user, high GPU user, and high compute burst)
-    - Execute `01-deploy-k8s.sh` by running `./01-deploy-k8s.sh`
-        - May fail if region deploying in does not have those instance types, can modify the `cluster-config.yaml.template` file to remove or replace instance types that are available in region and rerun script 
-        - TODO do the following in a verification script and throw error if not working
-        - (Optional) If you wish to check, you can ensure persistent volumes are created by running `kubectl get pv` and `kubectl get pvc --namespace <NAMESPACE>`
-        - (Optional) Can ensure autoscaling set by running `kubectl get deployments --namespace kube-system`
-   	- Can take 10 minutes or more to execute
-   	- If you are getting 'Error from server (NotFound)' or similar errors, wait and try again later.
-   	- Script is safe to re-run if fails.
+2. Deploy the `kube-system`` namespace
+Within this step, we'll be deploying the `cluster-autoscaler` and some additional `RoleBindings` required to administer an EKS cluster from the AWS console.
+
+Type the following:
+```
+kustomize build kube-system/base | kubectl apply -f -
+```
+
+3. Deploy the `amazon-cloudwatch` namespace
+Within this step, we'll be deploying the `amazon-cloudwatch` namespace, which handles log aggregation and the pod and node level.  When enabled, these logs will be available from the AWS console at CloudWatch.
+
+Type the following:
+```
+kustomize build amazon-cloudwatch/overlays/production | kubectl apply -f -
+```
+
+### DaskHub Storage Deployment
+During this stage, we're going to deploy the daskhub namespace and the storage related resources (`persistentvolume` and `persistentvolumeclaims`) required for the HelioCloud DaskHub Deployment.  Afterwards, a separate EFS Mount Target, that's addressable from the Kubernetes Environment, will be created.
+
+Kubernetes .  For more details on how to tailor storage for your environment, consult the [Persistent Volumes](https://kubernetes.io/docs/concepts/storage/persistent-volumes/) section of the Kubernetes Documentation.
+
+The default configuration contains shared scratch space between all users on Dashhub (sometimes this is refered to as the "EFS mount").  This can be removed from your deployement by skipping this step and removing all `efs-persist` related references from the DaskHub Helm Chart values in the DaskHub deployment stage.
+
+To automatically bring up the Kubernetes cluster w/ the required changes to the `kube-system` namespace, simply type:
+> ./02-deploy-daskhub-storage.sh
+
+This task should only take a few seconds to complete.  Once complete, move on to the DaskHub Helm section.  Advanced users, may decompose these tests, if so, review the following steps:
+
+
+1. Creating the daskhub related storage resources
+The base layer of the daskhub storage is defined in `daskhub-storage/base/` with the environment specific settings stored in `daskhub-storage/overlays/production/kustomization.yaml`.  The default configuration shouldn't
+require any modifications to deploy, but can be changed as needed.
+
+Type the following:
+```
+kustomize build daskhub-storage/overlays/production | kubectl apply -f -
+```
+
+2. Create an EFS Mount Target within the EKS 
+Within this step, a new EFS mount target addressable from the EKS cluster will be created.
+
+Type the following, where `EFS_ID`, `EKS_NAME`, `AWS_REGION`, `AWS_AZ_PRIMARY` are the identifier of the EFS volume, the name of the EKS cluster, the AWS region and the primary availablity zone of your EKS cluster respectively:
+```
+SUBNET_IDS=`aws eks describe-cluster --name $EKS_NAME --region $AWS_REGION --query cluster.resourcesVpcConfig.subnetIds --output text`
+SG_ID=`aws eks describe-cluster --name $EKS_NAME --region $AWS_REGION --query cluster.resourcesVpcConfig.clusterSecurityGroupId --output text`
+
+SUBNET_ID=`aws ec2 describe-subnets --subnet-ids $SUBNET_IDS --filters "Name=availability-zone,Values=$AWS_AZ_PRIMARY" --query "Subnets[0].SubnetId" --output text`
+
+aws efs create-mount-target \
+    --file-system-id $EFS_ID \
+    --subnet-id $SUBNET_ID \
+    --security-groups $SG_ID
+
+```
 
 ### DaskHub Helm Deployment
+During this stage, we're going to standup the DaskHub!
 
-**Daskhub (and JupyterHub) can be set-up so that there is no authentication.  We do NOT recommend this as this will leave a public facing entrypoint to your AWS instance where malicious users can access your Daskhub**.  The current HelioCloud DaskHub configuration is set-up for authentication (but can be run without).  If users standup DaskHubs without authentication (ex. for testing), we recommend tearing it down immediately after debugging is complete or then deploying with authentication right after.
+To automatically deploy the DaskHub and register the domain in Route53, simply type:
+> ./03-deploy-daskhub.sh
 
-This deployment assumes that Daskhub uses AWS Cognito for Authentication and Authorization that is initialized in step 1.  Other methods of Authentication and Authorization can be used but we do not detail them here. We also assume that the user wants domain routing to a DNS address purchased and available in AWS Route 53.  This is so the DaskHub can be accessed from a human readable URL.  We assume the user wants the DaskHub to sit on a subdomain of the DNS address that is configured in step 3.
+Initial deploy of the DaskHub can take up to 30 minutes to complete.  Once complete, move on to the Log into DaskHub section.  Advanced users, may decompose these tests, if so, review the following steps:
+
+1. Deploy the DaskHub using the Helm Chart.
+The DaskHub deployment is deployed via a Helm Chart.  It consists of two sub-charts, `jupyterhub` and `dask-gateway`.  Consult the respective documentation sites for these two tools for more details [here](https://z2jh.jupyter.org/en/stable/) and [here](https://gateway.dask.org/install-kube.html).
+
+Consult the [Using Helm](https://helm.sh/docs/intro/using_helm/) from the Helm Documentation site for more detail.  
+
+```
+cd daskhub
+helm dep update
+helm upgrade \
+    daskhub ./ \
+    --namespace ${KUBERNETES_NAMESPACE} \
+    --values=values.yaml \
+    --values=values-production.yaml \
+    --post-renderer=./kustomize-post-renderer-hook.sh \
+    --install --timeout 30m30s --debug
+```
+
+
+2. Update the Route53 entry.
+In the previous step, an AWS Load Balancer will automatically have been created to handle ingress for DaskHub.  For this step, we're going to update a Route53 CNAME record to point to this load balancer.
+
+```
+# 1. Look up the URL to the load balancer created during the deployment.
+LOADBALANCER_URL=$(kubectl --namespace=$KUBERNETES_NAMESPACE get svc proxy-public --output jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+
+# 2. Inject the URL to the load balancer into a Route53 request
+cp route53_record.json.template route53_record.json
+sed -i "s|<INSERT_LOADBALANCER_URL>|$LOADBALANCER_URL|g" route53_record.json
+
+# 3. Update the CNAME record in Route53
+ROUTE53_HOSTED_ZONE_ID=$(aws route53 list-hosted-zones-by-name | jq --arg name "$ROUTE53_HOSTED_ZONE." -r '.HostedZones | .[] | select(.Name=="\($name)") | .Id')
+aws route53 change-resource-record-sets --hosted-zone-id $ROUTE53_HOSTED_ZONE_ID --change-batch file://route53_record.json
+```
 
 See more details on [DNS routing](https://saturncloud.io/blog/jupyterhub_security/) and [https](https://zero-to-jupyterhub.readthedocs.io/en/latest/administrator/security.html#set-up-automatic-https).
 
 
-5. Execute `02-deploy-daskhub.sh` by running `./02-deploy-daskhub.sh`
-    - This script generates copies and fills in configurable values of 3 Daskhub configuration files (can alter manually if have alternate configurations, but NOTE if you change the .yaml files they will be overwritten when these are copied from the .yaml.template files):
-        <details>
-        <summary>dh-config.yaml </summary>
+## Log into DaskHub
 
-        - this file contains the specifications of our exact Daskhub build and we will modify the template file as we perform updates.  This file assumes you have built K8s as above specifically the EFS and serviceaccount naming conventions (if this is not the case alter these sections)
-        -  Only need to adjust `dh-config.yaml` if you did not follow the standard deployment instructions
-        -  If need to alter the docker container make sure to do it in the `app.config`
+6. Go to the DaskHub Frontend URL you just configured and try logging in. (NOTE: sometimes it can take up to 5 minutes for the DNS to propagate).  If you try to load too early on Google Chrome it seems to not try to resync for several minutes (try alternate browser).
 
-        </details>
+  - The URL is defined in the HelioCloud instance configuration (`/daskhub/daskhub/domain_record`.`/daskhub/daskhub/domain_url` in your HelioCloud instance configuration), default is `daskhub.</daskhub/daskhub/domain_url>`.
 
-        <details>
-        <summary>dh-secrets.yaml</summary>
+When successful, all pods within the `daskhub` namespace should be in `RUNNING` status, which looks something like this:
+```
+> sh-4.2$ kubectl --namespace daskhub get pods
 
-        - this file contains randomly generated API keys for JupyterHub and DaskHub, if you have specific API keys replace those instead
-        -  Only need to adjust `dh-secrets.yaml` if you want to specify your own API keys for Daskhub
+NAME                                              READY   STATUS    RESTARTS   AGE
+api-daskhub-dask-gateway-d4c57fdf7-96sw9          1/1     Running   0          29m
+autohttps-7796dd569d-kwngk                        2/2     Running   0          29m
+controller-daskhub-dask-gateway-f9d87c4f6-t7x42   1/1     Running   0          29m
+hub-68d67c569d-4hbnf                              1/1     Running   0          63m
+proxy-5c96bb5bb-pmnb5                             1/1     Running   0          63m
+traefik-daskhub-dask-gateway-7545967cdb-zh2fw     1/1     Running   0          29m
+user-scheduler-7cb7b48fdd-5rvm2                   1/1     Running   0          29m
+user-scheduler-7cb7b48fdd-h26rd                   1/1     Running   0          29m
+```
 
-        </details>
-
-        <details>
-        <summary>dh-auth.yaml</summary>
-
-        - this file contains authentication components of the Daskhub.  This is optional but highly recommended and done by default in this set-up. 
-
-        </details>
-    - This will use Helm (a K8s package manager) to get Daskhub running on our cluster, and as such you need to ensure that at least one node is available.
-    - Default deploys with Authentication and Authorization then gets the URL for our DNS routing and reruns with Authentication and Authorization specified in `dh-auth.yaml`, can alter `02-deploy-daskhub.sh` according to comments to run without authentication
-    - If you receive an error on executing the helm chart see this [link](https://stackoverflow.com/questions/72126048/circleci-message-error-exec-plugin-invalid-apiversion-client-authentication)
-    - Can take 10 minutes or more to execute
-    - If you are getting 'Error from server (NotFound)' or similar errors, wait and try again later.
-    - Script is safe to rerun if fails.
-
-## Log into Daskhub
-
-6. Go to the Daskhub Frontend URL you just configured and try logging in. (NOTE: sometimes it can take up to 5 minutes for the DNS to propagate).  If you try to load too early on Google Chrome it seems to not try to resync for several minutes (try alternate browser).
-
-  - The URL is defined in app.config (`<ROUTE53_DASKHUB_PREFIX>.<ROUTE53_HOSTED_ZONE>`), default is `daskhub.<ROUTE53_HOSTED_ZONE>`.
-   - If this does not work after waiting up to 5 minutes for the changes to propagate through try running: 
-     - `helm upgrade daskhub dask/daskhub --namespace=<NAMESPACE> --values=dh-config.yaml --values=dh-secrets.yaml --version=2022.8.2 --install` 
-     - Then check that the daskhub is working without auth by running `kubectl --namespace=<NAMESPACE> get svc proxy-public` and go to the `EXTERNAL-IP` url to make sure it loads (this allows you to spin up a Jupyterhub without authentication and you can type anything into the username and password) 
-     - Then run `helm upgrade daskhub dask/daskhub --namespace=<NAMESPACE> --values=dh-config.yaml --values=dh-secrets.yaml --values=dh-auth.yaml --version=2022.8.2 --install` and try the link again.  Sometimes it takes a few deploys.
-
-Congratulations! At this point you should have a working HelioCloud DaskHub environment. The following section will outline how you can create authorized users within the Daskhub.
+Congratulations! At this point you should have a working HelioCloud DaskHub environment. The following section will outline how you can create authorized users within the DaskHub.
 
 ## Create Users
 
-If you are using AWS Cognito (our default configuration) you will have to create users for the Daskhub via the AWS Web Console or similar (e.g. AWS CLI).  
+If you are using AWS Cognito (our default configuration) you will have to create users for the DaskHub via the AWS Web Console or similar (e.g. AWS CLI).  
    - First find the relevant AWS Cognito User Pool
      - Log into the AWS Console
      - Find the CloudFormation Auth deployment associated with your HelioCloud instance by first going searchinging `CloudFormation` in the search bar, then select the the Auth stack associated by your instance (ex. `<instance_name>AUTH####`) and select the resources, find the associated User Pool and click on the arrow to link you to the Cognito User Pool ![finding cognito user pool](instruction_images/find_cognito_user_pool.png)
    - Once at the Cognito User Pool, click `Create User`
    ![finding create user button](instruction_images/user_pool_create_user_button.png)
-   - Make an admin account that uses the same admin name as given in `app.config` (e.g. `admintest`).  Be sure to click `Invitation message: send an email invitation` if you use `generate a password` or it will not tell you what password it generated (or you can set your own password).
+   - Make an admin account that uses the same admin name as one given in the HelioCloud instance configuration (`/daskhub/daskhub/admin_users`).  Be sure to click `Invitation message: send an email invitation` if you use `generate a password` or it will not tell you what password it generated (or you can set your own password).
      - ![creating user options](instruction_images/user_pool_create_user_options.png)
    - (Optional) Make non-admin user account for testing or to populate your users' accounts
 
 ## OAuth Notes
 
-OAuth is controlled by your institution's authorization method (AWS Cognito is described in this document) and used by JupyterHub under the hood.  The oauth access token will persist based on your authorization setup.  The default in AWS Cognito is 60 minutes.  This means that if you logout of the Daskhub and then click sign in it will auto login and bypass the login page if the token has not expired.  This is NOT a security issue, the token is behaving as set-up.  This does however mean that users cannot easily logout and have another user login on their same browser.  Institutions may adjust the token time of life in their own authorization tool per their needs.
+OAuth is controlled by your institution's authorization method (AWS Cognito is described in this document) and used by JupyterHub under the hood.  The oauth access token will persist based on your authorization setup.  The default in AWS Cognito is 60 minutes.  This means that if you logout of the DaskHub and then click sign in it will auto login and bypass the login page if the token has not expired.  This is NOT a security issue, the token is behaving as set-up.  This does however mean that users cannot easily logout and have another user login on their same browser.  Institutions may adjust the token time of life in their own authorization tool per their needs.
 
 NOTE: AWS session tokens expire but have a long expiration time. If you are trying to log in as more than 1 user (for testing), you may have to use a different browser session to avoid token clashes blocking the login.
 
 ## Debugging
-Some debugging tips in no particular order. NOTE: the default `NAMESPACE` in `app.config` is `daskhub`
+Some debugging tips in no particular order. NOTE: the default `NAMESPACE` in the HelioCloud instance configuration at `/daskhub/daskhub/namespace`, which defaults to `daskhub`
 
 - Check logs
   - Can check pod logs by first finding pod name using `kubectl -n <NAMESPACE> get pods` and then `kubectl -n <NAMESPACE> logs <POD_NAME>` with the appropriate pod name
@@ -185,97 +254,47 @@ Some debugging tips in no particular order. NOTE: the default `NAMESPACE` in `ap
       - `aws ec2 describe-instance-type-offerings --location-type availability-zone  --filters Name=instance-type,Values=c5.xlarge --region us-east-1 --output table`
 
 - Force node to scale up
-    -  `eksctl scale nodegroup --cluster <CLUSTER_NAME> --name=ng-user-compute-spot --nodes-min=1` where <CLUSTER_NAME> is set by default to `eks-helio` in `app.config`
+    -  `eksctl scale nodegroup --cluster <CLUSTER_NAME> --name=ng-user-compute-spot --nodes-min=1` where <CLUSTER_NAME> is set by defaults to `eks-helio`
 
-# Updating Daskhub
+# Updating DaskHub
 
-To update Daskhub you can alter any of the configuration files (NOTE: not the ones with the suffix .template) and then run `helm upgrade daskhub dask/daskhub --namespace=<NAMESPACE> --values=dh-config.yaml --values=dh-secrets.yaml --values=dh-auth.yaml --version=2022.8.2 --install`
+To update DaskHub you can alter any value or the  `Chart.yaml` itself and then run:
 
-NOTE: often changes can take a minute or two to propogate through the system.
+```
+helm upgrade upgrade \
+    daskhub ./ \
+    --namespace ${KUBERNETES_NAMESPACE} \
+    --values=values.yaml \
+    --values=values-production.yaml \
+    --post-renderer=./kustomize-post-renderer-hook.sh \
+    --install --timeout 30m30s --debug
+```
 
-## Updating Kubernetes Cluster
+## Updating the Kubernetes Cluster
 
-1. Find nodes
-   -  To list the worker nodes registered to the Amazon EKS control plane, run the following command:
-      - `eksctl get nodegroup --cluster <clusterName>` where <CLUSTER_NAME> is set by default to `eks-helio` in `app.config`.  The following is an example output
+The `cluster` and `nodeGroups` configurations of your cluster can be applied automatically from your `cluster-config.yaml` file by running the following command:
+```
+kustomize build eksctl/overlays/production > eksctl/eksctl-kustomize.yaml && \
+        eksctl upgrade cluster -f eksctl/eksctl-kustomize.yaml --approve
+```
 
-        ```
-        [centos@ip-172-31-90-70 ~]$ eksctl get nodegroup --cluster <clusterName>
-        CLUSTER		NODEGROUP		STATUS		CREATED			MIN SIZE	MAX SIZE	DESIRED CAPACITY	INSTANCE TYPE	IMAGE ID		ASG NAME		TYPE
-        eks-helio	ng-burst-compute-spot	CREATE_COMPLETE	2022-10-11T16:19:55Z	0		10		0			m5.8xlarge	ami-099c768b04001b983	eksctl-eks-helio-nodegroup-ng-burst-compute-spot-NodeGroup-1CBEMPEXLSKOS	unmanaged
-        eks-helio	ng-daskhub-services	ACTIVE		2022-10-11T16:20:28Z	1		1		1			t3a.medium	AL2_x86_64		eks-ng-daskhub-services-98c1e3ec-7689-7a38-830d-011e2be4cbc6			managed
-        eks-helio	ng-user-compute-spot	CREATE_COMPLETE	2022-10-11T16:19:55Z	0		15		0			m5.xlarge	ami-099c768b04001b983	eksctl-eks-helio-nodegroup-ng-user-compute-spot-NodeGroup-1B379X9Q74QA9		unmanaged
-        eks-helio	ng-user-gpu-spot	CREATE_COMPLETE	2022-10-11T16:19:55Z	0		5		0			g4dn.xlarge	ami-0cb17a7e952cabb92	eksctl-eks-helio-nodegroup-ng-user-gpu-spot-NodeGroup-1E03TASV0OF6E		unmanaged
-        ```
-2. Drain nodes
-   - Drain each node using `eksctl drain nodegroup --cluster=<CLUSTER_NAME> --name=<NODE_GROUP_NAME> `
-      - Ex. `eksctl drain nodegroup --cluster <CLUSTER_NAME> --name ng-user-compute-spot`
-3. Delete nodes
-   - DO NOT DELETE managed node (`ng-daskhub-services`)
-   - Can delete each node using `eksctl delete nodegroup --cluster=<CLUSTER_NAME> --name=<NODE_GROUP_NAME>`
-
-NOTE: If you get a FAIL from any above commands, you may want to go to AWS console to CloudFormation and look at stack status. Make sure all stacks are successfully deleted, then trigger a delete from the console for the stack in question
-
-1. Stop managed node
-   - `eksctl scale nodegroup --cluster=<CLUSTER_NAME> --name=<NODE_GROUP_NAME> --nodes-min 0`
-
-2. Upgrade cluster through AWS Console
-   - Search for EKS in the AWS toolbar
-   - Select 'upgrade' on the cluster (as needed)
-
-3. Update tooling
-   - Execute `00-tools.sh` on EC2 instance
-
-4. Rebuild nodegroups
-   - Alter version in `cluster-config.yaml` files so the yaml version matches version changed to in EKS AWS Console
-   - `eksctl upgrade cluster --config-file cluster-config.yaml`
-
-5. Update helm chart  
-   - `helm install --version 2022.8.2 myrelease dask/dask`
-   - OPTIONAL NOTE: IF you do 'helm repo update' you get a later version of daskhub `helm repo update`
-
-6. Update the `dh-config.yaml` file to use latest container (TODO make this configurable and in `app.config`)
-   
-7.  Run helm
-    - `helm upgrade daskhub dask/daskhub --namespace=<NAMESPACE> --values=dh-config.yaml --values=dh-secrets.yaml --values=dh-auth.yaml --version=2022.8.2 --install --debug`
-
-8.  Find and kill 'autohttps' pod
-    - List the pods `kubectl --namespace=<NAMESPACE> get pod`
-    - Identify 'autohttps'
-        ```
-        NAME                                              READY   STATUS    RESTARTS   AGE
-        api-daskhub-dask-gateway-777666cfc7-dn6cx         1/1     Running   0          46m
-        autohttps-9f776485c-vpncw                         2/2     Running   0          46m
-        continuous-image-puller-49xxz                     1/1     Running   0          4m36s
-        controller-daskhub-dask-gateway-b465c66df-jmjxl   1/1     Running   0          46m
-        hub-6ffd77f4-hzzj6                                1/1     Running   0          4m34s
-        proxy-75b958f4f4-q8j9t                            1/1     Running   0          4m35s
-        traefik-daskhub-dask-gateway-6d6b6479c8-6drdw     1/1     Running   0          4m36s
-        user-scheduler-698cd85687-jnm7h                   1/1     Running   0          46m
-        user-scheduler-698cd85687-vzc2r                   1/1     Running   0          45m
-        ```
-    - Kill autohttps pod (it will auto-restart)
-      - `kubectl -n <NAMESPACE> delete pod <POD_NAME>`
-    - Verify it restarts
-
-IF THINGS GO WRONG: try the following to help debug
-`kubectl -n <NAMESPACE> get events --sort-by='{.lastTimestamp}'`
+NOTE: Some settings within your cluster configuration such as `iam`, `addons` and `iamidentitymapping` don't appear to have any effect.
 
 
-# Deleting Daskhub
+# Deleting DaskHub
 
-In order to delete Daskhub from the Kubernetes need to follow instructions (uninstall helm) here where the namespace from these instructions is "daskhub":
+In order to delete DaskHub from the Kubernetes need to follow instructions (uninstall helm) here where the namespace from these instructions is "daskhub":
 https://phoenixnap.com/kb/helm-delete-deployment-namespace
 
 If used the instructions above can call `helm uninstall daskhub --namespace <NAMESPACE>` to remove daskhub
 
 
-## Tearing down HelioCloud Daskhub infrastructure
+## Tearing down HelioCloud DaskHub infrastructure
 1. Execute `99-delete-daskhub.sh` by running `./99-delete-daskhub.sh`
    - Uninstalls the helm chart, detaches the EFS mount, and tears down the Kubernetes cluster
    - If any failures can look in the AWS console for further debugging, most common failure is the EFS mounted target is still present and using the EKS VPC so the cluster is taken down (which will show cluster delete complete) but the cloudformation stack is still up with the VPC.  If this is the case, go into EFS > network and delete the troublesome mounted target.  Another issue may be that there is an existing Elastic Network Interface still up can go find these through EC2 > Network Interfaces
    - Note that some resources will persist and if you truly want them deleted you will need to delete them by hand (their retention policy is set to not delete by default). See [list of AWS resources](#things-that-persist) that persist.
-2. Tear down the HelioCloud install Daskhub stack by calling `cdk destroy -c config=<CONFIGURING_FILE> HelioCloud-DaskHub` in your local terminal in the same way you deploy your cdk install
+2. Tear down the HelioCloud install DaskHub stack by calling `cdk destroy -c config=<CONFIGURING_FILE> HelioCloud-DaskHub` in your local terminal in the same way you deploy your cdk install
 
 Make sure resources no longer exist before proceeding to next step as this can cause the infrastructure to get stuck in a dependency loop and require extensive troubleshooting.
 

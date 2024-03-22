@@ -1,0 +1,10 @@
+prometheus:
+  server:
+    service:
+      type: LoadBalancer
+      servicePort: 443
+
+grafana:
+  service:
+    type: LoadBalancer
+    port: 443

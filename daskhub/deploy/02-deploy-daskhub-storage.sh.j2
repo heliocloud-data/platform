@@ -1,0 +1,27 @@
+#!/bin/bash
+
+AWS_REGION=$(aws ec2 describe-availability-zones --output text --query 'AvailabilityZones[0].[RegionName]')
+
+AWS_AZ_PRIMARY={{ config['eksctl']['availabilityZones'][0] }}
+EKS_NAME={{ config['eksctl']['metadata']['name'] }}
+
+EFS_ID=<<CNF_OUTPUT_EFSId>>
+
+kustomize build daskhub-storage/overlays/production | kubectl apply -f -
+
+# TODO:
+#
+#  Deploy the EFS mount!!!
+#  At this point in the deployment, it should be available.
+# Get region (should be in configure file after running 01-tools.sh)
+# and availability zone
+
+SUBNET_IDS=`aws eks describe-cluster --name $EKS_NAME --region $AWS_REGION --query cluster.resourcesVpcConfig.subnetIds --output text`
+SG_ID=`aws eks describe-cluster --name $EKS_NAME --region $AWS_REGION --query cluster.resourcesVpcConfig.clusterSecurityGroupId --output text`
+
+SUBNET_ID=`aws ec2 describe-subnets --subnet-ids $SUBNET_IDS --filters "Name=availability-zone,Values=$AWS_AZ_PRIMARY" --query "Subnets[0].SubnetId" --output text`
+
+aws efs create-mount-target \
+    --file-system-id $EFS_ID \
+    --subnet-id $SUBNET_ID \
+    --security-groups $SG_ID

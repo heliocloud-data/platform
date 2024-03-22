@@ -1,0 +1,10 @@
+# See:
+#  https://kubectl.docs.kubernetes.io/references/kustomize/
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+- efs-pv.yaml
+- efs-pvc.yaml
+- namespace.yaml
+- daskhub-admin-access.yaml

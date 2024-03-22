@@ -1,0 +1,12 @@
+apiVersion: v1
+data:
+  cluster.name: eks-helio
+  http.port: "2020"
+  http.server: "On"
+  logs.region: ${AWS_REGION}
+  read.head: "Off"
+  read.tail: "On"
+kind: ConfigMap
+metadata:
+  name: fluent-bit-cluster-info
+  namespace: amazon-cloudwatch

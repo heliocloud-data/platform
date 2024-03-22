@@ -1,0 +1,22 @@
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+
+metadata:
+  name: eks-helio
+  region: us-west-1
+
+iamIdentityMappings:
+  - arn: "<<INSERT>>"
+    username: admin
+    groups:
+    - system:masters
+    - eks-console-dashboard-full-access-group
+
+  # - arn: arn:aws:iam::006885615091:role/CT-PowerUser-HelioCloud
+  #   groups:
+  #   - eks-console-dashboard-full-access-group
+  # - arn: arn:aws:iam::006885615091:user/CT-PowerUser-HelioCloud-nicholas.lenzi@jhuapl.edu-401
+  #   groups:
+  #   - eks-console-dashboard-full-access-group
+  #   - daskhub-admin-access-group
+  #   username: lenzinm1

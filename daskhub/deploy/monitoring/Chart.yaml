@@ -1,0 +1,16 @@
+apiVersion: v2
+appVersion: jh1.2.0-dg2022.6.1
+dependencies:
+- name: prometheus
+  repository: https://prometheus-community.github.io/helm-charts
+  version: 25.8.0
+- name: grafana
+  repository: https://grafana.github.io/helm-charts/
+  version: 7.0.9
+description: HelioClouds multi-user JupyterHub and Dask deployment.
+icon: https://avatars3.githubusercontent.com/u/17131925?v=3&s=200
+maintainers:
+- email: nicholas.lenzi@jhuapl.edu
+  name: Nicholas Lenzi
+name: heliocloud-monitoring
+version: 1.0.0

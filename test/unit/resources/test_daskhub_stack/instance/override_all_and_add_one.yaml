@@ -9,18 +9,28 @@ portal:
   domain_certificate_arn:
 
 daskhub:
-  ROUTE53_HOSTED_ZONE: "ludicolo.org"
-  ROUTE53_DASKHUB_PREFIX: daskhub-tapubulu
-  KUBERNETES_NAMESPACE: tapufini
-  EKS_NAME: 'eks-alola'
-  DASKHUB_ADMIN_USER: ketchap1
-  ADMIN_USER_EMAIL: ash.ketchum@jhuapl.edu
-  GENERIC_DOCKER_LOCATION: 'public.ecr.aws/a/tapukoko-notebook'
-  GENERIC_DOCKER_VERSION: '151'
-  ML_DOCKER_LOCATION: 'public.ecr.aws/b/tapulele-ml-notebook'
-  ML_DOCKER_VERSION: '252'
-  ANOTHER_KLEFKI: '707'
-  AWS_LOAD_BALANCER_SSL_CERT: 'ABC'
+  eksctl:
+    metadata:
+      name: 'eks-alola'
+
+  daskhub:
+    namespace: tapufini
+
+    admin_users:
+      - ketchap1
+    contact_email: ash.ketchum@jhuapl.edu
+
+    domain_url: "ludicolo.org"
+    domain_record: daskhub-tapubulu
+
+    GENERIC_DOCKER_LOCATION: 'public.ecr.aws/a/tapukoko-notebook'
+    GENERIC_DOCKER_VERSION: '151'
+    ML_DOCKER_LOCATION: 'public.ecr.aws/b/tapulele-ml-notebook'
+    ML_DOCKER_VERSION: '252'
+    ANOTHER_KLEFKI: '707'
+
+  monitoring:
+    AWS_LOAD_BALANCER_SSL_CERT: 'ABC'
 
 
 

@@ -33,4 +33,4 @@ def get_daskhub_url(hc_instance):
     """
     cfg = load_configs(hc_id=hc_instance)
 
-    return f"https://{cfg['daskhub']['ROUTE53_DASKHUB_PREFIX']}.{cfg['daskhub']['ROUTE53_HOSTED_ZONE']}"
+    return f"https://{cfg['daskhub']['daskhub']['domain_record']}.{cfg['daskhub']['daskhub']['domain_url']}"

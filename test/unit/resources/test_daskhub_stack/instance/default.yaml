@@ -1,20 +1,88 @@
-# This file is used to support unit tests for
-# test_config.py.
+# Supports unit tests for Daskhub
+
+vpc:
+  type: "new"
+
+userSharedBucket:
+  destroyOnRemoval: False
+
+email:
+  user: "no-reply"
+  from_name: "APL HelioCloud"
+
 auth:
   domain_prefix: "apl-helio"
 
+
+registry:
+  datasetBucketNames: [
+    "bucket1", "bucket2"
+  ]
+
 portal:
-  domain_url:
-  domain_record:
-  domain_certificate_arn:
+  domain_url: "heliocloud.org"
+  domain_record: ""
+  domain_certificate_arn: ""
 
 daskhub:
+  eksctl:
+    metadata:
+      name: 'eks-helio'
+      region: # Example: us-east-1
+    availabilityZones:
+      # Availablity zones listed here, should be at least two,
+      # First zone will 
+    iamIdentityMappings:
+      # Add custom RBAC configuration settings to your aws-auth config
+      # map
+    nodeGroups:
+      # ng-user-gpu
+      - instancesDistribution:
+          instanceTypes:
+            - "g4dn.4xlarge"
+      # ng-user-compute
+      - instancesDistribution:
+          instanceTypes:
+            - "m5.4xlarge"
+            - "m5n.4xlarge"
+            - "m5d.4xlarge"
+            - "m5dn.4xlarge"
+      # ng-burst-compute-spot
+      - instancesDistribution:
+          instanceTypes:
+            - "m5n.8xlarge"
+            - "m5.8xlarge"
+            - "m4.8xlarge"
+            - "m5dn.8xlarge"
+            - "r5n.8xlarge"
+            - "r5dn.8xlarge"
 
+  daskhub_storage:
+    efs-persist:
+      storage: 10000Gi
 
+  daskhub:
+    # Kubernetes namespace where daskhub will be deployed
+    namespace: daskhub
 
+    # API Keys used by dask-gateway and jupyterhub apps within
+    # daskhub.  If set to `auto`, unique API Keys will be generated
+    # at CDK synth time.
+    api_key1: auto
+    api_key2: auto
+    admin_users:
+      # User(s) in AWS Cognito userpool that is the admin within
+      # daskhub, ex. 'jsmith'
+    contact_email: # Email to send cert validation emails to, ex. 'jsmith@gmail.com'
 
+    # Daskhub will be hosted at <domain_record>.<domain_url>
+    domain_url: <REPLACE>
+    domain_record: daskhub
 
-
-
+    # HelioCloud docker containers
+    GENERIC_DOCKER_LOCATION: 'public.ecr.aws/q3h7b4o8/heliocloud/helio-notebook'
+    GENERIC_DOCKER_VERSION: '2023.12.06'
+    ML_DOCKER_LOCATION: 'public.ecr.aws/q3h7b4o8/heliocloud/helio-notebook-mltf'
+    ML_DOCKER_VERSION: '2023.12.06'
 
 

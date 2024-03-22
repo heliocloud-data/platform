@@ -1,26 +1,59 @@
-# Assumes Route 53 hosted zone has been created 
-# Other scripts will upsert record at <ROUTE53_DASKHUB_PREFIX>.<ROUTE53_HOSTED_ZONE>
-# with load balancer created by Daskhub helm chart
-# Ex. for ROUTE53_HOSTED_ZONE: 'example.com' and ROUTE53_DASKHUB_PREFIX: 'hub'
-# will be able to access Daskhub at DNS of hub.example.com
-# after deploy
-ROUTE53_HOSTED_ZONE: '<REPLACE>'
-ROUTE53_DASKHUB_PREFIX: 'daskhub'
+eksctl:
+  metadata:
+    name: 'eks-helio'
+    region: # Example: us-east-1
+  availabilityZones:
+    # Availablity zones listed here, should be at least two,
+    # First zone will 
+  iamIdentityMappings:
+    # Add custom RBAC configuration settings to your aws-auth config
+    # map
+  nodeGroups:
+    # ng-user-gpu
+    - instancesDistribution:
+        instanceTypes:
+          - "g4dn.4xlarge"
+    # ng-user-compute
+    - instancesDistribution:
+        instanceTypes:
+          - "m5.4xlarge"
+          - "m5n.4xlarge"
+          - "m5d.4xlarge"
+          - "m5dn.4xlarge"
+    # ng-burst-compute-spot
+    - instancesDistribution:
+        instanceTypes:
+          - "m5n.8xlarge"
+          - "m5.8xlarge"
+          - "m4.8xlarge"
+          - "m5dn.8xlarge"
+          - "r5n.8xlarge"
+          - "r5dn.8xlarge"
 
-# Names of resources (typically only need to be changed if running multiple versions within same region)
-KUBERNETES_NAMESPACE: 'daskhub'
-EKS_NAME: 'eks-helio'
+daskhub_storage:
+  efs-persist:
+    storage: 10000Gi
 
-# Admin information for OAuth and Certs within the Daskhub 
-# TODO: modify if there is more than one admin
-DASKHUB_ADMIN_USER: '<REPLACE>'
-ADMIN_USER_EMAIL: '<REPLACE>'
+daskhub:
+  # Kubernetes namespace where daskhub will be deployed
+  namespace: daskhub
 
-# HelioCloud docker containers
-GENERIC_DOCKER_LOCATION: 'public.ecr.aws/q3h7b4o8/heliocloud/helio-notebook'
-GENERIC_DOCKER_VERSION: '2023.12.06'
-# Only relevant for GPU servers, can ignore if not hosting these types of servers
-ML_DOCKER_LOCATION: 'public.ecr.aws/q3h7b4o8/heliocloud/helio-notebook-mltf'
-ML_DOCKER_VERSION: '2023.12.06'
+  # API Keys used by dask-gateway and jupyterhub apps within
+  # daskhub.  If set to `auto`, unique API Keys will be generated
+  # at CDK synth time.
+  api_key1: auto
+  api_key2: auto
+  admin_users:
+    # User(s) in AWS Cognito userpool that is the admin within
+    # daskhub, ex. 'jsmith'
+  contact_email: # Email to send cert validation emails to, ex. 'jsmith@gmail.com'
 
-AWS_LOAD_BALANCER_SSL_CERT: ''
+  # Daskhub will be hosted at <domain_record>.<domain_url>
+  domain_url: '<REPLACE>'
+  domain_record: "daskhub"
+
+  # HelioCloud docker containers
+  GENERIC_DOCKER_LOCATION: 'public.ecr.aws/q3h7b4o8/heliocloud/helio-notebook'
+  GENERIC_DOCKER_VERSION: '2023.12.06'
+  ML_DOCKER_LOCATION: 'public.ecr.aws/q3h7b4o8/heliocloud/helio-notebook-mltf'
+  ML_DOCKER_VERSION: '2023.12.06'

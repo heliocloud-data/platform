@@ -11,7 +11,7 @@ class TestConfig(unittest.TestCase):
     def test_method_load_configs_OK(self):
         cfg = load_configs("test/unit/resources/test_app_config/instance", "test_config")
 
-        print(cfg)
+        print(f"AAA-> {cfg}")
 
         # Confirm values in the instance document
         self.assertEqual(cfg["env"]["account"], 123456789)

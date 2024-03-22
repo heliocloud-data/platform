@@ -1482,10 +1482,10 @@ metadata:
 apiVersion: v1
 data:
   config.yaml: |
-    apiVersion: kubescheduler.config.k8s.io/v1beta3
+    apiVersion: kubescheduler.config.k8s.io/v1
     kind: KubeSchedulerConfiguration
     leaderElection:
-      resourceLock: endpoints
+      resourceLock: leases
       resourceName: user-scheduler-lock
       resourceNamespace: "daskhub"
     profiles:
@@ -1508,15 +1508,15 @@ data:
             - name: ImageLocality
               weight: 11
         pluginConfig:
-          - args:
-              scoringStrategy:
-                resources:
-                - name: cpu
-                  weight: 1
-                - name: memory
-                  weight: 1
-                type: MostAllocated
-            name: NodeResourcesFit
+        - args:
+            scoringStrategy:
+              resources:
+              - name: cpu
+                weight: 1
+              - name: memory
+                weight: 1
+              type: MostAllocated
+          name: NodeResourcesFit
 kind: ConfigMap
 metadata:
   labels:
@@ -1524,6 +1524,7 @@ metadata:
     chart: jupyterhub-2.0.0
     component: user-scheduler
     heritage: Helm
+    kustomization: patch-jupyterhub-user-scheduler-apiVersion
     release: daskhub
   name: user-scheduler
 ---
@@ -2296,7 +2297,7 @@ spec:
             - --config=/etc/user-scheduler/config.yaml
             - --authentication-skip-lookup=true
             - --v=4
-          image: k8s.gcr.io/kube-scheduler:v1.22.17
+          image: registry.k8s.io/kube-scheduler:v1.27.10
           livenessProbe:
             httpGet:
               path: /healthz
@@ -2369,7 +2370,7 @@ spec:
               weight: 100
       automountServiceAccountToken: false
       containers:
-        - image: k8s.gcr.io/pause:3.8
+        - image: registry.k8s.io/pause:3.8
           name: pause
           resources:
             limits:
@@ -2976,7 +2977,7 @@ spec:
             runAsUser: 65534
       containers:
         - name: pause
-          image: k8s.gcr.io/pause:3.8
+          image: registry.k8s.io/pause:3.8
           securityContext:
             allowPrivilegeEscalation: false
             runAsGroup: 65534
@@ -3006,7 +3007,7 @@ spec:
     # prePuller.hook.enabled=true
     # prePuller.hook.pullOnlyOnChanges=true
     # post-upgrade checksum != pre-upgrade checksum (of the hook-image-puller DaemonSet)
-    # "775863f8e2d600b0fd8666eb578f1c75a5f64c4895bdf32254140e199aab1e9e" != ""
+    # "563e3d05d06f96d04b06989b299c0f1f8623ddcd146bba29f8231d437d51d8d1" != ""
     #
     metadata:
       labels:

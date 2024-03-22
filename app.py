@@ -17,6 +17,7 @@ from base_aws.base_aws_stack import BaseAwsStack
 from registry.registry_stack import RegistryStack
 from portal.portal_stack import PortalStack
 from daskhub.daskhub_stack import DaskhubStack
+from daskhub.daskhub_metrics_stack import DaskhubMetricsStack
 
 
 class MyHelioCloud(Construct):
@@ -143,7 +144,19 @@ class MyHelioCloud(Construct):
                 )
                 daskhub_stack.add_dependency(base_stack)
                 daskhub_stack.add_dependency(auth_stack)
-                cdk.Tags.of(daskhub_stack).add("Product", "heliocloud-dashboard")
+                cdk.Tags.of(daskhub_stack).add("Product", "heliocloud-daskhub-admin")
+
+            # Should Daskhub be deployed
+            if enabled_modules.get("daskhub_metrics", False):
+                daskhub_metrics_stack = DaskhubMetricsStack(
+                    self,
+                    "DaskhubMetrics",
+                    description="Metrics for a Daskhub HelioCloud instance.",
+                    config=self.__config,
+                    env=self.__env,
+                )
+                # daskhub_metrics_stack.add_dependency(daskhub_stack)
+                cdk.Tags.of(daskhub_metrics_stack).add("Product", "heliocloud-daskhub-metrics")
 
         # Deploy the registry module
         if enabled_modules.get("registry", False):

@@ -12,7 +12,7 @@ from utils import which
 
 
 class TestDaskhubStack(unittest.TestCase):
-    DEFAULT_KEY_COUNT = 10
+    DEFAULT_KEY_COUNT = 11
     """
     Various tests for parsing configuration files.
     """

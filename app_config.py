@@ -20,7 +20,9 @@ def load_configs(basedir: str = None, hc_id: str = None) -> dict:
     with open(f"{basedir}/default.yaml", "r", encoding="utf-8") as default_config_file:
         configuration = yaml.safe_load(default_config_file)
 
-    with open(f"{basedir}/{hc_id}.yaml", encoding="utf-8") as instance_config_file:
-        configuration.update(yaml.safe_load(instance_config_file))
+    # If an instance config is present, load and override the default
+    if hc_id is not None:
+        with open(f"{basedir}/{hc_id}.yaml", encoding="utf-8") as instance_config_file:
+            configuration.update(yaml.safe_load(instance_config_file))
 
     return configuration

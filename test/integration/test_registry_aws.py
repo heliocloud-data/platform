@@ -3,14 +3,16 @@ import json
 import os
 import unittest
 
-import boto3
-
-from registry.lambdas.app.catalog_lambda import lambda_execute
 from registry.lambdas.app.model.dataset import DataSet
+from registry.lambdas.client.invoke import (
+    get_ingester_function,
+    get_cataloger_function,
+    CatalogerResponse,
+)
+from features.utils.aws_utils import find_cloudformation_stack_name_starts_with
 from utils import (
     new_boto_session,
     get_hc_instance,
-    get_lambda_function_name,
     get_registry_s3_buckets,
     get_ingest_s3_bucket_name,
     list_lambda_function_names,
@@ -44,11 +46,11 @@ class TestRegistryAWS(unittest.TestCase):
     mms_local_manifest_path = "test/integration/resources/s3/to_upload/MMS/manifest.csv"
 
     # Get the function names
-    ingest_function_name = get_lambda_function_name(
-        session=session, hc_instance=hc_instance, lambda_name="Ingester"
+    ingest_function_name = get_ingester_function(
+        hc_instance=hc_instance, region=session.region_name
     )
-    cataloger_function_name = get_lambda_function_name(
-        session=session, hc_instance=hc_instance, lambda_name="Cataloger"
+    cataloger_function_name = get_cataloger_function(
+        hc_instance=hc_instance, region=session.region_name
     )
 
     def setUp(self) -> None:
@@ -60,6 +62,7 @@ class TestRegistryAWS(unittest.TestCase):
         print(
             f"Uploading manifest file: {TestRegistryAWS.mms_local_manifest_path} to key: {key} in bucket: {TestRegistryAWS.ingest_bucket}"
         )
+
         s3client.upload_file(
             Filename=TestRegistryAWS.mms_local_manifest_path,
             Bucket=TestRegistryAWS.ingest_bucket,
@@ -147,7 +150,7 @@ class TestRegistryAWS(unittest.TestCase):
             "job_folder": TestRegistryAWS.ingest_job_subfolder,
         }
 
-        if TestRegistryAWS.ingest_function_name is None:
+        if not TestRegistryAWS.ingest_function_name.strip():
             print(f"Unable to locate lambda ingest function for {TestRegistryAWS.hc_instance}")
             list_lambda_function_names(TestRegistryAWS.session)
         else:
@@ -161,12 +164,13 @@ class TestRegistryAWS(unittest.TestCase):
         print("Ingester lambda ran successfully.")
 
         # Next, run the Cataloger
-        response = lambda_execute(
-            function_name=TestRegistryAWS.cataloger_function_name, session=TestRegistryAWS.session
+        cataloger_response = CatalogerResponse(
+            lambda_client.invoke(
+                FunctionName=TestRegistryAWS.cataloger_function_name, Payload=json.dumps({})
+            )
         )
-        print(response.error_message)
-        print(response.function_error)
-        self.assertTrue(response.is_success)
+        print(cataloger_response)
+        self.assertTrue(cataloger_response.success)
         print("Cataloger ran successfully.")
 
         # Now inspect the results

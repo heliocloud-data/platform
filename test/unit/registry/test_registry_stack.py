@@ -1,97 +1,161 @@
-import pytest
+import inspect
+import json
 import unittest
-from unittest.mock import patch, MagicMock
 
+import aws_cdk as cdk
+from aws_cdk.assertions import Template, Match
+
+from app_config import load_configs
+from base_aws.base_aws_stack import BaseAwsStack
 from registry.lambdas.app.core.constants import (
     DEFAULT_PANDA_LAYERS_ARN,
 )
-
-from utils import which
+from registry.registry_stack import RegistryStack
+from utils import create_dumpfile
 
 
 class TestRegistryStack(unittest.TestCase):
-    @pytest.mark.skipif(which("node") is None, reason="node not installed")
-    @patch("base_aws.base_aws_stack.BaseAwsStack")
-    @patch("aws_cdk.aws_docdb.DatabaseCluster")
-    @patch("aws_cdk.aws_lambda.Function")
-    @patch("aws_cdk.aws_s3.Bucket")
-    def test_constructor_config__default(
-        self, base_aws_stack, database_cluster, lambda_function, s3_bucket
-    ) -> None:
+    def test_default_synthesis(self) -> None:
         """
-        This test checks verifies the resulting configuration with the default settings.
+        Test synthesis of a Registry stack instance using a default HelioCloud instance
+        configuration.
         """
 
-        # This is certainly feels strange, but appeared to be required for this
-        # test to run successfully on the CI server.  Basically, importing
-        # RegistryStack also does an of 'aws_cdk.__init__' which causes an
-        # exception during start up.  By moving the import here, and supplying
-        # a patch, we're able to instantiate the stack.
-        from registry.registry_stack import RegistryStack
+        # Startup a CDK app and load the default HelioCloud config
+        app = cdk.App()
+        env = cdk.Environment(region="us-east1", account="unit-test")
+        cfg = load_configs()
+        cfg["registry"]["ingestBucketName"] = "ingest"
+        cfg["registry"]["datasetBucketNames"] = ["bucket1", "bucket2"]
 
-        cfg = {
-            "registry": {
-                "destroyOnRemoval": False,
-                "datasetBucketNames": [],
-                "catalog": {
-                    "masterUser": "Ash Ketchum",
-                    "name": "Pikachu",
-                    "contact": "pikachu25@pokemoncenter.com",
-                },
-            }
-        }
+        # Stack dependencies
+        aws_stack = BaseAwsStack(app, "Base-Portal-Test", description="", config=cfg, env=env)
+        registry_stack = RegistryStack(
+            app, "Registry-Test", description="", config=cfg, env=env, base_aws_stack=aws_stack
+        )
 
-        scope = None
-        construct_id = "constructid"
-        rs = RegistryStack(scope, construct_id, cfg, base_aws_stack)
-        self.assertEqual(rs.pandas_layer_arn, DEFAULT_PANDA_LAYERS_ARN)
+        # Generate the template and dump a copy of it for inspection if needed
+        template = Template.from_stack(registry_stack)
+        create_dumpfile(
+            test_class=self.__class__.__name__,
+            test_name=inspect.currentframe().f_code.co_name,
+            data=json.dumps(template.to_json(), indent=2),
+        )
 
-        # Update the configs to include empty values for the optional
-        # elements.
-        cfg["registry"]["layers"] = {}
+        # Check for the ingest bucket
+        template.has_resource(
+            "AWS::S3::Bucket", {"DeletionPolicy": "Delete", "Properties": {"BucketName": "ingest"}}
+        )
 
-        scope = None
-        construct_id = "constructid"
-        rs = RegistryStack(scope, construct_id, cfg, base_aws_stack)
-        self.assertEqual(rs.pandas_layer_arn, DEFAULT_PANDA_LAYERS_ARN)
+        # Check for the dataset buckets
+        template.has_resource(
+            "AWS::S3::Bucket", {"DeletionPolicy": "Retain", "Properties": {"BucketName": "bucket1"}}
+        )
+        template.has_resource(
+            "AWS::S3::Bucket", {"DeletionPolicy": "Retain", "Properties": {"BucketName": "bucket2"}}
+        )
 
-    @pytest.mark.skipif(which("node") is None, reason="node not installed")
-    @patch("base_aws.base_aws_stack.BaseAwsStack")
-    @patch("aws_cdk.aws_docdb.DatabaseCluster")
-    @patch("aws_cdk.aws_lambda.Function")
-    @patch("aws_cdk.aws_s3.Bucket")
-    def test_constructor_config__pandas_arn_set(
-        self, base_aws_stack, database_cluster, lambda_function, s3_bucket
-    ) -> None:
+        # Check for Ingester & Cataloger lambdas
+        # w/ default layers
+        template.has_resource(
+            type="AWS::Lambda::Function",
+            props={
+                "Properties": {
+                    "Handler": "app.ingest_lambda.handler",
+                    "Layers": Match.array_with([DEFAULT_PANDA_LAYERS_ARN]),
+                }
+            },
+        )
+        template.has_resource(
+            type="AWS::Lambda::Function",
+            props={
+                "Properties": {
+                    "Handler": "app.catalog_lambda.handler",
+                    "Layers": Match.array_with([DEFAULT_PANDA_LAYERS_ARN]),
+                }
+            },
+        )
+
+        # Check for the Catalog database
+        template.has_resource(
+            type="AWS::DocDB::DBCluster",
+            props={"Properties": {"DeletionProtection": True}, "DeletionPolicy": "Retain"},
+        )
+
+    def test_destroy_on_removal(self):
         """
-        This test checks verifies the resulting configuration with the panda layers set.
+        Check that resources declared by this stack are set correctly for destruction on removal.
         """
 
-        # This is certainly feels strange, but appeared to be required for this
-        # test to run successfully on the CI server.  Basically, importing
-        # RegistryStack also does an of 'aws_cdk.__init__' which causes an
-        # exception during start up.  By moving the import here, and supplying
-        # a patch, we're able to instantiate the stack.
-        from registry.registry_stack import RegistryStack
+        # Startup a CDK app and load the default HelioCloud config
+        app = cdk.App()
+        env = cdk.Environment(region="us-east1", account="unit-test")
+        cfg = load_configs()
+        cfg["registry"]["ingestBucketName"] = "ingest"
+        cfg["registry"]["datasetBucketNames"] = ["bucket1"]
+        cfg["registry"]["destroyOnRemoval"] = True
 
-        cfg = {
-            "registry": {
-                "destroyOnRemoval": False,
-                "datasetBucketNames": [],
-                "catalog": {
-                    "masterUser": "Ash Ketchum",
-                    "name": "Pikachu",
-                    "contact": "pikachu25@pokemoncenter.com",
-                },
-                "layers": {
-                    "pandas": "" "arn:aws:lambda:pkm-alola-1:000000000760:layer:BEWEAR-Python39:6",
-                },
-            }
-        }
+        # Stack dependencies
+        aws_stack = BaseAwsStack(app, "Base-Portal-Test", description="", config=cfg, env=env)
+        registry_stack = RegistryStack(
+            app, "Registry-Test", description="", config=cfg, env=env, base_aws_stack=aws_stack
+        )
 
-        scope = None
-        construct_id = "constructid"
-        rs = RegistryStack(scope, construct_id, cfg, base_aws_stack)
-        self.assertEqual(
-            rs.pandas_layer_arn, "arn:aws:lambda:pkm-alola-1:000000000760:layer:BEWEAR-Python39:6"
+        # Generate the template and dump a copy of it for inspection if needed
+        template = Template.from_stack(registry_stack)
+        create_dumpfile(
+            test_class=self.__class__.__name__,
+            test_name=inspect.currentframe().f_code.co_name,
+            data=json.dumps(template.to_json(), indent=2),
+        )
+
+        # Catalog DB should be deleted
+        template.has_resource(
+            type="AWS::DocDB::DBCluster",
+            props={"Properties": {"DeletionProtection": False}, "DeletionPolicy": "Delete"},
+        )
+
+        # Dataset bucket should be deleted
+        template.has_resource(
+            "AWS::S3::Bucket", {"DeletionPolicy": "Delete", "Properties": {"BucketName": "bucket1"}}
+        )
+
+    def test_pandas_layer_set(self) -> None:
+        """
+        Test specifying the Pandas AWS Lambda Layer to use.
+        """
+        # Startup a CDK app and load the default HelioCloud config
+        app = cdk.App()
+        env = cdk.Environment(region="us-east1", account="unit-test")
+        cfg = load_configs()
+
+        # Provide required overrides
+        cfg["registry"]["ingestBucketName"] = "ingest"
+        cfg["registry"]["datasetBucketNames"] = ["bucket1"]
+
+        # Set the Pandas ARN
+        pandas_arn = "arn:aws:lambda:pkm-alola-1:000000000760:layer:BEWEAR-Python39:6"
+        cfg["registry"]["layers"] = {"pandas": pandas_arn}
+
+        # Generate the template and dump a copy of it for inspection if needed
+        aws_stack = BaseAwsStack(app, "Base-Portal-Test", description="", config=cfg, env=env)
+        registry_stack = RegistryStack(
+            app, "Registry-Test", description="", config=cfg, env=env, base_aws_stack=aws_stack
+        )
+        template = Template.from_stack(registry_stack)
+        create_dumpfile(
+            test_class=self.__class__.__name__,
+            test_name=inspect.currentframe().f_code.co_name,
+            data=json.dumps(template.to_json(), indent=2),
+        )
+
+        # Check that the specified pandas ARN was used
+        template.has_resource(
+            type="AWS::Lambda::Function",
+            props={
+                "Properties": {
+                    "Handler": "app.ingest_lambda.handler",
+                    "Layers": Match.array_with([pandas_arn]),
+                }
+            },
         )

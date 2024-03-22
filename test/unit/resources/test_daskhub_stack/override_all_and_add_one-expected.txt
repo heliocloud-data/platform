@@ -29,5 +29,8 @@ GENERIC_DOCKER_VERSION='151'
 ML_DOCKER_LOCATION='public.ecr.aws/b/tapulele-ml-notebook'
 ML_DOCKER_VERSION='252'
 
+AWS_LOAD_BALANCER_SSL_CERT='ABC'
+
+
 # Custom variables injected via heliocloud instance.yaml
 ANOTHER_KLEFKI='707'

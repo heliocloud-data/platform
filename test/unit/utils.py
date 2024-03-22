@@ -2,7 +2,6 @@
 Contains utility functions to support unit testing.
 """
 import os
-from pathlib import Path
 
 import dpath
 from ruamel.yaml import YAML

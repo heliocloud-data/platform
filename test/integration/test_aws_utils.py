@@ -31,7 +31,6 @@ class TestAWSUtils(unittest.TestCase):
 
         # put the test file up on S3
         s3client = boto3.client("s3")
-        print(f"\n\n\n{self.__location_constraint}\n\n\n")
         s3client.create_bucket(
             Bucket=TestAWSUtils.bucket,
             CreateBucketConfiguration={

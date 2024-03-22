@@ -33,6 +33,18 @@ class FileType(enum.Enum):
             cls._value2member_map_[other_value] = obj
         return obj
 
+    @classmethod
+    def is_valid_file_type(cls, ext: str) -> bool:
+        """
+        Checks if a FileType can be made out of a given extension.
+        Used so you don't have to catch ValueErrors to check elsewhere.
+        """
+        try:
+            FileType(ext)
+            return True
+        except ValueError:
+            return False
+
 
 class IndexType(enum.Enum):
     """

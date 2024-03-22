@@ -26,6 +26,7 @@ class FileStatus(Enum):
 
     NOT_FOUND = "NOT_FOUND"
     WRONG_SIZE = "WRONG_SIZE"
+    BAD_EXTENSION = "BAD_EXTENSION"
     VALID = "VALID"
 
 
@@ -147,9 +148,10 @@ class Ingester:  # pylint: disable=too-few-public-methods, too-many-instance-att
                 "filename": None,
             }
 
-            # Check that the file exists and has the correct size
+            # Check that the file exists, has the correct size, and has a correct file extension
             s3key = os.path.join(self.__ingest_folder, self.__entry_dataset.dataset_id, row.s3key)
             try:
+                record["filename"] = s3key
                 response = self.__s3_client.head_object(Bucket=self.__ingest_bucket, Key=s3key)
             except botocore.exceptions.ClientError:
                 # File wasn't found
@@ -161,7 +163,18 @@ class Ingester:  # pylint: disable=too-few-public-methods, too-many-instance-att
                     # File was the wrong size
                     record["status"] = FileStatus.WRONG_SIZE.name
                     print(f"Manifest file s3://{self.__ingest_bucket}/{s3key} wrong size.")
-                else:
+
+                # Get file extension from s3 key
+                filename_split = s3key.rsplit(".", 1)
+                extension = filename_split[-1].lower()
+
+                if not FileType.is_valid_file_type(extension):
+                    record["status"] = (
+                        record["status"] + ", " if record["status"] else ""
+                    ) + FileStatus.BAD_EXTENSION.name
+                    print(f"Manifest file s3://{self.__ingest_bucket}/{s3key} bad extension.")
+
+                if not record["status"]:
                     record["status"] = FileStatus.VALID.name
                     print(f"Manifest file s3://{self.__ingest_bucket}/{s3key} validated.")
             # results of check
@@ -171,17 +184,24 @@ class Ingester:  # pylint: disable=too-few-public-methods, too-many-instance-att
         results = self.__manifest_df.apply(check_file, axis=1, result_type="expand")
 
         # If the count of records that are VALID is less than the total records,
-        # we've got invalid entries and can't load
+        # we've got invalid entries and can't load. Throw an exception with error information
         valid = results[results["status"] == FileStatus.VALID.name]
         if valid["status"].count() < results["status"].count():
             valid_count = valid["status"].count()
             results_count = results["status"].count()
+
+            results_status_pretty = ""
+
+            for _, row in results.iterrows():
+                results_status_pretty += f"\n\tFile: {row['filename']} - Status: {row['status']}"
+
             raise IngesterException(
                 "Error validating manifest entries. Only "
                 + str(valid_count)
                 + " records were valid out of "
                 + str(results_count)
-                + " files checked"
+                + " files checked."
+                + results_status_pretty
             )
 
     def __install_dataset(self):
@@ -214,7 +234,6 @@ class Ingester:  # pylint: disable=too-few-public-methods, too-many-instance-att
             filename_split = uploaded_file.rsplit(".", 1)
             extension = filename_split[-1].lower()
             destination_file = ".".join([filename_split[0], FileType(extension).value])
-
             destination_key = self.__destination_folder + destination_file
             self.__s3_client.copy(
                 CopySource=copy_source,

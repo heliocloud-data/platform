@@ -25,8 +25,8 @@ auth:
 
 # Only working on the registry right now
 enabled:
-  registry: False
-  portal: True
+  registry: True
+  portal: False
 
 # Simple bucket names
 registry:
@@ -39,7 +39,9 @@ registry:
     masterUser: master
     name: "Chris Jeschke"
     contact: "chris.jeschke@jhuapl.edu"
-  destroyOnRemoval: False
+
+  # Helps w/ redeployment
+  destroyOnRemoval: True
 
 portal:
   # Typically deploying to JHUAPL cloud environment

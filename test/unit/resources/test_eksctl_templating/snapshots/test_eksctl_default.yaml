@@ -66,6 +66,8 @@ managedNodeGroups:
     maxSize: 3
     minSize: 2
     name: ng-daskhub-services
+    updateConfig:
+      maxUnavailable: 1
 metadata:
   name: eks-helio
   region: us-south-100

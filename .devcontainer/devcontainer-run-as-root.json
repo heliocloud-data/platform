@@ -1,11 +1,5 @@
 {
-    "build": {
-        "dockerfile": "Dockerfile",
-        "context": "..",
-        "args": {
-            "DEV_CONTAINER_USER": "${env:USER}"
-        }
-    },
+    "image": "python:3.9",
 
     // Will want to connect for dind to work, we'll be
     // installing this container on the local network
@@ -20,12 +14,11 @@
         },
         {
             "source": "${env:HOME}${env:USERPROFILE}/.aws",
-            "target": "${env:HOME}${env:USERPROFILE}/.aws,type=bind",
+            "target": "/root/.aws,type=bind",
             "type": "bind",
         },
     ],
-    "containerUser": "${env:USER}",
-    "updateRemoteUserUID": "true",
+    "containerUser": "root",
     "containerEnv": {
         "POST_START_PIP_INSTALL_REQUIREMENTS": "true",
     },

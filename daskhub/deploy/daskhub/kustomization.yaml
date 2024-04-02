@@ -15,10 +15,8 @@ patches:
   # application ingress into the cluster, must wait a short period of time before attempting
   # to generate the certificate (letsencrypt).
   #
-  # Unfortunately, there is no value in the daskhub helm chart (2022.8.2) that allows an
-  # initContainers value be set.  Starting with daskhub 2022.11.0, a value in the helm
-  # chart was introduced (Values.proxy.traefik.extraInitContainers) that allows this to be
-  # set in a more conventional way.  This patch should be removed during that upgrade.
+  # Although a helm value was introduced in the daskhub helm chart (2022.11.0), it executes
+  # after the certificate generation has been attempted.  For this reason, we can't use it.
   #
   # See:
   #  https://discourse.jupyter.org/t/autohttps-pod-unable-to-obtain-lets-encrypt-certificate/15141
@@ -26,21 +24,6 @@ patches:
     target:
       kind: Deployment
       name: autohttps
-
-  # Added when upgrading to kube-scheduler 1.22
-  #
-  # It's purpose is to add additional rules to the ClusterRole used by the
-  # user-scheduler which are not present in the current daskhub helm charts (2022.8.2).
-  # Starting with daskhub 2022.11.0, these rules are automatically added by default,
-  # although the helm value enabling the ClusterRole for the user-scheduler has changed
-  # (.Values.rbac.enabled -> .Values.rbac.create).
-  #
-  # As such, this patch should be completely removed during the daskhub 2022.11.0
-  # upgrade.
-  - path: patch-jupyterhub-user-scheduler-clusterRole.yaml
-    target:
-      kind: ClusterRole
-      name: daskhub-user-scheduler
 
   # Added to ensure the daskhub application will retry generating the certificate if they
   # fail on the first attempt, which is likely due to the domain being registered at the
@@ -88,33 +71,12 @@ patches:
   #      is defined in the ConfigMap.  There were a few additional changes within
   #      this resource as well.  The values included here are the current daskhub
   #      version 2024.1.1.
-  #  2.) The health check endpoints have also changed.  These values are properly
-  #      set starting with daskhub 2022.11.0, and can safely be removed during
-  #      that upgrade.
   #
   # Updated when upgrading to kube-scheduler 1.27
   #  1.) This version only supports apiVersion v1.  The first version of daskhub
   #      to support this apiVersion is 2024.1.0, these patches must remain until
   #      then
-  #  2.) Name of the leaderElection.resourceLock has changed from endpointleases
-  #      to leases.
   - path: patch-jupyterhub-user-scheduler-configMap-apiVersion-v1.yaml
     target:
       kind: ConfigMap
       name: user-scheduler
-  - target:
-      kind: Deployment
-      name: user-scheduler
-    patch: |
-      - op: add
-        path: /spec/template/spec/containers/0/livenessProbe/httpGet
-        value:
-              path: /healthz
-              scheme: HTTPS
-              port: 10259
-      - op: add
-        path: /spec/template/spec/containers/0/readinessProbe/httpGet
-        value:
-              path: /healthz
-              scheme: HTTPS
-              port: 10259

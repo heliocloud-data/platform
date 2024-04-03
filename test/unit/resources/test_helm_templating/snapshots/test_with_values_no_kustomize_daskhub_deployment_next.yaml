@@ -203,7 +203,6 @@ metadata:
     chart: jupyterhub-2.0.0
     component: user-scheduler
     heritage: Helm
-    kustomization: patch-jupyterhub-user-scheduler-apiVersion
     release: daskhub
   name: daskhub-user-scheduler
 rules:
@@ -1856,7 +1855,7 @@ spec:
           env:
             - name: PYTHONUNBUFFERED
               value: 'True'
-          image: jupyterhub/k8s-secret-sync:1.2.0
+          image: jupyterhub/k8s-secret-sync:2.0.0
           name: secret-sync
           securityContext:
             allowPrivilegeEscalation: false
@@ -1880,7 +1879,7 @@ spec:
           env:
             - name: PYTHONUNBUFFERED
               value: 'True'
-          image: jupyterhub/k8s-secret-sync:1.2.0
+          image: jupyterhub/k8s-secret-sync:2.0.0
           name: load-acme
           securityContext:
             allowPrivilegeEscalation: false
@@ -2023,7 +2022,7 @@ spec:
                   name: hub
             - name: EXTRA_PIP_PACKAGES
               value: boto3 dask_gatway_server
-          image: jupyterhub/k8s-hub:1.2.0
+          image: jupyterhub/k8s-hub:2.0.0
           livenessProbe:
             failureThreshold: 30
             httpGet:
@@ -2061,8 +2060,6 @@ spec:
               name: secret
             - mountPath: /srv/jupyterhub
               name: pvc
-      nodeSelector:
-        lifecycle: OnDemand
       securityContext:
         fsGroup: 1000
       serviceAccountName: hub
@@ -2141,7 +2138,7 @@ spec:
                 secretKeyRef:
                   key: hub.config.ConfigurableHTTPProxy.auth_token
                   name: hub
-          image: jupyterhub/configurable-http-proxy:4.5.0
+          image: jupyterhub/configurable-http-proxy:4.5.3
           livenessProbe:
             failureThreshold: 30
             httpGet:
@@ -2896,7 +2893,7 @@ spec:
       automountServiceAccountToken: false
       initContainers:
         - name: image-pull-metadata-block
-          image: jupyterhub/k8s-network-tools:1.2.0
+          image: jupyterhub/k8s-network-tools:2.0.0
           command:
             - /bin/sh
             - -c
@@ -2977,7 +2974,7 @@ spec:
     # prePuller.hook.enabled=true
     # prePuller.hook.pullOnlyOnChanges=true
     # post-upgrade checksum != pre-upgrade checksum (of the hook-image-puller DaemonSet)
-    # "7bbfa866fcecdf82efe35449f9637ec081834427f1916f8015c3d31f3fe7a269" != ""
+    # "eefb2c7bebd5204c6033afef5b07d196f91ae1bbf23431dab283c98d0f9518b6" != ""
     #
     metadata:
       labels:

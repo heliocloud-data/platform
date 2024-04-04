@@ -1,0 +1,192 @@
+addons:
+- name: aws-ebs-csi-driver
+  serviceAccountRoleARN: arn:aws:iam::006885615091:role/AmazonEKS_EBS_CSI_DriverRole-us-west-1-eks-helio
+  version: v1.28.0-eksbuild.1
+- name: vpc-cni
+- name: coredns
+- name: kube-proxy
+apiVersion: eksctl.io/v1alpha5
+availabilityZones:
+- us-west-1a
+- us-west-1b
+cloudWatch:
+  clusterLogging:
+    enableTypes:
+    - '*'
+iam:
+  serviceAccounts:
+  - attachPolicyARNs:
+    - arn:aws:iam::006885615091:policy/testingdevelopBase86E47503-S3ManagedPolicy988D4D4C-eYTa6RacoaOw
+    metadata:
+      labels:
+        aws-usage: application
+      name: helio-dh-role
+  - attachPolicyARNs:
+    - arn:aws:iam::006885615091:policy/testingdevelopBase86E47503-S3ManagedPolicy988D4D4C-eYTa6RacoaOw
+    metadata:
+      name: helio-dh-role
+      namespace: daskhub
+  - attachPolicyARNs:
+    - arn:aws:iam::006885615091:policy/testingdevelopDaskhub44C734C9-K8AutoScalingManagedPolicyD4C9010C-knPzrhtSP6NU
+    metadata:
+      name: cluster-autoscaler
+      namespace: kube-system
+  - attachPolicyARNs:
+    - arn:aws:iam::006885615091:policy/testingdevelopDaskhub44C734C9-K8AutoScalingManagedPolicyD4C9010C-knPzrhtSP6NU
+    metadata:
+      name: admin
+      namespace: kube-system
+  - attachPolicyARNs:
+    - arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy
+    metadata:
+      name: ebs-csi-controller-sa
+      namespace: kube-system
+    roleName: AmazonEKS_EBS_CSI_DriverRole-us-west-1-eks-helio
+    roleOnly: true
+  withOIDC: true
+kind: ClusterConfig
+kubernetesNetworkConfig:
+  ipFamily: IPv4
+managedNodeGroups:
+- availabilityZones: [us-west-1a]
+  desiredCapacity: 0
+  iam:
+    attachPolicyARNs:
+    - arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM
+    - arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy
+    - arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy
+    - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
+    withAddonPolicies:
+      autoScaler: true
+      awsLoadBalancerController: true
+      cloudWatch: true
+      ebs: true
+      efs: true
+      fsx: true
+  instanceTypes:
+  - g4dn.4xlarge
+  labels:
+    hub.jupyter.org/node-purpose: user
+    intent: apps
+    k8s.amazonaws.com/accelerator: nvidia-tesla-t4
+    lifecycle: OnDemand
+    node-purpose: user
+    nvidia.com/gpu: "true"
+  maxSize: 4
+  minSize: 0
+  name: ng-user-gpu
+  tags:
+    k8s.io/cluster-autoscaler/node-template/label/hub.jupyter.org/node-purpose: user
+    k8s.io/cluster-autoscaler/node-template/label/intent: apps
+    k8s.io/cluster-autoscaler/node-template/label/k8s.amazonaws.com/accelerator: nvidia-tesla-t4
+    k8s.io/cluster-autoscaler/node-template/label/lifecycle: OnDemand
+    k8s.io/cluster-autoscaler/node-template/label/node-purpose: user
+    k8s.io/cluster-autoscaler/node-template/label/nvidia.com/gpu: "true"
+    k8s.io/cluster-autoscaler/node-template/taint/dedicated: nvidia.com/gpu=true
+  taints:
+    - key: hub.jupyter.org/dedicated
+      value: user
+      effect: NoSchedule
+    - key: nvidia.com/gpu
+      value: 'true'
+      effect: NoSchedule
+- availabilityZones: [us-west-1a]
+  desiredCapacity: 0
+  iam:
+    attachPolicyARNs:
+    - arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM
+    - arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy
+    - arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy
+    - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
+    withAddonPolicies:
+      autoScaler: true
+      awsLoadBalancerController: true
+      cloudWatch: true
+      ebs: true
+      efs: true
+      fsx: true
+  instanceTypes:
+  - m5.4xlarge
+  - m5d.4xlarge
+  labels:
+    hub.jupyter.org/node-purpose: user
+    intent: apps
+    lifecycle: OnDemand
+    node-purpose: user
+  maxSize: 15
+  minSize: 0
+  name: ng-user-compute
+  tags:
+    k8s.io/cluster-autoscaler/node-template/label/hub.jupyter.org/node-purpose: user
+    k8s.io/cluster-autoscaler/node-template/label/intent: apps
+    k8s.io/cluster-autoscaler/node-template/label/lifecycle: OnDemand
+    k8s.io/cluster-autoscaler/node-template/label/node-purpose: user
+    k8s.io/cluster-autoscaler/node-template/taint/hub.jupyter.org/dedicated: user:NoSchedule
+  taints:
+    - key: hub.jupyter.org/dedicated
+      value: user
+      effect: NoSchedule
+- availabilityZones: [us-west-1a]
+  desiredCapacity: 0
+  iam:
+    attachPolicyARNs:
+    - arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM
+    - arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy
+    - arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy
+    - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
+    withAddonPolicies:
+      autoScaler: true
+      awsLoadBalancerController: true
+      cloudWatch: true
+      ebs: true
+      efs: true
+      fsx: true
+  instanceTypes:
+  - m5.8xlarge
+  - r5n.8xlarge
+  labels:
+    aws.amazon.com/spot: "true"
+    hub.jupyter.org/node-purpose: user
+    intent: apps
+    lifecycle: Ec2Spot
+    node-purpose: user
+  maxSize: 10
+  minSize: 0
+  name: ng-burst-compute-spot
+  spot: true
+  tags:
+    k8s.io/cluster-autoscaler/node-template/label/hub.jupyter.org/node-purpose: user
+    k8s.io/cluster-autoscaler/node-template/label/intent: apps
+    k8s.io/cluster-autoscaler/node-template/label/lifecycle: Ec2Spot
+    k8s.io/cluster-autoscaler/node-template/label/node-purpose: user
+- availabilityZones: [us-west-1a]
+  desiredCapacity: 2
+  iam:
+    attachPolicyARNs:
+    - arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM
+    - arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy
+    - arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy
+    - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
+    withAddonPolicies:
+      autoScaler: true
+      awsLoadBalancerController: true
+      cloudWatch: true
+      ebs: true
+      efs: true
+      fsx: true
+  instanceType: t3a.medium
+  labels:
+    lifecycle: OnDemand
+  maxSize: 3
+  minSize: 2
+  name: ng-daskhub-services
+metadata:
+  name: eks-helio
+  region: us-west-1
+  tags:
+    Product: heliocloud-daskhub
+    Project: heliocloud
+  version: "1.29"
+secretsEncryption:
+  keyARN: arn:aws:kms:us-west-1:006885615091:key/2b708f18-6c5e-4185-a446-57932fc64307
+

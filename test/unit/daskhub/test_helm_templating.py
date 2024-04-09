@@ -10,12 +10,12 @@ from daskhub.jinja_utils import apply_jinja_templates_by_dir
 
 PATH_TO_RESOURCES = f"{os.path.dirname(__file__)}/../resources/test_helm_templating"
 
-HELM_OPT_KUBE_VERSION = "1.28"
-HELM_OPT_API_VERSION = "1.28"
+HELM_OPT_KUBE_VERSION = "1.29"
+HELM_OPT_API_VERSION = "1.29"
 
 HELM_OPT_JUPYTERHUB_VERSION = "1.2.0"
-HELM_OPT_DASKHUB_CURR_VERSION = "2022.8.2"
-HELM_OPT_DASKHUB_NEXT1_VERSION = "2022.11.0"
+HELM_OPT_DASKHUB_CURR_VERSION = "2022.11.0"
+HELM_OPT_DASKHUB_NEXT1_VERSION = "2023.1.0"
 
 PREJINJA_DASKHUB_HELM_CHART_PATH = "daskhub/deploy/daskhub"
 POSTJINJA_DASKHUB_HELM_CHART_PATH = "temp/daskhub/deploy/daskhub"

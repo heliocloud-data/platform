@@ -6,9 +6,9 @@ metadata:
     app.kubernetes.io/instance: daskhub
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: dask-gateway
-    app.kubernetes.io/version: 2022.10.0
+    app.kubernetes.io/version: 2023.1.1
     gateway.dask.org/instance: daskhub-dask-gateway
-    helm.sh/chart: dask-gateway-2022.10.0
+    helm.sh/chart: dask-gateway-2023.1.1
   name: api-daskhub-dask-gateway
 ---
 apiVersion: v1
@@ -29,9 +29,9 @@ metadata:
     app.kubernetes.io/instance: daskhub
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: dask-gateway
-    app.kubernetes.io/version: 2022.10.0
+    app.kubernetes.io/version: 2023.1.1
     gateway.dask.org/instance: daskhub-dask-gateway
-    helm.sh/chart: dask-gateway-2022.10.0
+    helm.sh/chart: dask-gateway-2023.1.1
   name: controller-daskhub-dask-gateway
 ---
 apiVersion: v1
@@ -122,9 +122,9 @@ metadata:
     app.kubernetes.io/instance: daskhub
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: dask-gateway
-    app.kubernetes.io/version: 2022.10.0
+    app.kubernetes.io/version: 2023.1.1
     gateway.dask.org/instance: daskhub-dask-gateway
-    helm.sh/chart: dask-gateway-2022.10.0
+    helm.sh/chart: dask-gateway-2023.1.1
   name: api-daskhub-dask-gateway
 rules:
   - apiGroups:
@@ -147,9 +147,9 @@ metadata:
     app.kubernetes.io/instance: daskhub
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: dask-gateway
-    app.kubernetes.io/version: 2022.10.0
+    app.kubernetes.io/version: 2023.1.1
     gateway.dask.org/instance: daskhub-dask-gateway
-    helm.sh/chart: dask-gateway-2022.10.0
+    helm.sh/chart: dask-gateway-2023.1.1
   name: controller-daskhub-dask-gateway
 rules:
   - apiGroups:
@@ -484,9 +484,9 @@ metadata:
     app.kubernetes.io/instance: daskhub
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: dask-gateway
-    app.kubernetes.io/version: 2022.10.0
+    app.kubernetes.io/version: 2023.1.1
     gateway.dask.org/instance: daskhub-dask-gateway
-    helm.sh/chart: dask-gateway-2022.10.0
+    helm.sh/chart: dask-gateway-2023.1.1
   name: api-daskhub-dask-gateway
 roleRef:
   apiGroup: rbac.authorization.k8s.io
@@ -504,9 +504,9 @@ metadata:
     app.kubernetes.io/instance: daskhub
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: dask-gateway
-    app.kubernetes.io/version: 2022.10.0
+    app.kubernetes.io/version: 2023.1.1
     gateway.dask.org/instance: daskhub-dask-gateway
-    helm.sh/chart: dask-gateway-2022.10.0
+    helm.sh/chart: dask-gateway-2023.1.1
   name: controller-daskhub-dask-gateway
 roleRef:
   apiGroup: rbac.authorization.k8s.io
@@ -688,9 +688,9 @@ metadata:
     app.kubernetes.io/instance: daskhub
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: dask-gateway
-    app.kubernetes.io/version: 2022.10.0
+    app.kubernetes.io/version: 2023.1.1
     gateway.dask.org/instance: daskhub-dask-gateway
-    helm.sh/chart: dask-gateway-2022.10.0
+    helm.sh/chart: dask-gateway-2023.1.1
   name: api-daskhub-dask-gateway
 ---
 apiVersion: v1
@@ -818,9 +818,9 @@ metadata:
     app.kubernetes.io/instance: daskhub
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: dask-gateway
-    app.kubernetes.io/version: 2022.10.0
+    app.kubernetes.io/version: 2023.1.1
     gateway.dask.org/instance: daskhub-dask-gateway
-    helm.sh/chart: dask-gateway-2022.10.0
+    helm.sh/chart: dask-gateway-2023.1.1
   name: controller-daskhub-dask-gateway
 ---
 apiVersion: v1
@@ -1536,9 +1536,9 @@ metadata:
     app.kubernetes.io/instance: daskhub
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: dask-gateway
-    app.kubernetes.io/version: 2022.10.0
+    app.kubernetes.io/version: 2023.1.1
     gateway.dask.org/instance: daskhub-dask-gateway
-    helm.sh/chart: dask-gateway-2022.10.0
+    helm.sh/chart: dask-gateway-2023.1.1
   name: api-daskhub-dask-gateway
 type: Opaque
 ---
@@ -1563,9 +1563,9 @@ metadata:
     app.kubernetes.io/instance: daskhub
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: dask-gateway
-    app.kubernetes.io/version: 2022.10.0
+    app.kubernetes.io/version: 2023.1.1
     gateway.dask.org/instance: daskhub-dask-gateway
-    helm.sh/chart: dask-gateway-2022.10.0
+    helm.sh/chart: dask-gateway-2023.1.1
   name: api-daskhub-dask-gateway
 spec:
   ports:
@@ -1672,9 +1672,9 @@ metadata:
     app.kubernetes.io/instance: daskhub
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: dask-gateway
-    app.kubernetes.io/version: 2022.10.0
+    app.kubernetes.io/version: 2023.1.1
     gateway.dask.org/instance: daskhub-dask-gateway
-    helm.sh/chart: dask-gateway-2022.10.0
+    helm.sh/chart: dask-gateway-2023.1.1
   name: traefik-daskhub-dask-gateway
 spec:
   ports:
@@ -1711,9 +1711,9 @@ metadata:
     app.kubernetes.io/instance: daskhub
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: dask-gateway
-    app.kubernetes.io/version: 2022.10.0
+    app.kubernetes.io/version: 2023.1.1
     gateway.dask.org/instance: daskhub-dask-gateway
-    helm.sh/chart: dask-gateway-2022.10.0
+    helm.sh/chart: dask-gateway-2023.1.1
   name: api-daskhub-dask-gateway
 spec:
   replicas: 1
@@ -1731,9 +1731,9 @@ spec:
         app.kubernetes.io/instance: daskhub
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/name: dask-gateway
-        app.kubernetes.io/version: 2022.10.0
+        app.kubernetes.io/version: 2023.1.1
         gateway.dask.org/instance: daskhub-dask-gateway
-        helm.sh/chart: dask-gateway-2022.10.0
+        helm.sh/chart: dask-gateway-2023.1.1
         hub.jupyter.org/network-access-hub: 'true'
     spec:
       containers:
@@ -1747,7 +1747,7 @@ spec:
                 secretKeyRef:
                   key: jupyterhub-api-token
                   name: api-daskhub-dask-gateway
-          image: ghcr.io/dask/dask-gateway-server:2022.10.0
+          image: ghcr.io/dask/dask-gateway-server:2023.1.1
           imagePullPolicy: IfNotPresent
           livenessProbe:
             failureThreshold: 6
@@ -1912,9 +1912,9 @@ metadata:
     app.kubernetes.io/instance: daskhub
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: dask-gateway
-    app.kubernetes.io/version: 2022.10.0
+    app.kubernetes.io/version: 2023.1.1
     gateway.dask.org/instance: daskhub-dask-gateway
-    helm.sh/chart: dask-gateway-2022.10.0
+    helm.sh/chart: dask-gateway-2023.1.1
   name: controller-daskhub-dask-gateway
 spec:
   replicas: 1
@@ -1934,9 +1934,9 @@ spec:
         app.kubernetes.io/instance: daskhub
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/name: dask-gateway
-        app.kubernetes.io/version: 2022.10.0
+        app.kubernetes.io/version: 2023.1.1
         gateway.dask.org/instance: daskhub-dask-gateway
-        helm.sh/chart: dask-gateway-2022.10.0
+        helm.sh/chart: dask-gateway-2023.1.1
     spec:
       containers:
         - args:
@@ -1944,7 +1944,7 @@ spec:
             - kube-controller
             - --config
             - /etc/dask-gateway/dask_gateway_config.py
-          image: ghcr.io/dask/dask-gateway-server:2022.10.0
+          image: ghcr.io/dask/dask-gateway-server:2023.1.1
           imagePullPolicy: IfNotPresent
           name: controller
           ports:
@@ -2187,9 +2187,9 @@ metadata:
     app.kubernetes.io/instance: daskhub
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: dask-gateway
-    app.kubernetes.io/version: 2022.10.0
+    app.kubernetes.io/version: 2023.1.1
     gateway.dask.org/instance: daskhub-dask-gateway
-    helm.sh/chart: dask-gateway-2022.10.0
+    helm.sh/chart: dask-gateway-2023.1.1
   name: traefik-daskhub-dask-gateway
 spec:
   replicas: 1
@@ -2205,9 +2205,9 @@ spec:
         app.kubernetes.io/instance: daskhub
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/name: dask-gateway
-        app.kubernetes.io/version: 2022.10.0
+        app.kubernetes.io/version: 2023.1.1
         gateway.dask.org/instance: daskhub-dask-gateway
-        helm.sh/chart: dask-gateway-2022.10.0
+        helm.sh/chart: dask-gateway-2023.1.1
     spec:
       containers:
         - args:
@@ -2221,7 +2221,7 @@ spec:
             - --log.level=WARN
             - --entrypoints.traefik.address=:9000
             - --entrypoints.web.address=:8000
-          image: traefik:2.6.3
+          image: traefik:2.9.4
           imagePullPolicy: IfNotPresent
           livenessProbe:
             failureThreshold: 3
@@ -2735,9 +2735,9 @@ metadata:
     app.kubernetes.io/instance: daskhub
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: dask-gateway
-    app.kubernetes.io/version: 2022.10.0
+    app.kubernetes.io/version: 2023.1.1
     gateway.dask.org/instance: daskhub-dask-gateway
-    helm.sh/chart: dask-gateway-2022.10.0
+    helm.sh/chart: dask-gateway-2023.1.1
   name: api-daskhub-dask-gateway
 spec:
   entryPoints:
@@ -2758,9 +2758,9 @@ metadata:
     app.kubernetes.io/instance: daskhub
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: dask-gateway
-    app.kubernetes.io/version: 2022.10.0
+    app.kubernetes.io/version: 2023.1.1
     gateway.dask.org/instance: daskhub-dask-gateway
-    helm.sh/chart: dask-gateway-2022.10.0
+    helm.sh/chart: dask-gateway-2023.1.1
   name: api-prefix-daskhub-dask-gateway
 spec:
   stripPrefix:
@@ -2775,9 +2775,9 @@ metadata:
     app.kubernetes.io/instance: daskhub
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: dask-gateway
-    app.kubernetes.io/version: 2022.10.0
+    app.kubernetes.io/version: 2023.1.1
     gateway.dask.org/instance: daskhub-dask-gateway
-    helm.sh/chart: dask-gateway-2022.10.0
+    helm.sh/chart: dask-gateway-2023.1.1
   name: clusters-prefix-daskhub-dask-gateway
 spec:
   stripPrefixRegex:

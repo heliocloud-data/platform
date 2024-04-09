@@ -88,10 +88,6 @@ daskhub:
             mountPath: /efs
           - name: shm-volume
             mountPath: /dev/shm
-      networkTools:
-        image:
-          name: jupyterhub/k8s-network-tools
-          tag: "2.0.0"
       initContainers:
         - name: nfs-fixer
           image: alpine:3
@@ -215,16 +211,9 @@ daskhub:
       serviceAccountName: helio-dh-role
       defaultUrl: "/lab"  # Use jupyterlab by default.
     proxy:
-      secretSync:
-        image:
-          name: jupyterhub/k8s-secret-sync
-          tag: "2.0.0"
       chp:
         nodeSelector:
           lifecycle: OnDemand
-        image:
-          name: jupyterhub/configurable-http-proxy
-          tag: "4.5.3"
       traefik:
         image:
           name: traefik
@@ -234,11 +223,6 @@ daskhub:
     enabled: true  # Enabling dask-gateway will install Dask Gateway as a dependency.
     # Futher Dask Gateway configuration goes here
     # See https://github.com/dask/dask-gateway/blob/master/resources/helm/dask-gateway/values.yaml
-
-    traefik:
-      image:
-        name: traefik
-        tag: "v2.6.3"
 
     gateway:
       prefix: "/services/dask-gateway"  # Users connect to the Gateway through the JupyterHub service.

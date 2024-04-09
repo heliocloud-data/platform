@@ -3,11 +3,11 @@ appVersion: jh1.2.0-dg2022.6.1
 dependencies:
 - name: daskhub
   repository: https://helm.dask.org/
-  version: 2022.11.0
+  version: 2023.1.0
 description: HelioCloud's multi-user JupyterHub and Dask deployment.
 icon: https://avatars3.githubusercontent.com/u/17131925?v=3&s=200
 maintainers:
 - email: nicholas.lenzi@jhuapl.edu
   name: Nicholas Lenzi
 name: daskhub
-version: 1.1.0
+version: 1.2.0

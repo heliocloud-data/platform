@@ -163,6 +163,8 @@ managedNodeGroups:
     maxSize: 3
     desiredCapacity: 2
     availabilityZones: [<INSERT_PRIMARY_AVAILABILITY_ZONE>]
+    updateConfig:
+      maxUnavailable: 1
     labels:
       lifecycle: OnDemand
     iam:

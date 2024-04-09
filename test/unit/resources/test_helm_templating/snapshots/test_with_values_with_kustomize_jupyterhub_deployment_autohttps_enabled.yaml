@@ -1575,15 +1575,13 @@ spec:
           livenessProbe:
             httpGet:
               path: /healthz
-              port: 10259
-              scheme: HTTPS
+              port: 10251
             initialDelaySeconds: 15
           name: kube-scheduler
           readinessProbe:
             httpGet:
               path: /healthz
-              port: 10259
-              scheme: HTTPS
+              port: 10251
           securityContext:
             allowPrivilegeEscalation: false
             runAsGroup: 65534

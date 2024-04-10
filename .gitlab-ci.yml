@@ -323,6 +323,14 @@ staging-cdk-destroy-on_stop_hook:
   rules:
     - if: $CI_COMMIT_BRANCH == "develop"
 
+# Trigger downstream pipelines to apply any relevant changes from this repo
+trigger-downstream-pipelines:
+  stage: deploy
+  trigger:
+    project: heliocloud/jhuapl-operations
+    branch: main
+  rules:
+    - if: $CI_COMMIT_BRANCH == "develop"
 
 production-jhuapl-cdk-deploy:
   stage: deploy

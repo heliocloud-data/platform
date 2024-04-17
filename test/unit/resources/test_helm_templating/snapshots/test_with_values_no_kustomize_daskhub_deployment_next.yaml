@@ -6,9 +6,9 @@ metadata:
     app.kubernetes.io/instance: daskhub
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: dask-gateway
-    app.kubernetes.io/version: 2023.1.1
+    app.kubernetes.io/version: 2024.1.0
     gateway.dask.org/instance: daskhub-dask-gateway
-    helm.sh/chart: dask-gateway-2023.1.1
+    helm.sh/chart: dask-gateway-2024.1.0
   name: api-daskhub-dask-gateway
 ---
 apiVersion: v1
@@ -16,7 +16,7 @@ kind: ServiceAccount
 metadata:
   labels:
     app: jupyterhub
-    chart: jupyterhub-2.0.0
+    chart: jupyterhub-3.2.1
     component: autohttps
     heritage: Helm
     release: daskhub
@@ -29,9 +29,9 @@ metadata:
     app.kubernetes.io/instance: daskhub
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: dask-gateway
-    app.kubernetes.io/version: 2023.1.1
+    app.kubernetes.io/version: 2024.1.0
     gateway.dask.org/instance: daskhub-dask-gateway
-    helm.sh/chart: dask-gateway-2023.1.1
+    helm.sh/chart: dask-gateway-2024.1.0
   name: controller-daskhub-dask-gateway
 ---
 apiVersion: v1
@@ -39,7 +39,7 @@ kind: ServiceAccount
 metadata:
   labels:
     app: jupyterhub
-    chart: jupyterhub-2.0.0
+    chart: jupyterhub-3.2.1
     component: hub
     heritage: Helm
     release: daskhub
@@ -55,7 +55,7 @@ kind: ServiceAccount
 metadata:
   labels:
     app: jupyterhub
-    chart: jupyterhub-2.0.0
+    chart: jupyterhub-3.2.1
     component: user-scheduler
     heritage: Helm
     release: daskhub
@@ -66,7 +66,7 @@ kind: Role
 metadata:
   labels:
     app: jupyterhub
-    chart: jupyterhub-2.0.0
+    chart: jupyterhub-3.2.1
     component: autohttps
     heritage: Helm
     release: daskhub
@@ -87,7 +87,7 @@ kind: Role
 metadata:
   labels:
     app: jupyterhub
-    chart: jupyterhub-2.0.0
+    chart: jupyterhub-3.2.1
     component: hub
     heritage: Helm
     release: daskhub
@@ -122,9 +122,9 @@ metadata:
     app.kubernetes.io/instance: daskhub
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: dask-gateway
-    app.kubernetes.io/version: 2023.1.1
+    app.kubernetes.io/version: 2024.1.0
     gateway.dask.org/instance: daskhub-dask-gateway
-    helm.sh/chart: dask-gateway-2023.1.1
+    helm.sh/chart: dask-gateway-2024.1.0
   name: api-daskhub-dask-gateway
 rules:
   - apiGroups:
@@ -147,9 +147,9 @@ metadata:
     app.kubernetes.io/instance: daskhub
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: dask-gateway
-    app.kubernetes.io/version: 2023.1.1
+    app.kubernetes.io/version: 2024.1.0
     gateway.dask.org/instance: daskhub-dask-gateway
-    helm.sh/chart: dask-gateway-2023.1.1
+    helm.sh/chart: dask-gateway-2024.1.0
   name: controller-daskhub-dask-gateway
 rules:
   - apiGroups:
@@ -160,7 +160,7 @@ rules:
     verbs:
       - '*'
   - apiGroups:
-      - traefik.containo.us
+      - traefik.io
     resources:
       - ingressroutes
       - ingressroutetcps
@@ -200,7 +200,7 @@ kind: ClusterRole
 metadata:
   labels:
     app: jupyterhub
-    chart: jupyterhub-2.0.0
+    chart: jupyterhub-3.2.1
     component: user-scheduler
     heritage: Helm
     release: daskhub
@@ -423,6 +423,7 @@ rules:
     verbs:
       - update
   - apiGroups:
+      - traefik.io
       - traefik.containo.us
     resources:
       - ingressroutes
@@ -444,7 +445,7 @@ kind: RoleBinding
 metadata:
   labels:
     app: jupyterhub
-    chart: jupyterhub-2.0.0
+    chart: jupyterhub-3.2.1
     component: autohttps
     heritage: Helm
     release: daskhub
@@ -463,7 +464,7 @@ kind: RoleBinding
 metadata:
   labels:
     app: jupyterhub
-    chart: jupyterhub-2.0.0
+    chart: jupyterhub-3.2.1
     component: hub
     heritage: Helm
     release: daskhub
@@ -484,9 +485,9 @@ metadata:
     app.kubernetes.io/instance: daskhub
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: dask-gateway
-    app.kubernetes.io/version: 2023.1.1
+    app.kubernetes.io/version: 2024.1.0
     gateway.dask.org/instance: daskhub-dask-gateway
-    helm.sh/chart: dask-gateway-2023.1.1
+    helm.sh/chart: dask-gateway-2024.1.0
   name: api-daskhub-dask-gateway
 roleRef:
   apiGroup: rbac.authorization.k8s.io
@@ -504,9 +505,9 @@ metadata:
     app.kubernetes.io/instance: daskhub
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: dask-gateway
-    app.kubernetes.io/version: 2023.1.1
+    app.kubernetes.io/version: 2024.1.0
     gateway.dask.org/instance: daskhub-dask-gateway
-    helm.sh/chart: dask-gateway-2023.1.1
+    helm.sh/chart: dask-gateway-2024.1.0
   name: controller-daskhub-dask-gateway
 roleRef:
   apiGroup: rbac.authorization.k8s.io
@@ -522,7 +523,7 @@ kind: ClusterRoleBinding
 metadata:
   labels:
     app: jupyterhub
-    chart: jupyterhub-2.0.0
+    chart: jupyterhub-3.2.1
     component: user-scheduler
     heritage: Helm
     release: daskhub
@@ -688,9 +689,9 @@ metadata:
     app.kubernetes.io/instance: daskhub
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: dask-gateway
-    app.kubernetes.io/version: 2023.1.1
+    app.kubernetes.io/version: 2024.1.0
     gateway.dask.org/instance: daskhub-dask-gateway
-    helm.sh/chart: dask-gateway-2023.1.1
+    helm.sh/chart: dask-gateway-2024.1.0
   name: api-daskhub-dask-gateway
 ---
 apiVersion: v1
@@ -786,7 +787,7 @@ kind: ConfigMap
 metadata:
   labels:
     app: jupyterhub
-    chart: jupyterhub-2.0.0
+    chart: jupyterhub-3.2.1
     component: autohttps
     heritage: Helm
     release: daskhub
@@ -818,9 +819,9 @@ metadata:
     app.kubernetes.io/instance: daskhub
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: dask-gateway
-    app.kubernetes.io/version: 2023.1.1
+    app.kubernetes.io/version: 2024.1.0
     gateway.dask.org/instance: daskhub-dask-gateway
-    helm.sh/chart: dask-gateway-2023.1.1
+    helm.sh/chart: dask-gateway-2024.1.0
   name: controller-daskhub-dask-gateway
 ---
 apiVersion: v1
@@ -842,11 +843,13 @@ data:
   image-puller-priority: daskhub-image-puller-priority
   ingress: jupyterhub
   jupyterhub_config.py: |
+    # load the config object (satisfies linters)
+    c = get_config()  # noqa
+
     import glob
     import os
     import re
     import sys
-    from binascii import a2b_hex
 
     from jupyterhub.utils import url_path_join
     from kubernetes_asyncio import client
@@ -1261,23 +1264,28 @@ data:
 
     set_config_if_not_none(c.Spawner, "default_url", "singleuser.defaultUrl")
 
-    cloud_metadata = get_config("singleuser.cloudMetadata", {})
+    cloud_metadata = get_config("singleuser.cloudMetadata")
 
     if cloud_metadata.get("blockWithIptables") == True:
         # Use iptables to block access to cloud metadata by default
         network_tools_image_name = get_config("singleuser.networkTools.image.name")
         network_tools_image_tag = get_config("singleuser.networkTools.image.tag")
         network_tools_resources = get_config("singleuser.networkTools.resources")
+        ip = cloud_metadata["ip"]
         ip_block_container = client.V1Container(
             name="block-cloud-metadata",
             image=f"{network_tools_image_name}:{network_tools_image_tag}",
             command=[
                 "iptables",
-                "-A",
+                "--append",
                 "OUTPUT",
-                "-d",
-                cloud_metadata.get("ip", "169.254.169.254"),
-                "-j",
+                "--protocol",
+                "tcp",
+                "--destination",
+                ip,
+                "--destination-port",
+                "80",
+                "--jump",
                 "DROP",
             ],
             security_context=client.V1SecurityContext(
@@ -1472,7 +1480,7 @@ kind: ConfigMap
 metadata:
   labels:
     app: jupyterhub
-    chart: jupyterhub-2.0.0
+    chart: jupyterhub-3.2.1
     component: hub
     heritage: Helm
     release: daskhub
@@ -1520,7 +1528,7 @@ kind: ConfigMap
 metadata:
   labels:
     app: jupyterhub
-    chart: jupyterhub-2.0.0
+    chart: jupyterhub-3.2.1
     component: user-scheduler
     heritage: Helm
     kustomization: patch-jupyterhub-user-scheduler-apiVersion
@@ -1536,9 +1544,9 @@ metadata:
     app.kubernetes.io/instance: daskhub
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: dask-gateway
-    app.kubernetes.io/version: 2023.1.1
+    app.kubernetes.io/version: 2024.1.0
     gateway.dask.org/instance: daskhub-dask-gateway
-    helm.sh/chart: dask-gateway-2023.1.1
+    helm.sh/chart: dask-gateway-2024.1.0
   name: api-daskhub-dask-gateway
 type: Opaque
 ---
@@ -1549,7 +1557,7 @@ kind: Secret
 metadata:
   labels:
     app: jupyterhub
-    chart: jupyterhub-2.0.0
+    chart: jupyterhub-3.2.1
     component: hub
     heritage: Helm
     release: daskhub
@@ -1563,9 +1571,9 @@ metadata:
     app.kubernetes.io/instance: daskhub
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: dask-gateway
-    app.kubernetes.io/version: 2023.1.1
+    app.kubernetes.io/version: 2024.1.0
     gateway.dask.org/instance: daskhub-dask-gateway
-    helm.sh/chart: dask-gateway-2023.1.1
+    helm.sh/chart: dask-gateway-2024.1.0
   name: api-daskhub-dask-gateway
 spec:
   ports:
@@ -1587,7 +1595,7 @@ metadata:
     prometheus.io/scrape: 'true'
   labels:
     app: jupyterhub
-    chart: jupyterhub-2.0.0
+    chart: jupyterhub-3.2.1
     component: hub
     heritage: Helm
     release: daskhub
@@ -1608,7 +1616,7 @@ kind: Service
 metadata:
   labels:
     app: jupyterhub
-    chart: jupyterhub-2.0.0
+    chart: jupyterhub-3.2.1
     component: proxy-api
     heritage: Helm
     release: daskhub
@@ -1627,7 +1635,7 @@ kind: Service
 metadata:
   labels:
     app: jupyterhub
-    chart: jupyterhub-2.0.0
+    chart: jupyterhub-3.2.1
     component: autohttps
     heritage: Helm
     release: daskhub
@@ -1647,7 +1655,7 @@ kind: Service
 metadata:
   labels:
     app: jupyterhub
-    chart: jupyterhub-2.0.0
+    chart: jupyterhub-3.2.1
     component: proxy-public
     heritage: Helm
     release: daskhub
@@ -1661,6 +1669,7 @@ spec:
       port: 80
       targetPort: http
   selector:
+    app: jupyterhub
     component: autohttps
     release: daskhub
   type: LoadBalancer
@@ -1672,9 +1681,9 @@ metadata:
     app.kubernetes.io/instance: daskhub
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: dask-gateway
-    app.kubernetes.io/version: 2023.1.1
+    app.kubernetes.io/version: 2024.1.0
     gateway.dask.org/instance: daskhub-dask-gateway
-    helm.sh/chart: dask-gateway-2023.1.1
+    helm.sh/chart: dask-gateway-2024.1.0
   name: traefik-daskhub-dask-gateway
 spec:
   ports:
@@ -1692,7 +1701,7 @@ kind: PersistentVolumeClaim
 metadata:
   labels:
     app: jupyterhub
-    chart: jupyterhub-2.0.0
+    chart: jupyterhub-3.2.1
     component: hub
     heritage: Helm
     release: daskhub
@@ -1711,9 +1720,9 @@ metadata:
     app.kubernetes.io/instance: daskhub
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: dask-gateway
-    app.kubernetes.io/version: 2023.1.1
+    app.kubernetes.io/version: 2024.1.0
     gateway.dask.org/instance: daskhub-dask-gateway
-    helm.sh/chart: dask-gateway-2023.1.1
+    helm.sh/chart: dask-gateway-2024.1.0
   name: api-daskhub-dask-gateway
 spec:
   replicas: 1
@@ -1731,9 +1740,9 @@ spec:
         app.kubernetes.io/instance: daskhub
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/name: dask-gateway
-        app.kubernetes.io/version: 2023.1.1
+        app.kubernetes.io/version: 2024.1.0
         gateway.dask.org/instance: daskhub-dask-gateway
-        helm.sh/chart: dask-gateway-2023.1.1
+        helm.sh/chart: dask-gateway-2024.1.0
         hub.jupyter.org/network-access-hub: 'true'
     spec:
       containers:
@@ -1747,8 +1756,8 @@ spec:
                 secretKeyRef:
                   key: jupyterhub-api-token
                   name: api-daskhub-dask-gateway
-          image: ghcr.io/dask/dask-gateway-server:2023.1.1
-          imagePullPolicy: IfNotPresent
+          image: ghcr.io/dask/dask-gateway-server:2024.1.0
+          imagePullPolicy:
           livenessProbe:
             failureThreshold: 6
             httpGet:
@@ -1783,7 +1792,7 @@ kind: Deployment
 metadata:
   labels:
     app: jupyterhub
-    chart: jupyterhub-2.0.0
+    chart: jupyterhub-3.2.1
     component: autohttps
     heritage: Helm
     kustomization: patch-jupyterhub-autohttps-startup-delay
@@ -1847,7 +1856,7 @@ spec:
             - watch-save
             - --label=app=jupyterhub
             - --label=release=daskhub
-            - --label=chart=jupyterhub-2.0.0
+            - --label=chart=jupyterhub-3.2.1
             - --label=heritage=secret-sync
             - proxy-public-tls-acme
             - acme.json
@@ -1855,7 +1864,7 @@ spec:
           env:
             - name: PYTHONUNBUFFERED
               value: 'True'
-          image: jupyterhub/k8s-secret-sync:2.0.0
+          image: quay.io/jupyterhub/k8s-secret-sync:3.2.1
           name: secret-sync
           securityContext:
             allowPrivilegeEscalation: false
@@ -1879,7 +1888,7 @@ spec:
           env:
             - name: PYTHONUNBUFFERED
               value: 'True'
-          image: jupyterhub/k8s-secret-sync:2.0.0
+          image: quay.io/jupyterhub/k8s-secret-sync:3.2.1
           name: load-acme
           securityContext:
             allowPrivilegeEscalation: false
@@ -1912,9 +1921,9 @@ metadata:
     app.kubernetes.io/instance: daskhub
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: dask-gateway
-    app.kubernetes.io/version: 2023.1.1
+    app.kubernetes.io/version: 2024.1.0
     gateway.dask.org/instance: daskhub-dask-gateway
-    helm.sh/chart: dask-gateway-2023.1.1
+    helm.sh/chart: dask-gateway-2024.1.0
   name: controller-daskhub-dask-gateway
 spec:
   replicas: 1
@@ -1934,9 +1943,9 @@ spec:
         app.kubernetes.io/instance: daskhub
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/name: dask-gateway
-        app.kubernetes.io/version: 2023.1.1
+        app.kubernetes.io/version: 2024.1.0
         gateway.dask.org/instance: daskhub-dask-gateway
-        helm.sh/chart: dask-gateway-2023.1.1
+        helm.sh/chart: dask-gateway-2024.1.0
     spec:
       containers:
         - args:
@@ -1944,8 +1953,8 @@ spec:
             - kube-controller
             - --config
             - /etc/dask-gateway/dask_gateway_config.py
-          image: ghcr.io/dask/dask-gateway-server:2023.1.1
-          imagePullPolicy: IfNotPresent
+          image: ghcr.io/dask/dask-gateway-server:2024.1.0
+          imagePullPolicy:
           name: controller
           ports:
             - containerPort: 8000
@@ -1964,7 +1973,7 @@ kind: Deployment
 metadata:
   labels:
     app: jupyterhub
-    chart: jupyterhub-2.0.0
+    chart: jupyterhub-3.2.1
     component: hub
     heritage: Helm
     release: daskhub
@@ -2022,7 +2031,7 @@ spec:
                   name: hub
             - name: EXTRA_PIP_PACKAGES
               value: boto3 dask_gatway_server
-          image: jupyterhub/k8s-hub:2.0.0
+          image: quay.io/jupyterhub/k8s-hub:3.2.1
           livenessProbe:
             failureThreshold: 30
             httpGet:
@@ -2088,7 +2097,7 @@ kind: Deployment
 metadata:
   labels:
     app: jupyterhub
-    chart: jupyterhub-2.0.0
+    chart: jupyterhub-3.2.1
     component: proxy
     heritage: Helm
     release: daskhub
@@ -2138,7 +2147,7 @@ spec:
                 secretKeyRef:
                   key: hub.config.ConfigurableHTTPProxy.auth_token
                   name: hub
-          image: jupyterhub/configurable-http-proxy:4.5.3
+          image: quay.io/jupyterhub/configurable-http-proxy:4.6.1
           livenessProbe:
             failureThreshold: 30
             httpGet:
@@ -2187,9 +2196,9 @@ metadata:
     app.kubernetes.io/instance: daskhub
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: dask-gateway
-    app.kubernetes.io/version: 2023.1.1
+    app.kubernetes.io/version: 2024.1.0
     gateway.dask.org/instance: daskhub-dask-gateway
-    helm.sh/chart: dask-gateway-2023.1.1
+    helm.sh/chart: dask-gateway-2024.1.0
   name: traefik-daskhub-dask-gateway
 spec:
   replicas: 1
@@ -2205,9 +2214,9 @@ spec:
         app.kubernetes.io/instance: daskhub
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/name: dask-gateway
-        app.kubernetes.io/version: 2023.1.1
+        app.kubernetes.io/version: 2024.1.0
         gateway.dask.org/instance: daskhub-dask-gateway
-        helm.sh/chart: dask-gateway-2023.1.1
+        helm.sh/chart: dask-gateway-2024.1.0
     spec:
       containers:
         - args:
@@ -2221,8 +2230,8 @@ spec:
             - --log.level=WARN
             - --entrypoints.traefik.address=:9000
             - --entrypoints.web.address=:8000
-          image: traefik:2.9.4
-          imagePullPolicy: IfNotPresent
+          image: traefik:2.10.6
+          imagePullPolicy:
           livenessProbe:
             failureThreshold: 3
             httpGet:
@@ -2258,7 +2267,7 @@ kind: Deployment
 metadata:
   labels:
     app: jupyterhub
-    chart: jupyterhub-2.0.0
+    chart: jupyterhub-3.2.1
     component: user-scheduler
     heritage: Helm
     release: daskhub
@@ -2334,7 +2343,7 @@ kind: StatefulSet
 metadata:
   labels:
     app: jupyterhub
-    chart: jupyterhub-2.0.0
+    chart: jupyterhub-3.2.1
     component: user-placeholder
     heritage: Helm
     release: daskhub
@@ -2367,7 +2376,7 @@ spec:
               weight: 100
       automountServiceAccountToken: false
       containers:
-        - image: registry.k8s.io/pause:3.8
+        - image: registry.k8s.io/pause:3.9
           name: pause
           resources:
             limits:
@@ -2392,12 +2401,12 @@ spec:
           operator: Equal
           value: user
 ---
-apiVersion: policy/v1beta1
+apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
   labels:
     app: jupyterhub
-    chart: jupyterhub-2.0.0
+    chart: jupyterhub-3.2.1
     component: user-placeholder
     heritage: Helm
     release: daskhub
@@ -2410,12 +2419,12 @@ spec:
       component: user-placeholder
       release: daskhub
 ---
-apiVersion: policy/v1beta1
+apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
   labels:
     app: jupyterhub
-    chart: jupyterhub-2.0.0
+    chart: jupyterhub-3.2.1
     component: user-scheduler
     heritage: Helm
     release: daskhub
@@ -2433,7 +2442,7 @@ kind: NetworkPolicy
 metadata:
   labels:
     app: jupyterhub
-    chart: jupyterhub-2.0.0
+    chart: jupyterhub-3.2.1
     component: autohttps
     heritage: Helm
     release: daskhub
@@ -2454,6 +2463,11 @@ spec:
         - port: 53
           protocol: TCP
       to:
+        - ipBlock:
+            cidr: 169.254.169.254/32
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
         - ipBlock:
             cidr: 10.0.0.0/8
         - ipBlock:
@@ -2503,7 +2517,7 @@ kind: NetworkPolicy
 metadata:
   labels:
     app: jupyterhub
-    chart: jupyterhub-2.0.0
+    chart: jupyterhub-3.2.1
     component: hub
     heritage: Helm
     release: daskhub
@@ -2532,6 +2546,11 @@ spec:
         - port: 53
           protocol: TCP
       to:
+        - ipBlock:
+            cidr: 169.254.169.254/32
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
         - ipBlock:
             cidr: 10.0.0.0/8
         - ipBlock:
@@ -2577,7 +2596,7 @@ kind: NetworkPolicy
 metadata:
   labels:
     app: jupyterhub
-    chart: jupyterhub-2.0.0
+    chart: jupyterhub-3.2.1
     component: proxy
     heritage: Helm
     release: daskhub
@@ -2606,6 +2625,11 @@ spec:
         - port: 53
           protocol: TCP
       to:
+        - ipBlock:
+            cidr: 169.254.169.254/32
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
         - ipBlock:
             cidr: 10.0.0.0/8
         - ipBlock:
@@ -2660,7 +2684,7 @@ kind: NetworkPolicy
 metadata:
   labels:
     app: jupyterhub
-    chart: jupyterhub-2.0.0
+    chart: jupyterhub-3.2.1
     component: singleuser
     heritage: Helm
     release: daskhub
@@ -2699,6 +2723,11 @@ spec:
           protocol: TCP
       to:
         - ipBlock:
+            cidr: 169.254.169.254/32
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+        - ipBlock:
             cidr: 10.0.0.0/8
         - ipBlock:
             cidr: 172.16.0.0/12
@@ -2728,16 +2757,16 @@ spec:
     - Ingress
     - Egress
 ---
-apiVersion: traefik.containo.us/v1alpha1
+apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
 metadata:
   labels:
     app.kubernetes.io/instance: daskhub
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: dask-gateway
-    app.kubernetes.io/version: 2023.1.1
+    app.kubernetes.io/version: 2024.1.0
     gateway.dask.org/instance: daskhub-dask-gateway
-    helm.sh/chart: dask-gateway-2023.1.1
+    helm.sh/chart: dask-gateway-2024.1.0
   name: api-daskhub-dask-gateway
 spec:
   entryPoints:
@@ -2751,16 +2780,16 @@ spec:
         - name: api-daskhub-dask-gateway
           port: 8000
 ---
-apiVersion: traefik.containo.us/v1alpha1
+apiVersion: traefik.io/v1alpha1
 kind: Middleware
 metadata:
   labels:
     app.kubernetes.io/instance: daskhub
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: dask-gateway
-    app.kubernetes.io/version: 2023.1.1
+    app.kubernetes.io/version: 2024.1.0
     gateway.dask.org/instance: daskhub-dask-gateway
-    helm.sh/chart: dask-gateway-2023.1.1
+    helm.sh/chart: dask-gateway-2024.1.0
   name: api-prefix-daskhub-dask-gateway
 spec:
   stripPrefix:
@@ -2768,16 +2797,16 @@ spec:
     prefixes:
       - /services/dask-gateway
 ---
-apiVersion: traefik.containo.us/v1alpha1
+apiVersion: traefik.io/v1alpha1
 kind: Middleware
 metadata:
   labels:
     app.kubernetes.io/instance: daskhub
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: dask-gateway
-    app.kubernetes.io/version: 2023.1.1
+    app.kubernetes.io/version: 2024.1.0
     gateway.dask.org/instance: daskhub-dask-gateway
-    helm.sh/chart: dask-gateway-2023.1.1
+    helm.sh/chart: dask-gateway-2024.1.0
   name: clusters-prefix-daskhub-dask-gateway
 spec:
   stripPrefixRegex:
@@ -2793,7 +2822,7 @@ metadata:
     component: image-puller
     app: jupyterhub
     release: daskhub
-    chart: jupyterhub-2.0.0
+    chart: jupyterhub-3.2.1
     heritage: Helm
     hub.jupyter.org/deletable: 'true'
   annotations:
@@ -2810,7 +2839,7 @@ metadata:
     component: image-puller
     app: jupyterhub
     release: daskhub
-    chart: jupyterhub-2.0.0
+    chart: jupyterhub-3.2.1
     heritage: Helm
     hub.jupyter.org/deletable: 'true'
   annotations:
@@ -2831,7 +2860,7 @@ metadata:
     component: image-puller
     app: jupyterhub
     release: daskhub
-    chart: jupyterhub-2.0.0
+    chart: jupyterhub-3.2.1
     heritage: Helm
     hub.jupyter.org/deletable: 'true'
   annotations:
@@ -2856,7 +2885,7 @@ metadata:
     component: hook-image-puller
     app: jupyterhub
     release: daskhub
-    chart: jupyterhub-2.0.0
+    chart: jupyterhub-3.2.1
     heritage: Helm
     hub.jupyter.org/deletable: 'true'
   annotations:
@@ -2893,7 +2922,7 @@ spec:
       automountServiceAccountToken: false
       initContainers:
         - name: image-pull-metadata-block
-          image: jupyterhub/k8s-network-tools:2.0.0
+          image: quay.io/jupyterhub/k8s-network-tools:3.2.1
           command:
             - /bin/sh
             - -c
@@ -2944,7 +2973,7 @@ spec:
             runAsUser: 65534
       containers:
         - name: pause
-          image: registry.k8s.io/pause:3.8
+          image: registry.k8s.io/pause:3.9
           securityContext:
             allowPrivilegeEscalation: false
             runAsGroup: 65534
@@ -2959,7 +2988,7 @@ metadata:
     component: image-puller
     app: jupyterhub
     release: daskhub
-    chart: jupyterhub-2.0.0
+    chart: jupyterhub-3.2.1
     heritage: Helm
     hub.jupyter.org/deletable: 'true'
   annotations:
@@ -2974,7 +3003,7 @@ spec:
     # prePuller.hook.enabled=true
     # prePuller.hook.pullOnlyOnChanges=true
     # post-upgrade checksum != pre-upgrade checksum (of the hook-image-puller DaemonSet)
-    # "eefb2c7bebd5204c6033afef5b07d196f91ae1bbf23431dab283c98d0f9518b6" != ""
+    # "cf726129bad2b331234d11706692d6c7a50640587200b10e9a9e6a65bc614bcc" != ""
     #
     metadata:
       labels:
@@ -2996,7 +3025,7 @@ spec:
           operator: Equal
           value: core
       containers:
-        - image: jupyterhub/k8s-image-awaiter:2.0.0
+        - image: quay.io/jupyterhub/k8s-image-awaiter:3.2.1
           name: hook-image-awaiter
           command:
             - /image-awaiter

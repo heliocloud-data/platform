@@ -166,7 +166,7 @@ daskhub:
           cpu_guarantee: 3
           cpu_limit: 4
           image: {{ config['daskhub']['ML_DOCKER_LOCATION'] }}:{{ config['daskhub']['ML_DOCKER_VERSION'] }}
-          extra_env: {'NVIDIA_DRIVER_CAPABILITIES': 'compute,utility'}
+          environment: {'NVIDIA_DRIVER_CAPABILITIES': 'compute,utility'}
           node_selector:
             nvidia.com/gpu: "true"
           tolerations: [{'key': 'nvidia.com/gpu','operator': 'Equal','value': 'true','effect': 'NoSchedule'},{'key': 'hub.jupyter.org/dedicated','operator': 'Equal','value': 'user','effect': 'NoSchedule'}]
@@ -179,7 +179,7 @@ daskhub:
           cpu_guarantee: 6
           cpu_limit: 8
           image: {{ config['daskhub']['ML_DOCKER_LOCATION'] }}:{{ config['daskhub']['ML_DOCKER_VERSION'] }}
-          extra_env: {'NVIDIA_DRIVER_CAPABILITIES': 'compute,utility'}
+          environment: {'NVIDIA_DRIVER_CAPABILITIES': 'compute,utility'}
           node_selector:
             nvidia.com/gpu: "true"
           tolerations: [{'key': 'nvidia.com/gpu','operator': 'Equal','value': 'true','effect': 'NoSchedule'},{'key': 'hub.jupyter.org/dedicated','operator': 'Equal','value': 'user','effect': 'NoSchedule'}]
@@ -192,7 +192,7 @@ daskhub:
           cpu_guarantee: 12
           cpu_limit: 16
           image: {{ config['daskhub']['ML_DOCKER_LOCATION'] }}:{{ config['daskhub']['ML_DOCKER_VERSION'] }}
-          extra_env: {'NVIDIA_DRIVER_CAPABILITIES': 'compute,utility'}
+          environment: {'NVIDIA_DRIVER_CAPABILITIES': 'compute,utility'}
           node_selector:
             nvidia.com/gpu: "true"
           tolerations: [{'key': 'nvidia.com/gpu','operator': 'Equal','value': 'true','effect': 'NoSchedule'},{'key': 'hub.jupyter.org/dedicated','operator': 'Equal','value': 'user','effect': 'NoSchedule'}]
@@ -206,8 +206,18 @@ daskhub:
       memory:
         guarantee: 1G
         limit: 4G
+
+      # Specifically, this '{JUPYTER_IMAGE_SPEC}' was causing jupyterhub to crash When
+      # attempting to render the string in python, explicitly resolving it appeared to
+      # resolve the issue.
+      #
+      # Here's what the values are in JHUAPL's staging environment:
+      #   DASK_GATEWAY__CLUSTER__OPTIONS__IMAGE={JUPYTER_IMAGE_SPEC}
+      #   JUPYTER_IMAGE_SPEC=public.ecr.aws/q3h7b4o8/heliocloud/helio-notebook:2023.12.06
+
       extraEnv:
-        DASK_GATEWAY__CLUSTER__OPTIONS__IMAGE: '{JUPYTER_IMAGE_SPEC}'
+        DASK_GATEWAY__CLUSTER__OPTIONS__IMAGE: "{{ config['daskhub']['GENERIC_DOCKER_LOCATION'] }}:{{ config['daskhub']['GENERIC_DOCKER_VERSION'] }}"
+
       serviceAccountName: helio-dh-role
       defaultUrl: "/lab"  # Use jupyterlab by default.
     proxy:

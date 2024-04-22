@@ -51,7 +51,7 @@ fi
 #
 # Failure to execute this step, will result in a cluster that will
 # be unable to scale up based on load.
-kustomize build kube-system/base | kubectl apply -f -
+kustomize build kube-system/overlays/production | kubectl apply -f -
 
 # Within this step, we'll be deploying the `amazon-cloudwatch` namespace,
 # which handles log aggregation and the pod and node level.  When enabled,

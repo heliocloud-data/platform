@@ -48,6 +48,10 @@ daskhub:
         JupyterHub:
           authenticator_class: generic-oauth
     proxy:
+      service:
+        annotations:
+          external-dns.alpha.kubernetes.io/hostname: {{ config['daskhub']['domain_record'] + '.' + config['daskhub']['domain_url'] }}
+
       secretToken: {{ config['daskhub']['api_key1'] }}
       https:
         enabled: true

@@ -41,6 +41,17 @@ patches:
       path: /iam/serviceAccounts/4/roleName
       value: "AmazonEKS_EBS_CSI_DriverRole-{{ config['eksctl']['metadata']['region'] }}-{{ config['eksctl']['metadata']['name'] }}"
     - op: replace
+      path: /iam/serviceAccounts/4/roleName
+      value: "AmazonEKS_EBS_CSI_DriverRole-{{ config['eksctl']['metadata']['region'] }}-{{ config['eksctl']['metadata']['name'] }}"
+    # This should really be optional
+    - op: add
+      path: /iam/serviceAccounts/5
+      value:
+        metadata:
+          name: external-dns
+        attachPolicyARNs: 
+        - "<<CNF_OUTPUT_Route53Arn>>"
+    - op: replace
       path: /secretsEncryption/keyARN
       value: "<<CNF_OUTPUT_KMSArn>>"
     - op: replace

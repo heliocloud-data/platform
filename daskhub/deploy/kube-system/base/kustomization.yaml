@@ -6,3 +6,4 @@ kind: Kustomization
 resources:
 - clusterautoscaler.yaml
 - eks-console-full-access.yaml
+- external-dns.yaml

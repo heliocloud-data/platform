@@ -1,16 +1,37 @@
-prometheus:
-  server:
-    service:
-      annotations:
+cost-analyzer:
+  oidc:
+    enabled: true
+    clientID: <<CNF_OUTPUT_CognitoClientIdKubeCost>>
+    clientSecret: <<CNF_OUTPUT_CognitoClientSecretKubeCost>>
+    secretName: "kubecost-oidc-secret"
 {%- if 'monitoring' in config %}
-        service.beta.kubernetes.io/aws-load-balancer-ssl-cert: {{ config['monitoring']['AWS_LOAD_BALANCER_SSL_CERT'] }}
+{%- if 'domain_record' in config['daskhub'] and config['daskhub']['domain_record'] is not none and 'domain_url' in config['daskhub'] and config['daskhub']['domain_url'] is not none %}
+{%- if 'cost_analyzer_domain_prefix' in config['monitoring'] and config['monitoring']['cost_analyzer_domain_prefix'] is not none %}
+{%- if 'eksctl' in config and 'metadata' in config['eksctl'] and 'region' in config['eksctl']['metadata'] and config['eksctl']['metadata']['region'] is not none %}
+    authURL: https://<<CNF_OUTPUT_CognitoDomainPrefix>>.auth.{{ config['eksctl']['metadata']['region'] }}.amazoncognito.com/login?response_type=code&redirect_uri=https:%2F%2F{{ config['monitoring']['cost_analyzer_domain_prefix'] }}.{{ config['daskhub']['domain_url'] }}%2Fmodel%2Foidc%2Fauthorize&client_id=<<CNF_OUTPUT_CognitoClientIdKubeCost>>&scope=openid+phone+profile+email
+    loginRedirectURL: "https://{{ config['monitoring']['cost_analyzer_domain_prefix'] }}.{{ config['daskhub']['domain_url'] }}/model/oidc/authorize" 
+    discoveryURL: https://cognito-idp.{{ config['eksctl']['metadata']['region'] }}.amazonaws.com/<<CNF_OUTPUT_CognitoUserPoolId>>/.well-known/openid-configuration
 {%- endif %}
-        service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
-
-grafana:
+{%- endif %}
+{%- endif %}
+{%- endif %}
   service:
     annotations:
-{%- if 'monitoring' in config %}
+{%- if 'monitoring' in config and 'domain_url' in config['daskhub'] and config['daskhub']['domain_url'] is not none %}
       service.beta.kubernetes.io/aws-load-balancer-ssl-cert: {{ config['monitoring']['AWS_LOAD_BALANCER_SSL_CERT'] }}
-{%- endif %}
       service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+      external-dns.alpha.kubernetes.io/hostname: {{ config['monitoring']['cost_analyzer_domain_prefix'] }}.{{ config['daskhub']['domain_url'] }}
+{%- endif %}
+  grafana:
+    grafana.ini:
+      server:
+{%- if 'monitoring' in config %} #grafana_domain_record
+        root_url: https://{{ config['monitoring']['grafana_domain_prefix'] }}.{{ config['daskhub']['domain_url'] }}:443
+{%- endif %}
+    service:
+      annotations:
+{%- if 'monitoring' in config and 'domain_url' in config['daskhub'] and config['daskhub']['domain_url'] is not none %}
+        service.beta.kubernetes.io/aws-load-balancer-ssl-cert: {{ config['monitoring']['AWS_LOAD_BALANCER_SSL_CERT'] }}
+        service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+        external-dns.alpha.kubernetes.io/hostname: {{ config['monitoring']['grafana_domain_prefix'] }}.{{ config['daskhub']['domain_url'] }}
+{%- endif %}

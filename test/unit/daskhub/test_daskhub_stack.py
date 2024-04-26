@@ -3,12 +3,11 @@ import json
 import yaml
 
 import aws_cdk as cdk
-from aws_cdk import Duration
 from aws_cdk.assertions import Match, Template
 
 import pytest
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 from base_aws.base_aws_stack import BaseAwsStack
 from base_auth.auth_stack import AuthStack
 from base_auth.identity_stack import IdentityStack

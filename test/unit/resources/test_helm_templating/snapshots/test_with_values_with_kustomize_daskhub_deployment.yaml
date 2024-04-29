@@ -1633,6 +1633,8 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: daskhub.stuff.org
   labels:
     app: jupyterhub
     chart: jupyterhub-3.2.1
@@ -1653,6 +1655,8 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: daskhub.stuff.org
   labels:
     app: jupyterhub
     chart: jupyterhub-3.2.1

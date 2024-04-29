@@ -225,7 +225,7 @@ class TestDaskhubStack(unittest.TestCase):
             "AWS::Route53::RecordSet",
             {
                 "Properties": {
-                    "Comment": "Initial provisioning from CDK, overridden by EKSCTL deployment.",
+                    "Comment": "Initial provisioning from CDK, updated via external-dns.",
                     "Name": "daskhub.<REPLACE>.",
                     "ResourceRecords": Match.array_with(["0.0.0.0"]),
                 },

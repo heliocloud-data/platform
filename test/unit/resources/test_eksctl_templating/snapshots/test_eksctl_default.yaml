@@ -41,6 +41,10 @@ iam:
         namespace: kube-system
       roleName: AmazonEKS_EBS_CSI_DriverRole-us-south-100-eks-helio
       roleOnly: true
+    - attachPolicyARNs:
+        - <<CNF_OUTPUT_Route53Arn>>
+      metadata:
+        name: external-dns
   withOIDC: true
 kind: ClusterConfig
 managedNodeGroups:
@@ -53,6 +57,7 @@ managedNodeGroups:
         - arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy
         - arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy
         - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
+        - arn:aws:iam::aws:policy/AmazonRoute53AutoNamingRegistrantAccess
       withAddonPolicies:
         autoScaler: true
         awsLoadBalancerController: true
@@ -85,6 +90,7 @@ nodeGroups:
         - arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy
         - arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy
         - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
+        - arn:aws:iam::aws:policy/AmazonRoute53AutoNamingRegistrantAccess
       withAddonPolicies:
         autoScaler: true
         awsLoadBalancerController: true
@@ -126,6 +132,7 @@ nodeGroups:
         - arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy
         - arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy
         - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
+        - arn:aws:iam::aws:policy/AmazonRoute53AutoNamingRegistrantAccess
       withAddonPolicies:
         autoScaler: true
         awsLoadBalancerController: true
@@ -164,6 +171,7 @@ nodeGroups:
         - arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy
         - arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy
         - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
+        - arn:aws:iam::aws:policy/AmazonRoute53AutoNamingRegistrantAccess
       withAddonPolicies:
         autoScaler: true
         awsLoadBalancerController: true

@@ -61,6 +61,7 @@ class DaskhubStack(Stack):
         super().__init__(scope, construct_id, **kwargs)
 
         self.__daskhub_config = DaskhubStack.load_configurations(config)
+        self.build_hosted_zone()
 
         if self.__daskhub_config['daskhub']['api_key1'] == 'auto':
             self.__daskhub_config['daskhub']['api_key1'] = secrets.token_hex(SECRET_HEX_IN_BYTES)
@@ -228,6 +229,35 @@ class DaskhubStack(Stack):
         # Managed Policies (S3 access and K8s autoscaling) #
         ####################################################
 
+        route53_policy_document = iam.PolicyDocument(
+            statements=[
+                iam.PolicyStatement(
+                    effect = iam.Effect.ALLOW,
+                    actions=[
+                        "route53:ChangeResourceRecordSets",
+                    ],
+                    resources=[
+                        f"{self.hosted_zone.hosted_zone_arn}"
+                    ]
+                ),
+                iam.PolicyStatement(
+                    effect = iam.Effect.ALLOW,
+                    actions=[
+                        "route53:ListHostedZones",
+                        "route53:ListResourceRecordSets",
+        				"route53:ListTagsForResource"
+                    ],
+                    resources=[
+                        "*",
+                    ]
+                ),
+            ]
+        )
+
+        route53_managed_policy = iam.ManagedPolicy(
+            self, "AllowExternalDNSUpdates", document=route53_policy_document
+        )
+
         autoscaling_custom_policy_document = iam.PolicyDocument(
             statements=[
                 iam.PolicyStatement(
@@ -303,6 +333,7 @@ class DaskhubStack(Stack):
         cdk.CfnOutput(self, "ASGArn", value=autoscaling_managed_policy.managed_policy_arn)
         cdk.CfnOutput(self, "CustomS3Arn", value=base_aws.s3_managed_policy.managed_policy_arn)
         cdk.CfnOutput(self, "AdminRoleArn", value=ec2_admin_role.role_arn)
+        cdk.CfnOutput(self, "Route53Arn", value=route53_managed_policy.managed_policy_arn)
         cdk.CfnOutput(self, "EFSId", value=file_system.file_system_id)
         cdk.CfnOutput(self, "CognitoClientId", value=daskhub_client.user_pool_client_id)
         cdk.CfnOutput(self, "CognitoDomainPrefix", value=domain_prefix)
@@ -344,6 +375,17 @@ class DaskhubStack(Stack):
 
         return daskhub_config
 
+    def build_hosted_zone(self):
+        domain_url = self.__daskhub_config['daskhub']['domain_url']
+        self.hosted_zone = route53.PublicHostedZone.from_lookup(
+            self, "HostedZone", domain_name=domain_url
+        )
+
+        if self.hosted_zone.is_resource(self):
+            self.hosted_zone = route53.PublicHostedZone(
+                self, "HostedZone", zone_name=domain_url
+            )
+
     def build_route53_settings(self):
         """
         This method will configure the Route53 settings for daskhub.  These settings
@@ -351,23 +393,14 @@ class DaskhubStack(Stack):
         to run this deployment from a live system.
         """
 
-        domain_url = self.__daskhub_config['daskhub']['domain_url']
-        hosted_zone = route53.PublicHostedZone.from_lookup(
-            self, "HostedZone", domain_name=domain_url
-        )
-        if hosted_zone.is_resource(self):
-            hosted_zone = route53.PublicHostedZone(
-                self, "HostedZone", zone_name=domain_url
-            )
-
         cname_record = route53.CnameRecord(
             self,
             "CnameRecord",
             record_name=self.__daskhub_config['daskhub']['domain_record'],
-            zone=hosted_zone,
+            zone=self.hosted_zone,
             ttl=Duration.seconds(300),
             delete_existing=True,
             domain_name="0.0.0.0",
-            comment="Initial provisioning from CDK, overridden by EKSCTL deployment."
+            comment="Initial provisioning from CDK, updated via external-dns."
         )
         cname_record.apply_removal_policy(RemovalPolicy.DESTROY)

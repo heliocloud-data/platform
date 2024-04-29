@@ -1,0 +1,25 @@
+# See:
+#  https://kubectl.docs.kubernetes.io/references/kustomize/
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+- ../../base/
+
+patches:
+- target:
+    kind: Deployment
+    name: external-dns
+  patch: |
+    - op: replace
+      path: /spec/template/spec/containers/0/args
+      value:
+        - --source=service
+        - --source=ingress
+        - --domain-filter={{ config['daskhub']['domain_url'] }} # will make ExternalDNS see only the hosted zones matching provided domain, omit to process all available hosted zones
+        - --provider=aws
+        - --policy=upsert-only # would prevent ExternalDNS from deleting any records, omit to enable full synchronization
+        - --aws-zone-type=public # only look at public hosted zones (valid values are public, private or no value for both)
+        - --registry=noop
+        - --log-level=debug
+        - --aws-prefer-cname

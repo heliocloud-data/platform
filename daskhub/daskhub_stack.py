@@ -24,7 +24,7 @@ from aws_cdk import (
 from constructs import Construct
 from base_aws.base_aws_stack import BaseAwsStack
 
-from daskhub.aws_utils import get_instance_types_by_region
+from daskhub.aws_utils import get_instance_types_by_region, find_route53_record_by_type_and_name
 from daskhub.jinja_utils import apply_jinja_templates_by_dir
 
 SECRET_HEX_IN_BYTES = 32
@@ -429,14 +429,28 @@ class DaskhubStack(Stack):
         to run this deployment from a live system.
         """
 
+        ttl = Duration.seconds(300)
+        domain_name = "0.0.0.0"
+        full_name = f"{self.__daskhub_config['daskhub']['domain_record']}.{self.__daskhub_config['daskhub']['domain_url']}."
+
+        record = find_route53_record_by_type_and_name(
+            self.hosted_zone.hosted_zone_id, 'CNAME',
+            full_name
+        )
+        if record is not None:
+            print(f"Route53 record set already exists for {full_name}")
+            ttl = Duration.seconds(record['TTL'])
+            domain_name = record['ResourceRecords'][0]['Value']
+            print(f" Using ttl={ttl.to_seconds()}, domain_name={domain_name}")
+
         cname_record = route53.CnameRecord(
             self,
             "CnameRecord",
             record_name=self.__daskhub_config['daskhub']['domain_record'],
             zone=self.hosted_zone,
-            ttl=Duration.seconds(300),
+            ttl=ttl,
             delete_existing=True,
-            domain_name="0.0.0.0",
+            domain_name=domain_name,
             comment="Initial provisioning from CDK, updated via external-dns."
         )
         cname_record.apply_removal_policy(RemovalPolicy.DESTROY)

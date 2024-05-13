@@ -191,5 +191,5 @@ cloudWatch:
 
 addons:
   - name: aws-ebs-csi-driver
-    version: v1.29.1-eksbuild.1
-    serviceAccountRoleARN: arn:aws:iam::006885615091:role/AmazonEKS_EBS_CSI_DriverRole-us-east-2-eks-helio
+    version: v1.30.0-eksbuild.1
+    serviceAccountRoleARN: arn:aws:iam:::role/AmazonEKS_EBS_CSI_DriverRole-us-east-2-eks-helio

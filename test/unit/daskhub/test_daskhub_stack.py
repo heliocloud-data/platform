@@ -107,7 +107,21 @@ class TestDaskhubStack(unittest.TestCase):
         self.assertEqual("707", cfg["daskhub"]["ANOTHER_KLEFKI"])
 
     @pytest.mark.skipif(which("node") is None, reason="node not installed")
-    def test_constructor__default(self):
+    @patch("aws_cdk.aws_ses")
+    @patch("aws_cdk.aws_ses.__init__")
+    @patch("aws_cdk.aws_ses.Identity")
+    @patch("aws_cdk.aws_ses.EmailIdentity")
+    @patch("daskhub.daskhub_stack.find_route53_record_by_type_and_name")
+    def test_constructor__default(
+        self,
+        find_route53_record_by_type_and_name,
+        ses_email_identity,
+        ses_identity,
+        ses_package_constructor,
+        ses_package,
+    ):
+        find_route53_record_by_type_and_name.return_value = None
+
         # Environment
         app = cdk.App()
         env = cdk.Environment(region="us-east1", account="unit-test")

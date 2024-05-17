@@ -30,6 +30,7 @@ email:
 enabled:
   registry: True
   daskhub: True
+  daskhub_metrics: True
   portal: True
 
 auth:

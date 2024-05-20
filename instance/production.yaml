@@ -74,6 +74,7 @@ daskhub:
         groups:
         - eks-console-dashboard-full-access-group
         - daskhub-admin-access-group
+        - monitoring-admin-access-group
         username: lenzinm1
     nodeGroups:
       # ng-user-gpu
@@ -118,5 +119,5 @@ daskhub:
 
   monitoring:
     AWS_LOAD_BALANCER_SSL_CERT: "arn:aws:acm:${AWS_DEFAULT_REGION}:${HC_AWS_ACCOUNT}:certificate/${HC_PORTAL_CERT_ARN}"
-    grafana_domain_record: grafana
-    cost_analyzer_domain_record: kubecost
+    grafana_domain_prefix: grafana
+    cost_analyzer_domain_prefix: kubecost

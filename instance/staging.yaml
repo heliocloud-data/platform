@@ -76,6 +76,7 @@ daskhub:
         groups:
         - eks-console-dashboard-full-access-group
         - daskhub-admin-access-group
+        - monitoring-admin-access-group
         username: lenzinm1
     nodeGroups:
       # ng-user-gpu

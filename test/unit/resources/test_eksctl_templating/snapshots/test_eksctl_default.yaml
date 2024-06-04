@@ -45,6 +45,11 @@ iam:
         - <<CNF_OUTPUT_Route53Arn>>
       metadata:
         name: external-dns
+    - attachPolicyARNs:
+        - <<CNF_OUTPUT_EFSMountArn>>
+      metadata:
+        name: efs-mount
+        namespace: kube-system
   withOIDC: true
 kind: ClusterConfig
 managedNodeGroups:

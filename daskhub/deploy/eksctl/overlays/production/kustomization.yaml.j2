@@ -51,6 +51,14 @@ patches:
           name: external-dns
         attachPolicyARNs: 
         - "<<CNF_OUTPUT_Route53Arn>>"
+    - op: add
+      path: /iam/serviceAccounts/6
+      value:
+        metadata:
+          name: efs-mount
+          namespace: kube-system
+        attachPolicyARNs:
+        - "<<CNF_OUTPUT_EFSMountArn>>"
     - op: replace
       path: /secretsEncryption/keyARN
       value: "<<CNF_OUTPUT_KMSArn>>"

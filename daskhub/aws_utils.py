@@ -1,4 +1,5 @@
 import boto3
+import botocore.exceptions
 
 
 def get_instance_types_by_region(region_name):
@@ -24,14 +25,23 @@ def find_route53_record_by_type_and_name(hosted_zone_id, record_type, record_nam
     route53_client = boto3.client("route53")
 
     start_record_identifier = None
-    # while True:
     describe_args = {
         "HostedZoneId": hosted_zone_id,
     }
 
     print(f"Fetching Route53 RecordSets ...")
     while ret == None:
-        resp = route53_client.list_resource_record_sets(**describe_args)
+        try:
+            resp = route53_client.list_resource_record_sets(**describe_args)
+        except botocore.exceptions.ClientError as err:
+            # This error will be thrown if the hosted zone doesn't exit, which will be the case
+            # for the initial configuration.
+            if err.response["Error"]["Code"] == "NoSuchHostedZone":
+                break
+
+            # All other client errors should cause a failure.
+            raise err
+
         for i in resp["ResourceRecordSets"]:
             if i["Type"] != record_type or i["Name"] != record_name:
                 continue

@@ -1,0 +1,54 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: efs-mount
+  namespace: kube-system
+data:
+  delete-efs-mount-targets.sh: |
+    #!/bin/bash
+    mounted_targets_to_delete=$(aws efs describe-mount-targets --file-system-id $EFS_ID --query "MountTargets[*].MountTargetId" --output text)
+    IFS=' ' read -a arr <<< "$mounted_targets_to_delete"
+    sorted_unique_mounted_targets=($(echo "${arr[@]}" | tr ' ' '\n' | sort -u  | tr '\n' ' '))
+    
+    for i in "${sorted_unique_mounted_targets[@]}"
+    do
+      echo Removing EFS mounted target $i that is not within VPC
+      aws efs delete-mount-target --mount-target-id $i
+    done
+    
+    while [[ -n "$mounted_targets_to_delete" ]]
+    do
+      sleep 20s
+      mounted_targets_to_delete=$(aws efs describe-mount-targets --file-system-id $EFS_ID --query "MountTargets[*].MountTargetId" --output text)
+    done
+
+  create-efs-mount-targets.sh: |
+    #!/bin/bash
+    SUBNET_IDS=`aws eks describe-cluster --name $EKS_NAME  --query cluster.resourcesVpcConfig.subnetIds --output text`
+    SG_ID=`aws eks describe-cluster --name $EKS_NAME --query cluster.resourcesVpcConfig.clusterSecurityGroupId --output text`
+    SUBNET_ID=`aws ec2 describe-subnets --subnet-ids $SUBNET_IDS --filters "Name=availability-zone,Values=$AWS_AZ_PRIMARY" --query "Subnets[0].SubnetId" --output text`
+    echo aws efs create-mount-target --file-system-id $EFS_ID --subnet-id $SUBNET_ID --security-groups $SG_ID
+    aws efs create-mount-target \
+      --file-system-id $EFS_ID \
+      --subnet-id $SUBNET_ID \
+      --security-groups $SG_ID
+
+  exec.sh: |
+    #!/bin/bash
+    echo "Removing old mount targets in the original VPC (if necessary)..."
+    bash /scripts/delete-efs-mount-targets.sh
+    RET=$?
+    if [[ $RET != 0 ]]; then
+      echo "error: An unexpected error occurred while trying to remove the old EFS Mount Target(s)."
+      exit 1
+    fi
+
+    echo "Creating mount targets in the EKS Managed VPC..."
+    bash /scripts/create-efs-mount-targets.sh
+    RET=$?
+    if [[ $RET != 0 ]]; then
+      echo "error: An unexpected error occurred while trying to create the EFS Mount Target(s)."
+      exit 1
+    fi
+
+    echo "Complete."

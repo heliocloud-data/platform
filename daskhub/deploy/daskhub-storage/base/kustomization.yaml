@@ -4,6 +4,8 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 resources:
+- efs-mount-configmap.yaml
+- efs-mount-job.yaml
 - efs-pv.yaml
 - efs-pvc.yaml
 - namespace.yaml

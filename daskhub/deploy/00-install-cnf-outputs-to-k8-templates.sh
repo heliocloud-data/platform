@@ -41,7 +41,6 @@ FILES=(\
   /home/ssm-user/daskhub/values-production.yaml
   /home/ssm-user/monitoring/values-production.yaml
   /home/ssm-user/00-delete-efs-mount-targets.sh
-  /home/ssm-user/02-deploy-daskhub-storage.sh
 )
 
 while read p; do

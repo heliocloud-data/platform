@@ -282,6 +282,26 @@ class DaskhubStack(Stack):
             self, "K8AutoScalingManagedPolicy", document=autoscaling_custom_policy_document
         )
 
+        efs_mount_policy_document = iam.PolicyDocument(
+            statements=[
+                iam.PolicyStatement(
+                    actions=[
+				"elasticfilesystem:DescribeMountTargets",
+				"elasticfilesystem:CreateMountTarget",
+				"ec2:DescribeAvailabilityZones",
+				"eks:DescribeCluster",
+				"ec2:DescribeSubnets",
+				"elasticfilesystem:DeleteMountTarget"
+                    ],
+                    resources=["*"],
+                )
+            ]
+        )
+
+        efs_mount_managed_policy = iam.ManagedPolicy(
+            self, "EfsMountManagedPolicy", document=efs_mount_policy_document
+        )
+
         file_system = efs.FileSystem(
             self,
             "DaskhubEFS",
@@ -367,6 +387,7 @@ class DaskhubStack(Stack):
         cdk.CfnOutput(self, "AdminRoleArn", value=ec2_admin_role.role_arn)
         cdk.CfnOutput(self, "Route53Arn", value=route53_managed_policy.managed_policy_arn)
         cdk.CfnOutput(self, "EFSId", value=file_system.file_system_id)
+        cdk.CfnOutput(self, "EFSMountArn", value=efs_mount_managed_policy.managed_policy_arn)
         cdk.CfnOutput(self, "CognitoClientId", value=daskhub_client.user_pool_client_id)
         cdk.CfnOutput(self, "CognitoDomainPrefix", value=domain_prefix)
         cdk.CfnOutput(self, "CognitoUserPoolId", value=base_auth.userpool.user_pool_id)

@@ -8,7 +8,7 @@ import boto3
 from urllib3.exceptions import InsecureRequestWarning
 from urllib3 import disable_warnings
 
-from utils.aws_utils import (
+from features.utils.aws_utils import (
     str_to_stack_name,
     find_cloudformation_stack_name_starts_with,
     find_user_pool_id_from_stack_name,

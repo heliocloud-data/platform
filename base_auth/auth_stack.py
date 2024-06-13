@@ -46,6 +46,25 @@ class AuthStack(Stack):
             email=email,
         )
 
+        # Set the logo and css (only using css workaround - limitation with cdk prevents
+        # uploading images) for all HelioCloud Cognito auth screens
+        css = """
+            .banner-customizable {
+                padding: 0px 0px 0px 0px;
+                background-color: lightgray;
+                content:url(http://heliocloud.org/static/img/logo_bin.png);
+                width: 100%;
+            }
+        """
+
+        self.cfn_user_pool_ui_attachment = cognito.CfnUserPoolUICustomizationAttachment(
+            self,
+            "UserPoolUICustomizationAttachment",
+            client_id="ALL",
+            user_pool_id=self.userpool.user_pool_id,
+            css=css,
+        )
+
         # Provide a domain prefix for the public URLS that will be created
         # on instantiation of this Cognito user pool
         self.userpool.add_domain(

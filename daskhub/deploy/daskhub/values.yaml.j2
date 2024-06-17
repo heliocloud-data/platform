@@ -125,44 +125,48 @@ daskhub:
           volumeMounts:
           - name: volume-{username}{servername}
             mountPath: /home/jovyan
+      # The following profile list has been tuned for XX.4xlarge instances (16 Core/64GB RAM)
+      # and memory limits were selected to allocate the majority of the available RAM whole
+      # numbers where "Server", "Large Server", "X-Large Server" and, "The Big Big Server"
+      # can support 8, 4, 2 and 1 servers per node respectively.
+      #
+      # The trick here is to ensure the remaining RAM after hitting that whole number is
+      # less than the memory_limit on the smallest server.
       profileList:
       - display_name: "Server"
         description: "Regular notebook server. 8 GB RAM/2 CPU."
         default: true
         kubespawner_override:
-          mem_guarantee: 4G
-          mem_limit: 8G
+          mem_guarantee: 7G
+          mem_limit: 7G
           cpu_guarantee: 1
           cpu_limit: 2
       - display_name: "Large Server"
         description: "Large notebook server. 16GB RAM/4 CPU."
         kubespawner_override:
-          mem_guarantee: 13G
-          mem_limit: 16G
+          mem_guarantee: 14G
+          mem_limit: 14G
           cpu_guarantee: 3
           cpu_limit: 4
       - display_name: "X-Large Server"
         description: "Large notebook server. 32 GB RAM/8 CPU."
         kubespawner_override:
-          mem_guarantee: 26G
-          mem_limit: 32G
+          mem_guarantee: 28G
+          mem_limit: 28G
           cpu_guarantee: 6
           cpu_limit: 8
       - display_name: "The Big Big Server"
         description: "Use resources like you mean it. 64GB RAM/16 CPU reserved."
         kubespawner_override:
-          mem_guarantee: 48G
-          mem_limit: 64G
+          mem_guarantee: 56G
+          mem_limit: 56G
           cpu_guarantee: 12
           cpu_limit: 16
-          #node_selector:
-          #    large_memory: "true"
-          #tolerations: [{'key': 'large_memory', 'operator': 'Equal', 'value': 'true','effect': 'NoSchedule'}]
       - display_name: "GPU Server"
         description: "Notebook server with access to an NVidia T4 GPU. Up to 16GB RAM/4 CPU."
         kubespawner_override:
-          mem_guarantee: 13G
-          mem_limit: 16G
+          mem_guarantee: 14G
+          mem_limit: 14G
           cpu_guarantee: 3
           cpu_limit: 4
           image: {{ config['daskhub']['ML_DOCKER_LOCATION'] }}:{{ config['daskhub']['ML_DOCKER_VERSION'] }}
@@ -174,8 +178,8 @@ daskhub:
       - display_name: "GPU Server - Large"
         description: "Notebook server with access to an NVidia T4 GPU. Up to 32GB RAM/8 CPU."
         kubespawner_override:
-          mem_guarantee: 26G
-          mem_limit: 32G
+          mem_guarantee: 28G
+          mem_limit: 28G
           cpu_guarantee: 6
           cpu_limit: 8
           image: {{ config['daskhub']['ML_DOCKER_LOCATION'] }}:{{ config['daskhub']['ML_DOCKER_VERSION'] }}
@@ -187,8 +191,8 @@ daskhub:
       - display_name: "GPU Server - X-Large"
         description: "Notebook server with access to an NVidia T4 GPU. Up to 64GB RAM/16 CPU."
         kubespawner_override:
-          mem_guarantee: 46G
-          mem_limit: 64G
+          mem_guarantee: 56G
+          mem_limit: 56G
           cpu_guarantee: 12
           cpu_limit: 16
           image: {{ config['daskhub']['ML_DOCKER_LOCATION'] }}:{{ config['daskhub']['ML_DOCKER_VERSION'] }}

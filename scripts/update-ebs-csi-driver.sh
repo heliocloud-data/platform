@@ -2,10 +2,15 @@
 
 NEW_VERSION=$1
 if [[ "${NEW_VERSION}" == "" ]]; then
-  echo "error: missing version"
-  echo "usage: ${0} <ebs-csi-driver-version>"
-  echo ""
-  exit 1
+  echo "Attempting to auto-detected latest version of 'aws-ebs-csi-driver'"
+  NEW_VERSION=$(aws eks describe-addon-versions --addon-name aws-ebs-csi-driver --query 'addons[0].addonVersions[*].addonVersion' --output text | sed 's#[[:space:]]#\n#g' | head -n 1)
+  if [[ "${NEW_VERSION}" == "" ]]; then
+    echo "error: missing version"
+    echo "usage: ${0} <ebs-csi-driver-version>"
+    echo ""
+    exit 1
+  fi
+  echo "using: ${NEW_VERSION}"
 fi
 
 TARGET_STR=eksbuild
@@ -20,3 +25,10 @@ TARGET_DIR=daskhub/deploy/eksctl/base
 TARGET_FILE=cluster-config.yaml
 
 sed "s#version: .*${TARGET_STR}.*#version: ${NEW_VERSION}#" -i ${TARGET_DIR}/${TARGET_FILE}
+
+# Re-generate the snapshots
+export PYTHONPATH=.:test/unit
+pytest -c pytest-unit.ini  --snapshot-update
+
+# Re-run the tests
+pytest -c pytest-unit.ini --debug --verbose

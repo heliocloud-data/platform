@@ -4,7 +4,7 @@ kind: ClusterConfig
 metadata:
   name: eks-helio
   region: <INSERT_REGION>
-  version: "1.29"
+  version: "1.30"
   tags:
       Product: heliocloud-daskhub
       Project: heliocloud
@@ -191,5 +191,5 @@ cloudWatch:
 
 addons:
   - name: aws-ebs-csi-driver
-    version: v1.30.0-eksbuild.1
+    version: v1.31.0-eksbuild.1
     serviceAccountRoleARN: arn:aws:iam:::role/AmazonEKS_EBS_CSI_DriverRole-us-east-2-eks-helio

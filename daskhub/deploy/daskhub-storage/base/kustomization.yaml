@@ -4,6 +4,12 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 resources:
+# Starting w/ Kubernetes 1.30, we need to explicitly configure the default
+# storage class (storageclass.kubernetes.io/is-default-class=true) for reasons
+# that are not fully understood.  Previously, the EKS/EBS-CNI-Driver would
+# automatically create this resource correctly.  It's possible that this might
+# be a bug (or a misconfiguration), if so this item can safely be removed.
+- ebs-storageclass.yaml
 - efs-mount-configmap.yaml
 - efs-mount-job.yaml
 - efs-pv.yaml

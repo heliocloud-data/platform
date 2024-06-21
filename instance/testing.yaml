@@ -77,13 +77,6 @@ daskhub:
       - instancesDistribution:
           instanceTypes:
             - "g4dn.4xlarge"
-      # ng-user-compute
-      - instancesDistribution:
-          instanceTypes:
-            - "m5.4xlarge"
-            - "m5n.4xlarge"
-            - "m5d.4xlarge"
-            - "m5dn.4xlarge"
       # ng-burst-compute-spot
       - instancesDistribution:
           instanceTypes:

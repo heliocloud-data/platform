@@ -17,11 +17,17 @@ daskhub:
     create: true  # Create and use roles and service accounts on an RBAC-enabled cluster.
 
   jupyterhub:
+    # Performance-wise, the pre-puller should be completely disabled, node groups
+    # with shared user servers are inheriently locked to a single (docker) image
+    # so there's not really a benifit as scheduling of the first user's server
+    # will pull the image at that moment anyway.
+    #
+    # In the event that we choose to support multiple docker runtimes per shared
+    # server OR we re-configure the autoscaler to be less reactive, we might
+    # revisit this setting.
     prePuller:
       hook:
-        enabled: true
-        nodeSelector:
-          hub.jupyter.org/node-purpose: user
+        enabled: false
       pullProfileListImages: false
       pause:
         image:
@@ -141,6 +147,13 @@ daskhub:
           mem_limit: 7G
           cpu_guarantee: 1
           cpu_limit: 2
+          node_selector:
+            hub.jupyter.org/node-purpose: "user"
+          tolerations:
+            - key: 'hub.jupyter.org/dedicated'
+              operator: 'Equal'
+              value: 'user'
+              effect: 'NoSchedule'
       - display_name: "Large Server"
         description: "Large notebook server. 16GB RAM/4 CPU."
         kubespawner_override:
@@ -148,6 +161,13 @@ daskhub:
           mem_limit: 14G
           cpu_guarantee: 3
           cpu_limit: 4
+          node_selector:
+            hub.jupyter.org/node-purpose: "user"
+          tolerations:
+            - key: 'hub.jupyter.org/dedicated'
+              operator: 'Equal'
+              value: 'user'
+              effect: 'NoSchedule'
       - display_name: "X-Large Server"
         description: "Large notebook server. 32 GB RAM/8 CPU."
         kubespawner_override:
@@ -155,6 +175,13 @@ daskhub:
           mem_limit: 28G
           cpu_guarantee: 6
           cpu_limit: 8
+          node_selector:
+            hub.jupyter.org/node-purpose: "user"
+          tolerations:
+            - key: 'hub.jupyter.org/dedicated'
+              operator: 'Equal'
+              value: 'user'
+              effect: 'NoSchedule'
       - display_name: "The Big Big Server"
         description: "Use resources like you mean it. 64GB RAM/16 CPU reserved."
         kubespawner_override:
@@ -162,6 +189,13 @@ daskhub:
           mem_limit: 56G
           cpu_guarantee: 12
           cpu_limit: 16
+          node_selector:
+            hub.jupyter.org/node-purpose: "big-user"
+          tolerations:
+            - key: 'hub.jupyter.org/dedicated'
+              operator: 'Equal'
+              value: 'big-user'
+              effect: 'NoSchedule'
       - display_name: "GPU Server"
         description: "Notebook server with access to an NVidia T4 GPU. Up to 16GB RAM/4 CPU."
         kubespawner_override:
@@ -173,7 +207,15 @@ daskhub:
           environment: {'NVIDIA_DRIVER_CAPABILITIES': 'compute,utility'}
           node_selector:
             nvidia.com/gpu: "true"
-          tolerations: [{'key': 'nvidia.com/gpu','operator': 'Equal','value': 'true','effect': 'NoSchedule'},{'key': 'hub.jupyter.org/dedicated','operator': 'Equal','value': 'user','effect': 'NoSchedule'}]
+          tolerations: 
+            - key: 'nvidia.com/gpu'
+              operator: 'Equal'
+              value: 'true'
+              effect: 'NoSchedule'
+            - key: 'hub.jupyter.org/dedicated'
+              operator: 'Equal'
+              value: 'user'
+              effect: 'NoSchedule'
           extra_resource_limits: {"nvidia.com/gpu": "1"}
       - display_name: "GPU Server - Large"
         description: "Notebook server with access to an NVidia T4 GPU. Up to 32GB RAM/8 CPU."
@@ -186,7 +228,15 @@ daskhub:
           environment: {'NVIDIA_DRIVER_CAPABILITIES': 'compute,utility'}
           node_selector:
             nvidia.com/gpu: "true"
-          tolerations: [{'key': 'nvidia.com/gpu','operator': 'Equal','value': 'true','effect': 'NoSchedule'},{'key': 'hub.jupyter.org/dedicated','operator': 'Equal','value': 'user','effect': 'NoSchedule'}]
+          tolerations: 
+            - key: 'nvidia.com/gpu'
+              operator: 'Equal'
+              value: 'true'
+              effect: 'NoSchedule'
+            - key: 'hub.jupyter.org/dedicated'
+              operator: 'Equal'
+              value: 'user'
+              effect: 'NoSchedule'
           extra_resource_limits: {"nvidia.com/gpu": "1"}
       - display_name: "GPU Server - X-Large"
         description: "Notebook server with access to an NVidia T4 GPU. Up to 64GB RAM/16 CPU."
@@ -244,14 +294,35 @@ daskhub:
       auth:
         type: jupyterhub  # Use JupyterHub to authenticate with Dask Gateway
 
-    #readinessProbe:
-        # Enables the readinessProbe.
-        #enabled: true
-        # Configures the readinessProbe.
-        #initialDelaySeconds: 5
-        #timeoutSeconds: 2
-        #periodSeconds: 10
-        #failureThreshold: 3
+      # These settings ensure that we properly select the node group with
+      # Ec2Spot.  It might be better to switch to taint/toleration, not sure.
+      #
+      # See:
+      #   https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector
+      #   https://discourse.jupyter.org/t/tailoring-spawn-options-and-server-configuration-to-certain-users/8449
+      backend:
+        scheduler:
+          extraPodConfig:
+            affinity:
+              nodeAffinity:
+                requiredDuringSchedulingIgnoredDuringExecution:
+                  nodeSelectorTerms:
+                  - matchExpressions:
+                    - key: lifecycle
+                      operator: In
+                      values:
+                      - Ec2Spot
+        worker:
+          extraPodConfig:
+            affinity:
+              nodeAffinity:
+                requiredDuringSchedulingIgnoredDuringExecution:
+                  nodeSelectorTerms:
+                  - matchExpressions:
+                    - key: lifecycle
+                      operator: In
+                      values:
+                      - Ec2Spot
 
       extraConfig:
         optionHandler: |

@@ -72,12 +72,91 @@ managedNodeGroups:
         fsx: true
     instanceType: t3a.medium
     labels:
+      hub.jupyter.org/node-purpose: core
       lifecycle: OnDemand
     maxSize: 3
     minSize: 2
     name: ng-daskhub-services
+    tags:
+      k8s.io/cluster-autoscaler/node-template/label/hub.jupyter.org/node-purpose: core
+      k8s.io/cluster-autoscaler/node-template/label/lifecycle: OnDemand
+      k8s.io/cluster-autoscaler/node-template/label/node-purpose: core
     updateConfig:
       maxUnavailable: 1
+  - availabilityZones:
+      - <INSERT_PRIMARY_AVAILABILITY_ZONE>
+    desiredCapacity: 0
+    iam:
+      attachPolicyARNs:
+        - arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM
+        - arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy
+        - arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy
+        - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
+        - arn:aws:iam::aws:policy/AmazonRoute53AutoNamingRegistrantAccess
+      withAddonPolicies:
+        autoScaler: true
+        awsLoadBalancerController: true
+        cloudWatch: true
+        ebs: true
+        efs: true
+        fsx: true
+    instanceType: m5.2xlarge
+    labels:
+      hub.jupyter.org/node-purpose: user
+      intent: apps
+      lifecycle: OnDemand
+      node-purpose: user
+    maxSize: 15
+    minSize: 0
+    name: mng-user-compute
+    tags:
+      k8s.io/cluster-autoscaler/node-template/label/hub.jupyter.org/node-purpose: user
+      k8s.io/cluster-autoscaler/node-template/label/intent: apps
+      k8s.io/cluster-autoscaler/node-template/label/lifecycle: OnDemand
+      k8s.io/cluster-autoscaler/node-template/label/node-purpose: user
+      k8s.io/cluster-autoscaler/node-template/taint/hub.jupyter.org/dedicated: user:NoSchedule
+    taints:
+      - effect: NoSchedule
+        key: hub.jupyter.org/dedicated
+        value: user
+  - availabilityZones:
+      - <INSERT_PRIMARY_AVAILABILITY_ZONE>
+    desiredCapacity: 0
+    iam:
+      attachPolicyARNs:
+        - arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM
+        - arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy
+        - arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy
+        - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
+        - arn:aws:iam::aws:policy/AmazonRoute53AutoNamingRegistrantAccess
+      withAddonPolicies:
+        autoScaler: true
+        awsLoadBalancerController: true
+        cloudWatch: true
+        ebs: true
+        efs: true
+        fsx: true
+    instanceType: m5.4xlarge
+    labels:
+      hub.jupyter.org/node-purpose: big-user
+      intent: apps
+      lifecycle: OnDemand
+      node-purpose: big-user
+    maxSize: 15
+    minSize: 0
+    name: mng-user-compute-big
+    tags:
+      k8s.io/cluster-autoscaler/node-template/label/hub.jupyter.org/node-purpose: big-user
+      k8s.io/cluster-autoscaler/node-template/label/intent: apps
+      k8s.io/cluster-autoscaler/node-template/label/lifecycle: OnDemand
+      k8s.io/cluster-autoscaler/node-template/label/node-purpose: big-user
+      k8s.io/cluster-autoscaler/node-template/taint/hub.jupyter.org/dedicated: big-user:NoSchedule
+    taints:
+      - effect: NoSchedule
+        key: hub.jupyter.org/dedicated
+        value: big-user
+    updateConfig:
+      maxUnavailable: 15
 metadata:
   name: eks-helio
   region: us-south-100
@@ -128,45 +207,6 @@ nodeGroups:
     taints:
       hub.jupyter.org/dedicated: user:NoSchedule
       nvidia.com/gpu: true:NoSchedule
-  - availabilityZones:
-      - <INSERT_PRIMARY_AVAILABILITY_ZONE>
-    desiredCapacity: 0
-    iam:
-      attachPolicyARNs:
-        - arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM
-        - arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy
-        - arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy
-        - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
-        - arn:aws:iam::aws:policy/AmazonRoute53AutoNamingRegistrantAccess
-      withAddonPolicies:
-        autoScaler: true
-        awsLoadBalancerController: true
-        cloudWatch: true
-        ebs: true
-        efs: true
-        fsx: true
-    instancesDistribution:
-      instanceTypes:
-        - m5.4xlarge
-        - m5n.4xlarge
-        - m5d.4xlarge
-        - m5dn.4xlarge
-    labels:
-      hub.jupyter.org/node-purpose: user
-      intent: apps
-      lifecycle: OnDemand
-      node-purpose: user
-    maxSize: 15
-    minSize: 0
-    name: ng-user-compute
-    tags:
-      k8s.io/cluster-autoscaler/node-template/label/hub.jupyter.org/node-purpose: user
-      k8s.io/cluster-autoscaler/node-template/label/intent: apps
-      k8s.io/cluster-autoscaler/node-template/label/lifecycle: OnDemand
-      k8s.io/cluster-autoscaler/node-template/label/node-purpose: user
-      k8s.io/cluster-autoscaler/node-template/taint/hub.jupyter.org/dedicated: user:NoSchedule
-    taints:
-      hub.jupyter.org/dedicated: user:NoSchedule
   - availabilityZones:
       - <INSERT_PRIMARY_AVAILABILITY_ZONE>
     desiredCapacity: 0

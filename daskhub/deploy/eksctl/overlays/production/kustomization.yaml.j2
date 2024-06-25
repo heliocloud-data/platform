@@ -71,11 +71,15 @@ patches:
       value:
       - {{ config['eksctl']['availabilityZones'][0] }}
     - op: replace
-      path: /nodeGroups/2/availabilityZones
+      path: /managedNodeGroups/0/availabilityZones
       value:
       - {{ config['eksctl']['availabilityZones'][0] }}
     - op: replace
-      path: /managedNodeGroups/0/availabilityZones
+      path: /managedNodeGroups/1/availabilityZones
+      value:
+      - {{ config['eksctl']['availabilityZones'][0] }}
+    - op: replace
+      path: /managedNodeGroups/2/availabilityZones
       value:
       - {{ config['eksctl']['availabilityZones'][0] }}
     {%- if 'nodeGroups' in config['eksctl'] %}

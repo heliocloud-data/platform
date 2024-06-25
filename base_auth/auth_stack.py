@@ -6,6 +6,7 @@ for a HelioCloud instance.
 from aws_cdk import (
     Stack,
     aws_cognito as cognito,
+    custom_resources as resources,
     RemovalPolicy,
 )
 from constructs import Construct
@@ -46,31 +47,41 @@ class AuthStack(Stack):
             email=email,
         )
 
-        # Set the logo and css (only using css workaround - limitation with cdk prevents
-        # uploading images) for all HelioCloud Cognito auth screens
-        css = """
-            .banner-customizable {
-                padding: 0px 0px 0px 0px;
-                background-color: lightgray;
-                content:url(http://heliocloud.org/static/img/logo_bin.png);
-                width: 100%;
-            }
-        """
-
-        self.cfn_user_pool_ui_attachment = cognito.CfnUserPoolUICustomizationAttachment(
-            self,
-            "UserPoolUICustomizationAttachment",
-            client_id="ALL",
-            user_pool_id=self.userpool.user_pool_id,
-            css=css,
-        )
-
         # Provide a domain prefix for the public URLS that will be created
         # on instantiation of this Cognito user pool
         self.userpool.add_domain(
             "CognitoDomain",
             cognito_domain=cognito.CognitoDomainOptions(domain_prefix=self.__domain_prefix),
         )
+
+        # Set the logo and css (only using css workaround - limitation with cdk prevents
+        # uploading images) for all HelioCloud Cognito auth screens
+        with open("base_auth/static/style.css", encoding="UTF-8") as f:
+            css = f.read()
+
+        # No ImageFile parameter is used as the AWS SDK SetUICustomization funciton for all versions
+        # requires reading an array of base8 integers for the image instead of something that would
+        # not go past the string size limit on the generated CDK template file.
+        # See: https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/client/cognito-identity-provider/command/SetUICustomizationCommand/
+        custom = resources.AwsCustomResource(
+            self,
+            id="UserPoolHostedUICustomResource",
+            on_create=resources.AwsSdkCall(
+                service="@aws-sdk/client-cognito-identity-provider",
+                action="SetUICustomizationCommand",
+                parameters={
+                    "ClientId": "ALL",
+                    "CSS": css,
+                    "UserPoolId": self.userpool.user_pool_id,
+                },
+                physical_resource_id=resources.PhysicalResourceId.of("id"),
+            ),
+            install_latest_aws_sdk=True,
+            policy=resources.AwsCustomResourcePolicy.from_sdk_calls(
+                resources=resources.AwsCustomResourcePolicy.ANY_RESOURCE
+            ),
+        )
+        custom.node.add_dependency(self.userpool)
 
     @property
     def domain_prefix(self):

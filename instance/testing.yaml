@@ -73,10 +73,6 @@ daskhub:
         - daskhub-admin-access-group
         username: lenzinm1
     nodeGroups:
-      # ng-user-gpu
-      - instancesDistribution:
-          instanceTypes:
-            - "g4dn.4xlarge"
       # ng-burst-compute-spot
       - instancesDistribution:
           instanceTypes:

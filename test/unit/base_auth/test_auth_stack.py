@@ -11,6 +11,8 @@ class TestAuthStack(unittest.TestCase):
 
         self.construct_id = "constructid"
 
+    @patch("aws_cdk.custom_resources.AwsCustomResource.node.add_dependency")
+    @patch("aws_cdk.custom_resources.AwsCustomResource")
     @patch("aws_cdk.aws_cognito.CfnUserPoolUICustomizationAttachment")
     @patch("base_auth.identity_stack.IdentityStack")
     @patch("aws_cdk.aws_cognito.UserPool.user_pool_id")
@@ -25,6 +27,8 @@ class TestAuthStack(unittest.TestCase):
         user_pool_id,
         base_identity,
         cfn_user_pool_ui_customization_attachment,
+        custom_resources,
+        custom_resources_node_add_dependency,
     ) -> None:
         """
         This test checks verifies the resulting configuration with the default settings.
@@ -41,11 +45,18 @@ class TestAuthStack(unittest.TestCase):
         self.assertEqual(cognito_user_pool.call_args[0][1], "Pool")
         self.assertEqual(cognito_user_pool.call_args[1]["email"], email)
 
+    @patch("aws_cdk.custom_resources.AwsCustomResource.node.add_dependency")
+    @patch("aws_cdk.custom_resources.AwsCustomResource")
     @patch("aws_cdk.aws_cognito.CfnUserPoolUICustomizationAttachment")
     @patch("aws_cdk.aws_cognito.UserPool.user_pool_id")
     @patch("aws_cdk.aws_cognito.UserPool")
     def test_constructor_config__no_identity(
-        self, cognito_user_pool, user_pool_id, cfn_user_pool_ui_customization_attachment
+        self,
+        cognito_user_pool,
+        user_pool_id,
+        cfn_user_pool_ui_customization_attachment,
+        custom_resources,
+        custom_resources_node_add_dependency,
     ) -> None:
         """
         This test checks verifies the resulting configuration without an Identity Stack.

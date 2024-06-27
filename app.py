@@ -176,7 +176,8 @@ def get_instance(cdk_app: cdk.App) -> str:
 
 # Build the HelioCloud
 app = cdk.App()
-cdk.Tags.of(app).add("Project", "heliocloud")
-MyHelioCloud(app, heliocloud_id=get_instance(app))
+hc_instance = get_instance(app)  # pylint: disable=C0103
+cdk.Tags.of(app).add("Application ID", hc_instance)
+MyHelioCloud(app, heliocloud_id=hc_instance)
 
 app.synth()

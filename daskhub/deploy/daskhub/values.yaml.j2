@@ -207,7 +207,8 @@ daskhub:
           environment: {'NVIDIA_DRIVER_CAPABILITIES': 'compute,utility'}
           node_selector:
             nvidia.com/gpu: "true"
-          tolerations: 
+            heliocloud.org/instance-type: "xlarge"
+          tolerations:
             - key: 'nvidia.com/gpu'
               operator: 'Equal'
               value: 'true'
@@ -228,7 +229,8 @@ daskhub:
           environment: {'NVIDIA_DRIVER_CAPABILITIES': 'compute,utility'}
           node_selector:
             nvidia.com/gpu: "true"
-          tolerations: 
+            heliocloud.org/instance-type: "2xlarge"
+          tolerations:
             - key: 'nvidia.com/gpu'
               operator: 'Equal'
               value: 'true'
@@ -249,7 +251,16 @@ daskhub:
           environment: {'NVIDIA_DRIVER_CAPABILITIES': 'compute,utility'}
           node_selector:
             nvidia.com/gpu: "true"
-          tolerations: [{'key': 'nvidia.com/gpu','operator': 'Equal','value': 'true','effect': 'NoSchedule'},{'key': 'hub.jupyter.org/dedicated','operator': 'Equal','value': 'user','effect': 'NoSchedule'}]
+            heliocloud.org/instance-type: "4xlarge"
+          tolerations:
+            - key: 'nvidia.com/gpu'
+              operator: 'Equal'
+              value: 'true'
+              effect: 'NoSchedule'
+            - key: 'hub.jupyter.org/dedicated'
+              operator: 'Equal'
+              value: 'user'
+              effect: 'NoSchedule'
           extra_resource_limits: {"nvidia.com/gpu": "1"}
       image:
         name: {{ config['daskhub']['GENERIC_DOCKER_LOCATION'] }}

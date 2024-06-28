@@ -77,10 +77,6 @@ daskhub:
         - monitoring-admin-access-group
         username: lenzinm1
     nodeGroups:
-      # ng-user-gpu
-      - instancesDistribution:
-          instanceTypes:
-            - "g4dn.4xlarge"
       # ng-burst-compute-spot
       - instancesDistribution:
           instanceTypes:
@@ -96,8 +92,8 @@ daskhub:
 
   daskhub:
     namespace: daskhub
-    api_key1: 0957f1742c5757583c607f86bc7d90094a68dbdd13ddfb4da7ac95188d1442f8
-    api_key2: 26efca5cf499d1214fed44d389f99b8cf3117b0e3688cdf5978f5ddf7b6502cb
+    api_key1: auto
+    api_key2: auto
     admin_users:
      - lenzinm1
     contact_email: nicholas.lenzi@jhuapl.edu

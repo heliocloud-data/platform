@@ -63,11 +63,6 @@ patches:
       path: /secretsEncryption/keyARN
       value: "<<CNF_OUTPUT_KMSArn>>"
     - op: replace
-      # ng-burst-compute-spot
-      path: /nodeGroups/0/availabilityZones
-      value:
-      - {{ config['eksctl']['availabilityZones'][0] }}
-    - op: replace
       # ng-daskhub-services
       path: /managedNodeGroups/0/availabilityZones
       value:
@@ -95,6 +90,16 @@ patches:
     - op: replace
       # mng-user-gpu-4xlarge
       path: /managedNodeGroups/5/availabilityZones
+      value:
+      - {{ config['eksctl']['availabilityZones'][0] }}
+    - op: replace
+      # mng-burst-compute-spot
+      path: /managedNodeGroups/6/availabilityZones
+      value:
+      - {{ config['eksctl']['availabilityZones'][0] }}
+    - op: replace
+      # mng-burst-compute-spot-gpu-4xlarge
+      path: /managedNodeGroups/7/availabilityZones
       value:
       - {{ config['eksctl']['availabilityZones'][0] }}
     {%- if 'nodeGroups' in config['eksctl'] %}

@@ -655,32 +655,166 @@ data:
     c.KubeClusterConfig.idle_timeout = 1800
 
     # From gateway.extraConfig.optionHandler
-    from dask_gateway_server.options import Options, Integer, Float, String
+    from dask_gateway_server.options import Options, Integer, Float, String, Select
+    import copy
+
+    extra_pod_affinity_config = {
+      "nodeAffinity": {
+        "requiredDuringSchedulingIgnoredDuringExecution": {
+          "nodeSelectorTerms": [{
+            "matchExpressions": [{
+              "key": "heliocloud.org/dask-worker",
+              "operator": "In",
+              "values": [
+                "true",
+              ]
+            }]
+          }]
+        }
+      }
+    }
+
+    # Enumerate all the instance profiles that we want to support dask scheduling
+    # for.  We'll need corresponding node groups in the cluster.  We control this
+    # via the cluster-config.yaml.
+    profiles = {
+      "default": {
+        "extra_node_selectors": [{
+          "matchExpressions": [{
+            "key": "nvidia.com/gpu",
+            "operator": "In",
+            "values": [
+              "false",
+            ]
+          }]
+        }],
+
+        "scheduler_extra_pod_config": {
+          "affinity": extra_pod_affinity_config,
+          "tolerations": [{
+            "key": "heliocloud.org/dask-worker-profile",
+            "operator": "Equal",
+            "value": "default",
+            "effect": "NoSchedule",
+          }]
+        },
+        "worker_extra_pod_config": {
+          "affinity": extra_pod_affinity_config,
+          "tolerations": [{
+            "key": "heliocloud.org/dask-worker-profile",
+            "operator": "Equal",
+            "value": "default",
+            "effect": "NoSchedule",
+          }]
+        },
+        "environment": {},
+      },
+      "gpu-xlarge": {
+        "overrides": {
+          "worker_cores": 3.5,
+          "worker_memory": "14G",
+        },
+
+        "extra_node_selectors": [{
+          "matchExpressions": [{
+            "key": "nvidia.com/gpu",
+            "operator": "In",
+            "values": [
+              "true",
+            ]
+          }]
+        }],
+
+        "scheduler_extra_pod_config": {
+          "affinity": extra_pod_affinity_config,
+          "tolerations": [{
+            "key": "heliocloud.org/dask-worker-profile",
+            "operator": "Equal",
+            "value": "gpu-xlarge",
+            "effect": "NoSchedule",
+          }]
+        },
+        "worker_extra_pod_config": {
+          "affinity": extra_pod_affinity_config,
+          "tolerations": [{
+            "key": "heliocloud.org/dask-worker-profile",
+            "operator": "Equal",
+            "value": "gpu-xlarge",
+            "effect": "NoSchedule",
+          }]
+        },
+        "environment": {
+          "NVIDIA_DRIVER_CAPABILITIES": "compute,utility",
+        },
+      }
+    }
+
+    def get_extra_pod_config_from_profile(options, user, pod_config_key):
+      extra_toleration_user_config = {
+        "key": "hub.jupyter.org/username",
+        "operator": "Equal",
+        "value": user.name,
+        "effect": "NoSchedule",
+      }
+
+      extra_pod_config = copy.deepcopy(profiles[options.profile][pod_config_key])
+
+      if 'tolerations' not in extra_pod_config:
+        extra_pod_config['tolerations'] = []
+
+      # Inject tolerations associated w/ this user.
+      extra_pod_config['tolerations'].append(extra_toleration_user_config)
+
+      # Apply any additional node selectors for the given profile
+      # configuration
+      if 'extra_node_selectors' in profiles[options.profile] and len(profiles[options.profile]['extra_node_selectors']) > 0:
+        if 'affinity' not in extra_pod_config:
+          extra_pod_config['affinity'] = {}
+        if 'nodeAffinity' not in extra_pod_config['affinity']:
+          extra_pod_config['affinity']['nodeAffinity'] = {}
+        if 'requiredDuringSchedulingIgnoredDuringExecution' not in extra_pod_config['affinity']['nodeAffinity']:
+          extra_pod_config['affinity']['nodeAffinity']['requiredDuringSchedulingIgnoredDuringExecution'] = {}
+        if 'nodeSelectorTerms' not in extra_pod_config['affinity']['nodeAffinity']['requiredDuringSchedulingIgnoredDuringExecution']:
+          extra_pod_config['affinity']['nodeAffinity']['requiredDuringSchedulingIgnoredDuringExecution']['nodeSelectorTerms'] = []
+        for extra_node_selector in profiles[options.profile]['extra_node_selectors']:
+          extra_pod_config['affinity']['nodeAffinity']['requiredDuringSchedulingIgnoredDuringExecution']['nodeSelectorTerms'].append(extra_node_selector)
+
+      return extra_pod_config
+
     def option_handler(options, user):
+      environment = copy.deepcopy(profiles[options.profile]['environment'])
+
+      worker_extra_pod_config = get_extra_pod_config_from_profile(options, user, 'worker_extra_pod_config')
+      scheduler_extra_pod_config = get_extra_pod_config_from_profile(options, user, 'scheduler_extra_pod_config')
+
       extra_annotations = {
-              "hub.jupyter.org/username": user.name,
+        "hub.jupyter.org/username": user.name,
       }
 
       extra_labels = {
-              "hub.jupyter.org/username": user.name,
+        "hub.jupyter.org/username": user.name,
       }
 
       if ":" not in options.image:
-          raise ValueError("When specifying an image you must also provide a tag")
+        raise ValueError("When specifying an image you must also provide a tag")
 
       return {
-          "image": options.image,
-          "worker_cores": options.worker_cores,
-          "worker_memory": int(options.worker_memory * 2 ** 30),
-          "scheduler_extra_pod_annotations": extra_annotations,
-          "worker_extra_pod_annotations": extra_annotations,
-          "scheduler_extra_pod_labels": extra_labels,
-          "worker_extra_pod_labels": extra_labels,
+        "image": options.image,
+        "worker_cores": profiles[options.profile].get("overrides",{}).get("worker_cores",options.worker_cores),
+        "worker_memory": profiles[options.profile].get("overrides",{}).get("worker_memory", int(options.worker_memory * 2 ** 30)),
+        "scheduler_extra_pod_annotations": extra_annotations,
+        "worker_extra_pod_annotations": extra_annotations,
+        "scheduler_extra_pod_labels": extra_labels,
+        "worker_extra_pod_labels": extra_labels,
+        "environment": environment,
+        "worker_extra_pod_config": worker_extra_pod_config,
+        "scheduler_extra_pod_config": scheduler_extra_pod_config,
       }
     c.Backend.cluster_options = Options(
       String("image", default="<GENERIC_DOCKER_LOCATION>:<GENERIC_DOCKER_VERSION>", label="Image"),
       Integer("worker_cores", default=1, min=1, max=4, label="Worker Cores"),
       Float("worker_memory", default=1, min=1, max=8, label="Worker Memory (GiB)"),
+      Select("profile", list(profiles.keys()), default="default", label="Profile"),
       handler=option_handler,
     )
 kind: ConfigMap
@@ -2370,14 +2504,13 @@ spec:
     spec:
       affinity:
         nodeAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-            - preference:
-                matchExpressions:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
                   - key: hub.jupyter.org/node-purpose
                     operator: In
                     values:
                       - user
-              weight: 100
       automountServiceAccountToken: false
       containers:
         - image: registry.k8s.io/pause:3.9

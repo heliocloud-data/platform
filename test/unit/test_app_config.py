@@ -1,50 +1,51 @@
-import unittest
-
+import pytest
 from app_config import load_configs
 
 
-class TestConfig(unittest.TestCase):
+def test_load_configs():
+    cfg = load_configs("test/unit/resources/test_app_config/instance", "test_config")
+
+    print(f"AAA-> {cfg}")
+
+    # Confirm values in the instance document
+    assert cfg["env"]["account"] == 123456789
+    assert cfg["env"]["region"] == "us-east-100"
+    assert cfg["enabled"]["registry"] == True
+    assert cfg["registry"]["datasetBucketNames"][0] == "suds-datasets-1"
+    assert cfg["registry"]["ingestBucketName"] == "acid-reflux"
+
+    assert cfg["auth"]["domain_prefix"] == "apl-helio"
+    assert cfg["portal"]["domain_url"] is None
+    assert cfg["portal"]["domain_record"] is None
+    assert cfg["portal"]["domain_certificate_arn"] is None
+    assert cfg["daskhub"] is None
+
+
+def test_load_configs_null_basedir():
     """
-    Various tests for parsing configuration files.
+    Should load a default configuration
     """
+    cfg = load_configs(hc_id="example")
 
-    def test_method_load_configs_OK(self):
-        cfg = load_configs("test/unit/resources/test_app_config/instance", "test_config")
+    # Confirm values in the instance document
+    assert cfg["env"]["account"] == 12345678
 
-        print(f"AAA-> {cfg}")
 
-        # Confirm values in the instance document
-        self.assertEqual(cfg["env"]["account"], 123456789)
-        self.assertEqual(cfg["env"]["region"], "us-east-100")
-        self.assertEqual(cfg["enabled"]["registry"], True)
-        self.assertEqual(cfg["registry"]["datasetBucketNames"][0], "suds-datasets-1")
-        self.assertEqual(cfg["registry"]["ingestBucketName"], "acid-reflux")
+def test_load_configs_missing_file():
+    """
+    Confirm FileNotFoundError thrown if a non-existant configuration file is referenced.
+    """
+    with pytest.raises(FileNotFoundError):
+        load_configs("test/unit/resources/test_app_config/instance", "DoesNotExist")
+        print("FileNotFoundError should be thrown.")
+        assert False
 
-        # Confirm values in the default document
-        self.assertEqual(cfg["auth"]["domain_prefix"], "apl-helio")
-        self.assertIsNone(cfg["portal"]["domain_url"])
-        self.assertIsNone(cfg["portal"]["domain_record"])
-        self.assertIsNone(cfg["portal"]["domain_certificate_arn"])
-        self.assertIsNone(cfg["daskhub"])
 
-    def test_method_load_configs_OK_BasedirIsNull_Example(self):
-        cfg = load_configs(hc_id="example")
-
-        print(cfg)
-
-        # Confirm values in the instance document
-        self.assertEqual(cfg["env"]["account"], 12345678)
-
-    def test_method_load_configs_FileNotFound(self):
-        try:
-            cfg = load_configs("test/unit/resources/test_app_config/instance", "DoesNotExist")
-            self.fail("FileNotFoundError should be thrown")
-        except FileNotFoundError as e:
-            print(e)
-
-    def test_method_load_configs_InvalidFile(self):
-        try:
-            cfg = load_configs("test/unit/resources/test_app_config/instance", "invalid")
-            self.fail("ValueError should be thrown")
-        except ValueError as e:
-            print(e)
+def test_method_load_configs_InvalidFile():
+    """
+    Confirm a ValueError is thrown if an invalid configuration file is supplied
+    """
+    with pytest.raises(ValueError):
+        load_configs("test/unit/resources/test_app_config/instance", "invalid")
+        print("ValueError should be thrown")
+        assert False

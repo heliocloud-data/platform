@@ -20,7 +20,12 @@ class AuthStack(Stack):
     """
 
     def __init__(
-        self, scope: Construct, construct_id: str, config: dict, base_identity: Stack, **kwargs
+        self,
+        scope: Construct,
+        construct_id: str,
+        config: dict,
+        base_identity: Stack = None,
+        **kwargs,
     ) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
@@ -56,10 +61,11 @@ class AuthStack(Stack):
 
         # Set the logo and css (only using css workaround - limitation with cdk prevents
         # uploading images) for all HelioCloud Cognito auth screens
-        with open("base_auth/static/style.css", encoding="UTF-8") as f:
-            css = f.read()
+        with open("base_auth/static/style.css", encoding="UTF-8") as file:
+            css = file.read()
 
-        # No ImageFile parameter is used as the AWS SDK SetUICustomization funciton for all versions
+        # pylint: disable=line-too-long
+        # No ImageFile parameter is used as the AWS SDK SetUICustomization function for all versions
         # requires reading an array of base8 integers for the image instead of something that would
         # not go past the string size limit on the generated CDK template file.
         # See: https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/client/cognito-identity-provider/command/SetUICustomizationCommand/
@@ -82,6 +88,7 @@ class AuthStack(Stack):
             ),
         )
         custom.node.add_dependency(self.userpool)
+        # pylint: enable=line-too-long
 
     @property
     def domain_prefix(self):

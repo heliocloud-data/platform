@@ -1,83 +1,83 @@
-import boto3
 import os.path
 import random
-import unittest
-from registry.lambdas.app.aws_utils.s3 import get_dataset_entries_from_s3, get_manifest_from_s3
+import pytest
 
+from registry.lambdas.app.aws_utils.s3 import get_dataset_entries_from_s3, get_manifest_from_s3
 from utils import (
     new_boto_session,
     get_hc_instance,
     get_region,
 )
 
+# AWS S3 bucket name to use for this test
+BUCKET_NAME_PREFIX = "test-aws-utils"
 
-class TestAWSUtils(unittest.TestCase):
+# Files for entry dataset parsing test
+ENTRIES_FILE = os.path.dirname(__file__) + "/resources/s3/to_upload/entries_template.json"
+ENTRIES_KEY = "entries.json"
+
+# Files for manifest parsing test
+MANIFEST_FILE = os.path.dirname(__file__) + "/resources/s3/to_upload/MMS/manifest.csv"
+MANIFEST_KEY = "manifest.csv"
+
+
+@pytest.fixture(scope="module")
+def session():
     """
-    Simple integration tests for AWS utils functionality.
+    Boto 3 session for uses in these tests
     """
+    return new_boto_session(get_hc_instance())
 
-    pem_file = "registry/lambdas/app/resources/global-bundle.pem"
-    bucket = "heliocloud-test-integration-" + str(random.randint(0, 1000))
 
-    entry_dataset_file = os.path.dirname(__file__) + "/resources/s3/to_upload/entries.json"
-    entry_dataset_key = "entries.json"
+@pytest.fixture(scope="module")
+def bucket(session):
+    """
+    Creates an S3 bucket and populates it with the files to be used when testing the AWS utils.
+    """
+    s3_client = session.client("s3")
+    bucket_region = get_region(get_hc_instance(), True)
+    bucket_name = BUCKET_NAME_PREFIX + "-" + str(random.randint(0, 1000))
 
-    manifest_file = os.path.dirname(__file__) + "/resources/s3/to_upload/MMS/manifest.csv"
-    manifest_key = "manifest.csv"
-
-    def setUp(self) -> None:
-        self.__hc_instance = get_hc_instance()
-        self.__location_constraint = get_region(self.__hc_instance, True)
-
-        # put the test file up on S3
-        s3client = boto3.client("s3")
-        s3client.create_bucket(
-            Bucket=TestAWSUtils.bucket,
-            CreateBucketConfiguration={
-                "LocationConstraint": self.__location_constraint,
-            },
+    # Create the bucket
+    if bucket_region == "us-east-1":
+        s3_client.create_bucket(Bucket=bucket_name)
+    else:
+        s3_client.create_bucket(
+            Bucket=bucket_name, CreateBucketConfiguration={"LocationConstraint": bucket_region}
         )
-        s3client.upload_file(
-            Filename=TestAWSUtils.entry_dataset_file,
-            Bucket=TestAWSUtils.bucket,
-            Key=TestAWSUtils.entry_dataset_key,
-        )
-        s3client.upload_file(
-            Filename=TestAWSUtils.manifest_file,
-            Bucket=TestAWSUtils.bucket,
-            Key=TestAWSUtils.manifest_key,
-        )
-        s3client.close()
+    print(f"\nCreated {bucket_name} in {bucket_region} for testing.\n")
 
-        # Session to use
-        self.__hc_instance = get_hc_instance()
-        self.__session = new_boto_session(self.__hc_instance)
+    # Upload the test files
+    s3_client.upload_file(Filename=ENTRIES_FILE, Bucket=bucket_name, Key=ENTRIES_KEY)
+    s3_client.upload_file(Filename=MANIFEST_FILE, Bucket=bucket_name, Key=MANIFEST_KEY)
 
-    def tearDown(self) -> None:
-        # Delete it from S3
-        s3client = boto3.client("s3")
-        s3client.delete_object(Bucket=TestAWSUtils.bucket, Key=TestAWSUtils.entry_dataset_key)
-        s3client.delete_object(Bucket=TestAWSUtils.bucket, Key=TestAWSUtils.manifest_key)
-        s3client.delete_bucket(Bucket=TestAWSUtils.bucket)
-        s3client.close()
+    # Bucket is ready to use
+    yield bucket_name
 
-    def test_entriesx_json_s3(self):
-        s3client = boto3.client("s3")
-        dataset_list = get_dataset_entries_from_s3(
-            session=self.__session,
-            bucket_name=TestAWSUtils.bucket,
-            entry_key=TestAWSUtils.entry_dataset_key,
-        )
-        self.assertEqual(dataset_list[0].dataset_id, "MMS")
-        self.assertEqual(dataset_list[0].resource, "SPASE-1234567")
-        s3client.close()
+    # Clean up the bucket
+    s3_client.delete_object(Bucket=bucket_name, Key=ENTRIES_KEY)
+    s3_client.delete_object(Bucket=bucket_name, Key=MANIFEST_KEY)
+    s3_client.delete_bucket(Bucket=bucket_name)
+    s3_client.close()
+    print(f"\nDestroyed bucket {bucket_name} in {bucket_region}.\n")
 
-    def test_manifest_s3(self):
-        s3client = boto3.client("s3")
-        manifest_df = get_manifest_from_s3(
-            session=self.__session,
-            bucket_name=TestAWSUtils.bucket,
-            manifest_key=TestAWSUtils.manifest_key,
-        )
-        self.assertEqual(manifest_df.shape[0], 6)
-        s3client.close()
+
+def test_manifest(bucket, session):
+    """
+    Check that the manifest can be retrieved properly from an AWS s3 bucket.
+    """
+    manifest_df = get_manifest_from_s3(
+        session=session, bucket_name=bucket, manifest_key=MANIFEST_KEY
+    )
+    assert manifest_df.shape[0] == 6
+
+
+def test_dataset_entries_s3(bucket, session):
+    """
+    Check that the dataset entries file can be retrieved properly from an AWS S3 bucket.
+    """
+    dataset_list = get_dataset_entries_from_s3(
+        session=session, bucket_name=bucket, entry_key=ENTRIES_KEY
+    )
+    assert dataset_list[0].dataset_id == "MMS"
+    assert dataset_list[0].resource == "SPASE-1234567"

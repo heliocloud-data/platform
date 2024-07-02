@@ -3,9 +3,10 @@ A tool for uploading a custom auth ui to cognito.
 """
 
 import argparse
-import boto3
 import sys
 from pathlib import Path
+
+import boto3
 
 # pylint: disable=import-error, wrong-import-position
 # The catalog_lambda module is in a separate, top level project directory unaffiliated with tools,
@@ -87,8 +88,4 @@ if __name__ == "__main__":
     )
 
     args = ap.parse_args()
-    image_path = args.image
-    css_path = args.css
-    stack = args.stack
-
     upload_ui_customization(*vars(args).values())

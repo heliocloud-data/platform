@@ -1,14 +1,21 @@
+"""
+Utils for working with Jinja templates.
+"""
 import glob
 import os
-import jinja2
-from jinja2 import Template
-from pathlib import Path
 import shutil
+from pathlib import Path
+
+import jinja2
 
 
 def apply_jinja_templates_by_dir(
     template_src_folder: str, template_dest_folder: str, render_params: dict
 ):
+    """
+    Go through the jinja templates in the source folder, fill out the template
+    and put the resulting populated files in the destination folder.
+    """
     env = jinja2.Environment()
 
     for file in glob.glob(f"{template_src_folder}/**", recursive=True):
@@ -24,10 +31,10 @@ def apply_jinja_templates_by_dir(
             dest_file = f"{template_dest_folder}/{os.path.splitext(file_relative_to_src_folder)[0]}"
 
             print(f" processing jinja template {file}...")
-            t = env.from_string(Path(file).read_text())
-            doc = t.render(render_params)
+            template = env.from_string(Path(file).read_text(encoding="utf-8"))
+            doc = template.render(render_params)
 
-            with open(dest_file, "w") as dest_file_obj:
+            with open(dest_file, "w", encoding="utf-8") as dest_file_obj:
                 dest_file_obj.write(doc)
         else:
             # copy the file

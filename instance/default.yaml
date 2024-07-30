@@ -153,20 +153,6 @@ daskhub:
     iamIdentityMappings:
       # Add custom RBAC configuration settings to your aws-auth config
       # map
-    nodeGroups:
-      # ng-user-gpu
-      - instancesDistribution:
-          instanceTypes:
-            - "g4dn.4xlarge"
-      # ng-burst-compute-spot
-      - instancesDistribution:
-          instanceTypes:
-            - "m5n.8xlarge"
-            - "m5.8xlarge"
-            - "m4.8xlarge"
-            - "m5dn.8xlarge"
-            - "r5n.8xlarge"
-            - "r5dn.8xlarge"
 
   daskhub_storage:
     efs-persist:

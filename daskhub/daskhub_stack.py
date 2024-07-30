@@ -84,19 +84,20 @@ class DaskhubStack(Stack):
 
         # Scan the instance types and remove any instance type not supported by
         # the region.
-        for nodeGroup in self.__daskhub_config['eksctl']['nodeGroups']: # pylint: disable=invalid-name
-            if ('instancesDistribution' in nodeGroup and
-                'instanceTypes' in nodeGroup['instancesDistribution']):
-                to_remove = []
-                for instanceType in nodeGroup['instancesDistribution']['instanceTypes']: # pylint: disable=invalid-name
-                    if instanceType not in instance_types:
-                        if WARN_ON_UNSUPPORTED_INSTANCE_TYPE:
-                            print(f"WARN: Unsupported instance type {instanceType},"
-                                  + "removing from node group")
-                        to_remove.append(instanceType)
-                for rem in to_remove:
-                    nodeGroup['instancesDistribution']['instanceTypes'].remove(rem)
-                # TODO: If list is empty at this point... Fail.
+        if 'nodeGroups' in self.__daskhub_config['eksctl']:
+            for nodeGroup in self.__daskhub_config['eksctl']['nodeGroups']: # pylint: disable=invalid-name
+                if ('instancesDistribution' in nodeGroup and
+                    'instanceTypes' in nodeGroup['instancesDistribution']):
+                    to_remove = []
+                    for instanceType in nodeGroup['instancesDistribution']['instanceTypes']: # pylint: disable=invalid-name
+                        if instanceType not in instance_types:
+                            if WARN_ON_UNSUPPORTED_INSTANCE_TYPE:
+                                print(f"WARN: Unsupported instance type {instanceType},"
+                                    + "removing from node group")
+                            to_remove.append(instanceType)
+                    for rem in to_remove:
+                        nodeGroup['instancesDistribution']['instanceTypes'].remove(rem)
+                    # TODO: If list is empty at this point... Fail.
 
         # EC2 admin instance can create AWS resources needed to control
         # EKS (Kubernetes) backing Daskhub, can access through SSM opposed to SSH

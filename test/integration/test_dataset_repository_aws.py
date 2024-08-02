@@ -1,12 +1,13 @@
 from datetime import datetime
 import unittest
 import pymongo
+import pytest as pytest
 
 from registry.lambdas.app.catalog.dataset_repository import DataSetRepository
 from registry.lambdas.app.model.dataset import DataSet, IndexType, FileType
 
 
-@unittest.skip("Requires SSH tunnel to DocumentDB.")
+@pytest.mark.skip("Requires a running DocumentDB instance.")
 class TestDataSetRepositoryAWS(unittest.TestCase):
     """
     Tests the DataSetRepository implemented as backed by a DocumentDB instance running on AWS.

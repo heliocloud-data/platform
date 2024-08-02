@@ -453,7 +453,8 @@ class DaskhubStack(Stack):
 
         ttl = Duration.seconds(300)
         domain_name = "0.0.0.0"
-        full_name = f"{self.__daskhub_config['daskhub']['domain_record']}.{self.__daskhub_config['daskhub']['domain_url']}."
+        full_name = f"{self.__daskhub_config['daskhub']['domain_record']}." \
+                    f"{self.__daskhub_config['daskhub']['domain_url']}."
 
         record = find_route53_record_by_type_and_name(
             self.hosted_zone.hosted_zone_id, 'CNAME',

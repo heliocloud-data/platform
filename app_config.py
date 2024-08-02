@@ -31,14 +31,17 @@ def load_configs(basedir: str = None, hc_id: str = None) -> dict:
 
 
 def update_cfgs(dest: dict, cfgs: list):
+    """
+    Applies configuration updates to a destination config.
+    """
     if not isinstance(dest, dict):
-        raise ValueError(f"dest is not a dict")
+        raise ValueError("dest is not a dict")
     if not isinstance(cfgs, list):
-        raise ValueError(f"cfgs is not a list")
+        raise ValueError("cfgs is not a list")
 
     for cfg in cfgs:
         if not isinstance(cfg, dict):
-            raise ValueError(f"Element in cfgs is not a dict")
+            raise ValueError("Element in cfgs is not a dict")
 
         for key, value in cfg.items():
             if key not in dest:

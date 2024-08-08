@@ -78,16 +78,6 @@ daskhub:
         - daskhub-admin-access-group
         - monitoring-admin-access-group
         username: lenzinm1
-    nodeGroups:
-      # ng-burst-compute-spot
-      - instancesDistribution:
-          instanceTypes:
-            - "m5n.8xlarge"
-            - "m5.8xlarge"
-            - "m4.8xlarge"
-            - "m5dn.8xlarge"
-            - "r5n.8xlarge"
-            - "r5dn.8xlarge"
   daskhub_storage:
     efs-persist:
       storage: 10000Gi

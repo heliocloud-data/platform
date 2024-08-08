@@ -140,8 +140,8 @@ managedNodeGroups:
       lifecycle: OnDemand
       intent: apps
       nvidia.com/gpu: 'false'
-      node-purpose: big-user
-      hub.jupyter.org/node-purpose: big-user
+      hub.jupyter.org/node-purpose: user
+      heliocloud.org/instance-type: 4xlarge
     taints:
     - key: "hub.jupyter.org/dedicated"
       value: "big-user"
@@ -150,8 +150,8 @@ managedNodeGroups:
       k8s.io/cluster-autoscaler/node-template/label/lifecycle: OnDemand
       k8s.io/cluster-autoscaler/node-template/label/intent: apps
       k8s.io/cluster-autoscaler/node-template/label/nvidia.com/gpu: 'false'
-      k8s.io/cluster-autoscaler/node-template/label/node-purpose: big-user
-      k8s.io/cluster-autoscaler/node-template/label/hub.jupyter.org/node-purpose: big-user
+      k8s.io/cluster-autoscaler/node-template/label/hub.jupyter.org/node-purpose: user
+      k8s.io/cluster-autoscaler/node-template/label/heliocloud.org/instance-type: 4xlarge
       k8s.io/cluster-autoscaler/node-template/taint/hub.jupyter.org/dedicated: 'big-user:NoSchedule'
     iam:
       attachPolicyARNs:
@@ -335,6 +335,8 @@ managedNodeGroups:
     maxSize: 10
     desiredCapacity: 0
     availabilityZones: [<INSERT_PRIMARY_AVAILABILITY_ZONE>]
+    updateConfig:
+      maxUnavailable: 1
     labels:
       lifecycle: Ec2Spot
       intent: apps
@@ -383,6 +385,8 @@ managedNodeGroups:
     maxSize: 10
     desiredCapacity: 0
     availabilityZones: [<INSERT_PRIMARY_AVAILABILITY_ZONE>]
+    updateConfig:
+      maxUnavailable: 1
     labels:
       lifecycle: Ec2Spot
       intent: apps

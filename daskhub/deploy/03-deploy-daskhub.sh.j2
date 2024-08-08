@@ -3,7 +3,6 @@
 AWS_REGION=$(aws ec2 describe-availability-zones --output text --query 'AvailabilityZones[0].[RegionName]')
 
 KUBERNETES_NAMESPACE={{ config['daskhub']['namespace'] }}
-ROUTE53_HOSTED_ZONE={{ config['daskhub']['domain_url'] }}
 
 cd daskhub
 helm dep update

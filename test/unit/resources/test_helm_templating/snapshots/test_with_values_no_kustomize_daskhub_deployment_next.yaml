@@ -679,7 +679,12 @@ data:
     # via the cluster-config.yaml.
     profiles = {
       "default": {
-        "extra_node_selectors": [{
+        "extra_node_selectors": {
+          "nvidia.com/gpu": "false",
+          "heliocloud.org/dask-worker": "true",
+        },
+
+        "extra_node_affinity": [{
           "matchExpressions": [{
             "key": "nvidia.com/gpu",
             "operator": "In",
@@ -715,7 +720,12 @@ data:
           "worker_memory": "14G",
         },
 
-        "extra_node_selectors": [{
+        "extra_node_selectors": {
+          "nvidia.com/gpu": "true",
+          "heliocloud.org/dask-worker": "true",
+        },
+
+        "extra_node_affinity": [{
           "matchExpressions": [{
             "key": "nvidia.com/gpu",
             "operator": "In",
@@ -767,7 +777,12 @@ data:
 
       # Apply any additional node selectors for the given profile
       # configuration
-      if 'extra_node_selectors' in profiles[options.profile] and len(profiles[options.profile]['extra_node_selectors']) > 0:
+      if 'extra_node_selectors' in profiles[options.profile]:
+        extra_pod_config['nodeSelector'] = profiles[options.profile]['extra_node_selectors']
+
+      # Apply any additional node affinity for the given profile
+      # configuration
+      if 'extra_node_affinity' in profiles[options.profile] and len(profiles[options.profile]['extra_node_affinity']) > 0:
         if 'affinity' not in extra_pod_config:
           extra_pod_config['affinity'] = {}
         if 'nodeAffinity' not in extra_pod_config['affinity']:
@@ -776,7 +791,7 @@ data:
           extra_pod_config['affinity']['nodeAffinity']['requiredDuringSchedulingIgnoredDuringExecution'] = {}
         if 'nodeSelectorTerms' not in extra_pod_config['affinity']['nodeAffinity']['requiredDuringSchedulingIgnoredDuringExecution']:
           extra_pod_config['affinity']['nodeAffinity']['requiredDuringSchedulingIgnoredDuringExecution']['nodeSelectorTerms'] = []
-        for extra_node_selector in profiles[options.profile]['extra_node_selectors']:
+        for extra_node_selector in profiles[options.profile]['extra_node_affinity']:
           extra_pod_config['affinity']['nodeAffinity']['requiredDuringSchedulingIgnoredDuringExecution']['nodeSelectorTerms'].append(extra_node_selector)
 
       return extra_pod_config

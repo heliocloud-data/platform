@@ -2,7 +2,7 @@
 addons:
   - name: aws-ebs-csi-driver
     serviceAccountRoleARN: arn:aws:iam:::role/AmazonEKS_EBS_CSI_DriverRole-us-south-100-eks-helio
-    version: v1.31.0-eksbuild.1
+    version: v1.32.0-eksbuild.1
 apiVersion: eksctl.io/v1alpha5
 availabilityZones:
   - <INSERT_PRIMARY_AVAILABILITY_ZONE>

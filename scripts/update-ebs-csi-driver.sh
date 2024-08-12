@@ -32,3 +32,17 @@ pytest -c pytest-unit.ini  --snapshot-update
 
 # Re-run the tests
 pytest -c pytest-unit.ini --debug --verbose
+
+
+git add daskhub/deploy/eksctl/base/cluster-config.yaml
+git add test/unit/resources/test_eksctl_templating/snapshots/test_eksctl_default.yaml
+git add scripts/update-ebs-csi-driver.sh
+
+COMMIT_MSG="Update aws-ebs-csi-driver to ${NEW_VERSION}"
+
+TICKET_NO=$(git branch --show-current | grep --perl-regexp 'platform-(\d+)' | sed 's#platform-##')
+if [[ $? == 0 ]]; then
+  COMMIT_MSG="heliocloud/platform#${TICKET_NO}: ${COMMIT_MSG}"
+fi
+
+git commit -m "${COMMIT_MSG}"

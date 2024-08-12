@@ -141,19 +141,19 @@ managedNodeGroups:
         fsx: true
     instanceType: m5.4xlarge
     labels:
-      hub.jupyter.org/node-purpose: big-user
+      heliocloud.org/instance-type: 4xlarge
+      hub.jupyter.org/node-purpose: user
       intent: apps
       lifecycle: OnDemand
-      node-purpose: big-user
       nvidia.com/gpu: 'false'
     maxSize: 15
     minSize: 0
     name: mng-user-compute-big
     tags:
-      k8s.io/cluster-autoscaler/node-template/label/hub.jupyter.org/node-purpose: big-user
+      k8s.io/cluster-autoscaler/node-template/label/heliocloud.org/instance-type: 4xlarge
+      k8s.io/cluster-autoscaler/node-template/label/hub.jupyter.org/node-purpose: user
       k8s.io/cluster-autoscaler/node-template/label/intent: apps
       k8s.io/cluster-autoscaler/node-template/label/lifecycle: OnDemand
-      k8s.io/cluster-autoscaler/node-template/label/node-purpose: big-user
       k8s.io/cluster-autoscaler/node-template/label/nvidia.com/gpu: 'false'
       k8s.io/cluster-autoscaler/node-template/taint/hub.jupyter.org/dedicated: big-user:NoSchedule
     taints:
@@ -347,6 +347,8 @@ managedNodeGroups:
       - effect: NoSchedule
         key: heliocloud.org/dask-worker-profile
         value: default
+    updateConfig:
+      maxUnavailable: 1
   - availabilityZones:
       - <INSERT_PRIMARY_AVAILABILITY_ZONE>
     desiredCapacity: 0
@@ -388,6 +390,8 @@ managedNodeGroups:
       - effect: NoSchedule
         key: heliocloud.org/dask-worker-profile
         value: gpu-xlarge
+    updateConfig:
+      maxUnavailable: 1
 metadata:
   name: eks-helio
   region: us-south-100

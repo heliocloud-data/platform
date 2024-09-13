@@ -84,9 +84,9 @@ daskhub:
 
     # HelioCloud docker containers
     GENERIC_DOCKER_LOCATION: 'public.ecr.aws/q3h7b4o8/heliocloud/helio-notebook'
-    GENERIC_DOCKER_VERSION: '2023.12.06'
+    GENERIC_DOCKER_VERSION: '2024.09.13'
     ML_DOCKER_LOCATION: 'public.ecr.aws/q3h7b4o8/heliocloud/helio-notebook-mltf'
-    ML_DOCKER_VERSION: '2023.12.06'
+    ML_DOCKER_VERSION: '2024.09.13'
   monitoring:
     AWS_LOAD_BALANCER_SSL_CERT: "acert"
     grafana_domain_prefix: grafana-test

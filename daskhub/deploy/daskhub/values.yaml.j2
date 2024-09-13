@@ -283,7 +283,7 @@ daskhub:
       #
       # Here's what the values are in JHUAPL's staging environment:
       #   DASK_GATEWAY__CLUSTER__OPTIONS__IMAGE={JUPYTER_IMAGE_SPEC}
-      #   JUPYTER_IMAGE_SPEC=public.ecr.aws/q3h7b4o8/heliocloud/helio-notebook:2023.12.06
+      #   JUPYTER_IMAGE_SPEC=public.ecr.aws/q3h7b4o8/heliocloud/helio-notebook:2024.09.13
 
       extraEnv:
         DASK_GATEWAY__CLUSTER__OPTIONS__IMAGE: "{{ config['daskhub']['GENERIC_DOCKER_LOCATION'] }}:{{ config['daskhub']['GENERIC_DOCKER_VERSION'] }}"

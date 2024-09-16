@@ -78,6 +78,16 @@ def do_click(driver, text, page, element_type="button"):
         raise
 
 
+def do_double_click(driver, text, page, element_type="button"):
+    """
+    Find a button and click it.
+    """
+    button = find_element_by_text_type_page(driver, text, element_type, page)
+
+    # Some links require mouse over before clicking.
+    ActionChains(driver).move_to_element(button).double_click().perform()
+
+
 def do_select_from_dropdown(driver, text, field, page):
     """
     Find a dropdown and select an item by name in it.
@@ -163,12 +173,16 @@ def find_element_by_text_type_page(driver, text, element_type, page):
             elif text == "Logout":
                 xpath = "//a[@id='logout']"
                 ret = driver.find_element(By.XPATH, xpath)
-        # Classic Jupyter Notebook Page
+        # Classic Jupyter Notebook Page (Runtime: 2023.12.06)
         elif text == "restart the kernel, then re-run the whole notebook (with dialog)":
             xpath = f"//button[@title = '{text}']"
             ret = driver.find_element(By.XPATH, xpath)
         elif text == "Restart and Run All Cells":
             xpath = f"//button[text() = '{text}']"
+            ret = driver.find_element(By.XPATH, xpath)
+        # Classic Jupyter Notebook Page (Runtime: 2024.09.13)
+        elif text == "Restart the kernel and run all cells":
+            xpath = f"//jp-button[@data-command='notebook:restart-run-all']"
             ret = driver.find_element(By.XPATH, xpath)
 
     if element_type == "input":

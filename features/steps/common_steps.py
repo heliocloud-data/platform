@@ -9,6 +9,7 @@ from utils.selector_utils import (
     get_url,
     do_enter_text,
     do_click,
+    do_double_click,
     get_timeout_for_field,
     do_wait_for_element,
 )
@@ -85,3 +86,18 @@ def step_impl(context, text):
             f"temp/feature-tests/{context.current_page}.png",
         )
     do_click(context.browser, text, context.current_page)
+
+
+@then('double click "{text}"')
+def step_impl(context, text):
+    timeout = get_timeout_for_field(text, "button", context.current_page)
+    if timeout is not None:
+        do_wait_for_element(
+            context.browser,
+            text,
+            "button",
+            context.current_page,
+            timeout,
+            f"temp/feature-tests/{context.current_page}.png",
+        )
+    do_double_click(context.browser, text, context.current_page)

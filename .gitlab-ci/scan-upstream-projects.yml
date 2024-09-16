@@ -1,0 +1,10 @@
+default:
+  image: python:3.9
+
+addon-ebs-csi-driver:
+  stage: update
+  variables:
+    # SOURCE_REPO: platform
+    # INTEGRATION_BRANCH: integration/${SOURCE_REPO}
+  script:
+  - echo "hello, world"

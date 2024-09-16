@@ -33,370 +33,382 @@ variables:
 
 stages:
   - update
-  # - test
-  # - integration
-  # - staging
-  # - deploy
+  - test
+  - integration
+  - staging
+  - deploy
 
 
-# # At the momemnt, there are a subset of unit tests that require nodejs
-# # to be installed.
-# unit-test:
-#   stage: test
-#   before_script:
-#     - mkdir -p public/badges
-#   script:
-#     - export PYTHONPATH=.
-#     - python -m pip install -r requirements.txt
-#     - python -m pip install -r requirements-dev.txt
-#     - bash .gitlab-ci/scripts/install-deps.sh
-#     - curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 > get_helm.sh && bash get_helm.sh -v v3.9.4 && rm -rf get_helm.sh
-#     - curl https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv5.1.1/kustomize_v5.1.1_linux_amd64.tar.gz --silent --location --remote-name && tar zxvf kustomize_v5.1.1_linux_amd64.tar.gz && mv kustomize /usr/local/bin/ && rm -rf kustomize_v5.1.1_linux_amd64.tar.gz
-#     - pytest -c pytest-unit.ini --junit-xml=TEST-HelioCloud-platform.xml --junit-prefix=HelioCloud-platform
-#   artifacts:
-#     when: always
-#     paths:
-#       - TEST-HelioCloud-platform.xml
-#     reports:
-#       junit: TEST-HelioCloud-platform.xml
+# At the momemnt, there are a subset of unit tests that require nodejs
+# to be installed.
+unit-test:
+  stage: test
+  before_script:
+    - mkdir -p public/badges
+  script:
+    - export PYTHONPATH=.
+    - python -m pip install -r requirements.txt
+    - python -m pip install -r requirements-dev.txt
+    - bash .gitlab-ci/scripts/install-deps.sh
+    - curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 > get_helm.sh && bash get_helm.sh -v v3.9.4 && rm -rf get_helm.sh
+    - curl https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv5.1.1/kustomize_v5.1.1_linux_amd64.tar.gz --silent --location --remote-name && tar zxvf kustomize_v5.1.1_linux_amd64.tar.gz && mv kustomize /usr/local/bin/ && rm -rf kustomize_v5.1.1_linux_amd64.tar.gz
+    - pytest -c pytest-unit.ini --junit-xml=TEST-HelioCloud-platform.xml --junit-prefix=HelioCloud-platform
+  artifacts:
+    when: always
+    paths:
+      - TEST-HelioCloud-platform.xml
+    reports:
+      junit: TEST-HelioCloud-platform.xml
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "push"
 
-# # See
-# # * https://docs.gitlab.com/ee/ci/testing/test_coverage_visualization.html
-# coverage:
-#   stage: test
-#   script:
-#     - export PYTHONPATH=.
-#     - python -m pip install -r requirements.txt
-#     - python -m pip install -r requirements-dev.txt
-#     - bash .gitlab-ci/scripts/install-deps.sh
-#     - curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 > get_helm.sh && bash get_helm.sh -v v3.9.4 && rm -rf get_helm.sh
-#     - curl https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv5.1.1/kustomize_v5.1.1_linux_amd64.tar.gz --silent --location --remote-name && tar zxvf kustomize_v5.1.1_linux_amd64.tar.gz && mv kustomize /usr/local/bin/ && rm -rf kustomize_v5.1.1_linux_amd64.tar.gz
-#     - coverage run -m pytest -c pytest-unit.ini
-#     - coverage report
-#     - coverage xml
-#     - coverage html
-#   coverage: '/(?i)TOTAL.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/'
-#   artifacts:
-#     when: always
-#     paths:
-#       - coverage.xml
-#       - htmlcov
-#     reports:
-#       coverage_report:
-#         coverage_format: cobertura
-#         path: coverage.xml
+# See
+# * https://docs.gitlab.com/ee/ci/testing/test_coverage_visualization.html
+coverage:
+  stage: test
+  script:
+    - export PYTHONPATH=.
+    - python -m pip install -r requirements.txt
+    - python -m pip install -r requirements-dev.txt
+    - bash .gitlab-ci/scripts/install-deps.sh
+    - curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 > get_helm.sh && bash get_helm.sh -v v3.9.4 && rm -rf get_helm.sh
+    - curl https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv5.1.1/kustomize_v5.1.1_linux_amd64.tar.gz --silent --location --remote-name && tar zxvf kustomize_v5.1.1_linux_amd64.tar.gz && mv kustomize /usr/local/bin/ && rm -rf kustomize_v5.1.1_linux_amd64.tar.gz
+    - coverage run -m pytest -c pytest-unit.ini
+    - coverage report
+    - coverage xml
+    - coverage html
+  coverage: '/(?i)TOTAL.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/'
+  artifacts:
+    when: always
+    paths:
+      - coverage.xml
+      - htmlcov
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage.xml
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "push"
 
-# # For static-analysis, we're going to run the analysis once for badge generation
-# # and once for generating the codeclimate report, which is required integration
-# # with the gitlab pull request.
-# #
-# # This configuration only runs pylint on the main source files of the project,
-# # it excludes the unit and integration test folders as well as the cdk output
-# # build folder.
-# #
-# # See:
-# #  * https://pypi.org/project/pylint-gitlab/
-# static-analysis:
-#   stage: test
-#   variables:
-#     PYLINT_TEXT_OUTPUT_FILE: 'pylint.txt'
-#     PYLINT_SCORE_OUTPUT_FILE: public/pylint.score
-#     PYLINT_BADGE_OUTPUT_FILE: 'public/pylint.svg'
-#     CODE_CLIMATE_OUTPUT_FILE: 'codeclimate.json'
-#   before_script:
-#     - mkdir -p public  
-#   script:
-#     - export PYTHONPATH=.
-#     - python -m pip install -r requirements.txt
-#     - python -m pip install -r requirements-dev.txt
-#     - pylint --exit-zero --output-format=text $(find -type f -name "*.py" ! -path "**/.venv/**" | grep -v '/test/' | grep -v '/cdk.out/') | tee ${PYLINT_TEXT_OUTPUT_FILE}
-#     - sed -n 's/^Your code has been rated at \([-0-9.]*\)\/.*/\1/p' ${PYLINT_TEXT_OUTPUT_FILE} > ${PYLINT_SCORE_OUTPUT_FILE}
-#     - anybadge --value=$(cat ${PYLINT_SCORE_OUTPUT_FILE}) --file=${PYLINT_BADGE_OUTPUT_FILE} pylint
-#     - pylint --exit-zero --load-plugins=pylint_gitlab --output-format=gitlab-codeclimate $(find -type f -name "*.py" ! -path "**/.venv/**" | grep -v '/test/' | grep -v '/cdk.out/') > ${CODE_CLIMATE_OUTPUT_FILE}
-#   artifacts:
-#     when: always
-#     paths:
-#       - ${CODE_CLIMATE_OUTPUT_FILE}
-#       - ${PYLINT_TEXT_OUTPUT_FILE}
-#       - ${PYLINT_SCORE_OUTPUT_FILE}
-#       - ${PYLINT_BADGE_OUTPUT_FILE}
-#     reports:
-#       codequality: ${CODE_CLIMATE_OUTPUT_FILE}
+# For static-analysis, we're going to run the analysis once for badge generation
+# and once for generating the codeclimate report, which is required integration
+# with the gitlab pull request.
+#
+# This configuration only runs pylint on the main source files of the project,
+# it excludes the unit and integration test folders as well as the cdk output
+# build folder.
+#
+# See:
+#  * https://pypi.org/project/pylint-gitlab/
+static-analysis:
+  stage: test
+  variables:
+    PYLINT_TEXT_OUTPUT_FILE: 'pylint.txt'
+    PYLINT_SCORE_OUTPUT_FILE: public/pylint.score
+    PYLINT_BADGE_OUTPUT_FILE: 'public/pylint.svg'
+    CODE_CLIMATE_OUTPUT_FILE: 'codeclimate.json'
+  before_script:
+    - mkdir -p public  
+  script:
+    - export PYTHONPATH=.
+    - python -m pip install -r requirements.txt
+    - python -m pip install -r requirements-dev.txt
+    - pylint --exit-zero --output-format=text $(find -type f -name "*.py" ! -path "**/.venv/**" | grep -v '/test/' | grep -v '/cdk.out/') | tee ${PYLINT_TEXT_OUTPUT_FILE}
+    - sed -n 's/^Your code has been rated at \([-0-9.]*\)\/.*/\1/p' ${PYLINT_TEXT_OUTPUT_FILE} > ${PYLINT_SCORE_OUTPUT_FILE}
+    - anybadge --value=$(cat ${PYLINT_SCORE_OUTPUT_FILE}) --file=${PYLINT_BADGE_OUTPUT_FILE} pylint
+    - pylint --exit-zero --load-plugins=pylint_gitlab --output-format=gitlab-codeclimate $(find -type f -name "*.py" ! -path "**/.venv/**" | grep -v '/test/' | grep -v '/cdk.out/') > ${CODE_CLIMATE_OUTPUT_FILE}
+  artifacts:
+    when: always
+    paths:
+      - ${CODE_CLIMATE_OUTPUT_FILE}
+      - ${PYLINT_TEXT_OUTPUT_FILE}
+      - ${PYLINT_SCORE_OUTPUT_FILE}
+      - ${PYLINT_BADGE_OUTPUT_FILE}
+    reports:
+      codequality: ${CODE_CLIMATE_OUTPUT_FILE}
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "push"
 
-# black:
-#   stage: test
-#   script:
-#     - export PYTHONPATH=.
-#     - python -m pip install -r requirements-dev.txt
-#     - black --check .
+black:
+  stage: test
+  script:
+    - export PYTHONPATH=.
+    - python -m pip install -r requirements-dev.txt
+    - black --check .
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "push"
 
+# The integration stage will deploy parts of the heliocloud system and test
+# it using the "black-box" interface of the system component under test.  In
+# the current configuration, the environment is retained between runs.
+#
+# These jobs presume valid AWS variables are set, specifically:
+# * AWS_ACCESS_KEY_ID
+# * AWS_SECRET_ACCESS_KEY
+# * AWS_DEFAULT_REGION
+#
+# All jobs executing at this stage will create per-branch environments in
+# GitLab by using the CI_COMMIT_REF_SLUG environment variable.
+#
+# Per-commit environments are also possible using the CI_COMMIT_SHORT_SHA
+# environment variable.
+#
+# See:
+#   https://docs.gitlab.com/ee/ci/environments/
+#   https://docs.gitlab.com/ee/ci/variables/predefined_variables.html
+integration-cdk-deploy:
+  stage: integration
+  tags:
+    - dind # set to run on specific runer
+  environment:
+    name: testing/$CI_COMMIT_REF_SLUG
+    url: https://portal-${CI_COMMIT_REF_SLUG}.aplscicloud.org
+    on_stop: integration-cdk-destroy-on_stop_hook
+    auto_stop_in: 8 hours
+  script:
+    - python -m pip install -r requirements.txt
+    - python -m pip install -r requirements-dev.txt
+    - bash .gitlab-ci/scripts/install-deps.sh
+    - npm install -g npm
+    - npm install -g aws-cdk
+    - cdk --version
+    # Dependencies for Portal
+    - curl -sSL https://get.docker.com/ | sh
+    - apt-get update && apt-get install -y gettext
+    - envsubst < instance/gitlab-integration.yaml > instance/gitlab-integration-${CI_COMMIT_REF_SLUG}.yaml
+    # Modify the cdk.json file to run in coverage mode.
+    - cdk --app "coverage run app.py" deploy --all -c instance=gitlab-integration-${CI_COMMIT_REF_SLUG} --require-approval never -v
+  artifacts:
+    when: always
+    paths:
+      - instance/gitlab-integration-${CI_COMMIT_REF_SLUG}.yaml
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "push"
 
-# # The integration stage will deploy parts of the heliocloud system and test
-# # it using the "black-box" interface of the system component under test.  In
-# # the current configuration, the environment is retained between runs.
-# #
-# # These jobs presume valid AWS variables are set, specifically:
-# # * AWS_ACCESS_KEY_ID
-# # * AWS_SECRET_ACCESS_KEY
-# # * AWS_DEFAULT_REGION
-# #
-# # All jobs executing at this stage will create per-branch environments in
-# # GitLab by using the CI_COMMIT_REF_SLUG environment variable.
-# #
-# # Per-commit environments are also possible using the CI_COMMIT_SHORT_SHA
-# # environment variable.
-# #
-# # See:
-# #   https://docs.gitlab.com/ee/ci/environments/
-# #   https://docs.gitlab.com/ee/ci/variables/predefined_variables.html
-# integration-cdk-deploy:
-#   stage: integration
-#   tags:
-#     - dind # set to run on specific runer
-#   environment:
-#     name: testing/$CI_COMMIT_REF_SLUG
-#     url: https://portal-${CI_COMMIT_REF_SLUG}.aplscicloud.org
-#     on_stop: integration-cdk-destroy-on_stop_hook
-#     auto_stop_in: 8 hours
-#   script:
-#     - python -m pip install -r requirements.txt
-#     - python -m pip install -r requirements-dev.txt
-#     - bash .gitlab-ci/scripts/install-deps.sh
-#     - npm install -g npm
-#     - npm install -g aws-cdk
-#     - cdk --version
-#     # Dependencies for Portal
-#     - curl -sSL https://get.docker.com/ | sh
-#     - apt-get update && apt-get install -y gettext
-#     - envsubst < instance/gitlab-integration.yaml > instance/gitlab-integration-${CI_COMMIT_REF_SLUG}.yaml
-#     # Modify the cdk.json file to run in coverage mode.
-#     - cdk --app "coverage run app.py" deploy --all -c instance=gitlab-integration-${CI_COMMIT_REF_SLUG} --require-approval never -v
-#   artifacts:
-#     when: always
-#     paths:
-#       - instance/gitlab-integration-${CI_COMMIT_REF_SLUG}.yaml
+integration-test:
+  stage: integration
+  environment:
+    name: testing/$CI_COMMIT_REF_SLUG
+    action: verify
+  script:
+    - export PYTHONPATH=.:test/integration
+    - export HC_INSTANCE=gitlab-integration-${CI_COMMIT_REF_SLUG}
+    - python -m pip install -r requirements.txt
+    - python -m pip install -r requirements-dev.txt
+    - apt-get update && apt-get install -y gettext
+    - envsubst < instance/gitlab-integration.yaml > instance/${HC_INSTANCE}.yaml
+    - pytest -c pytest-integration.ini --junit-xml=IT-HelioCloud-platform.xml --junit-prefix=IT-HelioCloud-platform
+  artifacts:
+    when: always
+    paths:
+      - IT-HelioCloud-platform.xml
+    reports:
+      junit: IT-HelioCloud-platform.xml
+  dependencies:
+    - integration-cdk-deploy
+  needs: ['integration-cdk-deploy']
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "push"
 
-# integration-test:
-#   stage: integration
-#   environment:
-#     name: testing/$CI_COMMIT_REF_SLUG
-#     action: verify
-#   script:
-#     - export PYTHONPATH=.:test/integration
-#     - export HC_INSTANCE=gitlab-integration-${CI_COMMIT_REF_SLUG}
-#     - python -m pip install -r requirements.txt
-#     - python -m pip install -r requirements-dev.txt
-#     - apt-get update && apt-get install -y gettext
-#     - envsubst < instance/gitlab-integration.yaml > instance/${HC_INSTANCE}.yaml
-#     - pytest -c pytest-integration.ini --junit-xml=IT-HelioCloud-platform.xml --junit-prefix=IT-HelioCloud-platform
-#   artifacts:
-#     when: always
-#     paths:
-#       - IT-HelioCloud-platform.xml
-#     reports:
-#       junit: IT-HelioCloud-platform.xml
-#   dependencies:
-#     - integration-cdk-deploy
-#   needs: ['integration-cdk-deploy']
+integration-cdk-destroy:
+  stage: integration
+  environment:
+    name: testing/$CI_COMMIT_REF_SLUG
+    action: stop
+  script:
+    - python -m pip install -r requirements.txt
+    - python -m pip install -r requirements-dev.txt
+    - bash .gitlab-ci/scripts/install-deps.sh
+    - npm install -g npm
+    - npm install -g aws-cdk
+    - cdk --version
+    - apt-get update && apt-get install -y gettext
+    # Modify the cdk.json file to run in coverage mode.
+    - cdk --app "coverage run app.py" destroy --all -c instance=gitlab-integration-${CI_COMMIT_REF_SLUG} --force -v
+  dependencies:
+    - integration-cdk-deploy
+    - integration-test
+  needs: ['integration-cdk-deploy', 'integration-test']
+  rules:
+    - if: ($CI_COMMIT_BRANCH == "develop" || $CI_COMMIT_BRANCH == "main") && $CI_PIPELINE_SOURCE == "push"
 
-# integration-cdk-destroy:
-#   stage: integration
-#   environment:
-#     name: testing/$CI_COMMIT_REF_SLUG
-#     action: stop
-#   script:
-#     - python -m pip install -r requirements.txt
-#     - python -m pip install -r requirements-dev.txt
-#     - bash .gitlab-ci/scripts/install-deps.sh
-#     - npm install -g npm
-#     - npm install -g aws-cdk
-#     - cdk --version
-#     - apt-get update && apt-get install -y gettext
-#     # Modify the cdk.json file to run in coverage mode.
-#     - cdk --app "coverage run app.py" destroy --all -c instance=gitlab-integration-${CI_COMMIT_REF_SLUG} --force -v
-#   dependencies:
-#     - integration-cdk-deploy
-#     - integration-test
-#   needs: ['integration-cdk-deploy', 'integration-test']
-#   rules:
-#     - if: $CI_COMMIT_BRANCH == "develop" || $CI_COMMIT_BRANCH == "main"
+integration-cdk-destroy-on_stop_hook:
+  stage: integration
+  when: manual
+  environment:
+    name: testing/$CI_COMMIT_REF_SLUG
+    action: stop
+  script:
+    - python -m pip install -r requirements.txt
+    - python -m pip install -r requirements-dev.txt
+    - bash .gitlab-ci/scripts/install-deps.sh
+    - npm install -g npm
+    - npm install -g aws-cdk
+    - cdk --version
+    - apt-get update && apt-get install -y gettext
+    # Modify the cdk.json file to run in coverage mode.
+    - cdk --app "coverage run app.py" destroy --all -c instance=gitlab-integration-${CI_COMMIT_REF_SLUG} --force -v
+  dependencies:
+    - integration-cdk-deploy
+    - integration-test
+  needs: ['integration-cdk-deploy', 'integration-test']
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "push"
 
-# integration-cdk-destroy-on_stop_hook:
-#   stage: integration
-#   when: manual
-#   environment:
-#     name: testing/$CI_COMMIT_REF_SLUG
-#     action: stop
-#   script:
-#     - python -m pip install -r requirements.txt
-#     - python -m pip install -r requirements-dev.txt
-#     - bash .gitlab-ci/scripts/install-deps.sh
-#     - npm install -g npm
-#     - npm install -g aws-cdk
-#     - cdk --version
-#     - apt-get update && apt-get install -y gettext
-#     # Modify the cdk.json file to run in coverage mode.
-#     - cdk --app "coverage run app.py" destroy --all -c instance=gitlab-integration-${CI_COMMIT_REF_SLUG} --force -v
-#   dependencies:
-#     - integration-cdk-deploy
-#     - integration-test
-#   needs: ['integration-cdk-deploy', 'integration-test']
+staging-cdk-deploy:
+  stage: staging
+  tags:
+    - dind # set to run on specific runer
+  environment:
+    name: staging
+    url: https://portal-dev.aplscicloud.org
+    on_stop: staging-cdk-destroy-on_stop_hook
+  script:
+    - python -m pip install -r requirements.txt
+    # Dependencies for CDK
+    - bash .gitlab-ci/scripts/install-deps.sh
+    - npm install -g npm
+    - npm install -g aws-cdk
+    - cdk --version
+    # Dependencies for Portal
+    - curl -sSL https://get.docker.com/ | sh
+    # Dependencies for Daskhub
+    - curl "https://s3.amazonaws.com/session-manager-downloads/plugin/latest/ubuntu_64bit/session-manager-plugin.deb" -o "session-manager-plugin.deb"
+    - dpkg -i session-manager-plugin.deb
+    - apt-get update && apt-get install -y gettext
+    - envsubst < instance/staging.yaml > instance/staging-${CI_COMMIT_REF_SLUG}.yaml
+    # For an incremental deployment, we must deploy each stack, but not Daskhub.  That one
+    # has must be done via eksctl/kubect.
+    - cdk deploy staging-${CI_COMMIT_REF_SLUG}/Base -c instance=staging-${CI_COMMIT_REF_SLUG} --require-approval never -v
+    - cdk deploy staging-${CI_COMMIT_REF_SLUG}/Identity -c instance=staging-${CI_COMMIT_REF_SLUG} --require-approval never -v
+    - cdk deploy staging-${CI_COMMIT_REF_SLUG}/Auth -c instance=staging-${CI_COMMIT_REF_SLUG} --require-approval never -v
+    - cdk deploy staging-${CI_COMMIT_REF_SLUG}/Portal -c instance=staging-${CI_COMMIT_REF_SLUG} --require-approval never -v
+    - cdk deploy staging-${CI_COMMIT_REF_SLUG}/Registry -c instance=staging-${CI_COMMIT_REF_SLUG} --require-approval never -v
+  artifacts:
+    when: always
+    paths:
+      - instance/staging-${CI_COMMIT_REF_SLUG}.yaml
+  rules:
+    - if: $CI_COMMIT_BRANCH == "develop" && $CI_PIPELINE_SOURCE == "push"
 
+staging-test:
+  stage: staging
+  environment:
+    name: staging
+    action: verify
+  script:
+    - python -m pip install -r requirements.txt
+    - python -m pip install -r requirements-dev.txt
+    - 'wget --header="JOB-TOKEN: $CI_JOB_TOKEN" ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/google-chrome/118.0.5993.88/google-chrome-stable_current_amd64.deb'
+    - apt-get update && apt install -f ./google-chrome-stable_current_amd64.deb -y
+    - apt-get update && apt-get install -y gettext
+    - export HC_INSTANCE=staging-${CI_COMMIT_REF_SLUG}
+    - envsubst < instance/staging.yaml > instance/${HC_INSTANCE}.yaml
+    - behave --junit
+  artifacts:
+    when: always
+    paths:
+      - reports/*.xml
+      - temp/feature-tests/*
+    reports:
+      junit: reports/*.xml
+  dependencies:
+    - staging-cdk-deploy
+  needs: ['staging-cdk-deploy']
+  rules:
+    - if: $CI_COMMIT_BRANCH == "develop" && $CI_PIPELINE_SOURCE == "push"
 
-# staging-cdk-deploy:
-#   stage: staging
-#   tags:
-#     - dind # set to run on specific runer
-#   environment:
-#     name: staging
-#     url: https://portal-dev.aplscicloud.org
-#     on_stop: staging-cdk-destroy-on_stop_hook
-#   script:
-#     - python -m pip install -r requirements.txt
-#     # Dependencies for CDK
-#     - bash .gitlab-ci/scripts/install-deps.sh
-#     - npm install -g npm
-#     - npm install -g aws-cdk
-#     - cdk --version
-#     # Dependencies for Portal
-#     - curl -sSL https://get.docker.com/ | sh
-#     # Dependencies for Daskhub
-#     - curl "https://s3.amazonaws.com/session-manager-downloads/plugin/latest/ubuntu_64bit/session-manager-plugin.deb" -o "session-manager-plugin.deb"
-#     - dpkg -i session-manager-plugin.deb
-#     - apt-get update && apt-get install -y gettext
-#     - envsubst < instance/staging.yaml > instance/staging-${CI_COMMIT_REF_SLUG}.yaml
-#     # For an incremental deployment, we must deploy each stack, but not Daskhub.  That one
-#     # has must be done via eksctl/kubect.
-#     - cdk deploy staging-${CI_COMMIT_REF_SLUG}/Base -c instance=staging-${CI_COMMIT_REF_SLUG} --require-approval never -v
-#     - cdk deploy staging-${CI_COMMIT_REF_SLUG}/Identity -c instance=staging-${CI_COMMIT_REF_SLUG} --require-approval never -v
-#     - cdk deploy staging-${CI_COMMIT_REF_SLUG}/Auth -c instance=staging-${CI_COMMIT_REF_SLUG} --require-approval never -v
-#     - cdk deploy staging-${CI_COMMIT_REF_SLUG}/Portal -c instance=staging-${CI_COMMIT_REF_SLUG} --require-approval never -v
-#     - cdk deploy staging-${CI_COMMIT_REF_SLUG}/Registry -c instance=staging-${CI_COMMIT_REF_SLUG} --require-approval never -v
-#   artifacts:
-#     when: always
-#     paths:
-#       - instance/staging-${CI_COMMIT_REF_SLUG}.yaml
-#   rules:
-#     - if: $CI_COMMIT_BRANCH == "develop"
+staging-cdk-destroy-on_stop_hook:
+  stage: staging
+  when: manual
+  environment:
+    name: staging
+    action: stop
+  script:
+    - python -m pip install -r requirements.txt
+    - python -m pip install -r requirements-dev.txt
+    - bash .gitlab-ci/scripts/install-deps.sh
+    - npm install -g npm
+    - npm install -g aws-cdk
+    - cdk --version
+    - apt-get update && apt-get install -y gettext
+    - cdk destroy --all -c instance=staging-${CI_COMMIT_REF_SLUG} --force -v
+  dependencies:
+    - staging-cdk-deploy
+    - staging-test
+  needs: ['staging-cdk-deploy', 'staging-test']
+  rules:
+    - if: $CI_COMMIT_BRANCH == "develop" && $CI_PIPELINE_SOURCE == "push"
 
-# staging-test:
-#   stage: staging
-#   environment:
-#     name: staging
-#     action: verify
-#   script:
-#     - python -m pip install -r requirements.txt
-#     - python -m pip install -r requirements-dev.txt
-#     - 'wget --header="JOB-TOKEN: $CI_JOB_TOKEN" ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/google-chrome/118.0.5993.88/google-chrome-stable_current_amd64.deb'
-#     - apt-get update && apt install -f ./google-chrome-stable_current_amd64.deb -y
-#     - apt-get update && apt-get install -y gettext
-#     - export HC_INSTANCE=staging-${CI_COMMIT_REF_SLUG}
-#     - envsubst < instance/staging.yaml > instance/${HC_INSTANCE}.yaml
-#     - behave --junit
-#   artifacts:
-#     when: always
-#     paths:
-#       - reports/*.xml
-#       - temp/feature-tests/*
-#     reports:
-#       junit: reports/*.xml
-#   dependencies:
-#     - staging-cdk-deploy
-#   needs: ['staging-cdk-deploy']
-#   rules:
-#     - if: $CI_COMMIT_BRANCH == "develop"
+# Trigger downstream pipelines to apply any relevant changes from this repo
+trigger-downstream-pipelines:
+  stage: deploy
+  trigger:
+    project: heliocloud/jhuapl-operations
+    branch: main
+  rules:
+    - if: $CI_COMMIT_BRANCH == "develop" && $CI_PIPELINE_SOURCE == "push"
 
-# staging-cdk-destroy-on_stop_hook:
-#   stage: staging
-#   when: manual
-#   environment:
-#     name: staging
-#     action: stop
-#   script:
-#     - python -m pip install -r requirements.txt
-#     - python -m pip install -r requirements-dev.txt
-#     - bash .gitlab-ci/scripts/install-deps.sh
-#     - npm install -g npm
-#     - npm install -g aws-cdk
-#     - cdk --version
-#     - apt-get update && apt-get install -y gettext
-#     - cdk destroy --all -c instance=staging-${CI_COMMIT_REF_SLUG} --force -v
-#   dependencies:
-#     - staging-cdk-deploy
-#     - staging-test
-#   needs: ['staging-cdk-deploy', 'staging-test']
-#   rules:
-#     - if: $CI_COMMIT_BRANCH == "develop"
+production-jhuapl-cdk-deploy:
+  stage: deploy
+  tags:
+    - dind # set to run on specific runer
+  when: manual
+  environment:
+    name: production/jhuapl
+    url: https://portal.aplscicloud.org
+  script:
+    - python -m pip install -r requirements.txt
+    # Dependencies for CDK
+    - bash .gitlab-ci/scripts/install-deps.sh
+    - npm install -g npm
+    - npm install -g aws-cdk
+    - cdk --version
+    # Dependencies for Portal
+    - curl -sSL https://get.docker.com/ | sh
+    # Dependencies for Daskhub
+    - curl "https://s3.amazonaws.com/session-manager-downloads/plugin/latest/ubuntu_64bit/session-manager-plugin.deb" -o "session-manager-plugin.deb"
+    - dpkg -i session-manager-plugin.deb
+    - apt-get update && apt-get install -y gettext
+    - envsubst < instance/production.yaml > instance/production-jhuapl.yaml
+    # For an incremental deployment, we must deploy each stack, but not Daskhub.  That one
+    # has must be done via eksctl/kubect.
+    - cdk deploy production-jhuapl/Base -c instance=production-jhuapl --require-approval never -v
+    - cdk deploy production-jhuapl/Identity -c instance=production-jhuapl --require-approval never -v
+    - cdk deploy production-jhuapl/Auth -c instance=production-jhuapl --require-approval never -v
+    - cdk deploy production-jhuapl/Portal -c instance=production-jhuapl --require-approval never -v
+    - cdk deploy production-jhuapl/Registry -c instance=production-jhuapl --require-approval never -v
+  artifacts:
+    when: always
+    paths:
+      - instance/production-jhuapl.yaml
+  rules:
+    - if: $CI_COMMIT_BRANCH == "develop" && $CI_PIPELINE_SOURCE == "push"
 
-# # Trigger downstream pipelines to apply any relevant changes from this repo
-# trigger-downstream-pipelines:
-#   stage: deploy
-#   trigger:
-#     project: heliocloud/jhuapl-operations
-#     branch: main
-#   rules:
-#     - if: $CI_COMMIT_BRANCH == "develop"
-
-# production-jhuapl-cdk-deploy:
-#   stage: deploy
-#   tags:
-#     - dind # set to run on specific runer
-#   when: manual
-#   environment:
-#     name: production/jhuapl
-#     url: https://portal.aplscicloud.org
-#   script:
-#     - python -m pip install -r requirements.txt
-#     # Dependencies for CDK
-#     - bash .gitlab-ci/scripts/install-deps.sh
-#     - npm install -g npm
-#     - npm install -g aws-cdk
-#     - cdk --version
-#     # Dependencies for Portal
-#     - curl -sSL https://get.docker.com/ | sh
-#     # Dependencies for Daskhub
-#     - curl "https://s3.amazonaws.com/session-manager-downloads/plugin/latest/ubuntu_64bit/session-manager-plugin.deb" -o "session-manager-plugin.deb"
-#     - dpkg -i session-manager-plugin.deb
-#     - apt-get update && apt-get install -y gettext
-#     - envsubst < instance/production.yaml > instance/production-jhuapl.yaml
-#     # For an incremental deployment, we must deploy each stack, but not Daskhub.  That one
-#     # has must be done via eksctl/kubect.
-#     - cdk deploy production-jhuapl/Base -c instance=production-jhuapl --require-approval never -v
-#     - cdk deploy production-jhuapl/Identity -c instance=production-jhuapl --require-approval never -v
-#     - cdk deploy production-jhuapl/Auth -c instance=production-jhuapl --require-approval never -v
-#     - cdk deploy production-jhuapl/Portal -c instance=production-jhuapl --require-approval never -v
-#     - cdk deploy production-jhuapl/Registry -c instance=production-jhuapl --require-approval never -v
-#   artifacts:
-#     when: always
-#     paths:
-#       - instance/production-jhuapl.yaml
-#   rules:
-#     - if: $CI_COMMIT_BRANCH == "develop"
-
-# production-jhuapl-test:
-#   stage: deploy
-#   when: manual
-#   environment:
-#     name: production/jhuapl
-#     action: verify
-#   script:
-#     - python -m pip install -r requirements.txt
-#     - python -m pip install -r requirements-dev.txt
-#     - 'wget --header="JOB-TOKEN: $CI_JOB_TOKEN" ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/google-chrome/118.0.5993.88/google-chrome-stable_current_amd64.deb'
-#     - apt-get update && apt install -f ./google-chrome-stable_current_amd64.deb -y
-#     - apt-get update && apt-get install -y gettext
-#     - export HC_INSTANCE=production-jhuapl
-#     - envsubst < instance/production.yaml > instance/${HC_INSTANCE}.yaml
-#     - behave --junit
-#   artifacts:
-#     when: always
-#     paths:
-#       - reports/*.xml
-#       - temp/feature-tests/*
-#     reports:
-#       junit: reports/*.xml
-#   dependencies:
-#     - production-jhuapl-cdk-deploy
-#   needs: ['production-jhuapl-cdk-deploy']
-#   rules:
-#     - if: $CI_COMMIT_BRANCH == "develop"
+production-jhuapl-test:
+  stage: deploy
+  when: manual
+  environment:
+    name: production/jhuapl
+    action: verify
+  script:
+    - python -m pip install -r requirements.txt
+    - python -m pip install -r requirements-dev.txt
+    - 'wget --header="JOB-TOKEN: $CI_JOB_TOKEN" ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/google-chrome/118.0.5993.88/google-chrome-stable_current_amd64.deb'
+    - apt-get update && apt install -f ./google-chrome-stable_current_amd64.deb -y
+    - apt-get update && apt-get install -y gettext
+    - export HC_INSTANCE=production-jhuapl
+    - envsubst < instance/production.yaml > instance/${HC_INSTANCE}.yaml
+    - behave --junit
+  artifacts:
+    when: always
+    paths:
+      - reports/*.xml
+      - temp/feature-tests/*
+    reports:
+      junit: reports/*.xml
+  dependencies:
+    - production-jhuapl-cdk-deploy
+  needs: ['production-jhuapl-cdk-deploy']
+  rules:
+    - if: $CI_COMMIT_BRANCH == "develop" && $CI_PIPELINE_SOURCE == "push"

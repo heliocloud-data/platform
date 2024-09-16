@@ -1,10 +1,39 @@
 default:
   image: python:3.9
 
-addon-ebs-csi-driver:
+variables:
+  GIT_USER_EMAIL: gitlab-heliocloud@jhuapl.edu
+  GIT_USER_NAME: HelioCloud GitLab Pipeline
+  ENVIRONMENT_NAME: staging
+  SOURCE_BRANCH: develop
+  INTEGRATION_BRANCH: integration/eks-addon-update
+
+# This task will check for updates to addon-ebs-csi-driver, which changes monthly. If
+# changes are detected, a pull request is created.
+.eks-addon:
+  variables:
+    # The source branch, normally this will be set to develop
+    TEMPLATE_FILE: update-eks-addon-${ADDON_NAME}.json
+    FF_SCRIPT_SECTIONS: "true" 
+  script:
+    # Prepare the git client.
+    - git config --global user.email "${GIT_USER_EMAIL}"
+    - git config --global user.name "${GIT_USER_NAME}"
+    - git config --global --add --bool push.autoSetupRemote true
+    # Clone HelioCloud source repository and install the dependencies
+    - echo git clone https://gitlab-ci-token-push:${GITLAB_CI_TOKEN_PUSH}@gitlab.smce.nasa.gov/heliocloud/platform.git
+    - git clone https://gitlab-ci-token-push:${GITLAB_CI_TOKEN_PUSH}@gitlab.smce.nasa.gov/heliocloud/platform.git
+    - cd platform
+    - git checkout ${SOURCE_BRANCH}
+    - bash .gitlab-ci/scripts/update-eks-addon-and-commit-if-necessary.sh
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+
+eks-addon-aws-ebs-csi-driver:
+  extends: .eks-addon
   stage: update
   variables:
-    # SOURCE_REPO: platform
-    # INTEGRATION_BRANCH: integration/${SOURCE_REPO}
-  script:
-  - echo "hello, world"
+    ADDON_NAME: aws-ebs-csi-driver
+  environment:
+    name: ${ENVIRONMENT_NAME}
+    action: verify

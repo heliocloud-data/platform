@@ -1,12 +1,19 @@
 #!/bin/bash
 
-NEW_VERSION=$1
+ADDON_NAME=$1
+NEW_VERSION=$2
+if [[ "${ADDON_NAME}" == "" ]]; then
+  echo "error: missing addon-name"
+  echo "usage: ${0} <addon-name> <version>"
+  exit 1
+fi
+
 if [[ "${NEW_VERSION}" == "" ]]; then
-  echo "Attempting to auto-detected latest version of 'aws-ebs-csi-driver'"
-  NEW_VERSION=$(aws eks describe-addon-versions --addon-name aws-ebs-csi-driver --query 'addons[0].addonVersions[*].addonVersion' --output text | sed 's#[[:space:]]#\n#g' | head -n 1)
+  echo "Attempting to auto-detected latest version of '${ADDON_NAME}'"
+  NEW_VERSION=$(aws eks describe-addon-versions --addon-name ${ADDON_NAME} --query 'addons[0].addonVersions[*].addonVersion' --output text | sed 's#[[:space:]]#\n#g' | head -n 1)
   if [[ "${NEW_VERSION}" == "" ]]; then
     echo "error: missing version"
-    echo "usage: ${0} <ebs-csi-driver-version>"
+    echo "usage: ${0} <addon-name> <version>"
     echo ""
     exit 1
   fi
@@ -36,13 +43,14 @@ pytest -c pytest-unit.ini --debug --verbose
 
 git add daskhub/deploy/eksctl/base/cluster-config.yaml
 git add test/unit/resources/test_eksctl_templating/snapshots/test_eksctl_default.yaml
-git add scripts/update-ebs-csi-driver.sh
 
-COMMIT_MSG="Update aws-ebs-csi-driver to ${NEW_VERSION}"
+COMMIT_MSG="Update ${ADDON_NAME} to ${NEW_VERSION}"
 
 TICKET_NO=$(git branch --show-current | grep --perl-regexp 'platform-(\d+)' | sed 's#platform-##')
 if [[ $? == 0 ]]; then
-  COMMIT_MSG="heliocloud/platform#${TICKET_NO}: ${COMMIT_MSG}"
+  if [[ "${TICKET_NO}" != "" ]]; then
+    COMMIT_MSG="heliocloud/platform#${TICKET_NO}: ${COMMIT_MSG}"
+  fi
 fi
 
 git commit -m "${COMMIT_MSG}"

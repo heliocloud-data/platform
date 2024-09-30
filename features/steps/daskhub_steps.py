@@ -11,6 +11,7 @@ from utils.selector_utils import (
     DASKHUB_MAIN_PAGE_ID,
     get_url,
     do_click,
+    do_double_click,
     do_wait_for_element,
     do_wait_for_element_not_present,
 )
@@ -110,6 +111,36 @@ def step_impl(context, text):
         )
     else:
         do_click(context.browser, text, context.current_page, "daskhub-folder-item")
+    context.current_page = context.current_page + "__" + text
+
+
+@then('double click folder item "{text}"')
+def step_impl(context, text):
+    timeout = 10
+    if timeout is not None:
+        do_wait_for_element(
+            context.browser,
+            text,
+            "daskhub-folder-item",
+            context.current_page,
+            timeout,
+            f"temp/feature-tests/{context.current_page}.png",
+        )
+
+    if text.endswith(".ipynb"):
+        # We're attempting to open a notebook, daskhub
+        # will launch this in a new browser window when
+        # clicking the button, to get around this, we should
+        # navigate directly to the target.
+        url = f"{context.browser.current_url}/{text}"
+        webdriver_get(
+            context.browser,
+            url,
+            10,
+            "temp/feature-tests/" + context.current_page + "__" + text + ".png",
+        )
+    else:
+        do_double_click(context.browser, text, context.current_page, "daskhub-folder-item")
     context.current_page = context.current_page + "__" + text
 
 

@@ -28,11 +28,10 @@ Feature: Log into daskhub, launch a server and do stuff
     Given a fully deployed instance of HelioCloud
       And the user is logged in
      Then go to the "daskhub-classic-page"
-      And click folder item "<folder>"
-      And click folder item "<notebook>"
+      And double click folder item "<folder>"
+      And double click folder item "<notebook>"
       And take a screenshot with name "daskhub-classic-notebook-<notebook>.png"
-      And click "restart the kernel, then re-run the whole notebook (with dialog)"
-      And click "Restart and Run All Cells"
+      And click "Restart the kernel and run all cells"
       And wait up to <max_wait_time> seconds for execution to complete
 
     Examples:

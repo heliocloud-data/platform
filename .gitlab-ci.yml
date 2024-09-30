@@ -3,6 +3,9 @@ default:
   services:
   - docker:20.10.23-dind
 
+include:
+  - .gitlab-ci/scan-upstream-projects.yml
+
 variables:
   # When using dind service, you must instruct Docker to talk with
   # the daemon started inside of the service. The daemon is available
@@ -29,10 +32,12 @@ variables:
   DOCKER_CERT_PATH: "$DOCKER_TLS_CERTDIR/client"
 
 stages:
+  - update
   - test
   - integration
   - staging
   - deploy
+
 
 # At the momemnt, there are a subset of unit tests that require nodejs
 # to be installed.
@@ -54,6 +59,8 @@ unit-test:
       - TEST-HelioCloud-platform.xml
     reports:
       junit: TEST-HelioCloud-platform.xml
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "push"
 
 # See
 # * https://docs.gitlab.com/ee/ci/testing/test_coverage_visualization.html
@@ -80,6 +87,8 @@ coverage:
       coverage_report:
         coverage_format: cobertura
         path: coverage.xml
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "push"
 
 # For static-analysis, we're going to run the analysis once for badge generation
 # and once for generating the codeclimate report, which is required integration
@@ -117,6 +126,8 @@ static-analysis:
       - ${PYLINT_BADGE_OUTPUT_FILE}
     reports:
       codequality: ${CODE_CLIMATE_OUTPUT_FILE}
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "push"
 
 black:
   stage: test
@@ -124,7 +135,8 @@ black:
     - export PYTHONPATH=.
     - python -m pip install -r requirements-dev.txt
     - black --check .
-
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "push"
 
 # The integration stage will deploy parts of the heliocloud system and test
 # it using the "black-box" interface of the system component under test.  In
@@ -170,6 +182,8 @@ integration-cdk-deploy:
     when: always
     paths:
       - instance/gitlab-integration-${CI_COMMIT_REF_SLUG}.yaml
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "push"
 
 integration-test:
   stage: integration
@@ -193,6 +207,8 @@ integration-test:
   dependencies:
     - integration-cdk-deploy
   needs: ['integration-cdk-deploy']
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "push"
 
 integration-cdk-destroy:
   stage: integration
@@ -214,7 +230,7 @@ integration-cdk-destroy:
     - integration-test
   needs: ['integration-cdk-deploy', 'integration-test']
   rules:
-    - if: $CI_COMMIT_BRANCH == "develop" || $CI_COMMIT_BRANCH == "main"
+    - if: ($CI_COMMIT_BRANCH == "develop" || $CI_COMMIT_BRANCH == "main") && $CI_PIPELINE_SOURCE == "push"
 
 integration-cdk-destroy-on_stop_hook:
   stage: integration
@@ -236,7 +252,8 @@ integration-cdk-destroy-on_stop_hook:
     - integration-cdk-deploy
     - integration-test
   needs: ['integration-cdk-deploy', 'integration-test']
-
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "push"
 
 staging-cdk-deploy:
   stage: staging
@@ -272,7 +289,7 @@ staging-cdk-deploy:
     paths:
       - instance/staging-${CI_COMMIT_REF_SLUG}.yaml
   rules:
-    - if: $CI_COMMIT_BRANCH == "develop"
+    - if: $CI_COMMIT_BRANCH == "develop" && $CI_PIPELINE_SOURCE == "push"
 
 staging-test:
   stage: staging
@@ -299,7 +316,7 @@ staging-test:
     - staging-cdk-deploy
   needs: ['staging-cdk-deploy']
   rules:
-    - if: $CI_COMMIT_BRANCH == "develop"
+    - if: $CI_COMMIT_BRANCH == "develop" && $CI_PIPELINE_SOURCE == "push"
 
 staging-cdk-destroy-on_stop_hook:
   stage: staging
@@ -321,7 +338,7 @@ staging-cdk-destroy-on_stop_hook:
     - staging-test
   needs: ['staging-cdk-deploy', 'staging-test']
   rules:
-    - if: $CI_COMMIT_BRANCH == "develop"
+    - if: $CI_COMMIT_BRANCH == "develop" && $CI_PIPELINE_SOURCE == "push"
 
 # Trigger downstream pipelines to apply any relevant changes from this repo
 trigger-downstream-pipelines:
@@ -330,7 +347,7 @@ trigger-downstream-pipelines:
     project: heliocloud/jhuapl-operations
     branch: main
   rules:
-    - if: $CI_COMMIT_BRANCH == "develop"
+    - if: $CI_COMMIT_BRANCH == "develop" && $CI_PIPELINE_SOURCE == "push"
 
 production-jhuapl-cdk-deploy:
   stage: deploy
@@ -366,7 +383,7 @@ production-jhuapl-cdk-deploy:
     paths:
       - instance/production-jhuapl.yaml
   rules:
-    - if: $CI_COMMIT_BRANCH == "develop"
+    - if: $CI_COMMIT_BRANCH == "develop" && $CI_PIPELINE_SOURCE == "push"
 
 production-jhuapl-test:
   stage: deploy
@@ -394,4 +411,4 @@ production-jhuapl-test:
     - production-jhuapl-cdk-deploy
   needs: ['production-jhuapl-cdk-deploy']
   rules:
-    - if: $CI_COMMIT_BRANCH == "develop"
+    - if: $CI_COMMIT_BRANCH == "develop" && $CI_PIPELINE_SOURCE == "push"

@@ -7,3 +7,4 @@ resources:
 - clusterautoscaler.yaml
 - eks-console-full-access.yaml
 - external-dns.yaml
+- nvidia-device-plugin.yml

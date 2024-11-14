@@ -184,6 +184,9 @@ def find_element_by_text_type_page(driver, text, element_type, page):
         elif text == "Restart the kernel and run all cells":
             xpath = f"//jp-button[@data-command='notebook:restart-run-all']"
             ret = driver.find_element(By.XPATH, xpath)
+        elif text == "Restart":
+            xpath = f"//div[@aria-label='Confirm Kernel Restart']"
+            ret = driver.find_element(By.XPATH, xpath)
 
     if element_type == "input":
         if text == "username":

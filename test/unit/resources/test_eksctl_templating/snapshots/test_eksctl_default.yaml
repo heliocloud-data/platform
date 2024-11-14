@@ -398,6 +398,6 @@ metadata:
   tags:
     Product: daskhub
     Project: heliocloud
-  version: '1.30'
+  version: '1.31'
 secretsEncryption:
   keyARN: <<CNF_OUTPUT_KMSArn>>

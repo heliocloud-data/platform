@@ -2,15 +2,14 @@
 #
 # This is a helper script that updates the Kubernetes version.
 
-
 # Kubectl Download URL
 #
 # Example Value:
 #   https://s3.us-west-2.amazonaws.com/amazon-eks/1.29.0/2024-01-04/bin/linux/amd64/kubectl
 # See:
 #   https://docs.aws.amazon.com/eks/latest/userguide/install-kubectl.html
-NEW_K8_VERSION=1.30
-NEW_URL=https://s3.us-west-2.amazonaws.com/amazon-eks/1.30.0/2024-05-12/bin/linux/amd64/kubectl
+NEW_K8_VERSION=1.31
+NEW_URL=https://s3.us-west-2.amazonaws.com/amazon-eks/1.31.0/2024-09-12/bin/linux/amd64/kubectl
 
 NEW_CLUSTER_AUTOSCALER_VERSION=$(curl https://registry.k8s.io/v2/autoscaling/cluster-autoscaler/tags/list -L | jq '.[]'| grep v${NEW_K8_VERSION} | sed 's#[[:space:]]*"\(.*\)",*#\1#' | sort | uniq | tail -n 1)
 if [[ $? != 0 ]]; then

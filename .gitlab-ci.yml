@@ -110,6 +110,8 @@ static-analysis:
   before_script:
     - mkdir -p public  
   script:
+    - printenv
+    - pwd
     - export PYTHONPATH=.
     - python -m pip install -r requirements.txt
     - python -m pip install -r requirements-dev.txt
@@ -117,6 +119,7 @@ static-analysis:
     - sed -n 's/^Your code has been rated at \([-0-9.]*\)\/.*/\1/p' ${PYLINT_TEXT_OUTPUT_FILE} > ${PYLINT_SCORE_OUTPUT_FILE}
     - anybadge --value=$(cat ${PYLINT_SCORE_OUTPUT_FILE}) --file=${PYLINT_BADGE_OUTPUT_FILE} pylint
     - pylint --exit-zero --load-plugins=pylint_gitlab --output-format=gitlab-codeclimate $(find -type f -name "*.py" ! -path "**/.venv/**" | grep -v '/test/' | grep -v '/cdk.out/') > ${CODE_CLIMATE_OUTPUT_FILE}
+    - ls -la
   artifacts:
     when: always
     paths:

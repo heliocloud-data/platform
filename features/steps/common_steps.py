@@ -75,6 +75,10 @@ def step_impl(context, field):
 
 @then('click "{text}"')
 def step_impl(context, text):
+    # "Restart the kernel and run all cells"
+    # if it's this we probably need
+    # /html/body/dialog/div/div[2]/button[2]/div[2]
+    # <div class="jp-Dialog-buttonLabel" title="" aria-label="Confirm Kernel Restart">Restart</div>
     timeout = get_timeout_for_field(text, "button", context.current_page)
     if timeout is not None:
         do_wait_for_element(
@@ -83,9 +87,28 @@ def step_impl(context, text):
             "button",
             context.current_page,
             timeout,
-            f"temp/feature-tests/{context.current_page}.png",
+            f"temp/feature-tests/{context.current_page}_01.png",
         )
     do_click(context.browser, text, context.current_page)
+
+    if "Restart the kernel and run all cells" == text:
+        # look for modal dialog button
+        if timeout is not None:
+            # I think it's OK if it's not here...
+            do_wait_for_element(
+                context.browser,
+                "Restart",
+                "button",
+                context.current_page,
+                timeout,
+                f"temp/feature-tests/{context.current_page}_02.png",
+            )
+
+        do_click(context.browser, "Restart", context.current_page)
+
+        time.sleep(2)
+
+        webdriver_screenshot(context.browser, f"temp/feature-tests/{context.current_page}_03.png")
 
 
 @then('double click "{text}"')

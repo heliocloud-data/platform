@@ -5,11 +5,15 @@
 # the gitlab-ci pipelines.  Eventually, they should be migrated into
 # a docker container.
 
-git status | grep 'Your branch is up to date with'
-RET=$?
+echo "git status"
+git status
 
-if [[ $RET != 0 ]]; then
-#  git pull
+echo "git rev-list --count origin..HEAD"
+git rev-list --count origin..HEAD
+
+COMMIT_COUNT=$(git rev-list --count origin..HEAD)
+
+if [[ $COMMIT_COUNT != 0 ]]; then
   echo "Pushing changes"
   echo "git push -o merge_request.create"
   git push -o merge_request.create

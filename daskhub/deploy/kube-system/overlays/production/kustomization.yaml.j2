@@ -23,3 +23,18 @@ patches:
         - --registry=noop
         - --log-level=debug
         - --aws-prefer-cname
+# Applying this setting as a patch on-top of the nvidia provided kubernetes
+# resources.
+- target:
+    kind: DaemonSet
+    name: nvidia-device-plugin-daemonset
+  patch: |
+    - op: replace
+      path: /spec/template/spec/tolerations
+      - key: CriticalAddonsOnly
+        operator: Exists
+      - effect: NoSchedule
+        key: nvidia.com/gpu
+        operator: Exists
+      - key: hub.jupyter.org/dedicated
+        value: user

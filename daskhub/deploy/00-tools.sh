@@ -17,7 +17,7 @@ echo "PATH=$PATH:/usr/local/bin" >> /home/ssm-user/.bashrc
 #
 # See:
 #  https://docs.aws.amazon.com/eks/latest/userguide/install-kubectl.html
-sudo curl --location -o /usr/local/bin/kubectl https://s3.us-west-2.amazonaws.com/amazon-eks/1.30.0/2024-05-12/bin/linux/amd64/kubectl
+sudo curl --location -o /usr/local/bin/kubectl https://s3.us-west-2.amazonaws.com/amazon-eks/1.31.0/2024-09-12/bin/linux/amd64/kubectl
 sudo chmod +x /usr/local/bin/kubectl
 
 

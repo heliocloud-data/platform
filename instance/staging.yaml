@@ -27,9 +27,8 @@ email:
   user: "no-reply"
   from_name: "DEV - APL HelioCloud"
 
-# Only working on the registry right now
 enabled:
-  registry: True
+  registry: False
   daskhub: True
   daskhub_metrics: True
   portal: True
@@ -38,22 +37,6 @@ auth:
   domain_prefix: "apl-helio"
   deletion_protection: True
   removal_policy: RETAIN
-
-# Simple bucket names
-registry:
-  datasetBucketNames: [
-     "heliocloud-staging-${AWS_DEFAULT_REGION}-datasets-1",
-  ]
-
-  ingestBucketName: "heliocloud-staging-${AWS_DEFAULT_REGION}-uploads-1"
-  requesterPays: True
-  catalog:
-    masterUser: master
-    name: "Chris Jeschke"
-    contact: "chris.jeschke@jhuapl.edu"
-  destroyOnRemoval: True
-  layers:
-    pandas: "arn:aws:lambda:${AWS_DEFAULT_REGION}:336392948345:layer:AWSSDKPandas-Python39:6"
 
 portal:
   domain_url: "aplscicloud.org"

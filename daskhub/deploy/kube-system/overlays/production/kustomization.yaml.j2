@@ -31,6 +31,7 @@ patches:
   patch: |
     - op: replace
       path: /spec/template/spec/tolerations
+      value:
       - key: CriticalAddonsOnly
         operator: Exists
       - effect: NoSchedule

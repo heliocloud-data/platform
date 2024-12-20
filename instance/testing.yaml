@@ -28,6 +28,7 @@ enabled:
   daskhub: True
   daskhub_metrics: False
   portal: False
+  registration_page: False
 
 auth:
   domain_prefix: "apl-helio"
@@ -53,6 +54,11 @@ registry:
 portal:
   domain_url: "aplscicloud.org"
   domain_record: "portal-testing-${AWS_DEFAULT_REGION}"
+  domain_certificate_arn: "arn:aws:acm:${AWS_DEFAULT_REGION}:${HC_AWS_ACCOUNT}:certificate/${HC_PORTAL_CERT_ARN}"
+
+registration_page:
+  domain_url: "aplscicloud.org"
+  domain_record: "registration"
   domain_certificate_arn: "arn:aws:acm:${AWS_DEFAULT_REGION}:${HC_AWS_ACCOUNT}:certificate/${HC_PORTAL_CERT_ARN}"
 
 daskhub:

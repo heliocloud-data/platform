@@ -28,7 +28,13 @@ IT-*.xml
 # Output files from deployments
 instance/staging-*
 instance/production-*
+instance/*-dev.yaml
 
 # Output files from the feature tests
 reports/*
 TESTS-*.xml
+
+# CDK/AWS Account information
+cdk.context.json
+
+.DS_store

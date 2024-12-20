@@ -278,6 +278,9 @@ managedNodeGroups:
     instanceTypes:
       - m5.8xlarge
       - r5n.8xlarge
+      - m5n.8xlarge
+      - m5dn.8xlarge
+      - r5dn.8xlarge
     labels:
       aws.amazon.com/spot: 'true'
       heliocloud.org/dask-worker: 'true'

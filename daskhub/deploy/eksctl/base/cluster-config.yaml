@@ -282,7 +282,10 @@ managedNodeGroups:
   #  taint/toleration(s)
   #   * heliocloud.org/dask-worker-profile=gpu-xlarge:NoSchedule
   - name: mng-burst-compute-spot
-    instanceTypes: ["m5.8xlarge", "r5n.8xlarge"]
+    instanceTypes: ["m5.8xlarge", "r5n.8xlarge",
+      # At the time this comment was written, the following instance types were
+      # unavailable in us-west-1.
+      "m5n.8xlarge", "m5dn.8xlarge", "r5dn.8xlarge"]
     spot: true
     minSize: 0
     maxSize: 10

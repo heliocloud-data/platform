@@ -158,34 +158,6 @@ daskhub:
               operator: 'Equal'
               value: 'user'
               effect: 'NoSchedule'
-      - display_name: "Large Server"
-        description: "Large notebook server. 16GB RAM/4 CPU."
-        kubespawner_override:
-          mem_guarantee: 14G
-          mem_limit: 14G
-          cpu_guarantee: 3
-          cpu_limit: 4
-          node_selector:
-            nvidia.com/gpu: "false"
-          tolerations:
-            - key: 'hub.jupyter.org/dedicated'
-              operator: 'Equal'
-              value: 'user'
-              effect: 'NoSchedule'
-      - display_name: "X-Large Server"
-        description: "Large notebook server. 32 GB RAM/8 CPU."
-        kubespawner_override:
-          mem_guarantee: 28G
-          mem_limit: 28G
-          cpu_guarantee: 6
-          cpu_limit: 8
-          node_selector:
-            nvidia.com/gpu: "false"
-          tolerations:
-            - key: 'hub.jupyter.org/dedicated'
-              operator: 'Equal'
-              value: 'user'
-              effect: 'NoSchedule'
       - display_name: "The Big Big Server"
         description: "Use resources like you mean it. 64GB RAM/16 CPU reserved."
         kubespawner_override:
@@ -213,28 +185,6 @@ daskhub:
           node_selector:
             nvidia.com/gpu: "true"
             heliocloud.org/instance-type: "xlarge"
-          tolerations:
-            - key: 'nvidia.com/gpu'
-              operator: 'Equal'
-              value: 'true'
-              effect: 'NoSchedule'
-            - key: 'hub.jupyter.org/dedicated'
-              operator: 'Equal'
-              value: 'user'
-              effect: 'NoSchedule'
-          extra_resource_limits: {"nvidia.com/gpu": "1"}
-      - display_name: "GPU Server - Large"
-        description: "Notebook server with access to an NVidia T4 GPU. Up to 32GB RAM/8 CPU."
-        kubespawner_override:
-          mem_guarantee: 28G
-          mem_limit: 28G
-          cpu_guarantee: 6
-          cpu_limit: 8
-          image: {{ config['daskhub']['ML_DOCKER_LOCATION'] }}:{{ config['daskhub']['ML_DOCKER_VERSION'] }}
-          environment: {'NVIDIA_DRIVER_CAPABILITIES': 'compute,utility'}
-          node_selector:
-            nvidia.com/gpu: "true"
-            heliocloud.org/instance-type: "2xlarge"
           tolerations:
             - key: 'nvidia.com/gpu'
               operator: 'Equal'

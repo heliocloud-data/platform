@@ -4,7 +4,7 @@ HelioCloud employs the use of [Kubecost](https://github.com/kubecost) for monito
 
 ## Configuring and Deployment
 
-Kubecost can be deployed into a HelioCloud environment by setting `daskhub_metrics: True` in the deploymenyt instance yaml file and configuring the following settings:
+Kubecost can be deployed into a HelioCloud environment by setting `daskhub_metrics: True` in the deployment instance yaml file and configuring the following settings:
 
 ```
 daskhub:
@@ -13,6 +13,8 @@ daskhub:
         grafana_domain_prefix: (grafana-prefix)
         cost_analyzer_domain_prefix: (kubecost-prefix)
 ```
+
+`grafana_domain_prefix` and `cost_analyzer_domain_prefix` are the domain prefixes for the respective grafana and cost analyzer tools. Whatever is set here will be configured with AWS DNS Service - Route53.
 
 Follow along a normal deployment and Kubecost (along with Grafana and Prometheus) will be deployed into the `monitoring` namespace in your kubernetes cluster.
 

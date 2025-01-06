@@ -144,7 +144,7 @@ daskhub:
       # less than the memory_limit on the smallest server.
       profileList:
       - display_name: "Server"
-        description: "Regular notebook server. 8 GB RAM/2 CPU."
+        description: "Regular notebook server. 8 GB RAM/2 CPU. <b>$0.04/hr</b>"
         default: true
         kubespawner_override:
           mem_guarantee: 7G
@@ -159,7 +159,7 @@ daskhub:
               value: 'user'
               effect: 'NoSchedule'
       - display_name: "The Big Big Server"
-        description: "Use resources like you mean it. 64GB RAM/16 CPU reserved."
+        description: "Use resources like you mean it. 64GB RAM/16 CPU reserved. <b>$0.32/hr</b>"
         kubespawner_override:
           mem_guarantee: 56G
           mem_limit: 56G
@@ -174,7 +174,7 @@ daskhub:
               value: 'big-user'
               effect: 'NoSchedule'
       - display_name: "GPU Server"
-        description: "Notebook server with access to an NVidia T4 GPU. Up to 16GB RAM/4 CPU."
+        description: "Notebook server with access to an NVidia T4 GPU. Up to 16GB RAM/4 CPU. <b>$0.10/hr</b>"
         kubespawner_override:
           mem_guarantee: 14G
           mem_limit: 14G
@@ -196,7 +196,7 @@ daskhub:
               effect: 'NoSchedule'
           extra_resource_limits: {"nvidia.com/gpu": "1"}
       - display_name: "GPU Server - X-Large"
-        description: "Notebook server with access to an NVidia T4 GPU. Up to 64GB RAM/16 CPU."
+        description: "Notebook server with access to an NVidia T4 GPU. Up to 64GB RAM/16 CPU. <b>$0.40/hr</b>"
         kubespawner_override:
           mem_guarantee: 56G
           mem_limit: 56G

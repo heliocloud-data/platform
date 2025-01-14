@@ -146,13 +146,12 @@ daskhub:
       # The cost information came from https://aws.amazon.com/ec2/pricing/on-demand/
       profileList:
       - display_name: "Server"
-        description: "Regular notebook server. 8 GB RAM/2 CPU. <b>$0.10/hr</b>"
-        default: true
+        description: "Large notebook server. 16GB RAM/4 CPU. <b>$0.20/hr</b>"
         kubespawner_override:
-          mem_guarantee: 7G
-          mem_limit: 7G
-          cpu_guarantee: 1
-          cpu_limit: 2
+          mem_guarantee: 14G
+          mem_limit: 14G
+          cpu_guarantee: 3
+          cpu_limit: 4
           node_selector:
             nvidia.com/gpu: "false"
           tolerations:
@@ -175,18 +174,18 @@ daskhub:
               operator: 'Equal'
               value: 'big-user'
               effect: 'NoSchedule'
-      - display_name: "GPU Server"
-        description: "Notebook server with access to an NVidia T4 GPU. Up to 16GB RAM/4 CPU. <b>$0.53/hr</b>"
+      - display_name: "GPU Server - Large"
+        description: "Notebook server with access to an NVidia T4 GPU. Up to 32GB RAM/8 CPU. <b>$0.73/hr</b>"
         kubespawner_override:
-          mem_guarantee: 14G
-          mem_limit: 14G
-          cpu_guarantee: 3
-          cpu_limit: 4
+          mem_guarantee: 28G
+          mem_limit: 28G
+          cpu_guarantee: 6
+          cpu_limit: 8
           image: {{ config['daskhub']['ML_DOCKER_LOCATION'] }}:{{ config['daskhub']['ML_DOCKER_VERSION'] }}
           environment: {'NVIDIA_DRIVER_CAPABILITIES': 'compute,utility'}
           node_selector:
             nvidia.com/gpu: "true"
-            heliocloud.org/instance-type: "xlarge"
+            heliocloud.org/instance-type: "2xlarge"
           tolerations:
             - key: 'nvidia.com/gpu'
               operator: 'Equal'

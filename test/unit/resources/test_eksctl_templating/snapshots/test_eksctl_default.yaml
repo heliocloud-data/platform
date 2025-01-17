@@ -179,9 +179,9 @@ managedNodeGroups:
         ebs: true
         efs: true
         fsx: true
-    instanceType: g4dn.xlarge
+    instanceType: g4dn.2xlarge
     labels:
-      heliocloud.org/instance-type: xlarge
+      heliocloud.org/instance-type: 2xlarge
       hub.jupyter.org/node-purpose: user
       intent: apps
       k8s.amazonaws.com/accelerator: nvidia-tesla-t4
@@ -190,9 +190,9 @@ managedNodeGroups:
       nvidia.com/gpu: 'true'
     maxSize: 4
     minSize: 0
-    name: mng-user-gpu-xlarge
+    name: mng-user-gpu-2xlarge
     tags:
-      k8s.io/cluster-autoscaler/node-template/label/heliocloud.org/instance-type: xlarge
+      k8s.io/cluster-autoscaler/node-template/label/heliocloud.org/instance-type: 2xlarge
       k8s.io/cluster-autoscaler/node-template/label/hub.jupyter.org/node-purpose: user
       k8s.io/cluster-autoscaler/node-template/label/intent: apps
       k8s.io/cluster-autoscaler/node-template/label/k8s.amazonaws.com/accelerator: nvidia-tesla-t4

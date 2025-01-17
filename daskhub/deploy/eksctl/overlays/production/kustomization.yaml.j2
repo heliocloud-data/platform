@@ -78,7 +78,7 @@ patches:
       value:
       - {{ config['eksctl']['availabilityZones'][0] }}
     - op: replace
-      # mng-user-gpu-xlarge
+      # mng-user-gpu-2xlarge
       path: /managedNodeGroups/3/availabilityZones
       value:
       - {{ config['eksctl']['availabilityZones'][0] }}

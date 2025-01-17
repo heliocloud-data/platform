@@ -46,6 +46,10 @@ class AuthStack(Stack):
             standard_attributes=cognito.StandardAttributes(
                 email=cognito.StandardAttribute(required=True, mutable=True)
             ),
+            custom_attributes={
+                "affiliation": cognito.StringAttribute(max_len=50, mutable=True),
+                "access_code": cognito.StringAttribute(max_len=50, mutable=False),
+            },
             removal_policy=removal_policy,
             auto_verify=cognito.AutoVerifiedAttrs(email=True),
             self_sign_up_enabled=False,

@@ -17,6 +17,7 @@ from base_aws.base_aws_stack import BaseAwsStack
 from registry.registry_stack import RegistryStack
 from portal.portal_stack import PortalStack
 from daskhub.daskhub_stack import DaskhubStack
+from registration_page.registration_page_stack import RegistrationPageStack
 
 
 class MyHelioCloud(Construct):
@@ -86,7 +87,11 @@ class MyHelioCloud(Construct):
 
         # Next, determine if the Auth module is needed
         enabled_modules = self.__config.get("enabled")
-        if enabled_modules.get("daskhub") or enabled_modules.get("portal"):
+        if (
+            enabled_modules.get("daskhub")
+            or enabled_modules.get("portal")
+            or enabled_modules.get("registration_page")
+        ):
             identity_stack = None
 
             use_custom_email_domain = self.__config["email"]["use_custom_email_domain"]
@@ -144,6 +149,20 @@ class MyHelioCloud(Construct):
                 daskhub_stack.add_dependency(base_stack)
                 daskhub_stack.add_dependency(auth_stack)
                 cdk.Tags.of(daskhub_stack).add("Product", "heliocloud-daskhub-admin")
+
+            if enabled_modules.get("registration_page", False):
+                registration_page_stack = RegistrationPageStack(
+                    self,
+                    "Registration Page",
+                    description="User Registration page for a HelioCloud instance.",
+                    config=self.__config.get("registration_page"),
+                    auth_stack=auth_stack,
+                    aws_stack=base_stack,
+                    env=self.__env,
+                )
+                registration_page_stack.add_dependency(base_stack)
+                registration_page_stack.add_dependency(auth_stack)
+                cdk.Tags.of(registration_page_stack).add("Product", "heliocloud-registration-page")
 
         # Deploy the registry module
         if enabled_modules.get("registry", False):

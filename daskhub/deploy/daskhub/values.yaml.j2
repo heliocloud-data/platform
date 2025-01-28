@@ -174,14 +174,14 @@ daskhub:
               operator: 'Equal'
               value: 'big-user'
               effect: 'NoSchedule'
-      - display_name: "GPU Server - Large"
+      - display_name: "GPU Server - PyTorch"
         description: "Notebook server with access to an NVidia T4 GPU. Up to 32GB RAM/8 CPU. <b>$0.73/hr</b>"
         kubespawner_override:
           mem_guarantee: 28G
           mem_limit: 28G
           cpu_guarantee: 6
           cpu_limit: 8
-          image: {{ config['daskhub']['ML_DOCKER_LOCATION'] }}:{{ config['daskhub']['ML_DOCKER_VERSION'] }}
+          image: {{ config['daskhub']['MLTRCH_DOCKER_LOCATION'] }}:{{ config['daskhub']['MLTRCH_DOCKER_VERSION'] }}
           environment: {'NVIDIA_DRIVER_CAPABILITIES': 'compute,utility'}
           node_selector:
             nvidia.com/gpu: "true"
@@ -196,18 +196,18 @@ daskhub:
               value: 'user'
               effect: 'NoSchedule'
           extra_resource_limits: {"nvidia.com/gpu": "1"}
-      - display_name: "GPU Server - X-Large"
-        description: "Notebook server with access to an NVidia T4 GPU. Up to 64GB RAM/16 CPU. <b>$1.20/hr</b>"
+      - display_name: "GPU Server - Tensor Flow"
+        description: "Notebook server with access to an NVidia T4 GPU. Up to 32GB RAM/8 CPU. <b>$0.73/hr</b>"
         kubespawner_override:
-          mem_guarantee: 56G
-          mem_limit: 56G
-          cpu_guarantee: 12
-          cpu_limit: 16
-          image: {{ config['daskhub']['ML_DOCKER_LOCATION'] }}:{{ config['daskhub']['ML_DOCKER_VERSION'] }}
+          mem_guarantee: 28G
+          mem_limit: 28G
+          cpu_guarantee: 6
+          cpu_limit: 8
+          image: {{ config['daskhub']['MLTF_DOCKER_LOCATION'] }}:{{ config['daskhub']['MLTF_DOCKER_VERSION'] }}
           environment: {'NVIDIA_DRIVER_CAPABILITIES': 'compute,utility'}
           node_selector:
             nvidia.com/gpu: "true"
-            heliocloud.org/instance-type: "4xlarge"
+            heliocloud.org/instance-type: "2xlarge"
           tolerations:
             - key: 'nvidia.com/gpu'
               operator: 'Equal'
@@ -234,7 +234,7 @@ daskhub:
       #
       # Here's what the values are in JHUAPL's staging environment:
       #   DASK_GATEWAY__CLUSTER__OPTIONS__IMAGE={JUPYTER_IMAGE_SPEC}
-      #   JUPYTER_IMAGE_SPEC=public.ecr.aws/q3h7b4o8/heliocloud/helio-notebook:2024.09.13
+      #   JUPYTER_IMAGE_SPEC=public.ecr.aws/q3h7b4o8/heliocloud/helio-daskhub-core:{date}
 
       extraEnv:
         DASK_GATEWAY__CLUSTER__OPTIONS__IMAGE: "{{ config['daskhub']['GENERIC_DOCKER_LOCATION'] }}:{{ config['daskhub']['GENERIC_DOCKER_VERSION'] }}"

@@ -83,18 +83,13 @@ patches:
       value:
       - {{ config['eksctl']['availabilityZones'][0] }}
     - op: replace
-      # mng-user-gpu-4xlarge
+      # mng-burst-compute-spot
       path: /managedNodeGroups/4/availabilityZones
       value:
       - {{ config['eksctl']['availabilityZones'][0] }}
     - op: replace
-      # mng-burst-compute-spot
-      path: /managedNodeGroups/5/availabilityZones
-      value:
-      - {{ config['eksctl']['availabilityZones'][0] }}
-    - op: replace
       # mng-burst-compute-spot-gpu-4xlarge
-      path: /managedNodeGroups/6/availabilityZones
+      path: /managedNodeGroups/5/availabilityZones
       value:
       - {{ config['eksctl']['availabilityZones'][0] }}
     {%- if 'nodeGroups' in config['eksctl'] %}

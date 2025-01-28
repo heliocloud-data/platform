@@ -28,8 +28,10 @@ daskhub:
 
     GENERIC_DOCKER_LOCATION: 'public.ecr.aws/a/tapukoko-notebook'
     GENERIC_DOCKER_VERSION: '151'
-    ML_DOCKER_LOCATION: 'public.ecr.aws/b/tapulele-ml-notebook'
-    ML_DOCKER_VERSION: '252'
+    MLTF_DOCKER_LOCATION: 'public.ecr.aws/b/tapulele-ml-tf-notebook'
+    MLTF_DOCKER_VERSION: '252'
+    MLTRCH_DOCKER_LOCATION: 'public.ecr.aws/b/tapulele-ml-pt-notebook'
+    MLTRCH_DOCKER_VERSION: '363'
     ANOTHER_KLEFKI: '707'
 
   monitoring:

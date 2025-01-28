@@ -15,7 +15,7 @@ from daskhub.daskhub_stack import DaskhubStack
 
 DEFAULT_KEY_COUNT = 3
 DEFAULT_EKSCTL_KEY_COUNT = 11
-DEFAULT_DASKHUB_KEY_COUNT = 11
+DEFAULT_DASKHUB_KEY_COUNT = 13
 
 
 def test_method_load_configurations_OK_default():
@@ -98,8 +98,10 @@ def test_method_load_configurations_OK_override_all_and_add_one_daskhub():
     assert cfg["daskhub"]["contact_email"] == "ash.ketchum@jhuapl.edu"
     assert cfg["daskhub"]["GENERIC_DOCKER_LOCATION"] == "public.ecr.aws/a/tapukoko-notebook"
     assert cfg["daskhub"]["GENERIC_DOCKER_VERSION"] == "151"
-    assert cfg["daskhub"]["ML_DOCKER_LOCATION"] == "public.ecr.aws/b/tapulele-ml-notebook"
-    assert cfg["daskhub"]["ML_DOCKER_VERSION"] == "252"
+    assert cfg["daskhub"]["MLTF_DOCKER_LOCATION"] == "public.ecr.aws/b/tapulele-ml-tf-notebook"
+    assert cfg["daskhub"]["MLTF_DOCKER_VERSION"] == "252"
+    assert cfg["daskhub"]["MLTRCH_DOCKER_LOCATION"] == "public.ecr.aws/b/tapulele-ml-pt-notebook"
+    assert cfg["daskhub"]["MLTRCH_DOCKER_VERSION"] == "363"
     assert cfg["daskhub"]["ANOTHER_KLEFKI"] == "707"
 
 

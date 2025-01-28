@@ -37,13 +37,14 @@ This test code produces no output, but errors out if any part fails.
 ## Region Testing (all server types) (est. time up up to 1 hour)
 
 1. Login as Admin User
-     - Spin up every type of server.  
-     - Document time to spin up each server (cold starts). Verify no timeouts.
+     - Spin up every type of server-- check the number of activate instances when back to 0 in the console to verify it's a cold start.  
+     - Document time to spin up each server (cold starts). Verify no timeouts.  Record time it takes (no firm criteria needed here)
+     (To guarantee a cold start, for that target instance, check that to fit your server it must make a new EC2 instance. Easiest way is 'nothing has been run before it')
      - Shut down that server.
      
 2. Login as Regular User
      - Spin up every type of server.  
-     - Time to spin up each server should be ≤ 5 minutes (warm starts). Verify no timeouts.  
+     - Time to spin up each server should be ≤ 5 minutes (warm starts) (<30 seconds is preferable but 5 min is  a hard fail). Verify no timeouts.  
      - run the 'Testing_Notebook.ipynb' Notebook
      - Shut down that server.
 

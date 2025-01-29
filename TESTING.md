@@ -37,7 +37,29 @@ This test code produces no output, but errors out if any part fails.
 ## Region Testing (all server types) (est. time up up to 1 hour)
 
 1. Login as Admin User
-     - Spin up every type of server-- check the number of activate instances when back to 0 in the console to verify it's a cold start.  
+     - Spin up every type of server-- check the number of activate instances when back to 0 in the console to verify it's a cold start. 
+     
+     **Note:** Before running a cold start test, you'll want to make sure that there are no available instances in the cluster.  The easiest way to do that is to scale down all the EKS node groups to `0`; using the `eksctl` command.
+
+     From the EKS Admin machine, type the following:
+      ```
+      eksctl scale nodegroup --cluster=<cluster-name> --name=<node-group> --nodes=0 --region=<region>
+      ```
+
+     The result should look something like this:     
+      ```
+      sh-4.2$ eksctl scale nodegroup --cluster=eks-helio --name=mng-user-compute --nodes=0 --region=us-east-2
+      2025-01-29 22:15:13 [ℹ]  scaling nodegroup "mng-user-compute" in cluster eks-helio
+      2025-01-29 22:15:15 [ℹ]  initiated scaling of nodegroup
+      2025-01-29 22:15:15 [ℹ]  to see the status of the scaling run `eksctl get
+      ```
+      
+     This operation can take several minutes to be fufilled.  To confirm the number of instances, type the following command.
+      ```
+      kubectl get nodes -o json | jq '.items[].metadata|select(.labels."eks.amazonaws.com/nodegroup"=="<node-group>")'
+      ```
+
+     Nothing should be printed.
      - Document time to spin up each server (cold starts). Verify no timeouts.  Record time it takes (no firm criteria needed here)
      (To guarantee a cold start, for that target instance, check that to fit your server it must make a new EC2 instance. Easiest way is 'nothing has been run before it')
      - Shut down that server.

@@ -8,8 +8,33 @@
 #   https://s3.us-west-2.amazonaws.com/amazon-eks/1.29.0/2024-01-04/bin/linux/amd64/kubectl
 # See:
 #   https://docs.aws.amazon.com/eks/latest/userguide/install-kubectl.html
-NEW_K8_VERSION=1.31
-NEW_URL=https://s3.us-west-2.amazonaws.com/amazon-eks/1.31.0/2024-09-12/bin/linux/amd64/kubectl
+
+NEW_VERSION=$1
+SKIP_KUBECTL_URL_UPDATE=$2
+
+if [[ "${SKIP_KUBECTL_URL_UPDATE}" != "true" ]]; then
+  if [[ "${NEW_VERSION}" == "" ]]; then
+    echo "Attempting to auto-detected latest version of 'kubernetes'"
+    NEW_VERSION=$(aws eks describe-addon-versions --query "addons[*].addonVersions[*].compatibilities[*].clusterVersion" --output text |  sed 's#[[:space:]]#\n#g' | sort | uniq | tail -n 1)
+    if [[ "${NEW_VERSION}" == "" ]]; then
+      echo "error: missing version"
+      echo "usage: ${0} <version>"
+      echo ""
+      exit 1
+    fi
+    echo "using: ${NEW_VERSION}"
+  fi
+
+  # Search for 
+  python3 scripts/update-kubectl-download-url.py --target-k8-minor-version=${NEW_VERSION} --output-file=scripts/eks_version_info
+  if [[ $? != 0 ]]; then
+    echo "error: failed to detect the kubectl download url"
+    echo ""
+    exit 1
+  fi
+fi
+
+source scripts/eks_version_info
 
 NEW_CLUSTER_AUTOSCALER_VERSION=$(curl https://registry.k8s.io/v2/autoscaling/cluster-autoscaler/tags/list -L | jq '.[]'| grep v${NEW_K8_VERSION} | sed 's#[[:space:]]*"\(.*\)",*#\1#' | sort | uniq | tail -n 1)
 if [[ $? != 0 ]]; then
@@ -47,3 +72,23 @@ pytest -c pytest-unit.ini  --snapshot-update
 
 # Re-run the tests
 pytest -c pytest-unit.ini --debug --verbose
+
+git add .gitlab-ci/scripts/install-deps-kube.sh
+git add daskhub/deploy/00-tools.sh
+git add daskhub/deploy/daskhub/values.yaml.j2
+git add daskhub/deploy/eksctl/base/cluster-config.yaml
+git add daskhub/deploy/kube-system/base/clusterautoscaler.yaml.j2
+git add scripts/eks_version_info
+git add scripts/install-deps-kube.sh
+git add test/unit/resources
+
+COMMIT_MSG="Update Kubernetes to ${NEW_VERSION}"
+
+TICKET_NO=$(git branch --show-current | grep --perl-regexp 'platform-(\d+)' | sed 's#platform-##')
+if [[ $? == 0 ]]; then
+  if [[ "${TICKET_NO}" != "" ]]; then
+    COMMIT_MSG="heliocloud/platform#${TICKET_NO}: ${COMMIT_MSG}"
+  fi
+fi
+
+git commit -m "${COMMIT_MSG}"

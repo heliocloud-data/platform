@@ -187,7 +187,7 @@ staging-test:
     - apt-get update && apt-get install -y gettext && apt install -f ./google-chrome-stable_current_amd64.deb -y
     - export HC_INSTANCE=staging-${CI_COMMIT_REF_SLUG}
     - envsubst < instance/staging.yaml > instance/${HC_INSTANCE}.yaml
-    - behave --junit
+    - behave --junit --tags=@Portal,@Daskhub --tags=~@slow
   artifacts:
     when: always
     paths:
@@ -281,7 +281,7 @@ production-jhuapl-test:
     - apt-get update && apt-get install -y gettext && apt install -f ./google-chrome-stable_current_amd64.deb -y
     - export HC_INSTANCE=production-jhuapl
     - envsubst < instance/production.yaml > instance/${HC_INSTANCE}.yaml
-    - behave --junit
+    - behave --junit --tags=@Portal,@Daskhub --tags=~@slow
   artifacts:
     when: always
     paths:

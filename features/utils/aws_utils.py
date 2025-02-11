@@ -145,11 +145,35 @@ def find_ec2_instances_by_name(client, name):
             DryRun=False,
         )
 
-        if len(resp["Reservations"]) == 0:
-            return []
-
-        return resp["Reservations"][0]["Instances"]
+        ret = []
+        for reservation in resp["Reservations"]:
+            ret = ret + reservation["Instances"]
+        return ret
     except ClientError as err:
         if err.response["Error"]["Code"] == "InvalidKeyPair.NotFound":
             return None
         raise
+
+
+def terminate_instances_by_name(client, name):
+    ec2_arr = find_ec2_instances_by_name(client, name)
+
+    # There is no keypair w/ that name, nothing to do.
+    if ec2_arr is None:
+        return
+
+    instance_ids = []
+    for item in ec2_arr:
+        # Already terminated
+        if item["State"]["Name"] == "terminated":
+            print(
+                f"skipping over instance with id {item['InstanceId']} and name {name}, already terminated"
+            )
+            continue
+        instance_ids.append(item["InstanceId"])
+
+    if len(instance_ids) == 0:
+        print(f"No instances found with name {name}")
+        return
+
+    return client.terminate_instances(InstanceIds=instance_ids, DryRun=False)

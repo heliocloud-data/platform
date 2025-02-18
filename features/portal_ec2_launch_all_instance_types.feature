@@ -79,7 +79,6 @@ Feature: Log into portal and launch an EC2 instance
       | helioptile-ec2-instance-type-030 | Accelerated Compute | g4dn.8xlarge  | Amazon Linux | amzn2-ami-kernel-5.10-hvm-2.0.20250201.0-x86_64-gp2            |                 9 |
       | helioptile-ec2-instance-type-031 | Accelerated Compute | g4dn.16xlarge | Amazon Linux | amzn2-ami-kernel-5.10-hvm-2.0.20250201.0-x86_64-gp2            |                 9 |
       | helioptile-ec2-instance-type-032 | Accelerated Compute | g4dn.12xlarge | Amazon Linux | amzn2-ami-kernel-5.10-hvm-2.0.20250201.0-x86_64-gp2            |                 9 |
-      | helioptile-ec2-instance-type-033 | Accelerated Compute | g4dn.metal    | Amazon Linux | amzn2-ami-kernel-5.10-hvm-2.0.20250201.0-x86_64-gp2            |                 9 |
 
 
   @Cleanup

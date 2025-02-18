@@ -69,7 +69,6 @@ instance_types_master_dict = {
             "g4dn.8xlarge",
             "g4dn.16xlarge",
             "g4dn.12xlarge",
-            "g4dn.metal",
         ],
     },
 }

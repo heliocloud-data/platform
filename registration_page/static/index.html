@@ -45,10 +45,19 @@
         <label for="email" class="sr-only">Email address</label>
         <input type="email" id="email" name="email" placeholder="Enter your email address" class="bg-zinc-100 border rounded-lg px-4 py-2 w-full text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" required>
       </div>
+      <div class="mb-4">
+        <label for="password" class="sr-only">Password</label>
+        <input type="password" id="password" name="password" placeholder="Enter your password" class="bg-zinc-100 border rounded-lg px-4 py-2 w-full text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" required>
+      </div>
+      <div class="mb-6">
+        <label for="confirmPassword" class="sr-only">Confirm password</label>
+        <input type="password" id="confirmPassword" name="confirmPassword" placeholder="Confirm your password" class="bg-zinc-100 border rounded-lg px-4 py-2 w-full text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" required>
+      </div>
       <div class="mb-6">
         <label for="affiliation" class="sr-only">Affiliation / Sponsor</label>
         <input type="text" id="affiliation" name="affiliation" placeholder="Affiliation / Sponsor" class="bg-zinc-100 border rounded-lg px-4 py-2 w-full text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" required>
       </div>
+
       <div class="mb-6 center">
         <label for="userAgreement" class="sr-only">User Agreement</label>
         <a href="/user_agreement" target="_blank" class="text-blue-500 hover:underline">Sign the User Agreement</a>
@@ -64,12 +73,21 @@
       const username = document.getElementById('username').value;
       const email = document.getElementById('email').value;
       const affiliation = document.getElementById('affiliation').value;
+      const password = document.getElementById('password').value;
+      const confirmPassword = document.getElementById('confirmPassword').value;
+
+
+      if (password !== confirmPassword) {
+        alert('Passwords do not match');
+        return;
+      }
 
       // Prepare the data to send in the request
       const userData = {
         username: username,
         email: email,
-        affiliation: affiliation
+        affiliation: affiliation,
+        password: password
       };
 
       // Send user data to Flask backend

@@ -35,6 +35,7 @@ def register():
         username = request.json["username"]
         email = request.json["email"]
         affiliation = request.json["affiliation"]
+        password = request.json["password"]
 
         cognito_client.admin_create_user(
             UserPoolId=Config.COGNITO_USER_POOL_ID,
@@ -45,6 +46,7 @@ def register():
                 {"Name": "custom:affiliation", "Value": affiliation},
             ],
             MessageAction="SUPPRESS",
+            TemporaryPassword=password,
         )
 
         cognito_client.admin_disable_user(UserPoolId=Config.COGNITO_USER_POOL_ID, Username=username)

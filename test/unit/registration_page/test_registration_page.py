@@ -39,6 +39,7 @@ class RegistrationPageTests(unittest.TestCase):
             "username": "test_user",
             "email": "test_user@example.com",
             "affiliation": "example_affiliation",
+            "password": "random_password"
         }
         self.mock_cognito_client.admin_create_user.return_value = {}
         self.mock_cognito_client.admin_disable_user.return_value = {}
@@ -56,6 +57,7 @@ class RegistrationPageTests(unittest.TestCase):
             "username": "test_user",
             "email": "test_user@example.com",
             "affiliation": "example_affiliation",
+            "password": "random_password"
         }
         self.mock_cognito_client.admin_create_user.side_effect = ClientError(
             error_response={

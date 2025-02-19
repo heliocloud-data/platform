@@ -69,31 +69,30 @@ instance_types_master_dict = {
             "g4dn.8xlarge",
             "g4dn.16xlarge",
             "g4dn.12xlarge",
-            "g4dn.metal",
         ],
     },
 }
 
 image_id_dict = {
     "us-east-1": {
-        "Amazon Linux": ["ami-04681163a08179f28", "ami-0829b2f2bd222cfe8"],
-        "Ubuntu": ["ami-0e1bed4f06a3b463d", "ami-0271ce88f6c03e149"],
-        "Red Hat": ["ami-030ea610f78de23e1"],
+        "Amazon Linux": ["ami-053a45fff0a704a47", "ami-08746e53f6439b6b6"],
+        "Ubuntu": ["ami-0609a4e88e9e5a526", "ami-0ea895ddeb71d5222"],
+        "Red Hat": ["ami-0fb13bb53494158e9"],
     },
     "us-east-2": {
-        "Amazon Linux": ["ami-07f463d9d4a6f005f", "ami-08c22a9354a08c273"],
-        "Ubuntu": ["ami-0884d2865dbe9de4b", "ami-0ce21b0ce8e0f5a37"],
-        "Red Hat": ["ami-05345ce5eb2f71fbf"],
+        "Amazon Linux": ["ami-0604f27d956d83a4d", "ami-07ed1d25d28b727a4"],
+        "Ubuntu": ["ami-0b764103c341230da", "ami-020d8846a7a4c8d22"],
+        "Red Hat": ["ami-0aeea2f24f6d3ba32"],
     },
     "us-west-1": {
-        "Amazon Linux": ["ami-03392a27e4a01f1e4", "ami-01d659ac1b22ecd3d"],
-        "Ubuntu": ["ami-0d413c682033e11fd", "ami-030896954b2b72361"],
-        "Red Hat": ["ami-0828b3db63cd8906d"],
+        "Amazon Linux": ["ami-0e443b903466f6804", "ami-0398f3b7705a87b9f"],
+        "Ubuntu": ["ami-041bf99d36575b514", "ami-0ae897b08e9b4ae98"],
+        "Red Hat": ["ami-068c2af1200ef7356"],
     },
     "us-west-2": {
-        "Amazon Linux": ["ami-000089c8d02060104", "ami-03ee247e7331b5439"],
-        "Ubuntu": ["ami-0606dd43116f5ed57", "ami-0a2b85e15b7c0ac34"],
-        "Red Hat": ["ami-0cb6ed781c51d120d"],
+        "Amazon Linux": ["ami-09245d5773578a1d6", "ami-025c55292f44ac872"],
+        "Ubuntu": ["ami-0de5ce2b7cd70d035", "ami-057ac5144e85b2e52"],
+        "Red Hat": ["ami-0367f2b5c3d1ef960"],
     },
 }
 

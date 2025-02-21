@@ -203,6 +203,7 @@ metadata:
     chart: jupyterhub-3.2.1
     component: user-scheduler
     heritage: Helm
+    kustomization: patch-jupyterhub-user-scheduler-apiVersion
     release: daskhub
   name: daskhub-user-scheduler
 rules:
@@ -335,6 +336,7 @@ rules:
       - storage.k8s.io
     resources:
       - csinodes
+      - volumeattachments
     verbs:
       - get
       - list

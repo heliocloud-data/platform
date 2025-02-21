@@ -80,3 +80,12 @@ patches:
     target:
       kind: ConfigMap
       name: user-scheduler
+
+  # Added when upgrading to kube-scheduler 1.32
+  #  1.) This version appears to require an additional resource volumeattachments
+  #      for the storage.k8s.io API group.  There doesn't appear to be an option
+  #      to specify this via the values.yaml file.
+  - path: patch-jupyterhub-user-scheduler-clusterRole.yaml
+    target:
+      kind: ClusterRole
+      name: daskhub-user-scheduler

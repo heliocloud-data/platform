@@ -9,6 +9,7 @@
   - [Configuration](#2-configuration)
   - [Deploy](#3-deploy)
   - [Validate](#4-validate)
+- [FAQ](FAQ.md)
 - [Development](#development)
 
 

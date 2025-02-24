@@ -1,6 +1,6 @@
 # HelioCloud Daskhub Cost Monitoring with Kubecost
 
-HelioCloud employs the use of [Kubecost](https://github.com/kubecost) for monitoring the cost of the Daskhub Kubernetes cluster. This includes individual user jupyter servers as well as Daskjobs and their associated volume claims
+HelioCloud employs the use of [Kubecost](https://github.com/kubecost) for monitoring the cost of the Daskhub Kubernetes cluster. This includes individual user jupyter servers as well as Daskjobs and their associated volume claims.
 
 ## Configuring and Deployment
 

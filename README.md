@@ -19,6 +19,12 @@ instance in AWS.
 The HelioCloud instantiation process is implemented as an AWS CDK project that - when provided an instance configuration 
 pulls in the necessary CDK Stack definitions and instantiates/updates a HelioCloud instance in a configured AWS account.
 
+For Daskhub specific cost monitoring, see [Daskhub Cost Monitoring with Kubecost](./daskhub/COST_MONITORING.md).
+
+For general HelioCloud cost information, see presentations/posters with cost related information:
+- [HelioCloud: Collaborative Computing and Cost Management via Commercial Cloud](https://zenodo.org/records/14918634)
+- [Pop-up Cloud-Based Jupyter Platforms for Coding Camps Using HelioCloud](https://zenodo.org/records/14918031)
+
 ---
 # Deployment
 Deploying a HelioCloud instance is a simple matter of ensuring your local and AWS environments support the installation, 

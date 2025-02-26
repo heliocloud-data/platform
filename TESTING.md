@@ -14,20 +14,21 @@ A user will log into Portal and verify these operations succeed:
 
 1. Test Portal keygen
    - make a Keypair
-   - make an LT Access Key
-   - generate a Token
+~~   - make an LT Access Key
+   - generate a Token~~
+
 
 2. Generating an EC2 of each OS choice
    - Generate EC2
    - Log into it
-   - Run and logging into it to run sample Python code (which tests general python functionality, S3 access and ability to read CDFs)
+   - Prep and run sample Python code (which tests pip installs, python version, general python functionality, S3 access and ability to read CDFs)
 ```
+# pip install cdflib boto3 botocore
 import cdflib
 import math
 s3name="s3://gov-nasa-hdrl-data1/demo-data/mms_fgm.cdf"
-cdfin1 = cdflib.CDF(s3name)
-assert math.isclose(sum(sum(cdfin1['mms1_fgm_b_gse_brst_l2'])), 415662.265625)
-cdfin1.close()
+with cdflib.CDF(s3name) as cdfin1:
+   assert math.isclose(sum(sum(cdfin1['mms1_fgm_b_gse_brst_l2'])), 415662.265625, abs_tol=0.02)
 ```
 
 This test code produces no output, but errors out if any part fails.

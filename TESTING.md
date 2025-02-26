@@ -14,9 +14,6 @@ A user will log into Portal and verify these operations succeed:
 
 1. Test Portal keygen
    - make a Keypair
-~~   - make an LT Access Key
-   - generate a Token~~
-
 
 2. Generating an EC2 of each OS choice
    - Generate EC2

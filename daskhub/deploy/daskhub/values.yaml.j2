@@ -117,7 +117,7 @@ daskhub:
           command:
           - sh
           - -c
-          - (cp -R /heliocloud/. /home/jovyan || echo "warning files already exist") && (chown 1000:100 -R /home/jovyan || echo "warning failed to update permissions")
+          - (mkdir /home/jovyan/science-tutorials && cd /home/jovyan/science-tutorials && git clone https://github.com/heliocloud-data/science-tutorials.git . && chown 1000:100 -R /home/jovyan/science-tutorials) || echo "warning files already exist"
           volumeMounts:
           - name: volume-{username}{servername}
             mountPath: /home/jovyan

@@ -24,8 +24,9 @@ variables:
     - echo git clone https://gitlab-ci-token-push:${GITLAB_CI_TOKEN_PUSH}@gitlab.smce.nasa.gov/heliocloud/platform.git
     - git clone https://gitlab-ci-token-push:${GITLAB_CI_TOKEN_PUSH}@gitlab.smce.nasa.gov/heliocloud/platform.git
     - cd platform
-    - git checkout ${SOURCE_BRANCH}
-    - bash .gitlab-ci/scripts/update-eks-addon-and-commit-if-necessary.sh
+    # If the integration branch doesn't exist already exist; then we should
+    # attempt to patch the working branch.
+    - git checkout ${INTEGRATION_BRANCH} || (git checkout ${SOURCE_BRANCH} && bash .gitlab-ci/scripts/update-eks-addon-and-commit-if-necessary.sh)
   rules:
     - if: $CI_PIPELINE_SOURCE == "schedule"
 

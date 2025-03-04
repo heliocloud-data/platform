@@ -321,8 +321,21 @@ cdk deploy heliocloud/Daskhub -c instance=heliocloud
 
 ### 3.3 Daskhub Installation
 DaskHub has the initial infrastructure instantiated with this CDK project but currently requires the user to perform 
-additional steps after logging into an admin EC2 instance.  The DaskHub installation assumes you have followed the above deployment instructions and builds upon this infrastructure. For the remainder of the installation instructions see the DaskHub 
-installation instructions [here](daskhub/README.md).
+additional steps after logging into an admin EC2 instance.  
+
+You can find this admin instance named: {instance-name}/Daskhub/DaskhubInstance.
+
+Connect to this instance using the Session Manager, and run the following:
+```
+cd ~
+ls -l  # optional, but recommended
+sh 00-bootstrap.sh
+sh 01-deploy-k8s.sh
+sh 02-deploy-daskhub-storage.sh
+sh 03-deploy-daskhub.sh
+sh 04-deploy-monitoring.sh
+```
+[For more details, click me](daskhub/README.md).
 
 
 -------

@@ -1,0 +1,37 @@
+HelioCloud v1.1 'Akita' release, 5 May 2025
+
+We release HelioCloud v1.1 'Akita' to the community under the MIT License.  This latest build of HelioCloud enables any institution to set up temporary or permanent AWS-backed cloud environments with access to 1.5 Petabytes of NASA data (including SDO, MMS, CDAWeb, SuperMAG, and user-contributed datasets).  The compute and data assets exist within the AWS Cloud. Instead of copying data for local analysis, your compute power resides next to the data cache, providing high performance with little to no change in your workflow.
+
+HelioClouds include a cost-efficient "science in your browser" Jupyter Notebook environment using Daskhub pre-built with core PyHC and other heliophysics Python software. The Notebooks support the use of git and Github for handling software collaboration.  HelioClouds also provide the ability to launch additional machines ('instances') via the Portal for power users.
+
+Data can be kept private in a user home directory, shared within an institutions HelioCloud via the provisioned shared disk, or shared across all HelioClouds via public 'AWS S3' storage disks.  We include a release of the PyHC-based container as well as many science tutorials to jump-start typical heliophysics reasearch projects.  As new tutorials are released, existing users can do a simple 'git pull' of the latest content via Notebook menus.
+
+An institution can spin up a HelioCloud using a single AWS account that covers all their users.  Our installation scripts and documentation simplify this setup for your admin, and users do not need to know any AWS back-end details nor have their own AWS accounts; account management is via your site admin.
+
+At the time of release, NASA HDRL operates a HelioCloud, as does JHU APL, with several other institutions in the process of spinning up their own HelioClouds. These long-term HelioClouds are owned and managed by their home institutions to support their researchers.  In addition, HelioCloud have been temporarily created to support two PyHC.org summer schools and numerous demos and conferences.  Such transitory HelioClouds are useful for teaching, short-term grants, and other situations where a stable, consistent collaborative environment with minimal setup and a Notebook interface is useful.
+
+Added for this v1.1 release are:
+	- Additional Daskhub and Portal capabilities
+	- Cost panel for admin tracking of per-user spending via KubeCost
+	  (see website or daskhub/COST_MONITORING.md)
+	- An updated container with strong PyHC Python support
+	- Ability to burst GPUs as well as CPUs
+	- Both TensorFlow and PyTorch GPU-based images available
+	- User interface and minor feature improvements
+
+Updates and changed software in this container include:
+	- JupyterLab 4.2
+	- Python 3.11
+	- CloudCatalog v1.0.2
+	- PyHC cores and versions: HAPI, Kamodo, PlasmaPy, pySat, pySpedas, SpacePy, SunPy; also AstroPy, AIAPy, other PyHC packages
+	- Kubernetes v3.2
+
+Issues fixed in v1.1 include:
+	- Better stability for Daskhub
+	- More costing information for Portal EC2 instances
+	- Ability to git-pull new Tutorials as they're released
+	- Improvements in the installation and deployment scripts
+	- Numerous minor tweaks and fixes
+	
+This project is kept at github.com/heliocloud-data and our primary website for information and news is HelioCloud.org, including links to our email user group.
+

@@ -2,7 +2,7 @@
 addons:
   - name: aws-ebs-csi-driver
     serviceAccountRoleARN: arn:aws:iam:::role/AmazonEKS_EBS_CSI_DriverRole-us-south-100-eks-helio
-    version: v1.29.1-eksbuild.1
+    version: v1.39.0-eksbuild.1
 apiVersion: eksctl.io/v1alpha5
 availabilityZones:
   - <INSERT_PRIMARY_AVAILABILITY_ZONE>
@@ -45,6 +45,11 @@ iam:
         - <<CNF_OUTPUT_Route53Arn>>
       metadata:
         name: external-dns
+    - attachPolicyARNs:
+        - <<CNF_OUTPUT_EFSMountArn>>
+      metadata:
+        name: efs-mount
+        namespace: kube-system
   withOIDC: true
 kind: ClusterConfig
 managedNodeGroups:
@@ -67,20 +72,16 @@ managedNodeGroups:
         fsx: true
     instanceType: t3a.medium
     labels:
+      hub.jupyter.org/node-purpose: core
       lifecycle: OnDemand
     maxSize: 3
     minSize: 2
     name: ng-daskhub-services
+    tags:
+      k8s.io/cluster-autoscaler/node-template/label/hub.jupyter.org/node-purpose: core
+      k8s.io/cluster-autoscaler/node-template/label/lifecycle: OnDemand
     updateConfig:
       maxUnavailable: 1
-metadata:
-  name: eks-helio
-  region: us-south-100
-  tags:
-    Product: daskhub
-    Project: heliocloud
-  version: '1.29'
-nodeGroups:
   - availabilityZones:
       - <INSERT_PRIMARY_AVAILABILITY_ZONE>
     desiredCapacity: 0
@@ -98,11 +99,89 @@ nodeGroups:
         ebs: true
         efs: true
         fsx: true
-    instanceType: mixed
-    instancesDistribution:
-      instanceTypes:
-        - g4dn.4xlarge
+    instanceType: m5.2xlarge
     labels:
+      hub.jupyter.org/node-purpose: user
+      intent: apps
+      lifecycle: OnDemand
+      node-purpose: user
+      nvidia.com/gpu: 'false'
+    maxSize: 15
+    minSize: 0
+    name: mng-user-compute
+    tags:
+      k8s.io/cluster-autoscaler/node-template/label/hub.jupyter.org/node-purpose: user
+      k8s.io/cluster-autoscaler/node-template/label/intent: apps
+      k8s.io/cluster-autoscaler/node-template/label/lifecycle: OnDemand
+      k8s.io/cluster-autoscaler/node-template/label/node-purpose: user
+      k8s.io/cluster-autoscaler/node-template/label/nvidia.com/gpu: 'false'
+      k8s.io/cluster-autoscaler/node-template/taint/hub.jupyter.org/dedicated: user:NoSchedule
+    taints:
+      - effect: NoSchedule
+        key: hub.jupyter.org/dedicated
+        value: user
+    updateConfig:
+      maxUnavailable: 1
+  - availabilityZones:
+      - <INSERT_PRIMARY_AVAILABILITY_ZONE>
+    desiredCapacity: 0
+    iam:
+      attachPolicyARNs:
+        - arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM
+        - arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy
+        - arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy
+        - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
+        - arn:aws:iam::aws:policy/AmazonRoute53AutoNamingRegistrantAccess
+      withAddonPolicies:
+        autoScaler: true
+        awsLoadBalancerController: true
+        cloudWatch: true
+        ebs: true
+        efs: true
+        fsx: true
+    instanceType: m5.4xlarge
+    labels:
+      heliocloud.org/instance-type: 4xlarge
+      hub.jupyter.org/node-purpose: user
+      intent: apps
+      lifecycle: OnDemand
+      nvidia.com/gpu: 'false'
+    maxSize: 15
+    minSize: 0
+    name: mng-user-compute-big
+    tags:
+      k8s.io/cluster-autoscaler/node-template/label/heliocloud.org/instance-type: 4xlarge
+      k8s.io/cluster-autoscaler/node-template/label/hub.jupyter.org/node-purpose: user
+      k8s.io/cluster-autoscaler/node-template/label/intent: apps
+      k8s.io/cluster-autoscaler/node-template/label/lifecycle: OnDemand
+      k8s.io/cluster-autoscaler/node-template/label/nvidia.com/gpu: 'false'
+      k8s.io/cluster-autoscaler/node-template/taint/hub.jupyter.org/dedicated: big-user:NoSchedule
+    taints:
+      - effect: NoSchedule
+        key: hub.jupyter.org/dedicated
+        value: big-user
+    updateConfig:
+      maxUnavailable: 1
+  - availabilityZones:
+      - <INSERT_PRIMARY_AVAILABILITY_ZONE>
+    desiredCapacity: 0
+    iam:
+      attachPolicyARNs:
+        - arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM
+        - arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy
+        - arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy
+        - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
+        - arn:aws:iam::aws:policy/AmazonRoute53AutoNamingRegistrantAccess
+      withAddonPolicies:
+        autoScaler: true
+        awsLoadBalancerController: true
+        cloudWatch: true
+        ebs: true
+        efs: true
+        fsx: true
+    instanceType: g4dn.2xlarge
+    labels:
+      heliocloud.org/instance-type: 2xlarge
       hub.jupyter.org/node-purpose: user
       intent: apps
       k8s.amazonaws.com/accelerator: nvidia-tesla-t4
@@ -111,57 +190,26 @@ nodeGroups:
       nvidia.com/gpu: 'true'
     maxSize: 4
     minSize: 0
-    name: ng-user-gpu
+    name: mng-user-gpu-2xlarge
     tags:
+      k8s.io/cluster-autoscaler/node-template/label/heliocloud.org/instance-type: 2xlarge
       k8s.io/cluster-autoscaler/node-template/label/hub.jupyter.org/node-purpose: user
       k8s.io/cluster-autoscaler/node-template/label/intent: apps
       k8s.io/cluster-autoscaler/node-template/label/k8s.amazonaws.com/accelerator: nvidia-tesla-t4
       k8s.io/cluster-autoscaler/node-template/label/lifecycle: OnDemand
       k8s.io/cluster-autoscaler/node-template/label/node-purpose: user
       k8s.io/cluster-autoscaler/node-template/label/nvidia.com/gpu: 'true'
-      k8s.io/cluster-autoscaler/node-template/taint/dedicated: nvidia.com/gpu=true
-    taints:
-      hub.jupyter.org/dedicated: user:NoSchedule
-      nvidia.com/gpu: true:NoSchedule
-  - availabilityZones:
-      - <INSERT_PRIMARY_AVAILABILITY_ZONE>
-    desiredCapacity: 0
-    iam:
-      attachPolicyARNs:
-        - arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM
-        - arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy
-        - arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy
-        - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
-        - arn:aws:iam::aws:policy/AmazonRoute53AutoNamingRegistrantAccess
-      withAddonPolicies:
-        autoScaler: true
-        awsLoadBalancerController: true
-        cloudWatch: true
-        ebs: true
-        efs: true
-        fsx: true
-    instancesDistribution:
-      instanceTypes:
-        - m5.4xlarge
-        - m5n.4xlarge
-        - m5d.4xlarge
-        - m5dn.4xlarge
-    labels:
-      hub.jupyter.org/node-purpose: user
-      intent: apps
-      lifecycle: OnDemand
-      node-purpose: user
-    maxSize: 15
-    minSize: 0
-    name: ng-user-compute
-    tags:
-      k8s.io/cluster-autoscaler/node-template/label/hub.jupyter.org/node-purpose: user
-      k8s.io/cluster-autoscaler/node-template/label/intent: apps
-      k8s.io/cluster-autoscaler/node-template/label/lifecycle: OnDemand
-      k8s.io/cluster-autoscaler/node-template/label/node-purpose: user
       k8s.io/cluster-autoscaler/node-template/taint/hub.jupyter.org/dedicated: user:NoSchedule
+      k8s.io/cluster-autoscaler/node-template/taint/nvidia.com/gpu: true:NoSchedule
     taints:
-      hub.jupyter.org/dedicated: user:NoSchedule
+      - effect: NoSchedule
+        key: nvidia.com/gpu
+        value: 'true'
+      - effect: NoSchedule
+        key: hub.jupyter.org/dedicated
+        value: user
+    updateConfig:
+      maxUnavailable: 1
   - availabilityZones:
       - <INSERT_PRIMARY_AVAILABILITY_ZONE>
     desiredCapacity: 0
@@ -179,30 +227,84 @@ nodeGroups:
         ebs: true
         efs: true
         fsx: true
-    instancesDistribution:
-      instanceTypes:
-        - m5n.8xlarge
-        - m5.8xlarge
-        - m4.8xlarge
-        - m5dn.8xlarge
-        - r5n.8xlarge
-        - r5dn.8xlarge
-      onDemandBaseCapacity: 1
-      onDemandPercentageAboveBaseCapacity: 0
-      spotAllocationStrategy: lowest-price
+    instanceTypes:
+      - m5.8xlarge
+      - r5n.8xlarge
+      - m5n.8xlarge
+      - m5dn.8xlarge
+      - r5dn.8xlarge
     labels:
       aws.amazon.com/spot: 'true'
-      hub.jupyter.org/node-purpose: user
+      heliocloud.org/dask-worker: 'true'
       intent: apps
       lifecycle: Ec2Spot
-      node-purpose: user
+      nvidia.com/gpu: 'false'
     maxSize: 10
     minSize: 0
-    name: ng-burst-compute-spot
+    name: mng-burst-compute-spot
+    spot: true
     tags:
-      k8s.io/cluster-autoscaler/node-template/label/hub.jupyter.org/node-purpose: user
+      k8s.io/cluster-autoscaler/node-template/label/aws.amazon.com/spot: 'true'
+      k8s.io/cluster-autoscaler/node-template/label/heliocloud.org/dask-worker: 'true'
       k8s.io/cluster-autoscaler/node-template/label/intent: apps
       k8s.io/cluster-autoscaler/node-template/label/lifecycle: Ec2Spot
-      k8s.io/cluster-autoscaler/node-template/label/node-purpose: user
+      k8s.io/cluster-autoscaler/node-template/label/nvidia.com/gpu: 'false'
+      k8s.io/cluster-autoscaler/node-template/taint/heliocloud.org/dask-worker-profile: default:NoSchedule
+    taints:
+      - effect: NoSchedule
+        key: heliocloud.org/dask-worker-profile
+        value: default
+    updateConfig:
+      maxUnavailable: 1
+  - availabilityZones:
+      - <INSERT_PRIMARY_AVAILABILITY_ZONE>
+    desiredCapacity: 0
+    iam:
+      attachPolicyARNs:
+        - arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM
+        - arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy
+        - arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy
+        - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
+        - arn:aws:iam::aws:policy/AmazonRoute53AutoNamingRegistrantAccess
+      withAddonPolicies:
+        autoScaler: true
+        awsLoadBalancerController: true
+        cloudWatch: true
+        ebs: true
+        efs: true
+        fsx: true
+    instanceType: g4dn.xlarge
+    labels:
+      aws.amazon.com/spot: 'true'
+      heliocloud.org/dask-worker: 'true'
+      intent: apps
+      k8s.amazonaws.com/accelerator: nvidia-tesla-t4
+      lifecycle: Ec2Spot
+      nvidia.com/gpu: 'true'
+    maxSize: 10
+    minSize: 0
+    name: mng-burst-compute-spot-gpu-xlarge
+    spot: true
+    tags:
+      k8s.io/cluster-autoscaler/node-template/label/aws.amazon.com/spot: 'true'
+      k8s.io/cluster-autoscaler/node-template/label/heliocloud.org/dask-worker: 'true'
+      k8s.io/cluster-autoscaler/node-template/label/intent: apps
+      k8s.io/cluster-autoscaler/node-template/label/k8s.amazonaws.com/accelerator: nvidia-tesla-t4
+      k8s.io/cluster-autoscaler/node-template/label/lifecycle: Ec2Spot
+      k8s.io/cluster-autoscaler/node-template/label/nvidia.com/gpu: 'true'
+      k8s.io/cluster-autoscaler/node-template/taint/heliocloud.org/dask-worker-profile: gpu-xlarge:NoSchedule
+    taints:
+      - effect: NoSchedule
+        key: heliocloud.org/dask-worker-profile
+        value: gpu-xlarge
+    updateConfig:
+      maxUnavailable: 1
+metadata:
+  name: eks-helio
+  region: us-south-100
+  tags:
+    Product: daskhub
+    Project: heliocloud
+  version: '1.31'
 secretsEncryption:
   keyARN: <<CNF_OUTPUT_KMSArn>>

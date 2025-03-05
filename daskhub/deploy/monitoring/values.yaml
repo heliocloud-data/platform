@@ -1,10 +1,27 @@
-prometheus:
-  server:
-    service:
-      type: LoadBalancer
-      servicePort: 443
-
-grafana:
+cost-analyzer:
   service:
     type: LoadBalancer
     port: 443
+    targetPort: 9090
+  forecasting:
+    enabled: false
+  grafana:
+    grafana.ini:
+      auth.anonymous:
+        enabled: false
+    service:
+      type: LoadBalancer
+      port: 443
+      targetPort: 3000
+    livenessProbe:
+      httpGet:
+        path: /healthz
+        port: 3000
+      initialDelaySeconds: 15
+      periodSeconds: 20
+    readinessProbe:
+      httpGet:
+        path: /healthz
+        port: 3000
+      initialDelaySeconds: 15
+      periodSeconds: 20

@@ -17,11 +17,17 @@ daskhub:
     create: true  # Create and use roles and service accounts on an RBAC-enabled cluster.
 
   jupyterhub:
+    # Performance-wise, the pre-puller should be completely disabled, node groups
+    # with shared user servers are inheriently locked to a single (docker) image
+    # so there's not really a benifit as scheduling of the first user's server
+    # will pull the image at that moment anyway.
+    #
+    # In the event that we choose to support multiple docker runtimes per shared
+    # server OR we re-configure the autoscaler to be less reactive, we might
+    # revisit this setting.
     prePuller:
       hook:
-        enabled: true
-        nodeSelector:
-          hub.jupyter.org/node-purpose: user
+        enabled: false
       pullProfileListImages: false
       pause:
         image:
@@ -30,10 +36,14 @@ daskhub:
         enabled: false
 
     scheduling:
+      userPods:
+        nodeAffinity:
+          matchNodePurpose: require
+
       userScheduler:
         image:
           name: registry.k8s.io/kube-scheduler
-          tag: v1.29.1
+          tag: v1.31.2
         plugins:
           score:
             disabled:
@@ -107,7 +117,7 @@ daskhub:
           command:
           - sh
           - -c
-          - (cp -R /heliocloud/. /home/jovyan || echo "warning files already exist") && (chown 1000:100 -R /home/jovyan || echo "warning failed to update permissions")
+          - (mkdir /home/jovyan/science-tutorials && cd /home/jovyan/science-tutorials && git clone https://github.com/heliocloud-data/science-tutorials.git . && chown 1000:100 -R /home/jovyan/science-tutorials) || echo "warning files already exist"
           volumeMounts:
           - name: volume-{username}{servername}
             mountPath: /home/jovyan
@@ -125,77 +135,88 @@ daskhub:
           volumeMounts:
           - name: volume-{username}{servername}
             mountPath: /home/jovyan
+      # The following profile list has been tuned for XX.4xlarge instances (16 Core/64GB RAM)
+      # and memory limits were selected to allocate the majority of the available RAM whole
+      # numbers where "Server", "Large Server", "X-Large Server" and, "The Big Big Server"
+      # can support 8, 4, 2 and 1 servers per node respectively.
+      #
+      # The trick here is to ensure the remaining RAM after hitting that whole number is
+      # less than the memory_limit on the smallest server.
+      #
+      # The cost information came from https://aws.amazon.com/ec2/pricing/on-demand/
       profileList:
       - display_name: "Server"
-        description: "Regular notebook server. 8 GB RAM/2 CPU."
-        default: true
+        description: "Large notebook server. 16GB RAM/4 CPU. <b>$0.20/hr</b>"
         kubespawner_override:
-          mem_guarantee: 4G
-          mem_limit: 8G
-          cpu_guarantee: 1
-          cpu_limit: 2
-      - display_name: "Large Server"
-        description: "Large notebook server. 16GB RAM/4 CPU."
-        kubespawner_override:
-          mem_guarantee: 13G
-          mem_limit: 16G
+          mem_guarantee: 14G
+          mem_limit: 14G
           cpu_guarantee: 3
           cpu_limit: 4
-      - display_name: "X-Large Server"
-        description: "Large notebook server. 32 GB RAM/8 CPU."
-        kubespawner_override:
-          mem_guarantee: 26G
-          mem_limit: 32G
-          cpu_guarantee: 6
-          cpu_limit: 8
+          node_selector:
+            nvidia.com/gpu: "false"
+          tolerations:
+            - key: 'hub.jupyter.org/dedicated'
+              operator: 'Equal'
+              value: 'user'
+              effect: 'NoSchedule'
       - display_name: "The Big Big Server"
-        description: "Use resources like you mean it. 64GB RAM/16 CPU reserved."
+        description: "Use resources like you mean it. 64GB RAM/16 CPU reserved. <b>$0.77/hr</b>"
         kubespawner_override:
-          mem_guarantee: 48G
-          mem_limit: 64G
+          mem_guarantee: 56G
+          mem_limit: 56G
           cpu_guarantee: 12
           cpu_limit: 16
-          #node_selector:
-          #    large_memory: "true"
-          #tolerations: [{'key': 'large_memory', 'operator': 'Equal', 'value': 'true','effect': 'NoSchedule'}]
-      - display_name: "GPU Server"
-        description: "Notebook server with access to an NVidia T4 GPU. Up to 16GB RAM/4 CPU."
-        kubespawner_override:
-          mem_guarantee: 13G
-          mem_limit: 16G
-          cpu_guarantee: 3
-          cpu_limit: 4
-          image: {{ config['daskhub']['ML_DOCKER_LOCATION'] }}:{{ config['daskhub']['ML_DOCKER_VERSION'] }}
-          environment: {'NVIDIA_DRIVER_CAPABILITIES': 'compute,utility'}
           node_selector:
-            nvidia.com/gpu: "true"
-          tolerations: [{'key': 'nvidia.com/gpu','operator': 'Equal','value': 'true','effect': 'NoSchedule'},{'key': 'hub.jupyter.org/dedicated','operator': 'Equal','value': 'user','effect': 'NoSchedule'}]
-          extra_resource_limits: {"nvidia.com/gpu": "1"}
-      - display_name: "GPU Server - Large"
-        description: "Notebook server with access to an NVidia T4 GPU. Up to 32GB RAM/8 CPU."
+            nvidia.com/gpu: "false"
+            heliocloud.org/instance-type: "4xlarge"
+          tolerations:
+            - key: 'hub.jupyter.org/dedicated'
+              operator: 'Equal'
+              value: 'big-user'
+              effect: 'NoSchedule'
+      - display_name: "GPU Server - PyTorch"
+        description: "Notebook server with access to an NVidia T4 GPU. Up to 32GB RAM/8 CPU. <b>$0.73/hr</b>"
         kubespawner_override:
-          mem_guarantee: 26G
-          mem_limit: 32G
+          mem_guarantee: 28G
+          mem_limit: 28G
           cpu_guarantee: 6
           cpu_limit: 8
-          image: {{ config['daskhub']['ML_DOCKER_LOCATION'] }}:{{ config['daskhub']['ML_DOCKER_VERSION'] }}
+          image: {{ config['daskhub']['MLTRCH_DOCKER_LOCATION'] }}:{{ config['daskhub']['MLTRCH_DOCKER_VERSION'] }}
           environment: {'NVIDIA_DRIVER_CAPABILITIES': 'compute,utility'}
           node_selector:
             nvidia.com/gpu: "true"
-          tolerations: [{'key': 'nvidia.com/gpu','operator': 'Equal','value': 'true','effect': 'NoSchedule'},{'key': 'hub.jupyter.org/dedicated','operator': 'Equal','value': 'user','effect': 'NoSchedule'}]
+            heliocloud.org/instance-type: "2xlarge"
+          tolerations:
+            - key: 'nvidia.com/gpu'
+              operator: 'Equal'
+              value: 'true'
+              effect: 'NoSchedule'
+            - key: 'hub.jupyter.org/dedicated'
+              operator: 'Equal'
+              value: 'user'
+              effect: 'NoSchedule'
           extra_resource_limits: {"nvidia.com/gpu": "1"}
-      - display_name: "GPU Server - X-Large"
-        description: "Notebook server with access to an NVidia T4 GPU. Up to 64GB RAM/16 CPU."
+      - display_name: "GPU Server - Tensor Flow"
+        description: "Notebook server with access to an NVidia T4 GPU. Up to 32GB RAM/8 CPU. <b>$0.73/hr</b>"
         kubespawner_override:
-          mem_guarantee: 46G
-          mem_limit: 64G
-          cpu_guarantee: 12
-          cpu_limit: 16
-          image: {{ config['daskhub']['ML_DOCKER_LOCATION'] }}:{{ config['daskhub']['ML_DOCKER_VERSION'] }}
+          mem_guarantee: 28G
+          mem_limit: 28G
+          cpu_guarantee: 6
+          cpu_limit: 8
+          image: {{ config['daskhub']['MLTF_DOCKER_LOCATION'] }}:{{ config['daskhub']['MLTF_DOCKER_VERSION'] }}
           environment: {'NVIDIA_DRIVER_CAPABILITIES': 'compute,utility'}
           node_selector:
             nvidia.com/gpu: "true"
-          tolerations: [{'key': 'nvidia.com/gpu','operator': 'Equal','value': 'true','effect': 'NoSchedule'},{'key': 'hub.jupyter.org/dedicated','operator': 'Equal','value': 'user','effect': 'NoSchedule'}]
+            heliocloud.org/instance-type: "2xlarge"
+          tolerations:
+            - key: 'nvidia.com/gpu'
+              operator: 'Equal'
+              value: 'true'
+              effect: 'NoSchedule'
+            - key: 'hub.jupyter.org/dedicated'
+              operator: 'Equal'
+              value: 'user'
+              effect: 'NoSchedule'
           extra_resource_limits: {"nvidia.com/gpu": "1"}
       image:
         name: {{ config['daskhub']['GENERIC_DOCKER_LOCATION'] }}
@@ -213,7 +234,7 @@ daskhub:
       #
       # Here's what the values are in JHUAPL's staging environment:
       #   DASK_GATEWAY__CLUSTER__OPTIONS__IMAGE={JUPYTER_IMAGE_SPEC}
-      #   JUPYTER_IMAGE_SPEC=public.ecr.aws/q3h7b4o8/heliocloud/helio-notebook:2023.12.06
+      #   JUPYTER_IMAGE_SPEC=public.ecr.aws/q3h7b4o8/heliocloud/helio-daskhub-core:{date}
 
       extraEnv:
         DASK_GATEWAY__CLUSTER__OPTIONS__IMAGE: "{{ config['daskhub']['GENERIC_DOCKER_LOCATION'] }}:{{ config['daskhub']['GENERIC_DOCKER_VERSION'] }}"
@@ -240,43 +261,215 @@ daskhub:
       auth:
         type: jupyterhub  # Use JupyterHub to authenticate with Dask Gateway
 
-    #readinessProbe:
-        # Enables the readinessProbe.
-        #enabled: true
-        # Configures the readinessProbe.
-        #initialDelaySeconds: 5
-        #timeoutSeconds: 2
-        #periodSeconds: 10
-        #failureThreshold: 3
+      # These settings ensure that we properly select the node group with
+      # Ec2Spot.  It might be better to switch to taint/toleration, not sure.
+      #
+      # See:
+      #   https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector
+      #   https://discourse.jupyter.org/t/tailoring-spawn-options-and-server-configuration-to-certain-users/8449
+      backend:
+        scheduler:
+          extraPodConfig:
+            affinity:
+              nodeAffinity:
+                requiredDuringSchedulingIgnoredDuringExecution:
+                  nodeSelectorTerms:
+                  - matchExpressions:
+                    - key: hub.jupyter.org/node-purpose
+                      operator: In
+                      values:
+                      - core
+                      - user
+                      - dask
+        worker:
+          extraPodConfig:
+            affinity:
+              nodeAffinity:
+                requiredDuringSchedulingIgnoredDuringExecution:
+                  nodeSelectorTerms:
+                  - matchExpressions:
+                    - key: lifecycle
+                      operator: In
+                      values:
+                      - Ec2Spot
 
       extraConfig:
         optionHandler: |
-          from dask_gateway_server.options import Options, Integer, Float, String
+          from dask_gateway_server.options import Options, Integer, Float, String, Select
+          import copy
+
+          extra_pod_affinity_config = {
+            "nodeAffinity": {
+              "requiredDuringSchedulingIgnoredDuringExecution": {
+                "nodeSelectorTerms": [{
+                  "matchExpressions": [{
+                    "key": "heliocloud.org/dask-worker",
+                    "operator": "In",
+                    "values": [
+                      "true",
+                    ]
+                  }]
+                }]
+              }
+            }
+          }
+
+          # Enumerate all the instance profiles that we want to support dask scheduling
+          # for.  We'll need corresponding node groups in the cluster.  We control this
+          # via the cluster-config.yaml.
+          profiles = {
+            "default": {
+              "extra_node_selectors": {
+                "nvidia.com/gpu": "false",
+                "heliocloud.org/dask-worker": "true",
+              },
+
+              "extra_node_affinity": [{
+                "matchExpressions": [{
+                  "key": "nvidia.com/gpu",
+                  "operator": "In",
+                  "values": [
+                    "false",
+                  ]
+                }]
+              }],
+
+              "scheduler_extra_pod_config": {
+                "affinity": extra_pod_affinity_config,
+                "tolerations": [{
+                  "key": "heliocloud.org/dask-worker-profile",
+                  "operator": "Equal",
+                  "value": "default",
+                  "effect": "NoSchedule",
+                }]
+              },
+              "worker_extra_pod_config": {
+                "affinity": extra_pod_affinity_config,
+                "tolerations": [{
+                  "key": "heliocloud.org/dask-worker-profile",
+                  "operator": "Equal",
+                  "value": "default",
+                  "effect": "NoSchedule",
+                }]
+              },
+              "environment": {},
+            },
+            "gpu-xlarge": {
+              "overrides": {
+                "worker_cores": 3.5,
+                "worker_memory": "14G",
+              },
+
+              "extra_node_selectors": {
+                "nvidia.com/gpu": "true",
+                "heliocloud.org/dask-worker": "true",
+              },
+
+              "extra_node_affinity": [{
+                "matchExpressions": [{
+                  "key": "nvidia.com/gpu",
+                  "operator": "In",
+                  "values": [
+                    "true",
+                  ]
+                }]
+              }],
+
+              "scheduler_extra_pod_config": {
+                "affinity": extra_pod_affinity_config,
+                "tolerations": [{
+                  "key": "heliocloud.org/dask-worker-profile",
+                  "operator": "Equal",
+                  "value": "gpu-xlarge",
+                  "effect": "NoSchedule",
+                }]
+              },
+              "worker_extra_pod_config": {
+                "affinity": extra_pod_affinity_config,
+                "tolerations": [{
+                  "key": "heliocloud.org/dask-worker-profile",
+                  "operator": "Equal",
+                  "value": "gpu-xlarge",
+                  "effect": "NoSchedule",
+                }]
+              },
+              "environment": {
+                "NVIDIA_DRIVER_CAPABILITIES": "compute,utility",
+              },
+            }
+          }
+
+          def get_extra_pod_config_from_profile(options, user, pod_config_key):
+            extra_toleration_user_config = {
+              "key": "hub.jupyter.org/username",
+              "operator": "Equal",
+              "value": user.name,
+              "effect": "NoSchedule",
+            }
+
+            extra_pod_config = copy.deepcopy(profiles[options.profile][pod_config_key])
+
+            if 'tolerations' not in extra_pod_config:
+              extra_pod_config['tolerations'] = []
+
+            # Inject tolerations associated w/ this user.
+            extra_pod_config['tolerations'].append(extra_toleration_user_config)
+
+            # Apply any additional node selectors for the given profile
+            # configuration
+            if 'extra_node_selectors' in profiles[options.profile]:
+              extra_pod_config['nodeSelector'] = profiles[options.profile]['extra_node_selectors']
+
+            # Apply any additional node affinity for the given profile
+            # configuration
+            if 'extra_node_affinity' in profiles[options.profile] and len(profiles[options.profile]['extra_node_affinity']) > 0:
+              if 'affinity' not in extra_pod_config:
+                extra_pod_config['affinity'] = {}
+              if 'nodeAffinity' not in extra_pod_config['affinity']:
+                extra_pod_config['affinity']['nodeAffinity'] = {}
+              if 'requiredDuringSchedulingIgnoredDuringExecution' not in extra_pod_config['affinity']['nodeAffinity']:
+                extra_pod_config['affinity']['nodeAffinity']['requiredDuringSchedulingIgnoredDuringExecution'] = {}
+              if 'nodeSelectorTerms' not in extra_pod_config['affinity']['nodeAffinity']['requiredDuringSchedulingIgnoredDuringExecution']:
+                extra_pod_config['affinity']['nodeAffinity']['requiredDuringSchedulingIgnoredDuringExecution']['nodeSelectorTerms'] = []
+              for extra_node_selector in profiles[options.profile]['extra_node_affinity']:
+                extra_pod_config['affinity']['nodeAffinity']['requiredDuringSchedulingIgnoredDuringExecution']['nodeSelectorTerms'].append(extra_node_selector)
+
+            return extra_pod_config
+
           def option_handler(options, user):
+            environment = copy.deepcopy(profiles[options.profile]['environment'])
+
+            worker_extra_pod_config = get_extra_pod_config_from_profile(options, user, 'worker_extra_pod_config')
+            scheduler_extra_pod_config = get_extra_pod_config_from_profile(options, user, 'scheduler_extra_pod_config')
+
             extra_annotations = {
-                    "hub.jupyter.org/username": user.name,
+              "hub.jupyter.org/username": user.name,
             }
 
             extra_labels = {
-                    "hub.jupyter.org/username": user.name,
+              "hub.jupyter.org/username": user.name,
             }
 
             if ":" not in options.image:
-                raise ValueError("When specifying an image you must also provide a tag")
+              raise ValueError("When specifying an image you must also provide a tag")
 
             return {
-                "image": options.image,
-                "worker_cores": options.worker_cores,
-                "worker_memory": int(options.worker_memory * 2 ** 30),
-                "scheduler_extra_pod_annotations": extra_annotations,
-                "worker_extra_pod_annotations": extra_annotations,
-                "scheduler_extra_pod_labels": extra_labels,
-                "worker_extra_pod_labels": extra_labels,
+              "image": options.image,
+              "worker_cores": profiles[options.profile].get("overrides",{}).get("worker_cores",options.worker_cores),
+              "worker_memory": profiles[options.profile].get("overrides",{}).get("worker_memory", int(options.worker_memory * 2 ** 30)),
+              "scheduler_extra_pod_annotations": extra_annotations,
+              "worker_extra_pod_annotations": extra_annotations,
+              "scheduler_extra_pod_labels": extra_labels,
+              "worker_extra_pod_labels": extra_labels,
+              "environment": environment,
+              "worker_extra_pod_config": worker_extra_pod_config,
+              "scheduler_extra_pod_config": scheduler_extra_pod_config,
             }
           c.Backend.cluster_options = Options(
             String("image", default="{{ config['daskhub']['GENERIC_DOCKER_LOCATION'] }}:{{ config['daskhub']['GENERIC_DOCKER_VERSION'] }}", label="Image"),
             Integer("worker_cores", default=1, min=1, max=4, label="Worker Cores"),
             Float("worker_memory", default=1, min=1, max=8, label="Worker Memory (GiB)"),
+            Select("profile", list(profiles.keys()), default="default", label="Profile"),
             handler=option_handler,
           )
         idle: |

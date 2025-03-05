@@ -655,32 +655,181 @@ data:
     c.KubeClusterConfig.idle_timeout = 1800
 
     # From gateway.extraConfig.optionHandler
-    from dask_gateway_server.options import Options, Integer, Float, String
+    from dask_gateway_server.options import Options, Integer, Float, String, Select
+    import copy
+
+    extra_pod_affinity_config = {
+      "nodeAffinity": {
+        "requiredDuringSchedulingIgnoredDuringExecution": {
+          "nodeSelectorTerms": [{
+            "matchExpressions": [{
+              "key": "heliocloud.org/dask-worker",
+              "operator": "In",
+              "values": [
+                "true",
+              ]
+            }]
+          }]
+        }
+      }
+    }
+
+    # Enumerate all the instance profiles that we want to support dask scheduling
+    # for.  We'll need corresponding node groups in the cluster.  We control this
+    # via the cluster-config.yaml.
+    profiles = {
+      "default": {
+        "extra_node_selectors": {
+          "nvidia.com/gpu": "false",
+          "heliocloud.org/dask-worker": "true",
+        },
+
+        "extra_node_affinity": [{
+          "matchExpressions": [{
+            "key": "nvidia.com/gpu",
+            "operator": "In",
+            "values": [
+              "false",
+            ]
+          }]
+        }],
+
+        "scheduler_extra_pod_config": {
+          "affinity": extra_pod_affinity_config,
+          "tolerations": [{
+            "key": "heliocloud.org/dask-worker-profile",
+            "operator": "Equal",
+            "value": "default",
+            "effect": "NoSchedule",
+          }]
+        },
+        "worker_extra_pod_config": {
+          "affinity": extra_pod_affinity_config,
+          "tolerations": [{
+            "key": "heliocloud.org/dask-worker-profile",
+            "operator": "Equal",
+            "value": "default",
+            "effect": "NoSchedule",
+          }]
+        },
+        "environment": {},
+      },
+      "gpu-xlarge": {
+        "overrides": {
+          "worker_cores": 3.5,
+          "worker_memory": "14G",
+        },
+
+        "extra_node_selectors": {
+          "nvidia.com/gpu": "true",
+          "heliocloud.org/dask-worker": "true",
+        },
+
+        "extra_node_affinity": [{
+          "matchExpressions": [{
+            "key": "nvidia.com/gpu",
+            "operator": "In",
+            "values": [
+              "true",
+            ]
+          }]
+        }],
+
+        "scheduler_extra_pod_config": {
+          "affinity": extra_pod_affinity_config,
+          "tolerations": [{
+            "key": "heliocloud.org/dask-worker-profile",
+            "operator": "Equal",
+            "value": "gpu-xlarge",
+            "effect": "NoSchedule",
+          }]
+        },
+        "worker_extra_pod_config": {
+          "affinity": extra_pod_affinity_config,
+          "tolerations": [{
+            "key": "heliocloud.org/dask-worker-profile",
+            "operator": "Equal",
+            "value": "gpu-xlarge",
+            "effect": "NoSchedule",
+          }]
+        },
+        "environment": {
+          "NVIDIA_DRIVER_CAPABILITIES": "compute,utility",
+        },
+      }
+    }
+
+    def get_extra_pod_config_from_profile(options, user, pod_config_key):
+      extra_toleration_user_config = {
+        "key": "hub.jupyter.org/username",
+        "operator": "Equal",
+        "value": user.name,
+        "effect": "NoSchedule",
+      }
+
+      extra_pod_config = copy.deepcopy(profiles[options.profile][pod_config_key])
+
+      if 'tolerations' not in extra_pod_config:
+        extra_pod_config['tolerations'] = []
+
+      # Inject tolerations associated w/ this user.
+      extra_pod_config['tolerations'].append(extra_toleration_user_config)
+
+      # Apply any additional node selectors for the given profile
+      # configuration
+      if 'extra_node_selectors' in profiles[options.profile]:
+        extra_pod_config['nodeSelector'] = profiles[options.profile]['extra_node_selectors']
+
+      # Apply any additional node affinity for the given profile
+      # configuration
+      if 'extra_node_affinity' in profiles[options.profile] and len(profiles[options.profile]['extra_node_affinity']) > 0:
+        if 'affinity' not in extra_pod_config:
+          extra_pod_config['affinity'] = {}
+        if 'nodeAffinity' not in extra_pod_config['affinity']:
+          extra_pod_config['affinity']['nodeAffinity'] = {}
+        if 'requiredDuringSchedulingIgnoredDuringExecution' not in extra_pod_config['affinity']['nodeAffinity']:
+          extra_pod_config['affinity']['nodeAffinity']['requiredDuringSchedulingIgnoredDuringExecution'] = {}
+        if 'nodeSelectorTerms' not in extra_pod_config['affinity']['nodeAffinity']['requiredDuringSchedulingIgnoredDuringExecution']:
+          extra_pod_config['affinity']['nodeAffinity']['requiredDuringSchedulingIgnoredDuringExecution']['nodeSelectorTerms'] = []
+        for extra_node_selector in profiles[options.profile]['extra_node_affinity']:
+          extra_pod_config['affinity']['nodeAffinity']['requiredDuringSchedulingIgnoredDuringExecution']['nodeSelectorTerms'].append(extra_node_selector)
+
+      return extra_pod_config
+
     def option_handler(options, user):
+      environment = copy.deepcopy(profiles[options.profile]['environment'])
+
+      worker_extra_pod_config = get_extra_pod_config_from_profile(options, user, 'worker_extra_pod_config')
+      scheduler_extra_pod_config = get_extra_pod_config_from_profile(options, user, 'scheduler_extra_pod_config')
+
       extra_annotations = {
-              "hub.jupyter.org/username": user.name,
+        "hub.jupyter.org/username": user.name,
       }
 
       extra_labels = {
-              "hub.jupyter.org/username": user.name,
+        "hub.jupyter.org/username": user.name,
       }
 
       if ":" not in options.image:
-          raise ValueError("When specifying an image you must also provide a tag")
+        raise ValueError("When specifying an image you must also provide a tag")
 
       return {
-          "image": options.image,
-          "worker_cores": options.worker_cores,
-          "worker_memory": int(options.worker_memory * 2 ** 30),
-          "scheduler_extra_pod_annotations": extra_annotations,
-          "worker_extra_pod_annotations": extra_annotations,
-          "scheduler_extra_pod_labels": extra_labels,
-          "worker_extra_pod_labels": extra_labels,
+        "image": options.image,
+        "worker_cores": profiles[options.profile].get("overrides",{}).get("worker_cores",options.worker_cores),
+        "worker_memory": profiles[options.profile].get("overrides",{}).get("worker_memory", int(options.worker_memory * 2 ** 30)),
+        "scheduler_extra_pod_annotations": extra_annotations,
+        "worker_extra_pod_annotations": extra_annotations,
+        "scheduler_extra_pod_labels": extra_labels,
+        "worker_extra_pod_labels": extra_labels,
+        "environment": environment,
+        "worker_extra_pod_config": worker_extra_pod_config,
+        "scheduler_extra_pod_config": scheduler_extra_pod_config,
       }
     c.Backend.cluster_options = Options(
       String("image", default="<GENERIC_DOCKER_LOCATION>:<GENERIC_DOCKER_VERSION>", label="Image"),
       Integer("worker_cores", default=1, min=1, max=4, label="Worker Cores"),
       Float("worker_memory", default=1, min=1, max=8, label="Worker Memory (GiB)"),
+      Select("profile", list(profiles.keys()), default="default", label="Profile"),
       handler=option_handler,
     )
 kind: ConfigMap
@@ -2307,7 +2456,7 @@ spec:
             - --config=/etc/user-scheduler/config.yaml
             - --authentication-skip-lookup=true
             - --v=4
-          image: registry.k8s.io/kube-scheduler:v1.29.1
+          image: registry.k8s.io/kube-scheduler:v1.31.2
           livenessProbe:
             httpGet:
               path: /healthz
@@ -2370,14 +2519,13 @@ spec:
     spec:
       affinity:
         nodeAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-            - preference:
-                matchExpressions:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
                   - key: hub.jupyter.org/node-purpose
                     operator: In
                     values:
                       - user
-              weight: 100
       automountServiceAccountToken: false
       containers:
         - image: registry.k8s.io/pause:3.9
@@ -2816,230 +2964,3 @@ spec:
   stripPrefixRegex:
     regex:
       - /services/dask-gateway/clusters/[a-zA-Z0-9.-]+
----
-# Source: daskhub/charts/jupyterhub/templates/image-puller/serviceaccount.yaml
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: hook-image-awaiter
-  labels:
-    component: image-puller
-    app: jupyterhub
-    release: daskhub
-    chart: jupyterhub-3.2.1
-    heritage: Helm
-    hub.jupyter.org/deletable: 'true'
-  annotations:
-    helm.sh/hook: pre-install,pre-upgrade
-    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
-    helm.sh/hook-weight: '0'
----
-# Source: daskhub/charts/jupyterhub/templates/image-puller/rbac.yaml
-kind: Role
-apiVersion: rbac.authorization.k8s.io/v1
-metadata:
-  name: hook-image-awaiter
-  labels:
-    component: image-puller
-    app: jupyterhub
-    release: daskhub
-    chart: jupyterhub-3.2.1
-    heritage: Helm
-    hub.jupyter.org/deletable: 'true'
-  annotations:
-    helm.sh/hook: pre-install,pre-upgrade
-    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
-    helm.sh/hook-weight: '0'
-rules:
-  - apiGroups: [apps]         # "" indicates the core API group
-    resources: [daemonsets]
-    verbs: [get]
----
-# Source: daskhub/charts/jupyterhub/templates/image-puller/rbac.yaml
-kind: RoleBinding
-apiVersion: rbac.authorization.k8s.io/v1
-metadata:
-  name: hook-image-awaiter
-  labels:
-    component: image-puller
-    app: jupyterhub
-    release: daskhub
-    chart: jupyterhub-3.2.1
-    heritage: Helm
-    hub.jupyter.org/deletable: 'true'
-  annotations:
-    helm.sh/hook: pre-install,pre-upgrade
-    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
-    helm.sh/hook-weight: '0'
-subjects:
-  - kind: ServiceAccount
-    name: hook-image-awaiter
-    namespace: daskhub
-roleRef:
-  kind: Role
-  name: hook-image-awaiter
-  apiGroup: rbac.authorization.k8s.io
----
-# Source: daskhub/charts/jupyterhub/templates/image-puller/daemonset-hook.yaml
-apiVersion: apps/v1
-kind: DaemonSet
-metadata:
-  name: hook-image-puller
-  labels:
-    component: hook-image-puller
-    app: jupyterhub
-    release: daskhub
-    chart: jupyterhub-3.2.1
-    heritage: Helm
-    hub.jupyter.org/deletable: 'true'
-  annotations:
-    helm.sh/hook: pre-install,pre-upgrade
-    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
-    helm.sh/hook-weight: '-10'
-spec:
-  selector:
-    matchLabels:
-      component: hook-image-puller
-      app: jupyterhub
-      release: daskhub
-  updateStrategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxUnavailable: 100%
-  template:
-    metadata:
-      labels:
-        component: hook-image-puller
-        app: jupyterhub
-        release: daskhub
-    spec:
-      tolerations:
-        - effect: NoSchedule
-          key: hub.jupyter.org/dedicated
-          operator: Equal
-          value: user
-        - effect: NoSchedule
-          key: hub.jupyter.org_dedicated
-          operator: Equal
-          value: user
-      terminationGracePeriodSeconds: 0
-      automountServiceAccountToken: false
-      initContainers:
-        - name: image-pull-metadata-block
-          image: quay.io/jupyterhub/k8s-network-tools:3.2.1
-          command:
-            - /bin/sh
-            - -c
-            - echo "Pulling complete"
-          securityContext:
-            allowPrivilegeEscalation: false
-            runAsGroup: 65534
-            runAsUser: 65534
-        - name: image-pull-singleuser
-          image: <GENERIC_DOCKER_LOCATION>:<GENERIC_DOCKER_VERSION>
-          command:
-            - /bin/sh
-            - -c
-            - echo "Pulling complete"
-          securityContext:
-            allowPrivilegeEscalation: false
-            runAsGroup: 65534
-            runAsUser: 65534
-        - name: image-pull-singleuser-init-and-extra-containers-0
-          image: alpine:3
-          command:
-            - /bin/sh
-            - -c
-            - echo "Pulling complete"
-          securityContext:
-            allowPrivilegeEscalation: false
-            runAsGroup: 65534
-            runAsUser: 65534
-        - name: image-pull-singleuser-init-and-extra-containers-1
-          image: public.ecr.aws/q3h7b4o8/helio-science-tutorials:latest
-          command:
-            - /bin/sh
-            - -c
-            - echo "Pulling complete"
-          securityContext:
-            allowPrivilegeEscalation: false
-            runAsGroup: 65534
-            runAsUser: 65534
-        - name: image-pull-singleuser-init-and-extra-containers-2
-          image: alpine:3
-          command:
-            - /bin/sh
-            - -c
-            - echo "Pulling complete"
-          securityContext:
-            allowPrivilegeEscalation: false
-            runAsGroup: 65534
-            runAsUser: 65534
-      containers:
-        - name: pause
-          image: registry.k8s.io/pause:3.9
-          securityContext:
-            allowPrivilegeEscalation: false
-            runAsGroup: 65534
-            runAsUser: 65534
----
-# Source: daskhub/charts/jupyterhub/templates/image-puller/job.yaml
-apiVersion: batch/v1
-kind: Job
-metadata:
-  name: hook-image-awaiter
-  labels:
-    component: image-puller
-    app: jupyterhub
-    release: daskhub
-    chart: jupyterhub-3.2.1
-    heritage: Helm
-    hub.jupyter.org/deletable: 'true'
-  annotations:
-    helm.sh/hook: pre-install,pre-upgrade
-    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
-    helm.sh/hook-weight: '10'
-spec:
-  template:
-    # The hook-image-awaiter Job and hook-image-puller DaemonSet was
-    # conditionally created based on this state:
-    #
-    # prePuller.hook.enabled=true
-    # prePuller.hook.pullOnlyOnChanges=true
-    # post-upgrade checksum != pre-upgrade checksum (of the hook-image-puller DaemonSet)
-    # "cf726129bad2b331234d11706692d6c7a50640587200b10e9a9e6a65bc614bcc" != ""
-    #
-    metadata:
-      labels:
-        component: image-puller
-        app: jupyterhub
-        release: daskhub
-    spec:
-      restartPolicy: Never
-      serviceAccountName: hook-image-awaiter
-      nodeSelector:
-        hub.jupyter.org/node-purpose: user
-      tolerations:
-        - effect: NoSchedule
-          key: hub.jupyter.org/dedicated
-          operator: Equal
-          value: core
-        - effect: NoSchedule
-          key: hub.jupyter.org_dedicated
-          operator: Equal
-          value: core
-      containers:
-        - image: quay.io/jupyterhub/k8s-image-awaiter:3.2.1
-          name: hook-image-awaiter
-          command:
-            - /image-awaiter
-            - -ca-path=/var/run/secrets/kubernetes.io/serviceaccount/ca.crt
-            - -auth-token-path=/var/run/secrets/kubernetes.io/serviceaccount/token
-            - -api-server-address=https://kubernetes.default.svc:$(KUBERNETES_SERVICE_PORT)
-            - -namespace=daskhub
-            - -daemonset=hook-image-puller
-            - -pod-scheduling-wait-duration=10
-          securityContext:
-            allowPrivilegeEscalation: false
-            runAsGroup: 65534
-            runAsUser: 65534

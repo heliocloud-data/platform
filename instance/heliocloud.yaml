@@ -9,21 +9,11 @@ vpc:
 userSharedBucket:
   destroyOnRemoval: True
 
-# Only working on the registry right now
 enabled:
-  registry: True
+  registry: False
   daskhub: True
   portal: True
 
 # Configure per the domain of your respective organization
 auth:
   domain_prefix: "myorganization-helio"
-
-# Registry buckets are named in association with your organization
-registry:
-  bucketNames: [
-                 "edu-myorganization-helio1",
-                 "edu-myorganization-helio2"
-               ]
-
-

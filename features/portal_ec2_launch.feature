@@ -1,6 +1,6 @@
 # -- FILE: features/portal_ec2_launch.feature
 
-@Portal
+@Portal @fast
 Feature: Log into portal and launch an EC2 instance
 
   Scenario:  Create a user account to run this suite of tests.
@@ -35,7 +35,7 @@ Feature: Log into portal and launch an EC2 instance
      Then go to the "portal-launch_instance-page"
       And verify the "portal-launch_instance-page"
       And click "Amazon Linux"
-       And click "amzn2-ami-kernel-5.10-hvm-2.0.20220606.1-x86_64-gp2"
+       And click "al2023-ami-2023.6.20250211.0-kernel-6.1-x86_64" # hint update-portal-amis.sh
       And click "General Purpose"
        And click "t2.micro"
       And select "the-key-to-my-heart" in the "Select Key Pair" dropdown

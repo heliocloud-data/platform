@@ -36,13 +36,14 @@ When creating a key pair, download and save the private key file on your compute
 <b>You will not be able to download the private key again</b>.
 If you lose the private key to a key pair, delete the key pair and create a new one.</p>
 
-<p>You can generate new keys and see a list of existing key pairs on through the <a href="secrets">"Manage Key Pairs"</a> page.
+<p>You can generate new keys and see a list of existing key pairs on through the <a href="keypairs">"Manage Key Pairs"</a> page.
 Once you download your private key, change the permissions on the private key file like so: `chmod 400 {keypair_name}.pem`.
 To SSH into an instance using your private key, make sure you are in the same directory as your private key and use the "Connect via SSH" command provided for your instance on the home page.</p>
 
 <p>The portal will allow you to manage 5 active key pairs at a time.
 If you no longer need a key pair, or lose access to the private key of a pair, please delete the key pair by clicking "Delete" next to the key pair name.</p>
 
+<!--
 <h4>Managing AWS Access Keys</h4>
 <p><b>AWS access keys</b> are long-term credentials for a user to access AWS through the CLI or API.
 Access keys consist of two parts: an access key ID and a secret access key.
@@ -67,7 +68,7 @@ Each user can have at most 2 access keys (either active or inactive) at one time
 
 <p><b>Never</b> share your access keys with any other user.
     It is best practice to rotate your keys every 90 keys and delete any keys you are not using.</p>
-
+-->
 
 
 

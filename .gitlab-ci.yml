@@ -3,6 +3,9 @@ default:
   services:
   - docker:20.10.23-dind
 
+include:
+  - .gitlab-ci/scan-upstream-projects.yml
+
 variables:
   # When using dind service, you must instruct Docker to talk with
   # the daemon started inside of the service. The daemon is available
@@ -29,10 +32,11 @@ variables:
   DOCKER_CERT_PATH: "$DOCKER_TLS_CERTDIR/client"
 
 stages:
+  - update
   - test
-  - integration
   - staging
   - deploy
+
 
 # At the momemnt, there are a subset of unit tests that require nodejs
 # to be installed.
@@ -54,6 +58,8 @@ unit-test:
       - TEST-HelioCloud-platform.xml
     reports:
       junit: TEST-HelioCloud-platform.xml
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "push"
 
 # See
 # * https://docs.gitlab.com/ee/ci/testing/test_coverage_visualization.html
@@ -80,6 +86,8 @@ coverage:
       coverage_report:
         coverage_format: cobertura
         path: coverage.xml
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "push"
 
 # For static-analysis, we're going to run the analysis once for badge generation
 # and once for generating the codeclimate report, which is required integration
@@ -101,6 +109,8 @@ static-analysis:
   before_script:
     - mkdir -p public  
   script:
+    - printenv
+    - pwd
     - export PYTHONPATH=.
     - python -m pip install -r requirements.txt
     - python -m pip install -r requirements-dev.txt
@@ -108,6 +118,7 @@ static-analysis:
     - sed -n 's/^Your code has been rated at \([-0-9.]*\)\/.*/\1/p' ${PYLINT_TEXT_OUTPUT_FILE} > ${PYLINT_SCORE_OUTPUT_FILE}
     - anybadge --value=$(cat ${PYLINT_SCORE_OUTPUT_FILE}) --file=${PYLINT_BADGE_OUTPUT_FILE} pylint
     - pylint --exit-zero --load-plugins=pylint_gitlab --output-format=gitlab-codeclimate $(find -type f -name "*.py" ! -path "**/.venv/**" | grep -v '/test/' | grep -v '/cdk.out/') > ${CODE_CLIMATE_OUTPUT_FILE}
+    - ls -la
   artifacts:
     when: always
     paths:
@@ -117,6 +128,8 @@ static-analysis:
       - ${PYLINT_BADGE_OUTPUT_FILE}
     reports:
       codequality: ${CODE_CLIMATE_OUTPUT_FILE}
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "push"
 
 black:
   stage: test
@@ -124,119 +137,8 @@ black:
     - export PYTHONPATH=.
     - python -m pip install -r requirements-dev.txt
     - black --check .
-
-
-# The integration stage will deploy parts of the heliocloud system and test
-# it using the "black-box" interface of the system component under test.  In
-# the current configuration, the environment is retained between runs.
-#
-# These jobs presume valid AWS variables are set, specifically:
-# * AWS_ACCESS_KEY_ID
-# * AWS_SECRET_ACCESS_KEY
-# * AWS_DEFAULT_REGION
-#
-# All jobs executing at this stage will create per-branch environments in
-# GitLab by using the CI_COMMIT_REF_SLUG environment variable.
-#
-# Per-commit environments are also possible using the CI_COMMIT_SHORT_SHA
-# environment variable.
-#
-# See:
-#   https://docs.gitlab.com/ee/ci/environments/
-#   https://docs.gitlab.com/ee/ci/variables/predefined_variables.html
-integration-cdk-deploy:
-  stage: integration
-  tags:
-    - dind # set to run on specific runer
-  environment:
-    name: testing/$CI_COMMIT_REF_SLUG
-    url: https://portal-${CI_COMMIT_REF_SLUG}.aplscicloud.org
-    on_stop: integration-cdk-destroy-on_stop_hook
-    auto_stop_in: 8 hours
-  script:
-    - python -m pip install -r requirements.txt
-    - python -m pip install -r requirements-dev.txt
-    - bash .gitlab-ci/scripts/install-deps.sh
-    - npm install -g npm
-    - npm install -g aws-cdk
-    - cdk --version
-    # Dependencies for Portal
-    - curl -sSL https://get.docker.com/ | sh
-    - apt-get update && apt-get install -y gettext
-    - envsubst < instance/gitlab-integration.yaml > instance/gitlab-integration-${CI_COMMIT_REF_SLUG}.yaml
-    # Modify the cdk.json file to run in coverage mode.
-    - cdk --app "coverage run app.py" deploy --all -c instance=gitlab-integration-${CI_COMMIT_REF_SLUG} --require-approval never -v
-  artifacts:
-    when: always
-    paths:
-      - instance/gitlab-integration-${CI_COMMIT_REF_SLUG}.yaml
-
-integration-test:
-  stage: integration
-  environment:
-    name: testing/$CI_COMMIT_REF_SLUG
-    action: verify
-  script:
-    - export PYTHONPATH=.:test/integration
-    - export HC_INSTANCE=gitlab-integration-${CI_COMMIT_REF_SLUG}
-    - python -m pip install -r requirements.txt
-    - python -m pip install -r requirements-dev.txt
-    - apt-get update && apt-get install -y gettext
-    - envsubst < instance/gitlab-integration.yaml > instance/${HC_INSTANCE}.yaml
-    - pytest -c pytest-integration.ini --junit-xml=IT-HelioCloud-platform.xml --junit-prefix=IT-HelioCloud-platform
-  artifacts:
-    when: always
-    paths:
-      - IT-HelioCloud-platform.xml
-    reports:
-      junit: IT-HelioCloud-platform.xml
-  dependencies:
-    - integration-cdk-deploy
-  needs: ['integration-cdk-deploy']
-
-integration-cdk-destroy:
-  stage: integration
-  environment:
-    name: testing/$CI_COMMIT_REF_SLUG
-    action: stop
-  script:
-    - python -m pip install -r requirements.txt
-    - python -m pip install -r requirements-dev.txt
-    - bash .gitlab-ci/scripts/install-deps.sh
-    - npm install -g npm
-    - npm install -g aws-cdk
-    - cdk --version
-    - apt-get update && apt-get install -y gettext
-    # Modify the cdk.json file to run in coverage mode.
-    - cdk --app "coverage run app.py" destroy --all -c instance=gitlab-integration-${CI_COMMIT_REF_SLUG} --force -v
-  dependencies:
-    - integration-cdk-deploy
-    - integration-test
-  needs: ['integration-cdk-deploy', 'integration-test']
   rules:
-    - if: $CI_COMMIT_BRANCH == "develop" || $CI_COMMIT_BRANCH == "main"
-
-integration-cdk-destroy-on_stop_hook:
-  stage: integration
-  when: manual
-  environment:
-    name: testing/$CI_COMMIT_REF_SLUG
-    action: stop
-  script:
-    - python -m pip install -r requirements.txt
-    - python -m pip install -r requirements-dev.txt
-    - bash .gitlab-ci/scripts/install-deps.sh
-    - npm install -g npm
-    - npm install -g aws-cdk
-    - cdk --version
-    - apt-get update && apt-get install -y gettext
-    # Modify the cdk.json file to run in coverage mode.
-    - cdk --app "coverage run app.py" destroy --all -c instance=gitlab-integration-${CI_COMMIT_REF_SLUG} --force -v
-  dependencies:
-    - integration-cdk-deploy
-    - integration-test
-  needs: ['integration-cdk-deploy', 'integration-test']
-
+    - if: $CI_PIPELINE_SOURCE == "push"
 
 staging-cdk-deploy:
   stage: staging
@@ -266,13 +168,12 @@ staging-cdk-deploy:
     - cdk deploy staging-${CI_COMMIT_REF_SLUG}/Identity -c instance=staging-${CI_COMMIT_REF_SLUG} --require-approval never -v
     - cdk deploy staging-${CI_COMMIT_REF_SLUG}/Auth -c instance=staging-${CI_COMMIT_REF_SLUG} --require-approval never -v
     - cdk deploy staging-${CI_COMMIT_REF_SLUG}/Portal -c instance=staging-${CI_COMMIT_REF_SLUG} --require-approval never -v
-    - cdk deploy staging-${CI_COMMIT_REF_SLUG}/Registry -c instance=staging-${CI_COMMIT_REF_SLUG} --require-approval never -v
   artifacts:
     when: always
     paths:
       - instance/staging-${CI_COMMIT_REF_SLUG}.yaml
   rules:
-    - if: $CI_COMMIT_BRANCH == "develop"
+    - if: $CI_COMMIT_BRANCH == "develop" && $CI_PIPELINE_SOURCE == "push"
 
 staging-test:
   stage: staging
@@ -283,11 +184,10 @@ staging-test:
     - python -m pip install -r requirements.txt
     - python -m pip install -r requirements-dev.txt
     - 'wget --header="JOB-TOKEN: $CI_JOB_TOKEN" ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/google-chrome/118.0.5993.88/google-chrome-stable_current_amd64.deb'
-    - apt-get update && apt install -f ./google-chrome-stable_current_amd64.deb -y
-    - apt-get update && apt-get install -y gettext
+    - apt-get update && apt-get install -y gettext && apt install -f ./google-chrome-stable_current_amd64.deb -y
     - export HC_INSTANCE=staging-${CI_COMMIT_REF_SLUG}
     - envsubst < instance/staging.yaml > instance/${HC_INSTANCE}.yaml
-    - behave --junit
+    - behave --junit --tags=@Portal,@Daskhub --tags=~@slow
   artifacts:
     when: always
     paths:
@@ -299,7 +199,7 @@ staging-test:
     - staging-cdk-deploy
   needs: ['staging-cdk-deploy']
   rules:
-    - if: $CI_COMMIT_BRANCH == "develop"
+    - if: $CI_COMMIT_BRANCH == "develop" && $CI_PIPELINE_SOURCE == "push"
 
 staging-cdk-destroy-on_stop_hook:
   stage: staging
@@ -321,7 +221,7 @@ staging-cdk-destroy-on_stop_hook:
     - staging-test
   needs: ['staging-cdk-deploy', 'staging-test']
   rules:
-    - if: $CI_COMMIT_BRANCH == "develop"
+    - if: $CI_COMMIT_BRANCH == "develop" && $CI_PIPELINE_SOURCE == "push"
 
 # Trigger downstream pipelines to apply any relevant changes from this repo
 trigger-downstream-pipelines:
@@ -330,7 +230,7 @@ trigger-downstream-pipelines:
     project: heliocloud/jhuapl-operations
     branch: main
   rules:
-    - if: $CI_COMMIT_BRANCH == "develop"
+    - if: $CI_COMMIT_BRANCH == "develop" && $CI_PIPELINE_SOURCE == "push"
 
 production-jhuapl-cdk-deploy:
   stage: deploy
@@ -366,7 +266,7 @@ production-jhuapl-cdk-deploy:
     paths:
       - instance/production-jhuapl.yaml
   rules:
-    - if: $CI_COMMIT_BRANCH == "develop"
+    - if: $CI_COMMIT_BRANCH == "develop" && $CI_PIPELINE_SOURCE == "push"
 
 production-jhuapl-test:
   stage: deploy
@@ -378,11 +278,10 @@ production-jhuapl-test:
     - python -m pip install -r requirements.txt
     - python -m pip install -r requirements-dev.txt
     - 'wget --header="JOB-TOKEN: $CI_JOB_TOKEN" ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/google-chrome/118.0.5993.88/google-chrome-stable_current_amd64.deb'
-    - apt-get update && apt install -f ./google-chrome-stable_current_amd64.deb -y
-    - apt-get update && apt-get install -y gettext
+    - apt-get update && apt-get install -y gettext && apt install -f ./google-chrome-stable_current_amd64.deb -y
     - export HC_INSTANCE=production-jhuapl
     - envsubst < instance/production.yaml > instance/${HC_INSTANCE}.yaml
-    - behave --junit
+    - behave --junit --tags=@Portal,@Daskhub --tags=~@slow
   artifacts:
     when: always
     paths:
@@ -394,4 +293,4 @@ production-jhuapl-test:
     - production-jhuapl-cdk-deploy
   needs: ['production-jhuapl-cdk-deploy']
   rules:
-    - if: $CI_COMMIT_BRANCH == "develop"
+    - if: $CI_COMMIT_BRANCH == "develop" && $CI_PIPELINE_SOURCE == "push"

@@ -40,6 +40,16 @@ def get_dataset_entries_from_s3(
     return dataset_list
 
 
+def get_s3_manifest_key(entry: DataSet, base_path="") -> str:
+    """
+    For a particular DataSet stored in an S3 bucket, return the S3 key
+    for its corresponding manifest file.
+    :param entry: DataSet to determine the manifest S3 key relative to
+    :param base_path: optional S3 path to prepend to the manifest file name
+    """
+    return base_path + entry.index.split("/", 3)[3] + "/manifest.csv"
+
+
 def get_manifest_from_s3(session: Session, bucket_name: str, manifest_key: str) -> pd.DataFrame:
     """
     Retrieves a manifest file from AWS S3, returning as a Pandas DataFrame

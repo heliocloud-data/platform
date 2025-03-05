@@ -26,36 +26,26 @@ email:
   user: "no-reply"
   from_name: "APL HelioCloud"
 
-# Only working on the registry right now
 enabled:
-  registry: True
+  registry: False
   daskhub: True
   daskhub_metrics: True
   portal: True
+  registration_page: False
 
 auth:
   domain_prefix: "apl-helio"
   deletion_protection: True
   removal_policy: RETAIN
 
-# Simple bucket names
-registry:
-  datasetBucketNames: [
-    "heliocloud-production-${AWS_DEFAULT_REGION}-datasets-1",
-  ]
-  ingestBucketName: "heliocloud-production-${AWS_DEFAULT_REGION}-uploads-1"
-  requesterPays: True
-  catalog:
-    masterUser: master
-    name: "Chris Jeschke"
-    contact: "chris.jeschke@jhuapl.edu"
-  destroyOnRemoval: False
-  layers:
-    pandas: "arn:aws:lambda:${AWS_DEFAULT_REGION}:336392948345:layer:AWSSDKPandas-Python39:6"
-
 portal:
   domain_url: "aplscicloud.org"
   domain_record: "portal"
+  domain_certificate_arn: "arn:aws:acm:${AWS_DEFAULT_REGION}:${HC_AWS_ACCOUNT}:certificate/${HC_PORTAL_CERT_ARN}"
+
+registration_page:
+  domain_url: "aplscicloud.org"
+  domain_record: "registration"
   domain_certificate_arn: "arn:aws:acm:${AWS_DEFAULT_REGION}:${HC_AWS_ACCOUNT}:certificate/${HC_PORTAL_CERT_ARN}"
 
 daskhub:
@@ -74,53 +64,31 @@ daskhub:
         groups:
         - eks-console-dashboard-full-access-group
         - daskhub-admin-access-group
+        - monitoring-admin-access-group
         username: lenzinm1
-    nodeGroups:
-      # ng-user-gpu
-      - instancesDistribution:
-          instanceTypes:
-            - "g4dn.4xlarge"
-      # ng-user-compute
-      - instancesDistribution:
-          instanceTypes:
-            - "m5.4xlarge"
-            - "m5n.4xlarge"
-            - "m5d.4xlarge"
-            - "m5dn.4xlarge"
-      # ng-burst-compute-spot
-      - instancesDistribution:
-          instanceTypes:
-            - "m5n.8xlarge"
-            - "m5.8xlarge"
-            - "m4.8xlarge"
-            - "m5dn.8xlarge"
-            - "r5n.8xlarge"
-            - "r5dn.8xlarge"
   daskhub_storage:
     efs-persist:
       storage: 10000Gi
 
   daskhub:
     namespace: daskhub
-    api_key1: 0957f1742c5757583c607f86bc7d90094a68dbdd13ddfb4da7ac95188d1442f8
-    api_key2: 26efca5cf499d1214fed44d389f99b8cf3117b0e3688cdf5978f5ddf7b6502cb
+    api_key1: auto
+    api_key2: auto
     admin_users:
      - lenzinm1
     contact_email: nicholas.lenzi@jhuapl.edu
 
-    GENERIC_DOCKER_LOCATION: 'public.ecr.aws/q3h7b4o8/heliocloud/helio-notebook'
-    GENERIC_DOCKER_VERSION: '2023.12.06'
-    ML_DOCKER_LOCATION: 'public.ecr.aws/q3h7b4o8/heliocloud/helio-notebook-mltf'
-    ML_DOCKER_VERSION: '2023.12.06'
+    GENERIC_DOCKER_LOCATION: 'public.ecr.aws/q3h7b4o8/heliocloud/helio-daskhub-core'
+    GENERIC_DOCKER_VERSION: '2025.01.29'
+    MLTF_DOCKER_LOCATION: 'public.ecr.aws/q3h7b4o8/heliocloud/helio-daskhub-mltf'
+    MLTF_DOCKER_VERSION: '2025.01.29'
+    MLTRCH_DOCKER_LOCATION: 'public.ecr.aws/q3h7b4o8/heliocloud/helio-daskhub-mltrch'
+    MLTRCH_DOCKER_VERSION: '2025.01.29'
 
     domain_url: "aplscicloud.org"
     domain_record: "daskhub"
 
   monitoring:
     AWS_LOAD_BALANCER_SSL_CERT: "arn:aws:acm:${AWS_DEFAULT_REGION}:${HC_AWS_ACCOUNT}:certificate/${HC_PORTAL_CERT_ARN}"
-
-daskhub_metrics:
-  domain_url: "aplscicloud.org"
-  grafana_domain_prefix: grafana-${AWS_DEFAULT_REGION}
-  prometheus_domain_prefix: prometheus-${AWS_DEFAULT_REGION}
-  AWS_LOAD_BALANCER_SSL_CERT: "arn:aws:acm:${AWS_DEFAULT_REGION}:${HC_AWS_ACCOUNT}:certificate/${HC_PORTAL_CERT_ARN}"
+    grafana_domain_prefix: grafana
+    cost_analyzer_domain_prefix: kubecost

@@ -51,23 +51,45 @@ patches:
           name: external-dns
         attachPolicyARNs: 
         - "<<CNF_OUTPUT_Route53Arn>>"
+    - op: add
+      path: /iam/serviceAccounts/6
+      value:
+        metadata:
+          name: efs-mount
+          namespace: kube-system
+        attachPolicyARNs:
+        - "<<CNF_OUTPUT_EFSMountArn>>"
     - op: replace
       path: /secretsEncryption/keyARN
       value: "<<CNF_OUTPUT_KMSArn>>"
     - op: replace
-      path: /nodeGroups/0/availabilityZones
-      value:
-      - {{ config['eksctl']['availabilityZones'][0] }}
-    - op: replace
-      path: /nodeGroups/1/availabilityZones
-      value:
-      - {{ config['eksctl']['availabilityZones'][0] }}
-    - op: replace
-      path: /nodeGroups/2/availabilityZones
-      value:
-      - {{ config['eksctl']['availabilityZones'][0] }}
-    - op: replace
+      # ng-daskhub-services
       path: /managedNodeGroups/0/availabilityZones
+      value:
+      - {{ config['eksctl']['availabilityZones'][0] }}
+    - op: replace
+      # mng-user-compute
+      path: /managedNodeGroups/1/availabilityZones
+      value:
+      - {{ config['eksctl']['availabilityZones'][0] }}
+    - op: replace
+      # mng-user-compute-big
+      path: /managedNodeGroups/2/availabilityZones
+      value:
+      - {{ config['eksctl']['availabilityZones'][0] }}
+    - op: replace
+      # mng-user-gpu-2xlarge
+      path: /managedNodeGroups/3/availabilityZones
+      value:
+      - {{ config['eksctl']['availabilityZones'][0] }}
+    - op: replace
+      # mng-burst-compute-spot
+      path: /managedNodeGroups/4/availabilityZones
+      value:
+      - {{ config['eksctl']['availabilityZones'][0] }}
+    - op: replace
+      # mng-burst-compute-spot-gpu-4xlarge
+      path: /managedNodeGroups/5/availabilityZones
       value:
       - {{ config['eksctl']['availabilityZones'][0] }}
     {%- if 'nodeGroups' in config['eksctl'] %}

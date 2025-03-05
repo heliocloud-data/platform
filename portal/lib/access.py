@@ -16,7 +16,6 @@ def get_aws_console_username(username):
     Current implementation is empty.
     TODO: Figure out what we are supposed to do here.
     """
-    # 'CT-PowerUser-HelioCloud-Wenli.Mo@jhuapl.edu-208'
     return username
 
 

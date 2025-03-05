@@ -78,6 +78,16 @@ def do_click(driver, text, page, element_type="button"):
         raise
 
 
+def do_double_click(driver, text, page, element_type="button"):
+    """
+    Find a button and click it.
+    """
+    button = find_element_by_text_type_page(driver, text, element_type, page)
+
+    # Some links require mouse over before clicking.
+    ActionChains(driver).move_to_element(button).double_click().perform()
+
+
 def do_select_from_dropdown(driver, text, field, page):
     """
     Find a dropdown and select an item by name in it.
@@ -119,12 +129,18 @@ def find_element_by_text_type_page(driver, text, element_type, page):
                 # It's an AMI, the identifier of the radio button
                 # will match
                 ret = driver.find_element(By.ID, text)
-            elif "-ami-" in text:
+            elif (
+                "-ami-" in text
+                or "Deep Learning AMI" in text
+                or "Deep Learning OSS" in text
+                or "HVM" in text
+                or "hvm" in text
+            ):
                 # It's an AMI by name, we need to select the previous
                 # sibling element.
                 xpath = f"//*[text()[contains(.,'{text}')]]/../input"
                 ret = driver.find_element(By.XPATH, xpath)
-            elif text.startswith("t2."):
+            elif text.startswith(("t2.", "m5.", "c5.", "r5.", "g4dn.")):
                 # It's an Instance type, the identifier of the radio button
                 xpath = f"//input[@id='{text}' and @value='{text}' and @type='radio']"
                 ret = driver.find_element(By.XPATH, xpath)
@@ -163,12 +179,19 @@ def find_element_by_text_type_page(driver, text, element_type, page):
             elif text == "Logout":
                 xpath = "//a[@id='logout']"
                 ret = driver.find_element(By.XPATH, xpath)
-        # Classic Jupyter Notebook Page
+        # Classic Jupyter Notebook Page (Runtime: 2023.12.06)
         elif text == "restart the kernel, then re-run the whole notebook (with dialog)":
             xpath = f"//button[@title = '{text}']"
             ret = driver.find_element(By.XPATH, xpath)
         elif text == "Restart and Run All Cells":
             xpath = f"//button[text() = '{text}']"
+            ret = driver.find_element(By.XPATH, xpath)
+        # Classic Jupyter Notebook Page (Runtime: 2024.09.13)
+        elif text == "Restart the kernel and run all cells":
+            xpath = f"//jp-button[@data-command='notebook:restart-run-all']"
+            ret = driver.find_element(By.XPATH, xpath)
+        elif text == "Restart":
+            xpath = f"//div[@aria-label='Confirm Kernel Restart']"
             ret = driver.find_element(By.XPATH, xpath)
 
     if element_type == "input":

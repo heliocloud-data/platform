@@ -8,7 +8,7 @@ import boto3
 from urllib3.exceptions import InsecureRequestWarning
 from urllib3 import disable_warnings
 
-from utils.aws_utils import (
+from features.utils.aws_utils import (
     str_to_stack_name,
     find_cloudformation_stack_name_starts_with,
     find_user_pool_id_from_stack_name,
@@ -16,7 +16,7 @@ from utils.aws_utils import (
     update_user_set_password,
     delete_user,
     find_keypair_by_name,
-    find_ec2_instances_by_name,
+    terminate_instances_by_name,
 )
 
 # pylint: disable=undefined-variable
@@ -69,24 +69,11 @@ def given_delete_keypair_if_exists(context, key_name):
 def given_terminate_ec2_instance_if_exists(context, ec2_name):
     client = boto3.client("ec2")
 
-    ec2_arr = find_ec2_instances_by_name(client, ec2_name)
+    resp = terminate_instances_by_name(client, ec2_name)
 
-    # There is no keypair w/ that name, nothing to do.
-    if ec2_arr is None:
-        return
-
-    instance_ids = []
-    for item in ec2_arr:
-        instance_ids.append(item["InstanceId"])
-
-    if len(instance_ids) == 0:
-        return
-
-    resp = client.terminate_instances(InstanceIds=instance_ids, DryRun=False)
-
-    if 200 != resp["ResponseMetadata"]["HTTPStatusCode"]:
+    if resp is not None and 200 != resp["ResponseMetadata"]["HTTPStatusCode"]:
         print(resp)
-        raise ValueError("Falied to termine ec2 instances; id: {instance_ids}")
+        raise ValueError("Falied to termine ec2 instances; name: {ec2_name}")
 
 
 @then('create a user with the name "{user_name}"')
@@ -114,3 +101,14 @@ def test_step_aws_delete_user(context, user_name):
     client = boto3.client("cognito-idp")
 
     delete_user(client, user_pool_id, user_name)
+
+
+@then('delete ec2 instance named "{ec2_name}"')
+def then_terminate_ec2_instance_if_exists(context, ec2_name):
+    client = boto3.client("ec2")
+
+    resp = terminate_instances_by_name(client, ec2_name)
+
+    if resp is not None and 200 != resp["ResponseMetadata"]["HTTPStatusCode"]:
+        print(resp)
+        raise ValueError("Falied to termine ec2 instances; name: {ec2_name}")

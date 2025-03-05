@@ -50,13 +50,13 @@ rm -rf  session-manager-plugin.deb
 sudo apt install -f ./google-chrome-stable_current_amd64.deb -y || exit 7
 
 # Install the project deps
-if [ "${POST_START_PIP_INSTALL_REQUIREMENTS}" == "false" ]; then
+if [ "${POST_START_PIP_INSTALL_REQUIREMENTS}" == "true" ]; then
     # If the PIP_GLOBAL_INDEX_URL is set AND REQUEST_CA_BUNDLE
     # there's a self-signed certificate in the chain, but it conflicts
     if [ "$PIP_GLOBAL_INDEX_URL" != "" ]; then
         unset REQUESTS_CA_BUNDLE
     fi
 
-    pip install -r requirements.txt 
-    pip install -r requirements-dev.txt 
+    pip install -r requirements.txt ${EXTRA_PIP_ARGS}
+    pip install -r requirements-dev.txt ${EXTRA_PIP_ARGS}
 fi

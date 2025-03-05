@@ -54,3 +54,16 @@ patches:
     - op: replace
       path: /metadata/namespace
       value: {{ config['daskhub']['namespace'] }}
+- target:
+    kind: Job
+    name: efs-mount
+  patch: |
+    - op: replace
+      path: /spec/template/spec/containers/0/env
+      value:
+        - name: EFS_ID
+          value: <<CNF_OUTPUT_EFSId>>
+        - name: AWS_AZ_PRIMARY
+          value: {{ config['eksctl']['availabilityZones'][0] }}
+        - name: EKS_NAME
+          value: {{ config['eksctl']['metadata']['name'] }}

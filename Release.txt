@@ -1,4 +1,4 @@
-HelioCloud v1.1 'Akita' release, 5 May 2025
+HelioCloud v1.1 'Akita' release, 5 March 2025
 
 We release HelioCloud v1.1 'Akita' to the community under the MIT License.  This latest build of HelioCloud enables any institution to set up temporary or permanent AWS-backed cloud environments with access to 1.5 Petabytes of NASA data (including SDO, MMS, CDAWeb, SuperMAG, and user-contributed datasets).  The compute and data assets exist within the AWS Cloud. Instead of copying data for local analysis, your compute power resides next to the data cache, providing high performance with little to no change in your workflow.
 

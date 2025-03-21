@@ -39,10 +39,10 @@ Feature: Log into daskhub, launch a server and do stuff
       | science-tutorials | 01-Intro-Tutorial.ipynb    |            15 |
       | science-tutorials | CloudCatalog-Demo.ipynb    |            60 |
       | science-tutorials | Dask-Gateway-Example.ipynb |           450 |
-      | science-tutorials | HelioCloud-SDO-Demo.ipynb  |          1200 |
       | science-tutorials | MMS-Catalog-Demo.ipynb     |            30 |
       | science-tutorials | S3-Access-Demo.ipynb       |            30 |
       | science-tutorials | S3-Dask-Demo.ipynb         |           450 |
+      | science-tutorials | SDO-Demo.ipynb             |          1200 |
 
   Scenario: Stop My Server and Logout of Daskhub
     Given a fully deployed instance of HelioCloud

@@ -75,6 +75,15 @@ def step_impl(context, field):
 
 @then('click "{text}"')
 def step_impl(context, text):
+    do_click_step(context, text)
+
+
+@then('click "{text}" # hint update-portal-amis.sh')
+def step_impl(context, text):
+    do_click_step(context, text)
+
+
+def do_click_step(context, text):
     # "Restart the kernel and run all cells"
     # if it's this we probably need
     # /html/body/dialog/div/div[2]/button[2]/div[2]

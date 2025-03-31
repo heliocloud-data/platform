@@ -260,7 +260,6 @@ production-jhuapl-cdk-deploy:
     - cdk deploy production-jhuapl/Identity -c instance=production-jhuapl --require-approval never -v
     - cdk deploy production-jhuapl/Auth -c instance=production-jhuapl --require-approval never -v
     - cdk deploy production-jhuapl/Portal -c instance=production-jhuapl --require-approval never -v
-    - cdk deploy production-jhuapl/Registry -c instance=production-jhuapl --require-approval never -v
   artifacts:
     when: always
     paths:

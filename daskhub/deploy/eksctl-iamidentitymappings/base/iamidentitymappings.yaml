@@ -11,12 +11,6 @@ iamIdentityMappings:
     groups:
     - system:masters
     - eks-console-dashboard-full-access-group
-
-  # - arn: arn:aws:iam::006885615091:role/CT-PowerUser-HelioCloud
-  #   groups:
-  #   - eks-console-dashboard-full-access-group
-  # - arn: arn:aws:iam::006885615091:user/CT-PowerUser-HelioCloud-nicholas.lenzi@jhuapl.edu-401
-  #   groups:
-  #   - eks-console-dashboard-full-access-group
-  #   - daskhub-admin-access-group
-  #   username: lenzinm1
+    - kube-system-admin-access-group
+    - daskhub-admin-access-group
+    - monitoring-admin-access-group

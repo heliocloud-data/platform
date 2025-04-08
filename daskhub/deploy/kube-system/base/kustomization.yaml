@@ -4,6 +4,7 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 resources:
+- admin-access-role.yaml
 - clusterautoscaler.yaml
 - eks-console-full-access.yaml
 - external-dns.yaml

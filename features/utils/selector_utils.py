@@ -154,12 +154,16 @@ def find_element_by_text_type_page(driver, text, element_type, page):
                 value_text = "server"
                 xpath = f"//input[@value='{value_text}' and @type='radio']"
                 ret = driver.find_element(By.XPATH, xpath)
-            elif text == "Large Server":
-                value_text = "large-server"
+            elif text == "The Big Big Server":
+                value_text = "the-big-big-server"
                 xpath = f"//input[@value='{value_text}' and @type='radio']"
                 ret = driver.find_element(By.XPATH, xpath)
-            elif text == "GPU Server - X-Large":
-                value_text = "gpu-server-x-large"
+            elif text == "GPU Server - PyTorch":
+                value_text = "gpu-server-pytorch"
+                xpath = f"//input[@value='{value_text}' and @type='radio']"
+                ret = driver.find_element(By.XPATH, xpath)
+            elif text == "GPU Server - Tensor Flow":
+                value_text = "gpu-server-tensor-flow"
                 xpath = f"//input[@value='{value_text}' and @type='radio']"
                 ret = driver.find_element(By.XPATH, xpath)
             elif text == "Start":

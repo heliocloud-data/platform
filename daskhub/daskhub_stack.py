@@ -143,6 +143,7 @@ class DaskhubStack(Stack):
             'stack': self,
             'base_aws': base_aws,
             'config': self.__daskhub_config,
+            'hc_config': config,
             'account': account,
         })
 

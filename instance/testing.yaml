@@ -27,7 +27,7 @@ enabled:
   registry: False
   daskhub: True
   daskhub_metrics: False
-  portal: False
+  portal: True
   registration_page: False
 
 auth:
@@ -55,6 +55,7 @@ portal:
   domain_url: "aplscicloud.org"
   domain_record: "portal-testing-${AWS_DEFAULT_REGION}"
   domain_certificate_arn: "arn:aws:acm:${AWS_DEFAULT_REGION}:${HC_AWS_ACCOUNT}:certificate/${HC_PORTAL_CERT_ARN}"
+  api_key: auto
 
 registration_page:
   domain_url: "aplscicloud.org"

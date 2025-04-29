@@ -29,18 +29,20 @@ patches:
         - name: SITE_URL
           value: https://{{ hc_config['portal']['domain_record'] }}.{{ hc_config['portal']['domain_url'] }}
         - name: USER_POOL_CLIENT_SECRET
-          value: ""<<CNF_OUTPUT_PortalCognitoClientSecret>>"
+          value: "<<CNF_OUTPUT_PortalCognitoClientSecret>>"
         - name: USER_POOL_CLIENT_ID
           value: "<<CNF_OUTPUT_PortalCognitoClientId>>"
         - name: USER_POOL_ID
           value: "<<CNF_OUTPUT_PortalUserPoolId>>"
+        - name: FLASK_SECRET_KEY
+          value: {{ hc_config['portal']['api_key'] }}
 - target:
     kind: ServiceAccount
     name: portal-sa
   patch: |
     - op: replace
       path: /metadata/annotations/eks.amazonaws.com~1role-arn
-      value: "<CNF_OUTPUT_PortalEc2Role>>"
+      value: "<<CNF_OUTPUT_PortalEc2RoleArn>>"
 - target:
     kind: Service
     name: portal
@@ -48,3 +50,10 @@ patches:
     - op: replace
       path: /metadata/annotations/external-dns.alpha.kubernetes.io~1hostname
       value: {{ hc_config['portal']['domain_record'] }}.{{ hc_config['portal']['domain_url'] }}
+    - op: replace
+      path: /metadata/annotations/service.beta.kubernetes.io~1aws-load-balancer-backend-protocol
+      value: tcp
+    - op: replace
+      path: /metadata/annotations/service.beta.kubernetes.io~1aws-load-balancer-ssl-cert
+      value: {{ hc_config['portal']['domain_certificate_arn'] }}
+

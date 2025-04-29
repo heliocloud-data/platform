@@ -67,20 +67,23 @@ class PortalStack(Stack):
 
         # Create the Portal task for Fargate
         task = self.__create_ec2_resources(
-            vpc=aws_stack.heliocloud_vpc,
-            s3_policy=aws_stack.s3_managed_policy
+            vpc=aws_stack.heliocloud_vpc, s3_policy=aws_stack.s3_managed_policy
         )
 
         # # Cloudformation outputs
         # # Return instance ID to make logging into admin instance easier
-        cdk.CfnOutput(self, "PortalEc2SecurityGroup", value=self.security_group.security_group_id)
-        cdk.CfnOutput(self, "PortalEc2InstanceProfile", value=self.ec2_default_instance_profile.attr_arn)
-        cdk.CfnOutput(self, "PortalEc2SubnetId", value=aws_stack.heliocloud_vpc.public_subnets[0].subnet_id)
-        cdk.CfnOutput(self, "PortalEc2Role", value=self.ec2_default_role)
+        cdk.CfnOutput(self, "Portal_Ec2SecurityGroup", value=self.security_group.security_group_id)
+        cdk.CfnOutput(
+            self, "Portal_Ec2InstanceProfile", value=self.ec2_default_instance_profile.attr_arn
+        )
+        cdk.CfnOutput(
+            self, "Portal_Ec2SubnetId", value=aws_stack.heliocloud_vpc.public_subnets[0].subnet_id
+        )
+        cdk.CfnOutput(self, "Portal_Ec2RoleArn", value=self.ec2_default_role.role_arn)
 
-        cdk.CfnOutput(self, "PortalIdentityPool", value=id_pool.identity_pool_id)
-        cdk.CfnOutput(self, "PortalCognitoClientId", value=user_pool_client.user_pool_client_id)
-        cdk.CfnOutput(self, "PortalUserPoolId", value=user_pool_client.userpool.user_pool_id)
+        cdk.CfnOutput(self, "Portal_IdentityPool", value=id_pool.identity_pool_id)
+        cdk.CfnOutput(self, "Portal_CognitoClientId", value=user_pool_client.user_pool_client_id)
+        cdk.CfnOutput(self, "Portal_UserPoolId", value=auth_stack.userpool.user_pool_id)
 
     # pylint: enable=too-many-arguments
     # pylint: enable=too-many-locals
@@ -209,11 +212,7 @@ class PortalStack(Stack):
         return id_pool
 
     # pylint: disable=too-many-arguments
-    def __create_ec2_resources(
-        self,
-        vpc: ec2.Vpc,
-        s3_policy: iam.ManagedPolicy
-    ):
+    def __create_ec2_resources(self, vpc: ec2.Vpc, s3_policy: iam.ManagedPolicy):
         """
         Create the task in Fargate to run the Portal.
         """

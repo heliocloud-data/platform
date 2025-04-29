@@ -58,6 +58,8 @@ class DaskhubStack(Stack):
         self.__daskhub_config = DaskhubStack.load_configurations(config)
         self.build_hosted_zone()
 
+        if 'portal' in config and ('api_key' not in config['portal'] or config['portal']['api_key'] == 'auto'):
+            config['portal']['api_key'] = secrets.token_hex(SECRET_HEX_IN_BYTES)
         if self.__daskhub_config['daskhub']['api_key1'] == 'auto':
             self.__daskhub_config['daskhub']['api_key1'] = secrets.token_hex(SECRET_HEX_IN_BYTES)
         if self.__daskhub_config['daskhub']['api_key2'] == 'auto':

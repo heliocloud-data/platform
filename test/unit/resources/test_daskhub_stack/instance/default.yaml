@@ -1,4 +1,6 @@
 # Supports unit tests for Daskhub
+env:
+  region: us-east-1
 
 vpc:
   type: "new"

@@ -16,7 +16,7 @@ patches:
       value:
         - name: APP_NAME
           value: {{ hc_config['auth']['domain_prefix'] }}
-        - name: DEFAULT_EC2_SECURITY_GROUP_ID
+        - name: DEFAULT_SECURITY_GROUP_ID
           value: "<<CNF_OUTPUT_PortalEc2SecurityGroup>>"
         - name: DEFAULT_EC2_INSTANCE_PROFILE_ARN
           value: "<<CNF_OUTPUT_PortalEc2InstanceProfile>>"

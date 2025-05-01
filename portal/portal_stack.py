@@ -12,18 +12,19 @@ from aws_cdk import (
     aws_cognito as cognito,
     aws_cognito_identitypool_alpha as identity_pool,
     aws_ecs as ecs,
-    aws_ecs_patterns as ecs_patterns,
-    aws_ecr_assets as ecr_assets,
     aws_logs as logs,
-    aws_secretsmanager as sm,
     aws_route53 as route53,
-    aws_certificatemanager as cm,
     aws_ec2 as ec2,
+    aws_route53 as route53,
+    Duration,
+    RemovalPolicy,
 )
 from constructs import Construct
 
 from base_auth.auth_stack import AuthStack
 from base_aws.base_aws_stack import BaseAwsStack
+
+from daskhub.aws_utils import get_instance_types_by_region, find_route53_record_by_type_and_name
 
 
 class PortalStack(Stack):
@@ -68,6 +69,11 @@ class PortalStack(Stack):
         # Create the Portal task for Fargate
         task = self.__create_ec2_resources(
             vpc=aws_stack.heliocloud_vpc, s3_policy=aws_stack.s3_managed_policy
+        )
+
+        self.__build_hosted_zone(config["domain_url"])
+        self.__build_route53_settings(
+            f"{config['domain_record']}.{config['domain_url']}", config["domain_record"]
         )
 
         # # Cloudformation outputs
@@ -245,3 +251,47 @@ class PortalStack(Stack):
         )
 
     # pylint: enable=too-many-arguments
+
+    def __build_hosted_zone(self, domain_name):
+        """
+        This method creates a CDK route53 construct from a domain lookup under the
+        assumption it already exists.
+        """
+        self.hosted_zone = route53.PublicHostedZone.from_lookup(
+            self, "PortalHostedZone", domain_name=domain_name
+        )
+        if self.hosted_zone.is_resource(self):
+            self.hosted_zone = route53.PublicHostedZone(
+                self, "PortalHostedZone", zone_name=domain_name
+            )
+
+    def __build_route53_settings(self, full_record_name, record_name):
+        """
+        This method will configure the Route53 settings for daskhub.  These settings
+        will be subsequently updated during the EKSCTL portions of the deployment.  It's safe
+        to run this deployment from a live system.
+        """
+
+        ttl = Duration.seconds(300)
+        domain_name = "0.0.0.0"
+
+        record = find_route53_record_by_type_and_name(
+            self.hosted_zone.hosted_zone_id, "CNAME", full_record_name
+        )
+        if record is not None:
+            print(f"Route53 record set already exists for {full_record_name}")
+            ttl = Duration.seconds(record["TTL"])
+            domain_name = record["ResourceRecords"][0]["Value"]
+            print(f" Using ttl={ttl.to_seconds()}, domain_name={domain_name}")
+
+        cname_record = route53.CnameRecord(
+            self,
+            "CnameRecord",
+            record_name=record_name,
+            zone=self.hosted_zone,
+            ttl=ttl,
+            delete_existing=True,
+            domain_name=domain_name,
+            comment="Initial provisioning from CDK, updated via external-dns.",
+        )
+        cname_record.apply_removal_policy(RemovalPolicy.DESTROY)

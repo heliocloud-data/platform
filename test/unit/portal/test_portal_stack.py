@@ -60,32 +60,7 @@ def test_portal_stack():
         data=json.dumps(template.to_json(), indent=2),
     )
 
-    # Check that all 4 secrets got created
-    template.resource_count_is("AWS::SecretsManager::Secret", 4)
-
-    # Check the site URL on the Fargate task definition
-    template.has_resource_properties(
-        "AWS::ECS::TaskDefinition",
-        {
-            "ContainerDefinitions": Match.array_with(
-                [
-                    {
-                        "Environment": Match.array_with(
-                            [{"Name": "SITE_URL", "Value": "https://portal.hctest.org"}]
-                        ),
-                        "Essential": Match.any_value(),
-                        "Image": Match.any_value(),
-                        "LogConfiguration": Match.any_value(),
-                        "Name": Match.any_value(),
-                        "PortMappings": Match.any_value(),
-                        "Secrets": Match.any_value(),
-                    }
-                ]
-            )
-        },
-    )
-
     # Check for a correct A record will go into Route 53 for the portal
     template.has_resource_properties(
-        "AWS::Route53::RecordSet", props={"Name": "portal.hctest.org.", "Type": "A"}
+        "AWS::Route53::RecordSet", props={"Name": "portal.hctest.org.", "Type": "CNAME"}
     )

@@ -12,7 +12,7 @@ portal:
   domain_certificate_arn:
 
 daskhub:
-  daskhub:
+  global:
     domain_url: "ludicolo.org"
 
 

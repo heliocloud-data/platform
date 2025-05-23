@@ -5,6 +5,7 @@ AWS_REGION=$(aws ec2 describe-availability-zones --output text --query 'Availabi
 KUBERNETES_NAMESPACE={{ config['daskhub']['namespace'] }}
 EKS_NAME={{ config['eksctl']['metadata']['name'] }}
 
+helm uninstall heliocloud-ingress --namespace ingress
 helm uninstall heliocloud-monitoring --namespace monitoring
 helm uninstall daskhub --namespace ${KUBERNETES_NAMESPACE}
 

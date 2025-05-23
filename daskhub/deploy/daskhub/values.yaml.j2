@@ -75,10 +75,29 @@ daskhub:
     # JupyterHub configuration goes here.
     # See https://github.com/jupyterhub/zero-to-jupyterhub-k8s/blob/master/jupyterhub/values.yaml
     hub:
+      config:
+        Authenticator:
+          auto_login: true
+      extraConfig:
+        00-auth.py: |
+          from jupyterhub.auth import Authenticator
+
+          # Custom JupyterHub Authenticator
+          # The username proxied with X-Auth-Request-Preferred-Username becomes the
+          # username in jupyterhub. Without it, it would be a UUID from cognito.
+          # This value is sourced from cognito - users must have a Preferred Username
+          # set as one of their attributes.
+          class ProxiedHeaderAuthenticator(Authenticator):
+            async def authenticate(self, handler, data=None):
+              headers = handler.request.headers
+              username = headers.get("X-Auth-Request-Preferred-Username")
+              return username
+          c.JupyterHub.authenticator_class = ProxiedHeaderAuthenticator
       extraEnv:
         EXTRA_PIP_PACKAGES: >-
           boto3
-          dask_gatway_server
+          dask_gateway_server
+
 
     singleuser:
       startTimeout: 900
@@ -242,13 +261,8 @@ daskhub:
       serviceAccountName: helio-dh-role
       defaultUrl: "/lab"  # Use jupyterlab by default.
     proxy:
-      chp:
-        nodeSelector:
-          lifecycle: OnDemand
-      traefik:
-        image:
-          name: traefik
-          tag: "v2.4.11"
+      service:
+        type: ClusterIP
 
   dask-gateway:
     enabled: true  # Enabling dask-gateway will install Dask Gateway as a dependency.
@@ -476,7 +490,7 @@ daskhub:
           # timeout after 30 minutes of inactivity
           c.KubeClusterConfig.idle_timeout = 1800
 
-    traefik:
+    traefik: # Traefik is unavoidable here - tightly coupled with Dask Gateway. See: https://dask.discourse.group/t/deploying-dask-gateway-without-traefik/3554
       service:
         type: ClusterIP  # Access Dask Gateway through JupyterHub. To access the Gateway from outside JupyterHub, this must be changed to a `LoadBalancer`.
 

@@ -56,6 +56,8 @@ portal:
   domain_record: "portal-testing-${AWS_DEFAULT_REGION}"
   domain_certificate_arn: "arn:aws:acm:${AWS_DEFAULT_REGION}:${HC_AWS_ACCOUNT}:certificate/${HC_PORTAL_CERT_ARN}"
   api_key: auto
+  PORTAL_DOCKER_LOCATION: 'public.ecr.aws/q3h7b4o8/heliocloud/helio-portal'
+  PORTAL_DOCKER_VERSION: '2025.06.09'
 
 registration_page:
   domain_url: "aplscicloud.org"
@@ -74,13 +76,14 @@ daskhub:
     - ${AWS_DEFAULT_REGION}a
     - ${AWS_DEFAULT_REGION}b
     iamIdentityMappings:
-      - arn: arn:aws:iam::006885615091:role/CT-PowerUser-HelioCloud
+      - arn: arn:aws:iam::${HC_AWS_ACCOUNT}:role/CT-PowerUser-HelioCloud
         groups:
         - eks-console-dashboard-full-access-group
-      - arn: arn:aws:iam::006885615091:user/CT-PowerUser-HelioCloud-nicholas.lenzi@jhuapl.edu-401
+      - arn: arn:aws:iam::${HC_AWS_ACCOUNT}:user/CT-PowerUser-HelioCloud-nicholas.lenzi@jhuapl.edu-401
         groups:
         - eks-console-dashboard-full-access-group
         - daskhub-admin-access-group
+        - monitoring-admin-access-group
         username: lenzinm1
   daskhub_storage:
     efs-persist:

@@ -343,37 +343,36 @@ class DaskhubStack(Stack):
             prevent_user_existence_errors=True,
         )
 
-        # Add Daskhub Metrics as a client to the Cognito user pool
+        # Add OAuth2 PRoxy as a client to the Cognito user pool
         # pylint: disable=duplicate-code
-        if "daskhub_metrics" in config["enabled"] and config["enabled"]["daskhub_metrics"]:
-            oauth_base_url = ("https://oauth-"
-                            f"{self.__daskhub_config['eksctl']['metadata']['name']}-{self.__daskhub_config['eksctl']['metadata']['region']}."
-                            f"{self.__daskhub_config['global']['domain_url']}")
-            callback_url = f"{oauth_base_url}/oauth2/callback"
-            logout_url = f"{oauth_base_url}/logout"
+        oauth_base_url = ("https://oauth-"
+                        f"{self.__daskhub_config['eksctl']['metadata']['name']}-{self.__daskhub_config['eksctl']['metadata']['region']}."
+                        f"{self.__daskhub_config['global']['domain_url']}")
+        callback_url = f"{oauth_base_url}/oauth2/callback"
+        logout_url = f"{oauth_base_url}/logout"
 
-            kubecost_client = base_auth.userpool.add_client(
-                "heliocloud-kubecost",
-                generate_secret=True,
-                o_auth=cognito.OAuthSettings(
-                    flows=cognito.OAuthFlows(authorization_code_grant=True),
-                    scopes=[
-                        cognito.OAuthScope.PHONE,
-                        cognito.OAuthScope.EMAIL,
-                        cognito.OAuthScope.OPENID,
-                        cognito.OAuthScope.COGNITO_ADMIN,
-                        cognito.OAuthScope.PROFILE,
-                    ],
-                    callback_urls=[callback_url],
-                    logout_urls=[logout_url],
-                ),
-                supported_identity_providers=[cognito.UserPoolClientIdentityProvider.COGNITO],
-                prevent_user_existence_errors=True,
-            )
+        kubecost_client = base_auth.userpool.add_client(
+            "heliocloud-kubecost",
+            generate_secret=True,
+            o_auth=cognito.OAuthSettings(
+                flows=cognito.OAuthFlows(authorization_code_grant=True),
+                scopes=[
+                    cognito.OAuthScope.PHONE,
+                    cognito.OAuthScope.EMAIL,
+                    cognito.OAuthScope.OPENID,
+                    cognito.OAuthScope.COGNITO_ADMIN,
+                    cognito.OAuthScope.PROFILE,
+                ],
+                callback_urls=[callback_url],
+                logout_urls=[logout_url],
+            ),
+            supported_identity_providers=[cognito.UserPoolClientIdentityProvider.COGNITO],
+            prevent_user_existence_errors=True,
+        )
 
-            # Set conditional output for the kubecost client
-            cdk.CfnOutput(self, "CognitoClientIdKubeCost",
-                          value=kubecost_client.user_pool_client_id)
+        # Set conditional output for the kubecost client
+        cdk.CfnOutput(self, "CognitoClientIdKubeCost",
+                        value=kubecost_client.user_pool_client_id)
 
         self.build_route53_settings()
 

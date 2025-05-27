@@ -137,13 +137,51 @@ aws efs create-mount-target \
 
 ```
 
+### Ingress
+During this stage, we're going to deploy the ingress controller and oauth2 proxy that subsequent deployment steps will use.
+
+To automatically deploy the DaskHub and register the domain in Route53, simply type:
+> ./02-deploy-ingress.sh
+
+Deployment of Ingress typically takes around 30 seconds.  Once complete, move on to the DaskHub Helm Deployment section.  Advanced users, may decompose this deployment into individual tasks, if so, review the following step(s):
+
+
+dependencies:
+  - name: oauth2-proxy
+    version: 7.10.2
+    repository: https://oauth2-proxy.github.io/manifests
+
+  - name: ingress-nginx
+    version: 4.10.0
+    repository: https://kubernetes.github.io/ingress-nginx
+
+
+1. Deploy the Ingress using the Helm Chart.
+
+HelioCloud provides a Helm Chart.yaml and accompanying values files located in `ingress/`.  It consists of two sub-charts `oauth2-proxy` and `ingress-nginx`.
+
+Consult the docs for [Using Helm](https://helm.sh/docs/intro/using_helm/) from the Helm Documentation site for more detail.  
+
+```
+cd ingress
+helm dep update
+helm upgrade \
+    heliocloud-ingress ./ \
+    --create-namespace \
+    --namespace ingress \
+    --values=values.yaml \
+    --values=values-production.yaml \
+    --install --timeout 5m --debug
+```
+
+
 ### DaskHub Helm Deployment
 During this stage, we're going to standup the DaskHub!
 
 To automatically deploy the DaskHub and register the domain in Route53, simply type:
 > ./03-deploy-daskhub.sh
 
-Initial deploy of the DaskHub can take up to 30 minutes to complete.  Once complete, move on to the Log into DaskHub section.  Advanced users, may decompose these tests, if so, review the following steps:
+Initial deploy of the DaskHub can take up to 30 minutes to complete.  Once complete, move on to the Log into DaskHub section.  Advanced users, may decompose this deployment into individual tasks, if so, review the following step(s):
 
 1. Deploy the DaskHub using the Helm Chart.
 The DaskHub deployment is deployed via a Helm Chart.  It consists of two sub-charts, `jupyterhub` and `dask-gateway`.  Consult the respective documentation sites for these two tools for more details [here](https://z2jh.jupyter.org/en/stable/) and [here](https://gateway.dask.org/install-kube.html).
@@ -162,22 +200,6 @@ helm upgrade \
     --install --timeout 30m30s --debug
 ```
 
-
-2. Update the Route53 entry.
-In the previous step, an AWS Load Balancer will automatically have been created to handle ingress for DaskHub.  For this step, we're going to update a Route53 CNAME record to point to this load balancer.
-
-```
-# 1. Look up the URL to the load balancer created during the deployment.
-LOADBALANCER_URL=$(kubectl --namespace=$KUBERNETES_NAMESPACE get svc proxy-public --output jsonpath='{.status.loadBalancer.ingress[0].hostname}')
-
-# 2. Inject the URL to the load balancer into a Route53 request
-cp route53_record.json.template route53_record.json
-sed -i "s|<INSERT_LOADBALANCER_URL>|$LOADBALANCER_URL|g" route53_record.json
-
-# 3. Update the CNAME record in Route53
-ROUTE53_HOSTED_ZONE_ID=$(aws route53 list-hosted-zones-by-name | jq --arg name "$ROUTE53_HOSTED_ZONE." -r '.HostedZones | .[] | select(.Name=="\($name)") | .Id')
-aws route53 change-resource-record-sets --hosted-zone-id $ROUTE53_HOSTED_ZONE_ID --change-batch file://route53_record.json
-```
 
 See more details on [DNS routing](https://saturncloud.io/blog/jupyterhub_security/) and [https](https://zero-to-jupyterhub.readthedocs.io/en/latest/administrator/security.html#set-up-automatic-https).
 

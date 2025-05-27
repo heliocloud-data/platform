@@ -36,6 +36,15 @@ patches:
           value: "<<CNF_OUTPUT_PortalUserPoolId>>"
         - name: FLASK_SECRET_KEY
           value: {{ hc_config['portal']['api_key'] }}
+{%- if 'portal' in hc_config and 'PORTAL_DOCKER_LOCATION' in hc_config['portal']  and 'PORTAL_DOCKER_VERSION' in hc_config['portal'] %}
+- target:
+    kind: Deployment
+    name: portal
+  patch: |
+    - op: replace
+      path: /spec/template/spec/containers/0/image
+      value: {{ hc_config['portal']['PORTAL_DOCKER_LOCATION'] }}:{{ hc_config['portal']['PORTAL_DOCKER_VERSION'] }}
+{%- endif %}
 - target:
     kind: ServiceAccount
     name: portal-sa

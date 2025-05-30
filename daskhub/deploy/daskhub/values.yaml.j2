@@ -75,6 +75,24 @@ daskhub:
     # JupyterHub configuration goes here.
     # See https://github.com/jupyterhub/zero-to-jupyterhub-k8s/blob/master/jupyterhub/values.yaml
     hub:
+      config:
+        Authenticator:
+          auto_login: true
+      extraConfig:
+        00-auth.py: |
+          from jupyterhub.auth import Authenticator
+
+          # Custom JupyterHub Authenticator
+          # The username proxied with X-Auth-Request-Preferred-Username becomes the
+          # username in jupyterhub. Without it, it would be a UUID from cognito.
+          # This value is sourced from cognito - users must have 'preferred_username'
+          # set as one of their user attributes.
+          class ProxiedHeaderAuthenticator(Authenticator):
+            async def authenticate(self, handler, data=None):
+              headers = handler.request.headers
+              username = headers.get("X-Auth-Request-Preferred-Username")
+              return username
+          c.JupyterHub.authenticator_class = ProxiedHeaderAuthenticator
       extraEnv:
         EXTRA_PIP_PACKAGES: >-
           boto3

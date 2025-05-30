@@ -1,0 +1,23 @@
+ingress-nginx:
+  controller:
+    config:
+      large-client-header-buffers: "8 64k"
+      client-header-buffer-size: "64k"
+    ingressClassResource:
+      name: nginx
+      enabled: true
+      default: true
+    ingressClass: nginx
+    service:
+      targetPorts:
+        http: http
+        https: http
+      ports:
+        http: 80
+        https: 443
+      type: LoadBalancer # MUST remain LoadBalancer for ingress from Internet
+
+oauth2-proxy:
+  service:
+    type: ClusterIP
+    portNumber: 80

@@ -1,5 +1,8 @@
 ingress-nginx:
   controller:
+    config:
+      large-client-header-buffers: "8 64k"
+      client-header-buffer-size: "64k"
     ingressClassResource:
       name: nginx
       enabled: true

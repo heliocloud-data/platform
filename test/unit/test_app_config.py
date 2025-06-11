@@ -10,9 +10,6 @@ def test_load_configs():
     # Confirm values in the instance document
     assert cfg["env"]["account"] == 123456789
     assert cfg["env"]["region"] == "us-east-100"
-    assert cfg["enabled"]["registry"] == True
-    assert cfg["registry"]["datasetBucketNames"][0] == "suds-datasets-1"
-    assert cfg["registry"]["ingestBucketName"] == "acid-reflux"
 
     assert cfg["auth"]["domain_prefix"] == "apl-helio"
     assert cfg["portal"]["domain_url"] is None

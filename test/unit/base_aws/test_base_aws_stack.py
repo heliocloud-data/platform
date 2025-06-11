@@ -23,7 +23,6 @@ def test_synthesis_new_vpc():
         "vpc": {"type": "new"},
         "userSharedBucket": {},
         "email": {"user": "no-reply", "from_name": "APL HelioCloud"},
-        "registry": {"datasetBucketNames": ["bucket1"]},
     }
 
     # Stack dependencies

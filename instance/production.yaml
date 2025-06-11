@@ -27,7 +27,6 @@ email:
   from_name: "APL HelioCloud"
 
 enabled:
-  registry: False
   daskhub: True
   daskhub_metrics: True
   portal: True

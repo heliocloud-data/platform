@@ -72,25 +72,6 @@ This may be caused by an unsupported region, make sure the following machine siz
 </ol>
 </details><br>
 
-<details>
-<summary>3 — Click to expand.</summary>
-This could be caused by now un-used Amazon AWS Registry components in your configuration file, to resolve the issue:
-<ol>
-<li>Completely tear down your current deployment/attempt</li>
-<li>Make sure that Registry databases are also removed/torn down</li>
-<li>Comment out or delete the Registry section in your configuration file</li>
-<li>Set the Registry component to <code>False</code> in the HelioCloud modules section as such:
-<pre>
-# Enabling all available HelioCloud modules
-enabled:
-  registry: False # ← make sure this is False
-  portal: True
-  daskhub: True
-</pre>
-</li>
-</ol>
-</details><br>
-
 #### In case DaskHub deploys but the page does not open when accessed:
 
 <details>

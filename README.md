@@ -213,7 +213,6 @@ Modify your newly created instance configuration to suit your HelioCloud instanc
 - Which HelioCloud modules you want activated. Here we will activate all of them:
     ```yaml
     enabled:
-      registry: True
       portal: True
       daskhub: True
     ```
@@ -233,8 +232,6 @@ Modify your newly created instance configuration to suit your HelioCloud instanc
       from_name: "My Organization"
     ```
 
-- Registry module is still in progress, will be updated by v1.2.  It assists in making data shareable in S3 buckets.
-  
 - The User Portal requires a domain URL, record, and the ARN corresponding to an active SSL certificate. 
     ```yaml
     portal:
@@ -285,7 +282,6 @@ Using newly created vpc: ${Token[TOKEN.608]}.
 Deploying buckets: ['edu-myorganization-helio1', 'edu-myorganization-helio2']
 heliocloud/Base
 heliocloud/Auth
-heliocloud/Registry
 heliocloud/Daskhub
 heliocloud/Portal
 ```
@@ -397,8 +393,7 @@ for that particular stack.
 
 Additionally, you will note several other directories that comprise important part`s of the 
 codebase:
-- `test` contains unit and integration tests for HelioCloud platform. _Note_: Using integration tests
-will require you to have deployed a development instance of HelioCloud to AWS.
+- `test` contains unit tests for HelioCloud platform.
 - `tools` contains client side tools for administering and operating a HelioCloud instance.
 - `instance` contains the default configuration file `default.yaml`, which you will want to refer
 to and update if making any changes that impact HelioCloud's configurability. 
@@ -432,10 +427,10 @@ using an instance configuration you have created for development purposes:
 
 ## 3 Testing
 All HelioCloud test fixtures and tooling are present under `test`.  Go here for adding
-unit tests, integration tests and any related code or tools.
+unit tests and any related code or tools.
 
 ### 3.1 Unit Testing
-The `test/unit` directory contains a collection of unit and integration tests for exercising the HelioCloud codebase,
+The `test/unit` directory contains a collection of unit tests for exercising the HelioCloud codebase,
 with the subdirectories within organized to match the top-level directories containing the 
 code to test:
 - `test/unit/tools` contains unit test code for the tools module
@@ -449,18 +444,6 @@ python test/unit/tools
 All of these tests can by run locally, with no requirement of a deployed HelioCloud instance or
 AWS account.
 
-
-### 3.1 Integration Testing
-Integration tests have been developed in `test/integration` to exercise certain features of a 
-deployed HelioCloud 
-development instance. These are very effect for ensuring that AWS services are being configured
-correctly by the CDK, and that any module specific features leveraging AWS resources (e.g. S3) 
-are working correctly.
-
-Integration tests are invoked the same way as unit tests:
-```shell
-python test/integration
-```
 
 ### 4 Prepping your changes as a pull or merge request
 

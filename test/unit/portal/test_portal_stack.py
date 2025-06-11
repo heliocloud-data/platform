@@ -24,7 +24,6 @@ def test_portal_stack():
         "userSharedBucket": {},
         "email": {"user": "no-reply", "from_name": "APL HelioCloud"},
         "auth": {"domain_prefix": "helio"},
-        "registry": {"datasetBucketNames": ["bucket1", "bucket2"]},
         "portal": {
             "domain_record": "portal",
             "domain_url": "hctest.org",

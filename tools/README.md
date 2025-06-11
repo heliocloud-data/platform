@@ -27,25 +27,9 @@ Scripts for helping to administer HelioCloud user accounts.
 
 `list_users.sh` - script for listing the HelioCloud users configured in the AWS Cognito pool(s)
 
----
-#### Registry
-These scripts support working with the HelioCloud registry and datasets stored therein.
-
-`s3_bucket_bulk_delete.py` - Helps with selectively bulk deleting the contents of an S3 bucket
-
-`s3_bucket_list_objects.py` - Used by the bulk delete script to list some/all verions of objects in the bucket
-
-`s3_bucket_object_delete.py` - For deleting individual objects
-
-`ingest.py` - Use to ingest a dataset stored in an S3 bucket into a HelioCloud's Registry module
-
-`catalog.py` - Use to invoke the Cataloger for this HelioCloud. This will force an update of the 
-Registry.
-
----
 ##### S3 Bucket Comparison
 These scripts support comparison of a 'source' and a 'destination' S3 bucket as may be necessary
-when confirming data has been ingested into the HelioCloud registry correctly. This code will report 
+when confirming data has been copied, checks
 if there are any missing files in the destination bucket.
 
 _Setup_

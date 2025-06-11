@@ -18,12 +18,6 @@ email:
 auth:
   domain_prefix: "apl-helio"
 
-
-registry:
-  datasetBucketNames: [
-    "bucket1", "bucket2"
-  ]
-
 portal:
   domain_url: "heliocloud.org"
   domain_record: ""

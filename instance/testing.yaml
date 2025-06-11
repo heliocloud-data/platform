@@ -22,9 +22,8 @@ vpc:
 userSharedBucket:
   destroyOnRemoval: True
 
-# Only working on the registry right now
+# 
 enabled:
-  registry: False
   daskhub: True
   daskhub_metrics: False
   portal: True
@@ -34,22 +33,6 @@ auth:
   domain_prefix: "apl-helio"
   deletion_protection: False
   removal_policy: DESTROY
-
-# Simple bucket names
-registry:
-  datasetBucketNames: [
-     "heliocloud-testing-${AWS_DEFAULT_REGION}-datasets-1",
-  ]
-
-  ingestBucketName: "heliocloud-testing-${AWS_DEFAULT_REGION}-uploads-1"
-  requesterPays: True
-  catalog:
-    masterUser: master
-    name: "Chris Jeschke"
-    contact: "chris.jeschke@jhuapl.edu"
-  destroyOnRemoval: True
-  layers:
-    pandas: "arn:aws:lambda:${AWS_DEFAULT_REGION}:336392948345:layer:AWSSDKPandas-Python39:6"
 
 portal:
   domain_url: "aplscicloud.org"

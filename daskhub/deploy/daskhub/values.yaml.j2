@@ -85,8 +85,8 @@ daskhub:
           # Custom JupyterHub Authenticator
           # The username proxied with X-Auth-Request-Preferred-Username becomes the
           # username in jupyterhub. Without it, it would be a UUID from cognito.
-          # This value is sourced from cognito - users must have 'preferred_username'
-          # set as one of their user attributes.
+          # This value is sourced from cognito - users must have a Preferred Username
+          # set as one of their attributes.
           class ProxiedHeaderAuthenticator(Authenticator):
             async def authenticate(self, handler, data=None):
               headers = handler.request.headers

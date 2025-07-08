@@ -23,9 +23,6 @@ portal:
   domain_certificate_arn: ""
 
 daskhub:
-  global:
-    domain_certificate_arn: "acert"
-    domain_url: <REPLACE>
   eksctl:
     metadata:
       name: 'eks-helio'
@@ -77,6 +74,7 @@ daskhub:
     contact_email: # Email to send cert validation emails to, ex. 'jsmith@gmail.com'
 
     # Daskhub will be hosted at <domain_record>.<domain_url>
+    domain_url: <REPLACE>
     domain_record: daskhub
 
     # HelioCloud docker containers
@@ -87,6 +85,7 @@ daskhub:
     MLTRCH_DOCKER_LOCATION: 'public.ecr.aws/q3h7b4o8/heliocloud/helio-daskhub-mltrch'
     MLTRCH_DOCKER_VERSION: '2025.01.29'
   monitoring:
+    AWS_LOAD_BALANCER_SSL_CERT: "acert"
     grafana_domain_prefix: grafana-test
     cost_analyzer_domain_prefix: kubecost-test
 

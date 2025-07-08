@@ -53,16 +53,16 @@ patches:
       path: /metadata/annotations/eks.amazonaws.com~1role-arn
       value: "<<CNF_OUTPUT_PortalEc2RoleArn>>"
 - target:
-    kind: Ingress
-    name: portal-ingress
+    kind: Service
+    name: portal
   patch: |
     - op: replace
-      path: /spec/rules/0/host
+      path: /metadata/annotations/external-dns.alpha.kubernetes.io~1hostname
       value: {{ hc_config['portal']['domain_record'] }}.{{ hc_config['portal']['domain_url'] }}
     - op: replace
-      path: /metadata/annotations/nginx.ingress.kubernetes.io~1auth-url
-      value: "https://oauth-{{ config['eksctl']['metadata']['name'] }}-{{ config['eksctl']['metadata']['region'] }}.{{ config['global']['domain_url'] }}/oauth2/auth"
+      path: /metadata/annotations/service.beta.kubernetes.io~1aws-load-balancer-backend-protocol
+      value: tcp
     - op: replace
-      path: /metadata/annotations/nginx.ingress.kubernetes.io~1auth-signin
-      value: "https://oauth-{{ config['eksctl']['metadata']['name'] }}-{{ config['eksctl']['metadata']['region'] }}.{{ config['global']['domain_url'] }}/oauth2/start"
+      path: /metadata/annotations/service.beta.kubernetes.io~1aws-load-balancer-ssl-cert
+      value: {{ hc_config['portal']['domain_certificate_arn'] }}
 

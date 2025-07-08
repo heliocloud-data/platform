@@ -33,6 +33,7 @@ CLOUDFORMATION_NAME=$(echo $CLOUDFORMATION_ARN | sed 's/^.*stack\///' | cut -d'/
 
 aws cloudformation describe-stacks --stack-name $CLOUDFORMATION_NAME --query 'Stacks[0].Outputs' --output text > stack.txt
 
+# TODO: don't hardcode this
 PORTAL_CLOUDFORMATION_NAME=$(aws cloudformation describe-stacks --stack-name $CLOUDFORMATION_NAME --query 'Stacks[0].Outputs[?OutputKey==`PortalStackName`].OutputValue' --output text)
 aws cloudformation describe-stacks --stack-name $PORTAL_CLOUDFORMATION_NAME --query 'Stacks[0].Outputs' --output text >> stack.txt
 
@@ -45,7 +46,6 @@ FILES=(\
   /home/ssm-user/daskhub/values-production.yaml
   /home/ssm-user/portal/overlays/production/kustomization.yaml
   /home/ssm-user/monitoring/values-production.yaml
-  /home/ssm-user/ingress/values-production.yaml
   /home/ssm-user/00-delete-efs-mount-targets.sh
 )
 

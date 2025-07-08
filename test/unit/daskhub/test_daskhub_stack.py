@@ -13,7 +13,7 @@ from base_auth.identity_stack import IdentityStack
 from base_aws.base_aws_stack import BaseAwsStack
 from daskhub.daskhub_stack import DaskhubStack
 
-DEFAULT_KEY_COUNT = 4
+DEFAULT_KEY_COUNT = 3
 DEFAULT_EKSCTL_KEY_COUNT = 11
 DEFAULT_DASKHUB_KEY_COUNT = 13
 
@@ -53,7 +53,7 @@ def test_method_load_configurations_OK_override_one():
     # Verify that some elements are populated in the configuration
     # the
     assert len(cfg) == DEFAULT_KEY_COUNT
-    assert cfg["global"]["domain_url"] == "ludicolo.org"
+    assert cfg["daskhub"]["domain_url"] == "ludicolo.org"
 
     # The contents should exactly match the 'defaults'
     default_cfg = None
@@ -65,7 +65,7 @@ def test_method_load_configurations_OK_override_one():
         if isinstance(basevalue, dict):
             for key, value in default_cfg[basekey].items():
                 # Skip over key that's set in the file.
-                if basekey == "global" and key == "domain_url":
+                if basekey == "daskhub" and key == "domain_url":
                     continue
                 assert (
                     default_cfg[basekey][key] == cfg[basekey][key]
@@ -88,9 +88,9 @@ def test_method_load_configurations_OK_override_all_and_add_one_daskhub():
 
     # Verify that some elements are populated in the configuration
     # the
-    assert len(cfg) == DEFAULT_KEY_COUNT
-    assert len(cfg["daskhub"]) == DEFAULT_DASKHUB_KEY_COUNT
-    assert cfg["global"]["domain_url"] == "ludicolo.org"
+    assert len(cfg) == DEFAULT_KEY_COUNT + 1
+    assert len(cfg["daskhub"]) == DEFAULT_DASKHUB_KEY_COUNT + 1
+    assert cfg["daskhub"]["domain_url"] == "ludicolo.org"
     assert cfg["daskhub"]["domain_record"] == "daskhub-tapubulu"
     assert cfg["daskhub"]["namespace"] == "tapufini"
     assert cfg["eksctl"]["metadata"]["name"] == "eks-alola"

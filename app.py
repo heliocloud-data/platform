@@ -143,13 +143,10 @@ class MyHelioCloud(Construct):
                     config=self.__config,
                     base_aws=base_stack,
                     base_auth=auth_stack,
-                    portal_stack=portal_stack,
                     env=self.__env,
                 )
                 daskhub_stack.add_dependency(base_stack)
                 daskhub_stack.add_dependency(auth_stack)
-                if enabled_modules.get("portal", False):
-                    daskhub_stack.add_dependency(portal_stack)
                 cdk.Tags.of(daskhub_stack).add("Product", "heliocloud-daskhub-admin")
 
             if enabled_modules.get("registration_page", False):

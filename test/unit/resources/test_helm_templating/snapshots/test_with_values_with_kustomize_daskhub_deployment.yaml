@@ -15,6 +15,17 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   labels:
+    app: jupyterhub
+    chart: jupyterhub-3.2.1
+    component: autohttps
+    heritage: Helm
+    release: daskhub
+  name: autohttps
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  labels:
     app.kubernetes.io/instance: daskhub
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: dask-gateway
@@ -49,6 +60,27 @@ metadata:
     heritage: Helm
     release: daskhub
   name: user-scheduler
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  labels:
+    app: jupyterhub
+    chart: jupyterhub-3.2.1
+    component: autohttps
+    heritage: Helm
+    release: daskhub
+  name: autohttps
+rules:
+  - apiGroups:
+      - ''
+    resources:
+      - secrets
+    verbs:
+      - get
+      - patch
+      - list
+      - create
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
@@ -409,6 +441,25 @@ rules:
       - get
       - list
       - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  labels:
+    app: jupyterhub
+    chart: jupyterhub-3.2.1
+    component: autohttps
+    heritage: Helm
+    release: daskhub
+  name: autohttps
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: autohttps
+subjects:
+  - apiGroup:
+    kind: ServiceAccount
+    name: autohttps
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
@@ -793,6 +844,105 @@ metadata:
     gateway.dask.org/instance: daskhub-dask-gateway
     helm.sh/chart: dask-gateway-2024.1.0
   name: api-daskhub-dask-gateway
+---
+apiVersion: v1
+data:
+  dynamic.yaml: |
+    http:
+      middlewares:
+        hsts:
+          headers:
+            stsIncludeSubdomains: false
+            stsPreload: false
+            stsSeconds: 15724800
+        redirect:
+          redirectScheme:
+            permanent: true
+            scheme: https
+        scheme:
+          headers:
+            customRequestHeaders:
+              X-Scheme: https
+      routers:
+        default:
+          entrypoints:
+          - https
+          middlewares:
+          - hsts
+          - scheme
+          rule: PathPrefix(`/`)
+          service: default
+          tls:
+            certResolver: default
+            domains:
+            - main: daskhub.stuff.org
+            options: default
+        insecure:
+          entrypoints:
+          - http
+          middlewares:
+          - redirect
+          rule: PathPrefix(`/`)
+          service: default
+      services:
+        default:
+          loadBalancer:
+            servers:
+            - url: http://proxy-http:8000/
+    tls:
+      options:
+        default:
+          cipherSuites:
+          - TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384
+          - TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384
+          - TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256
+          - TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256
+          - TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305
+          - TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305
+          minVersion: VersionTLS12
+          sniStrict: true
+  traefik.yaml: |
+    accessLog:
+      fields:
+        headers:
+          names:
+            Authorization: redacted
+            Cookie: redacted
+            Set-Cookie: redacted
+            X-Xsrftoken: redacted
+      filters:
+        statusCodes:
+        - 500-599
+    certificatesResolvers:
+      default:
+        acme:
+          caServer: https://acme-v02.api.letsencrypt.org/directory
+          email: <INSERT_CONTACT_EMAIL>
+          httpChallenge:
+            entryPoint: http
+          storage: /etc/acme/acme.json
+    entryPoints:
+      http:
+        address: :8080
+      https:
+        address: :8443
+        transport:
+          respondingTimeouts:
+            idleTimeout: 10m0s
+    log:
+      level: DEBUG
+    providers:
+      file:
+        filename: /etc/traefik/dynamic.yaml
+kind: ConfigMap
+metadata:
+  labels:
+    app: jupyterhub
+    chart: jupyterhub-3.2.1
+    component: autohttps
+    heritage: Helm
+    release: daskhub
+  name: autohttps
 ---
 apiVersion: v1
 data:
@@ -1634,6 +1784,30 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: daskhub.stuff.org
+  labels:
+    app: jupyterhub
+    chart: jupyterhub-3.2.1
+    component: autohttps
+    heritage: Helm
+    release: daskhub
+  name: proxy-http
+spec:
+  ports:
+    - port: 8000
+      targetPort: http
+  selector:
+    app: jupyterhub
+    component: proxy
+    release: daskhub
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: daskhub.stuff.org
   labels:
     app: jupyterhub
     chart: jupyterhub-3.2.1
@@ -1643,14 +1817,17 @@ metadata:
   name: proxy-public
 spec:
   ports:
+    - name: https
+      port: 443
+      targetPort: https
     - name: http
       port: 80
       targetPort: http
   selector:
     app: jupyterhub
-    component: proxy
+    component: autohttps
     release: daskhub
-  type: ClusterIP
+  type: LoadBalancer
 ---
 apiVersion: v1
 kind: Service
@@ -1769,6 +1946,133 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
+    app: jupyterhub
+    chart: jupyterhub-3.2.1
+    component: autohttps
+    heritage: Helm
+    kustomization: patch-jupyterhub-autohttps-startup-delay
+    release: daskhub
+  name: autohttps
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: jupyterhub
+      component: autohttps
+      release: daskhub
+  template:
+    metadata:
+      annotations:
+        checksum/static-config: 2c6b369b3ac56cb757248a03ba940643c62cd989b435f34cbcd3d57eb7e5f6e4
+      labels:
+        app: jupyterhub
+        component: autohttps
+        hub.jupyter.org/network-access-proxy-http: 'true'
+        release: daskhub
+    spec:
+      affinity:
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - preference:
+                matchExpressions:
+                  - key: hub.jupyter.org/node-purpose
+                    operator: In
+                    values:
+                      - core
+              weight: 100
+      containers:
+        - image: traefik:v2.4.11
+          livenessProbe:
+            exec:
+              command:
+                - grep
+                - main
+                - /etc/acme/acme.json
+            failureThreshold: 3
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 3
+          name: traefik
+          ports:
+            - containerPort: 8080
+              name: http
+            - containerPort: 8443
+              name: https
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsGroup: 65534
+            runAsUser: 65534
+          volumeMounts:
+            - mountPath: /etc/traefik
+              name: traefik-config
+            - mountPath: /etc/acme
+              name: certificates
+        - args:
+            - watch-save
+            - --label=app=jupyterhub
+            - --label=release=daskhub
+            - --label=chart=jupyterhub-3.2.1
+            - --label=heritage=secret-sync
+            - proxy-public-tls-acme
+            - acme.json
+            - /etc/acme/acme.json
+          env:
+            - name: PYTHONUNBUFFERED
+              value: 'True'
+          image: quay.io/jupyterhub/k8s-secret-sync:3.2.1
+          name: secret-sync
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsGroup: 65534
+            runAsUser: 65534
+          volumeMounts:
+            - mountPath: /etc/acme
+              name: certificates
+      initContainers:
+        - command:
+            - sh
+            - -c
+            - sleep 30
+          image: busybox:stable
+          name: startup-delay
+        - args:
+            - load
+            - proxy-public-tls-acme
+            - acme.json
+            - /etc/acme/acme.json
+          env:
+            - name: PYTHONUNBUFFERED
+              value: 'True'
+          image: quay.io/jupyterhub/k8s-secret-sync:3.2.1
+          name: load-acme
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsGroup: 65534
+            runAsUser: 65534
+          volumeMounts:
+            - mountPath: /etc/acme
+              name: certificates
+      serviceAccountName: autohttps
+      tolerations:
+        - effect: NoSchedule
+          key: hub.jupyter.org/dedicated
+          operator: Equal
+          value: core
+        - effect: NoSchedule
+          key: hub.jupyter.org_dedicated
+          operator: Equal
+          value: core
+      volumes:
+        - emptyDir: {}
+          name: certificates
+        - configMap:
+            name: autohttps
+          name: traefik-config
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
     app.kubernetes.io/instance: daskhub
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: dask-gateway
@@ -1881,7 +2185,7 @@ spec:
                   key: hub.config.ConfigurableHTTPProxy.auth_token
                   name: hub
             - name: EXTRA_PIP_PACKAGES
-              value: boto3 dask_gateway_server
+              value: boto3 dask_gatway_server
           image: quay.io/jupyterhub/k8s-hub:3.2.1
           livenessProbe:
             failureThreshold: 30
@@ -2027,6 +2331,8 @@ spec:
             allowPrivilegeEscalation: false
             runAsGroup: 65534
             runAsUser: 65534
+      nodeSelector:
+        lifecycle: OnDemand
       terminationGracePeriodSeconds: 60
       tolerations:
         - effect: NoSchedule
@@ -2286,34 +2592,79 @@ spec:
       release: daskhub
 ---
 apiVersion: networking.k8s.io/v1
-kind: Ingress
+kind: NetworkPolicy
 metadata:
-  annotations:
-    kubernetes.io/ingress.class: nginx
-    nginx.ingress.kubernetes.io/auth-response-headers: X-Auth-Request-User,X-Auth-Request-Email,X-Auth-Request-Preferred-Username
-    nginx.ingress.kubernetes.io/auth-signin: https://oauth-eks-helio-.stuff.org/oauth2/start
-    nginx.ingress.kubernetes.io/auth-url: https://oauth-eks-helio-.stuff.org/oauth2/auth
-    nginx.ingress.kubernetes.io/proxy-buffer-size: 8k
-    nginx.ingress.kubernetes.io/proxy-buffering: on
   labels:
     app: jupyterhub
     chart: jupyterhub-3.2.1
-    component: ingress
+    component: autohttps
     heritage: Helm
     release: daskhub
-  name: jupyterhub
+  name: autohttps
 spec:
-  rules:
-    - host: daskhub.stuff.org
-      http:
-        paths:
-          - backend:
-              service:
-                name: proxy-public
-                port:
-                  name: http
-            path: /
-            pathType: Prefix
+  egress:
+    - ports:
+        - port: 8000
+      to:
+        - podSelector:
+            matchLabels:
+              app: jupyterhub
+              component: proxy
+              release: daskhub
+    - ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
+      to:
+        - ipBlock:
+            cidr: 169.254.169.254/32
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+        - ipBlock:
+            cidr: 10.0.0.0/8
+        - ipBlock:
+            cidr: 172.16.0.0/12
+        - ipBlock:
+            cidr: 192.168.0.0/16
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              - 10.0.0.0/8
+              - 172.16.0.0/12
+              - 192.168.0.0/16
+              - 169.254.169.254/32
+    - to:
+        - ipBlock:
+            cidr: 10.0.0.0/8
+        - ipBlock:
+            cidr: 172.16.0.0/12
+        - ipBlock:
+            cidr: 192.168.0.0/16
+    - to:
+        - ipBlock:
+            cidr: 169.254.169.254/32
+  ingress:
+    - ports:
+        - port: http
+        - port: https
+    - from:
+        - podSelector:
+            matchLabels:
+              hub.jupyter.org/network-access-proxy-http: 'true'
+      ports:
+        - port: http
+        - port: https
+  podSelector:
+    matchLabels:
+      app: jupyterhub
+      component: autohttps
+      release: daskhub
+  policyTypes:
+    - Ingress
+    - Egress
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy

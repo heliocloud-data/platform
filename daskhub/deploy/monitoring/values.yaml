@@ -1,17 +1,18 @@
 cost-analyzer:
   service:
-    type: ClusterIP
-    port: 9090
+    type: LoadBalancer
+    port: 443
     targetPort: 9090
   forecasting:
     enabled: false
   grafana:
-    service:
-      type: ClusterIP
-      port: 80
     grafana.ini:
       auth.anonymous:
-        enabled: true
+        enabled: false
+    service:
+      type: LoadBalancer
+      port: 443
+      targetPort: 3000
     livenessProbe:
       httpGet:
         path: /healthz

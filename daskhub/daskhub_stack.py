@@ -50,14 +50,12 @@ class DaskhubStack(Stack):
             config: dict,
             base_aws: BaseAwsStack,
             base_auth: Stack,
-            portal_stack: Stack = None,
             **kwargs,
     ) -> None:
         # fmt: on
         super().__init__(scope, construct_id, **kwargs)
 
         self.__daskhub_config = DaskhubStack.load_configurations(config)
-
         self.build_hosted_zone()
 
         if 'portal' in config and ('api_key' not in config['portal'] or config['portal']['api_key'] == 'auto'):
@@ -318,7 +316,7 @@ class DaskhubStack(Stack):
         )
 
         oauth_base_url=(f"https://{self.__daskhub_config['daskhub']['domain_record']}."
-            f"{self.__daskhub_config['global']['domain_url']}")
+            f"{self.__daskhub_config['daskhub']['domain_url']}")
         callback_url=f"{oauth_base_url}/hub/oauth_callback"
         logout_url=f"{oauth_base_url}/logout"
 
@@ -345,11 +343,12 @@ class DaskhubStack(Stack):
 
         # Add OAuth2 PRoxy as a client to the Cognito user pool
         # pylint: disable=duplicate-code
-        oauth_base_url = ("https://oauth-"
-                        f"{self.__daskhub_config['eksctl']['metadata']['name']}-{self.__daskhub_config['eksctl']['metadata']['region']}."
-                        f"{self.__daskhub_config['global']['domain_url']}")
-        callback_url = f"{oauth_base_url}/oauth2/callback"
-        logout_url = f"{oauth_base_url}/logout"
+        if "daskhub_metrics" in config["enabled"] and config["enabled"]["daskhub_metrics"]:
+            oauth_base_url = ("https://"
+                            f"{self.__daskhub_config['monitoring']['cost_analyzer_domain_prefix']}."
+                            f"{self.__daskhub_config['daskhub']['domain_url']}")
+            callback_url = f"{oauth_base_url}/model/oidc/authorize"
+            logout_url = f"{oauth_base_url}/logout"
 
         kubecost_client = base_auth.userpool.add_client(
             "heliocloud-kubecost",
@@ -396,8 +395,6 @@ class DaskhubStack(Stack):
         cdk.CfnOutput(self, "CognitoClientId", value=daskhub_client.user_pool_client_id)
         cdk.CfnOutput(self, "CognitoDomainPrefix", value=domain_prefix)
         cdk.CfnOutput(self, "CognitoUserPoolId", value=base_auth.userpool.user_pool_id)
-        if portal_stack:
-            cdk.CfnOutput(self, "PortalStackName", value=portal_stack.stack_name)
 
 
     @staticmethod
@@ -440,7 +437,7 @@ class DaskhubStack(Stack):
         This method creates a CDK route53 construct from a domain lookup under the 
         assumption it already exists.
         """
-        domain_url = self.__daskhub_config['global']['domain_url']
+        domain_url = self.__daskhub_config['daskhub']['domain_url']
         self.hosted_zone = route53.PublicHostedZone.from_lookup(
             self, "HostedZone", domain_name=domain_url
         )
@@ -460,7 +457,7 @@ class DaskhubStack(Stack):
         ttl = Duration.seconds(300)
         domain_name = "0.0.0.0"
         full_name = f"{self.__daskhub_config['daskhub']['domain_record']}." \
-                    f"{self.__daskhub_config['global']['domain_url']}."
+                    f"{self.__daskhub_config['daskhub']['domain_url']}."
 
         record = find_route53_record_by_type_and_name(
             self.hosted_zone.hosted_zone_id, 'CNAME',

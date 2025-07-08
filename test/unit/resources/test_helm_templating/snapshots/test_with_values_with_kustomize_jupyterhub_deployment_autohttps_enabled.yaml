@@ -3,36 +3,12 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   labels:
-    app.kubernetes.io/instance: daskhub
-    app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/name: dask-gateway
-    app.kubernetes.io/version: 2024.1.0
-    gateway.dask.org/instance: daskhub-dask-gateway
-    helm.sh/chart: dask-gateway-2024.1.0
-  name: api-daskhub-dask-gateway
----
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  labels:
     app: jupyterhub
     chart: jupyterhub-3.2.1
     component: autohttps
     heritage: Helm
-    release: daskhub
+    release: jupyterhub
   name: autohttps
----
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  labels:
-    app.kubernetes.io/instance: daskhub
-    app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/name: dask-gateway
-    app.kubernetes.io/version: 2024.1.0
-    gateway.dask.org/instance: daskhub-dask-gateway
-    helm.sh/chart: dask-gateway-2024.1.0
-  name: controller-daskhub-dask-gateway
 ---
 apiVersion: v1
 kind: ServiceAccount
@@ -42,13 +18,8 @@ metadata:
     chart: jupyterhub-3.2.1
     component: hub
     heritage: Helm
-    release: daskhub
+    release: jupyterhub
   name: hub
----
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: traefik-daskhub-dask-gateway
 ---
 apiVersion: v1
 kind: ServiceAccount
@@ -58,7 +29,7 @@ metadata:
     chart: jupyterhub-3.2.1
     component: user-scheduler
     heritage: Helm
-    release: daskhub
+    release: jupyterhub
   name: user-scheduler
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -69,7 +40,7 @@ metadata:
     chart: jupyterhub-3.2.1
     component: autohttps
     heritage: Helm
-    release: daskhub
+    release: jupyterhub
   name: autohttps
 rules:
   - apiGroups:
@@ -90,7 +61,7 @@ metadata:
     chart: jupyterhub-3.2.1
     component: hub
     heritage: Helm
-    release: daskhub
+    release: jupyterhub
   name: hub
 rules:
   - apiGroups:
@@ -119,93 +90,12 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   labels:
-    app.kubernetes.io/instance: daskhub
-    app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/name: dask-gateway
-    app.kubernetes.io/version: 2024.1.0
-    gateway.dask.org/instance: daskhub-dask-gateway
-    helm.sh/chart: dask-gateway-2024.1.0
-  name: api-daskhub-dask-gateway
-rules:
-  - apiGroups:
-      - ''
-    resources:
-      - secrets
-    verbs:
-      - get
-  - apiGroups:
-      - gateway.dask.org
-    resources:
-      - daskclusters
-    verbs:
-      - '*'
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  labels:
-    app.kubernetes.io/instance: daskhub
-    app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/name: dask-gateway
-    app.kubernetes.io/version: 2024.1.0
-    gateway.dask.org/instance: daskhub-dask-gateway
-    helm.sh/chart: dask-gateway-2024.1.0
-  name: controller-daskhub-dask-gateway
-rules:
-  - apiGroups:
-      - gateway.dask.org
-    resources:
-      - daskclusters
-      - daskclusters/status
-    verbs:
-      - '*'
-  - apiGroups:
-      - traefik.io
-    resources:
-      - ingressroutes
-      - ingressroutetcps
-    verbs:
-      - get
-      - create
-      - delete
-  - apiGroups:
-      - ''
-    resources:
-      - pods
-    verbs:
-      - get
-      - list
-      - watch
-      - create
-      - delete
-  - apiGroups:
-      - ''
-    resources:
-      - endpoints
-    verbs:
-      - get
-      - list
-      - watch
-  - apiGroups:
-      - ''
-    resources:
-      - secrets
-      - services
-    verbs:
-      - create
-      - delete
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  labels:
     app: jupyterhub
     chart: jupyterhub-3.2.1
     component: user-scheduler
     heritage: Helm
-    kustomization: patch-jupyterhub-user-scheduler-apiVersion
-    release: daskhub
-  name: daskhub-user-scheduler
+    release: jupyterhub
+  name: jupyterhub-user-scheduler
 rules:
   - apiGroups:
       - ''
@@ -336,7 +226,6 @@ rules:
       - storage.k8s.io
     resources:
       - csinodes
-      - volumeattachments
     verbs:
       - get
       - list
@@ -395,54 +284,6 @@ rules:
       - watch
 ---
 apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  name: traefik-daskhub-dask-gateway
-rules:
-  - apiGroups:
-      - ''
-    resources:
-      - pods
-      - services
-      - endpoints
-      - secrets
-    verbs:
-      - get
-      - list
-      - watch
-  - apiGroups:
-      - extensions
-    resources:
-      - ingresses
-    verbs:
-      - get
-      - list
-      - watch
-  - apiGroups:
-      - extensions
-    resources:
-      - ingresses/status
-    verbs:
-      - update
-  - apiGroups:
-      - traefik.io
-      - traefik.containo.us
-    resources:
-      - ingressroutes
-      - ingressroutetcps
-      - ingressrouteudps
-      - middlewares
-      - middlewaretcps
-      - serverstransports
-      - tlsoptions
-      - tlsstores
-      - traefikservices
-    verbs:
-      - get
-      - list
-      - watch
----
-apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   labels:
@@ -450,7 +291,7 @@ metadata:
     chart: jupyterhub-3.2.1
     component: autohttps
     heritage: Helm
-    release: daskhub
+    release: jupyterhub
   name: autohttps
 roleRef:
   apiGroup: rbac.authorization.k8s.io
@@ -469,7 +310,7 @@ metadata:
     chart: jupyterhub-3.2.1
     component: hub
     heritage: Helm
-    release: daskhub
+    release: jupyterhub
   name: hub
 roleRef:
   apiGroup: rbac.authorization.k8s.io
@@ -484,366 +325,20 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   labels:
-    app.kubernetes.io/instance: daskhub
-    app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/name: dask-gateway
-    app.kubernetes.io/version: 2024.1.0
-    gateway.dask.org/instance: daskhub-dask-gateway
-    helm.sh/chart: dask-gateway-2024.1.0
-  name: api-daskhub-dask-gateway
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: api-daskhub-dask-gateway
-subjects:
-  - kind: ServiceAccount
-    name: api-daskhub-dask-gateway
-    namespace: daskhub
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  labels:
-    app.kubernetes.io/instance: daskhub
-    app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/name: dask-gateway
-    app.kubernetes.io/version: 2024.1.0
-    gateway.dask.org/instance: daskhub-dask-gateway
-    helm.sh/chart: dask-gateway-2024.1.0
-  name: controller-daskhub-dask-gateway
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: controller-daskhub-dask-gateway
-subjects:
-  - kind: ServiceAccount
-    name: controller-daskhub-dask-gateway
-    namespace: daskhub
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  labels:
     app: jupyterhub
     chart: jupyterhub-3.2.1
     component: user-scheduler
     heritage: Helm
-    release: daskhub
-  name: daskhub-user-scheduler
+    release: jupyterhub
+  name: jupyterhub-user-scheduler
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: daskhub-user-scheduler
+  name: jupyterhub-user-scheduler
 subjects:
   - kind: ServiceAccount
     name: user-scheduler
     namespace: daskhub
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: traefik-daskhub-dask-gateway
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: traefik-daskhub-dask-gateway
-subjects:
-  - kind: ServiceAccount
-    name: traefik-daskhub-dask-gateway
-    namespace: daskhub
----
-apiVersion: v1
-data:
-  dask_gateway_config.py: |-
-    import os
-    import json
-    import sys
-
-    # Add this directory to path to support extension modules
-    sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
-
-    _PROPERTIES = json.loads("{}") # CLEANED FOR TESTING
-
-    def get_property(key, default=None):
-        """Read a property from the configured helm values."""
-        value = _PROPERTIES
-        for key2 in key.split("."):
-            if not isinstance(value, dict) or key2 not in value:
-                return default
-            value = value[key2]
-        return value
-
-    c.DaskGateway.log_level = "INFO"
-
-    # Configure addresses
-    c.DaskGateway.address = ":8000"
-    c.KubeBackend.api_url = 'http://api-daskhub-dask-gateway.daskhub:8000/api'
-
-    # Configure the backend
-    c.DaskGateway.backend_class = "dask_gateway_server.backends.kubernetes.KubeBackend"
-    c.KubeBackend.gateway_instance = "daskhub-dask-gateway"
-
-    # Configure the dask cluster image
-    image_name = get_property("gateway.backend.image.name")
-    if image_name:
-        image_tag = get_property("gateway.backend.image.tag")
-        c.KubeClusterConfig.image = (
-            "%s:%s" % (image_name, image_tag) if image_tag else image_name
-        )
-        c.KubeClusterConfig.image_pull_secrets = get_property("gateway.backend.imagePullSecrets")
-
-    # Forward dask cluster configuration
-    for field, prop_name in [
-        # Scheduler config
-        ("scheduler_cores", "scheduler.cores.request"),
-        ("scheduler_cores_limit", "scheduler.cores.limit"),
-        ("scheduler_memory", "scheduler.memory.request"),
-        ("scheduler_memory_limit", "scheduler.memory.limit"),
-        ("scheduler_extra_container_config", "scheduler.extraContainerConfig"),
-        ("scheduler_extra_pod_config", "scheduler.extraPodConfig"),
-        # Worker config
-        ("worker_cores", "worker.cores.request"),
-        ("worker_cores_limit", "worker.cores.limit"),
-        ("worker_memory", "worker.memory.request"),
-        ("worker_memory_limit", "worker.memory.limit"),
-        ("worker_threads", "worker.threads"),
-        ("worker_extra_container_config", "worker.extraContainerConfig"),
-        ("worker_extra_pod_config", "worker.extraPodConfig"),
-        # Additional fields
-        ("image_pull_policy", "image.pullPolicy"),
-        ("environment", "environment"),
-        ("namespace", "namespace"),
-    ]:
-        value = get_property("gateway.backend." + prop_name)
-        if value is not None:
-            setattr(c.KubeClusterConfig, field, value)
-
-    # Authentication
-    auth_type = get_property("gateway.auth.type")
-    if auth_type == "simple":
-        c.DaskGateway.authenticator_class = "dask_gateway_server.auth.SimpleAuthenticator"
-        password = get_property("gateway.auth.simple.password")
-        if password is not None:
-            c.SimpleAuthenticator.password = password
-    elif auth_type == "kerberos":
-        c.DaskGateway.authenticator_class = "dask_gateway_server.auth.KerberosAuthenticator"
-        keytab = get_property("gateway.auth.kerberos.keytab")
-        if keytab is not None:
-            c.KerberosAuthenticator.keytab = keytab
-    elif auth_type == "jupyterhub":
-        c.DaskGateway.authenticator_class = "dask_gateway_server.auth.JupyterHubAuthenticator"
-        api_url = get_property("gateway.auth.jupyterhub.apiUrl")
-        if api_url is None:
-            try:
-                api_url = "http://{HUB_SERVICE_HOST}:{HUB_SERVICE_PORT}/hub/api".format(**os.environ)
-            except Exception:
-                raise ValueError(
-                    "Failed to infer JupyterHub API url from environment, "
-                    "please specify `gateway.auth.jupyterhub.apiUrl` in "
-                    "your config file"
-                )
-        c.DaskGateway.JupyterHubAuthenticator.jupyterhub_api_url = api_url
-    elif auth_type == "custom":
-        auth_cls = get_property("gateway.auth.custom.class")
-        c.DaskGateway.authenticator_class = auth_cls
-        auth_cls_name = auth_cls.rsplit('.', 1)[-1]
-        auth_config = c[auth_cls_name]
-        auth_config.update(get_property("gateway.auth.custom.config") or {})
-    else:
-        raise ValueError("Unknown authenticator type %r" % auth_type)
-
-    # From gateway.extraConfig.idle
-    # timeout after 30 minutes of inactivity
-    c.KubeClusterConfig.idle_timeout = 1800
-
-    # From gateway.extraConfig.optionHandler
-    from dask_gateway_server.options import Options, Integer, Float, String, Select
-    import copy
-
-    extra_pod_affinity_config = {
-      "nodeAffinity": {
-        "requiredDuringSchedulingIgnoredDuringExecution": {
-          "nodeSelectorTerms": [{
-            "matchExpressions": [{
-              "key": "heliocloud.org/dask-worker",
-              "operator": "In",
-              "values": [
-                "true",
-              ]
-            }]
-          }]
-        }
-      }
-    }
-
-    # Enumerate all the instance profiles that we want to support dask scheduling
-    # for.  We'll need corresponding node groups in the cluster.  We control this
-    # via the cluster-config.yaml.
-    profiles = {
-      "default": {
-        "extra_node_selectors": {
-          "nvidia.com/gpu": "false",
-          "heliocloud.org/dask-worker": "true",
-        },
-
-        "extra_node_affinity": [{
-          "matchExpressions": [{
-            "key": "nvidia.com/gpu",
-            "operator": "In",
-            "values": [
-              "false",
-            ]
-          }]
-        }],
-
-        "scheduler_extra_pod_config": {
-          "affinity": extra_pod_affinity_config,
-          "tolerations": [{
-            "key": "heliocloud.org/dask-worker-profile",
-            "operator": "Equal",
-            "value": "default",
-            "effect": "NoSchedule",
-          }]
-        },
-        "worker_extra_pod_config": {
-          "affinity": extra_pod_affinity_config,
-          "tolerations": [{
-            "key": "heliocloud.org/dask-worker-profile",
-            "operator": "Equal",
-            "value": "default",
-            "effect": "NoSchedule",
-          }]
-        },
-        "environment": {},
-      },
-      "gpu-xlarge": {
-        "overrides": {
-          "worker_cores": 3.5,
-          "worker_memory": "14G",
-        },
-
-        "extra_node_selectors": {
-          "nvidia.com/gpu": "true",
-          "heliocloud.org/dask-worker": "true",
-        },
-
-        "extra_node_affinity": [{
-          "matchExpressions": [{
-            "key": "nvidia.com/gpu",
-            "operator": "In",
-            "values": [
-              "true",
-            ]
-          }]
-        }],
-
-        "scheduler_extra_pod_config": {
-          "affinity": extra_pod_affinity_config,
-          "tolerations": [{
-            "key": "heliocloud.org/dask-worker-profile",
-            "operator": "Equal",
-            "value": "gpu-xlarge",
-            "effect": "NoSchedule",
-          }]
-        },
-        "worker_extra_pod_config": {
-          "affinity": extra_pod_affinity_config,
-          "tolerations": [{
-            "key": "heliocloud.org/dask-worker-profile",
-            "operator": "Equal",
-            "value": "gpu-xlarge",
-            "effect": "NoSchedule",
-          }]
-        },
-        "environment": {
-          "NVIDIA_DRIVER_CAPABILITIES": "compute,utility",
-        },
-      }
-    }
-
-    def get_extra_pod_config_from_profile(options, user, pod_config_key):
-      extra_toleration_user_config = {
-        "key": "hub.jupyter.org/username",
-        "operator": "Equal",
-        "value": user.name,
-        "effect": "NoSchedule",
-      }
-
-      extra_pod_config = copy.deepcopy(profiles[options.profile][pod_config_key])
-
-      if 'tolerations' not in extra_pod_config:
-        extra_pod_config['tolerations'] = []
-
-      # Inject tolerations associated w/ this user.
-      extra_pod_config['tolerations'].append(extra_toleration_user_config)
-
-      # Apply any additional node selectors for the given profile
-      # configuration
-      if 'extra_node_selectors' in profiles[options.profile]:
-        extra_pod_config['nodeSelector'] = profiles[options.profile]['extra_node_selectors']
-
-      # Apply any additional node affinity for the given profile
-      # configuration
-      if 'extra_node_affinity' in profiles[options.profile] and len(profiles[options.profile]['extra_node_affinity']) > 0:
-        if 'affinity' not in extra_pod_config:
-          extra_pod_config['affinity'] = {}
-        if 'nodeAffinity' not in extra_pod_config['affinity']:
-          extra_pod_config['affinity']['nodeAffinity'] = {}
-        if 'requiredDuringSchedulingIgnoredDuringExecution' not in extra_pod_config['affinity']['nodeAffinity']:
-          extra_pod_config['affinity']['nodeAffinity']['requiredDuringSchedulingIgnoredDuringExecution'] = {}
-        if 'nodeSelectorTerms' not in extra_pod_config['affinity']['nodeAffinity']['requiredDuringSchedulingIgnoredDuringExecution']:
-          extra_pod_config['affinity']['nodeAffinity']['requiredDuringSchedulingIgnoredDuringExecution']['nodeSelectorTerms'] = []
-        for extra_node_selector in profiles[options.profile]['extra_node_affinity']:
-          extra_pod_config['affinity']['nodeAffinity']['requiredDuringSchedulingIgnoredDuringExecution']['nodeSelectorTerms'].append(extra_node_selector)
-
-      return extra_pod_config
-
-    def option_handler(options, user):
-      environment = copy.deepcopy(profiles[options.profile]['environment'])
-
-      worker_extra_pod_config = get_extra_pod_config_from_profile(options, user, 'worker_extra_pod_config')
-      scheduler_extra_pod_config = get_extra_pod_config_from_profile(options, user, 'scheduler_extra_pod_config')
-
-      extra_annotations = {
-        "hub.jupyter.org/username": user.name,
-      }
-
-      extra_labels = {
-        "hub.jupyter.org/username": user.name,
-      }
-
-      if ":" not in options.image:
-        raise ValueError("When specifying an image you must also provide a tag")
-
-      return {
-        "image": options.image,
-        "worker_cores": profiles[options.profile].get("overrides",{}).get("worker_cores",options.worker_cores),
-        "worker_memory": profiles[options.profile].get("overrides",{}).get("worker_memory", int(options.worker_memory * 2 ** 30)),
-        "scheduler_extra_pod_annotations": extra_annotations,
-        "worker_extra_pod_annotations": extra_annotations,
-        "scheduler_extra_pod_labels": extra_labels,
-        "worker_extra_pod_labels": extra_labels,
-        "environment": environment,
-        "worker_extra_pod_config": worker_extra_pod_config,
-        "scheduler_extra_pod_config": scheduler_extra_pod_config,
-      }
-    c.Backend.cluster_options = Options(
-      String("image", default="<GENERIC_DOCKER_LOCATION>:<GENERIC_DOCKER_VERSION>", label="Image"),
-      Integer("worker_cores", default=1, min=1, max=4, label="Worker Cores"),
-      Float("worker_memory", default=1, min=1, max=8, label="Worker Memory (GiB)"),
-      Select("profile", list(profiles.keys()), default="default", label="Profile"),
-      handler=option_handler,
-    )
-kind: ConfigMap
-metadata:
-  labels:
-    app.kubernetes.io/instance: daskhub
-    app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/name: dask-gateway
-    app.kubernetes.io/version: 2024.1.0
-    gateway.dask.org/instance: daskhub-dask-gateway
-    helm.sh/chart: dask-gateway-2024.1.0
-  name: api-daskhub-dask-gateway
 ---
 apiVersion: v1
 data:
@@ -875,7 +370,7 @@ data:
           tls:
             certResolver: default
             domains:
-            - main: daskhub.stuff.org
+            - main: <INSERT_HOST_NAME>
             options: default
         insecure:
           entrypoints:
@@ -930,7 +425,7 @@ data:
           respondingTimeouts:
             idleTimeout: 10m0s
     log:
-      level: DEBUG
+      level: WARN
     providers:
       file:
         filename: /etc/traefik/dynamic.yaml
@@ -941,39 +436,8 @@ metadata:
     chart: jupyterhub-3.2.1
     component: autohttps
     heritage: Helm
-    release: daskhub
+    release: jupyterhub
   name: autohttps
----
-apiVersion: v1
-data:
-  dask_gateway_config.py: |-
-    # Configure addresses
-    c.KubeController.address = ":8000"
-    c.KubeController.api_url = 'http://api-daskhub-dask-gateway.daskhub:8000/api'
-    c.KubeController.gateway_instance = 'daskhub-dask-gateway'
-    c.KubeController.proxy_prefix = "/services/dask-gateway"
-    c.KubeController.proxy_web_middlewares = [
-      {"name": 'clusters-prefix-daskhub-dask-gateway',
-      "namespace": 'daskhub'}
-    ]
-    c.KubeController.log_level = "INFO"
-    c.KubeController.completed_cluster_max_age = 86400
-    c.KubeController.completed_cluster_cleanup_period = 600
-    c.KubeController.backoff_base_delay = 0.1
-    c.KubeController.backoff_max_delay = 300
-    c.KubeController.k8s_api_rate_limit = 50
-    c.KubeController.k8s_api_rate_limit_burst = 100
-    c.KubeController.proxy_tcp_entrypoint = "web"
-kind: ConfigMap
-metadata:
-  labels:
-    app.kubernetes.io/instance: daskhub
-    app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/name: dask-gateway
-    app.kubernetes.io/version: 2024.1.0
-    gateway.dask.org/instance: daskhub-dask-gateway
-    helm.sh/chart: dask-gateway-2024.1.0
-  name: controller-daskhub-dask-gateway
 ---
 apiVersion: v1
 data:
@@ -991,7 +455,7 @@ data:
   hub-pvc: hub-db-dir
   hub-serviceaccount: hub
   image-pull-secret: image-pull-secret
-  image-puller-priority: daskhub-image-puller-priority
+  image-puller-priority: jupyterhub-image-puller-priority
   ingress: jupyterhub
   jupyterhub_config.py: |
     # load the config object (satisfies linters)
@@ -1491,7 +955,7 @@ data:
     for key, config_py in sorted(get_config("hub.extraConfig", {}).items()):
         print(f"Loading extra config: {key}")
         exec(config_py)
-  priority: daskhub-default-priority
+  priority: jupyterhub-default-priority
   proxy: proxy
   proxy-api: proxy-api
   proxy-http: proxy-http
@@ -1500,8 +964,8 @@ data:
   proxy-public-tls: proxy-public-tls-acme
   singleuser: singleuser
   user-placeholder: user-placeholder
-  user-placeholder-priority: daskhub-user-placeholder-priority
-  user-scheduler: daskhub-user-scheduler
+  user-placeholder-priority: jupyterhub-user-placeholder-priority
+  user-scheduler: jupyterhub-user-scheduler
   user-scheduler-deploy: user-scheduler
   user-scheduler-lock: user-scheduler-lock
   user-scheduler-serviceaccount: user-scheduler
@@ -1634,7 +1098,7 @@ metadata:
     chart: jupyterhub-3.2.1
     component: hub
     heritage: Helm
-    release: daskhub
+    release: jupyterhub
   name: hub
 ---
 apiVersion: v1
@@ -1683,27 +1147,13 @@ metadata:
     component: user-scheduler
     heritage: Helm
     kustomization: patch-jupyterhub-user-scheduler-apiVersion
-    release: daskhub
+    release: jupyterhub
   name: user-scheduler
 ---
 apiVersion: v1
 data:
-  jupyterhub-api-token: PElOU0VSVF9BUElfS0VZMj4=
-kind: Secret
-metadata:
-  labels:
-    app.kubernetes.io/instance: daskhub
-    app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/name: dask-gateway
-    app.kubernetes.io/version: 2024.1.0
-    gateway.dask.org/instance: daskhub-dask-gateway
-    helm.sh/chart: dask-gateway-2024.1.0
-  name: api-daskhub-dask-gateway
-type: Opaque
----
-apiVersion: v1
-data:
-  hub.services.dask-gateway.apiToken: PElOU0VSVF9BUElfS0VZMj4=
+  values.yaml: 
+    Q2hhcnQ6CiAgTmFtZToganVweXRlcmh1YgogIFZlcnNpb246IDMuMi4xClJlbGVhc2U6CiAgTmFtZToganVweXRlcmh1YgogIE5hbWVzcGFjZTogZGFza2h1YgogIFNlcnZpY2U6IEhlbG0KY3VsbDoKICBhZG1pblVzZXJzOiB0cnVlCiAgY29uY3VycmVuY3k6IDEwCiAgZW5hYmxlZDogdHJ1ZQogIGV2ZXJ5OiA2MDAKICBtYXhBZ2U6IDAKICByZW1vdmVOYW1lZFNlcnZlcnM6IGZhbHNlCiAgdGltZW91dDogMzYwMAogIHVzZXJzOiBmYWxzZQpjdXN0b206IHt9CmRlYnVnOgogIGVuYWJsZWQ6IGZhbHNlCmZ1bGxuYW1lT3ZlcnJpZGU6ICIiCmdsb2JhbDoKICBzYWZlVG9TaG93VmFsdWVzOiBmYWxzZQpodWI6CiAgYWN0aXZlU2VydmVyTGltaXQ6IG51bGwKICBhbGxvd05hbWVkU2VydmVyczogZmFsc2UKICBhbm5vdGF0aW9uczoge30KICBhcmdzOiBbXQogIGF1dGhlbnRpY2F0ZVByb21ldGhldXM6IG51bGwKICBiYXNlVXJsOiAvCiAgY29tbWFuZDogW10KICBjb25jdXJyZW50U3Bhd25MaW1pdDogNjQKICBjb25maWc6CiAgICBKdXB5dGVySHViOgogICAgICBhZG1pbl9hY2Nlc3M6IHRydWUKICAgICAgYXV0aGVudGljYXRvcl9jbGFzczogZHVtbXkKICBjb25zZWN1dGl2ZUZhaWx1cmVMaW1pdDogNQogIGNvbnRhaW5lclNlY3VyaXR5Q29udGV4dDoKICAgIGFsbG93UHJpdmlsZWdlRXNjYWxhdGlvbjogZmFsc2UKICAgIHJ1bkFzR3JvdXA6IDEwMDAKICAgIHJ1bkFzVXNlcjogMTAwMAogIGNvb2tpZVNlY3JldDogbnVsbAogIGRiOgogICAgcGFzc3dvcmQ6IG51bGwKICAgIHB2YzoKICAgICAgYWNjZXNzTW9kZXM6CiAgICAgIC0gUmVhZFdyaXRlT25jZQogICAgICBhbm5vdGF0aW9uczoge30KICAgICAgc2VsZWN0b3I6IHt9CiAgICAgIHN0b3JhZ2U6IDFHaQogICAgICBzdG9yYWdlQ2xhc3NOYW1lOiBudWxsCiAgICAgIHN1YlBhdGg6IG51bGwKICAgIHR5cGU6IHNxbGl0ZS1wdmMKICAgIHVwZ3JhZGU6IG51bGwKICAgIHVybDogbnVsbAogIGRlcGxveW1lbnRTdHJhdGVneToKICAgIHR5cGU6IFJlY3JlYXRlCiAgZXhpc3RpbmdTZWNyZXQ6IG51bGwKICBleHRyYUNvbmZpZzoge30KICBleHRyYUNvbnRhaW5lcnM6IFtdCiAgZXh0cmFFbnY6IHt9CiAgZXh0cmFGaWxlczoge30KICBleHRyYVBvZFNwZWM6IHt9CiAgZXh0cmFWb2x1bWVNb3VudHM6IFtdCiAgZXh0cmFWb2x1bWVzOiBbXQogIGltYWdlOgogICAgbmFtZTogcXVheS5pby9qdXB5dGVyaHViL2s4cy1odWIKICAgIHB1bGxQb2xpY3k6IG51bGwKICAgIHB1bGxTZWNyZXRzOiBbXQogICAgdGFnOiAzLjIuMQogIGluaXRDb250YWluZXJzOiBbXQogIGxhYmVsczoge30KICBsaWZlY3ljbGU6IHt9CiAgbGl2ZW5lc3NQcm9iZToKICAgIGVuYWJsZWQ6IHRydWUKICAgIGZhaWx1cmVUaHJlc2hvbGQ6IDMwCiAgICBpbml0aWFsRGVsYXlTZWNvbmRzOiAzMDAKICAgIHBlcmlvZFNlY29uZHM6IDEwCiAgICB0aW1lb3V0U2Vjb25kczogMwogIGxvYWRSb2xlczoge30KICBuYW1lZFNlcnZlckxpbWl0UGVyVXNlcjogbnVsbAogIG5ldHdvcmtQb2xpY3k6CiAgICBhbGxvd2VkSW5ncmVzc1BvcnRzOiBbXQogICAgZWdyZXNzOiBbXQogICAgZWdyZXNzQWxsb3dSdWxlczoKICAgICAgY2xvdWRNZXRhZGF0YVNlcnZlcjogdHJ1ZQogICAgICBkbnNQb3J0c0Nsb3VkTWV0YWRhdGFTZXJ2ZXI6IHRydWUKICAgICAgZG5zUG9ydHNLdWJlU3lzdGVtTmFtZXNwYWNlOiB0cnVlCiAgICAgIGRuc1BvcnRzUHJpdmF0ZUlQczogdHJ1ZQogICAgICBub25Qcml2YXRlSVBzOiB0cnVlCiAgICAgIHByaXZhdGVJUHM6IHRydWUKICAgIGVuYWJsZWQ6IHRydWUKICAgIGluZ3Jlc3M6IFtdCiAgICBpbnRlck5hbWVzcGFjZUFjY2Vzc0xhYmVsczogaWdub3JlCiAgbm9kZVNlbGVjdG9yOiB7fQogIHBkYjoKICAgIGVuYWJsZWQ6IGZhbHNlCiAgICBtYXhVbmF2YWlsYWJsZTogbnVsbAogICAgbWluQXZhaWxhYmxlOiAxCiAgcG9kU2VjdXJpdHlDb250ZXh0OgogICAgZnNHcm91cDogMTAwMAogIHJlYWRpbmVzc1Byb2JlOgogICAgZW5hYmxlZDogdHJ1ZQogICAgZmFpbHVyZVRocmVzaG9sZDogMTAwMAogICAgaW5pdGlhbERlbGF5U2Vjb25kczogMAogICAgcGVyaW9kU2Vjb25kczogMgogICAgdGltZW91dFNlY29uZHM6IDEKICByZWRpcmVjdFRvU2VydmVyOiBudWxsCiAgcmVzb3VyY2VzOiB7fQogIHJldmlzaW9uSGlzdG9yeUxpbWl0OiBudWxsCiAgc2VydmljZToKICAgIGFubm90YXRpb25zOiB7fQogICAgZXh0cmFQb3J0czogW10KICAgIGxvYWRCYWxhbmNlcklQOiBudWxsCiAgICBwb3J0czoKICAgICAgbm9kZVBvcnQ6IG51bGwKICAgIHR5cGU6IENsdXN0ZXJJUAogIHNlcnZpY2VBY2NvdW50OgogICAgYW5ub3RhdGlvbnM6IHt9CiAgICBjcmVhdGU6IHRydWUKICAgIG5hbWU6IG51bGwKICBzZXJ2aWNlczoge30KICBzaHV0ZG93bk9uTG9nb3V0OiBudWxsCiAgdGVtcGxhdGVQYXRoczogW10KICB0ZW1wbGF0ZVZhcnM6IHt9CiAgdG9sZXJhdGlvbnM6IFtdCmltYWdlUHVsbFNlY3JldDoKICBhdXRvbWF0aWNSZWZlcmVuY2VJbmplY3Rpb246IHRydWUKICBjcmVhdGU6IGZhbHNlCiAgZW1haWw6IG51bGwKICBwYXNzd29yZDogbnVsbAogIHJlZ2lzdHJ5OiBudWxsCiAgdXNlcm5hbWU6IG51bGwKaW1hZ2VQdWxsU2VjcmV0czogW10KaW5ncmVzczoKICBhbm5vdGF0aW9uczoge30KICBlbmFibGVkOiBmYWxzZQogIGhvc3RzOiBbXQogIGluZ3Jlc3NDbGFzc05hbWU6IG51bGwKICBwYXRoU3VmZml4OiBudWxsCiAgcGF0aFR5cGU6IFByZWZpeAogIHRsczogW10KcHJlUHVsbGVyOgogIGFubm90YXRpb25zOiB7fQogIGNvbnRhaW5lclNlY3VyaXR5Q29udGV4dDoKICAgIGFsbG93UHJpdmlsZWdlRXNjYWxhdGlvbjogZmFsc2UKICAgIHJ1bkFzR3JvdXA6IDY1NTM0CiAgICBydW5Bc1VzZXI6IDY1NTM0CiAgY29udGludW91czoKICAgIGVuYWJsZWQ6IHRydWUKICBleHRyYUltYWdlczoge30KICBleHRyYVRvbGVyYXRpb25zOiBbXQogIGhvb2s6CiAgICBjb250YWluZXJTZWN1cml0eUNvbnRleHQ6CiAgICAgIGFsbG93UHJpdmlsZWdlRXNjYWxhdGlvbjogZmFsc2UKICAgICAgcnVuQXNHcm91cDogNjU1MzQKICAgICAgcnVuQXNVc2VyOiA2NTUzNAogICAgZW5hYmxlZDogdHJ1ZQogICAgaW1hZ2U6CiAgICAgIG5hbWU6IHF1YXkuaW8vanVweXRlcmh1Yi9rOHMtaW1hZ2UtYXdhaXRlcgogICAgICBwdWxsUG9saWN5OiBudWxsCiAgICAgIHB1bGxTZWNyZXRzOiBbXQogICAgICB0YWc6IDMuMi4xCiAgICBub2RlU2VsZWN0b3I6IHt9CiAgICBwb2RTY2hlZHVsaW5nV2FpdER1cmF0aW9uOiAxMAogICAgcHVsbE9ubHlPbkNoYW5nZXM6IHRydWUKICAgIHJlc291cmNlczoge30KICAgIHNlcnZpY2VBY2NvdW50OgogICAgICBhbm5vdGF0aW9uczoge30KICAgICAgY3JlYXRlOiB0cnVlCiAgICAgIG5hbWU6IG51bGwKICAgIHRvbGVyYXRpb25zOiBbXQogIGxhYmVsczoge30KICBwYXVzZToKICAgIGNvbnRhaW5lclNlY3VyaXR5Q29udGV4dDoKICAgICAgYWxsb3dQcml2aWxlZ2VFc2NhbGF0aW9uOiBmYWxzZQogICAgICBydW5Bc0dyb3VwOiA2NTUzNAogICAgICBydW5Bc1VzZXI6IDY1NTM0CiAgICBpbWFnZToKICAgICAgbmFtZTogcmVnaXN0cnkuazhzLmlvL3BhdXNlCiAgICAgIHB1bGxQb2xpY3k6IG51bGwKICAgICAgcHVsbFNlY3JldHM6IFtdCiAgICAgIHRhZzogIjMuOSIKICBwdWxsUHJvZmlsZUxpc3RJbWFnZXM6IHRydWUKICByZXNvdXJjZXM6IHt9CiAgcmV2aXNpb25IaXN0b3J5TGltaXQ6IG51bGwKcHJveHk6CiAgYW5ub3RhdGlvbnM6IHt9CiAgY2hwOgogICAgY29udGFpbmVyU2VjdXJpdHlDb250ZXh0OgogICAgICBhbGxvd1ByaXZpbGVnZUVzY2FsYXRpb246IGZhbHNlCiAgICAgIHJ1bkFzR3JvdXA6IDY1NTM0CiAgICAgIHJ1bkFzVXNlcjogNjU1MzQKICAgIGRlZmF1bHRUYXJnZXQ6IG51bGwKICAgIGVycm9yVGFyZ2V0OiBudWxsCiAgICBleHRyYUNvbW1hbmRMaW5lRmxhZ3M6IFtdCiAgICBleHRyYUVudjoge30KICAgIGV4dHJhUG9kU3BlYzoge30KICAgIGltYWdlOgogICAgICBuYW1lOiBxdWF5LmlvL2p1cHl0ZXJodWIvY29uZmlndXJhYmxlLWh0dHAtcHJveHkKICAgICAgcHVsbFBvbGljeTogbnVsbAogICAgICBwdWxsU2VjcmV0czogW10KICAgICAgdGFnOiA0LjYuMQogICAgbGl2ZW5lc3NQcm9iZToKICAgICAgZW5hYmxlZDogdHJ1ZQogICAgICBmYWlsdXJlVGhyZXNob2xkOiAzMAogICAgICBpbml0aWFsRGVsYXlTZWNvbmRzOiA2MAogICAgICBwZXJpb2RTZWNvbmRzOiAxMAogICAgICB0aW1lb3V0U2Vjb25kczogMwogICAgbmV0d29ya1BvbGljeToKICAgICAgYWxsb3dlZEluZ3Jlc3NQb3J0czoKICAgICAgLSBodHRwCiAgICAgIC0gaHR0cHMKICAgICAgZWdyZXNzOiBbXQogICAgICBlZ3Jlc3NBbGxvd1J1bGVzOgogICAgICAgIGNsb3VkTWV0YWRhdGFTZXJ2ZXI6IHRydWUKICAgICAgICBkbnNQb3J0c0Nsb3VkTWV0YWRhdGFTZXJ2ZXI6IHRydWUKICAgICAgICBkbnNQb3J0c0t1YmVTeXN0ZW1OYW1lc3BhY2U6IHRydWUKICAgICAgICBkbnNQb3J0c1ByaXZhdGVJUHM6IHRydWUKICAgICAgICBub25Qcml2YXRlSVBzOiB0cnVlCiAgICAgICAgcHJpdmF0ZUlQczogdHJ1ZQogICAgICBlbmFibGVkOiB0cnVlCiAgICAgIGluZ3Jlc3M6IFtdCiAgICAgIGludGVyTmFtZXNwYWNlQWNjZXNzTGFiZWxzOiBpZ25vcmUKICAgIG5vZGVTZWxlY3Rvcjoge30KICAgIHBkYjoKICAgICAgZW5hYmxlZDogZmFsc2UKICAgICAgbWF4VW5hdmFpbGFibGU6IG51bGwKICAgICAgbWluQXZhaWxhYmxlOiAxCiAgICByZWFkaW5lc3NQcm9iZToKICAgICAgZW5hYmxlZDogdHJ1ZQogICAgICBmYWlsdXJlVGhyZXNob2xkOiAxMDAwCiAgICAgIGluaXRpYWxEZWxheVNlY29uZHM6IDAKICAgICAgcGVyaW9kU2Vjb25kczogMgogICAgICB0aW1lb3V0U2Vjb25kczogMQogICAgcmVzb3VyY2VzOiB7fQogICAgcmV2aXNpb25IaXN0b3J5TGltaXQ6IG51bGwKICAgIHRvbGVyYXRpb25zOiBbXQogIGRlcGxveW1lbnRTdHJhdGVneToKICAgIHJvbGxpbmdVcGRhdGU6IG51bGwKICAgIHR5cGU6IFJlY3JlYXRlCiAgaHR0cHM6CiAgICBlbmFibGVkOiB0cnVlCiAgICBob3N0czoKICAgIC0gPElOU0VSVF9IT1NUX05BTUU+CiAgICBsZXRzZW5jcnlwdDoKICAgICAgYWNtZVNlcnZlcjogaHR0cHM6Ly9hY21lLXYwMi5hcGkubGV0c2VuY3J5cHQub3JnL2RpcmVjdG9yeQogICAgICBjb250YWN0RW1haWw6IDxJTlNFUlRfQ09OVEFDVF9FTUFJTD4KICAgIG1hbnVhbDoKICAgICAgY2VydDogbnVsbAogICAgICBrZXk6IG51bGwKICAgIHNlY3JldDoKICAgICAgY3J0OiB0bHMuY3J0CiAgICAgIGtleTogdGxzLmtleQogICAgICBuYW1lOiBudWxsCiAgICB0eXBlOiBsZXRzZW5jcnlwdAogIGxhYmVsczoge30KICBzZWNyZXRTeW5jOgogICAgY29udGFpbmVyU2VjdXJpdHlDb250ZXh0OgogICAgICBhbGxvd1ByaXZpbGVnZUVzY2FsYXRpb246IGZhbHNlCiAgICAgIHJ1bkFzR3JvdXA6IDY1NTM0CiAgICAgIHJ1bkFzVXNlcjogNjU1MzQKICAgIGltYWdlOgogICAgICBuYW1lOiBxdWF5LmlvL2p1cHl0ZXJodWIvazhzLXNlY3JldC1zeW5jCiAgICAgIHB1bGxQb2xpY3k6IG51bGwKICAgICAgcHVsbFNlY3JldHM6IFtdCiAgICAgIHRhZzogMy4yLjEKICAgIHJlc291cmNlczoge30KICBzZWNyZXRUb2tlbjogbnVsbAogIHNlcnZpY2U6CiAgICBhbm5vdGF0aW9uczoge30KICAgIGRpc2FibGVIdHRwUG9ydDogZmFsc2UKICAgIGV4dHJhUG9ydHM6IFtdCiAgICBsYWJlbHM6IHt9CiAgICBsb2FkQmFsYW5jZXJJUDogbnVsbAogICAgbG9hZEJhbGFuY2VyU291cmNlUmFuZ2VzOiBbXQogICAgbm9kZVBvcnRzOgogICAgICBodHRwOiBudWxsCiAgICAgIGh0dHBzOiBudWxsCiAgICB0eXBlOiBMb2FkQmFsYW5jZXIKICB0cmFlZmlrOgogICAgY29udGFpbmVyU2VjdXJpdHlDb250ZXh0OgogICAgICBhbGxvd1ByaXZpbGVnZUVzY2FsYXRpb246IGZhbHNlCiAgICAgIHJ1bkFzR3JvdXA6IDY1NTM0CiAgICAgIHJ1bkFzVXNlcjogNjU1MzQKICAgIGV4dHJhRHluYW1pY0NvbmZpZzoKICAgICAgaHR0cDoKICAgICAgICBtaWRkbGV3YXJlczoKICAgICAgICAgIGhzdHM6CiAgICAgICAgICAgIGhlYWRlcnM6CiAgICAgICAgICAgICAgc3RzSW5jbHVkZVN1YmRvbWFpbnM6IGZhbHNlCiAgICAgICAgICAgICAgc3RzUHJlbG9hZDogZmFsc2UKICAgICAgICAgICAgICBzdHNTZWNvbmRzOiAxNTcyNDgwMAogICAgICAgICAgcmVkaXJlY3Q6CiAgICAgICAgICAgIHJlZGlyZWN0U2NoZW1lOgogICAgICAgICAgICAgIHBlcm1hbmVudDogdHJ1ZQogICAgICAgICAgICAgIHNjaGVtZTogaHR0cHMKICAgICAgICAgIHNjaGVtZToKICAgICAgICAgICAgaGVhZGVyczoKICAgICAgICAgICAgICBjdXN0b21SZXF1ZXN0SGVhZGVyczoKICAgICAgICAgICAgICAgIFgtU2NoZW1lOiBodHRwcwogICAgICAgIHJvdXRlcnM6CiAgICAgICAgICBkZWZhdWx0OgogICAgICAgICAgICBlbnRyeXBvaW50czoKICAgICAgICAgICAgLSBodHRwcwogICAgICAgICAgICBtaWRkbGV3YXJlczoKICAgICAgICAgICAgLSBoc3RzCiAgICAgICAgICAgIC0gc2NoZW1lCiAgICAgICAgICAgIHJ1bGU6IFBhdGhQcmVmaXgoYC9gKQogICAgICAgICAgICBzZXJ2aWNlOiBkZWZhdWx0CiAgICAgICAgICAgIHRsczoKICAgICAgICAgICAgICBjZXJ0UmVzb2x2ZXI6IGRlZmF1bHQKICAgICAgICAgICAgICBkb21haW5zOgogICAgICAgICAgICAgIC0gbWFpbjogPElOU0VSVF9IT1NUX05BTUU+CiAgICAgICAgICAgICAgb3B0aW9uczogZGVmYXVsdAogICAgICAgICAgaW5zZWN1cmU6CiAgICAgICAgICAgIGVudHJ5cG9pbnRzOgogICAgICAgICAgICAtIGh0dHAKICAgICAgICAgICAgbWlkZGxld2FyZXM6CiAgICAgICAgICAgIC0gcmVkaXJlY3QKICAgICAgICAgICAgcnVsZTogUGF0aFByZWZpeChgL2ApCiAgICAgICAgICAgIHNlcnZpY2U6IGRlZmF1bHQKICAgICAgICBzZXJ2aWNlczoKICAgICAgICAgIGRlZmF1bHQ6CiAgICAgICAgICAgIGxvYWRCYWxhbmNlcjoKICAgICAgICAgICAgICBzZXJ2ZXJzOgogICAgICAgICAgICAgIC0gdXJsOiBodHRwOi8vcHJveHktaHR0cDo4MDAwLwogICAgICB0bHM6CiAgICAgICAgb3B0aW9uczoKICAgICAgICAgIGRlZmF1bHQ6CiAgICAgICAgICAgIGNpcGhlclN1aXRlczoKICAgICAgICAgICAgLSBUTFNfRUNESEVfRUNEU0FfV0lUSF9BRVNfMjU2X0dDTV9TSEEzODQKICAgICAgICAgICAgLSBUTFNfRUNESEVfUlNBX1dJVEhfQUVTXzI1Nl9HQ01fU0hBMzg0CiAgICAgICAgICAgIC0gVExTX0VDREhFX0VDRFNBX1dJVEhfQUVTXzEyOF9HQ01fU0hBMjU2CiAgICAgICAgICAgIC0gVExTX0VDREhFX1JTQV9XSVRIX0FFU18xMjhfR0NNX1NIQTI1NgogICAgICAgICAgICAtIFRMU19FQ0RIRV9FQ0RTQV9XSVRIX0NIQUNIQTIwX1BPTFkxMzA1CiAgICAgICAgICAgIC0gVExTX0VDREhFX1JTQV9XSVRIX0NIQUNIQTIwX1BPTFkxMzA1CiAgICAgICAgICAgIG1pblZlcnNpb246IFZlcnNpb25UTFMxMgogICAgICAgICAgICBzbmlTdHJpY3Q6IHRydWUKICAgIGV4dHJhRW52OiB7fQogICAgZXh0cmFJbml0Q29udGFpbmVyczogW10KICAgIGV4dHJhUG9kU3BlYzoge30KICAgIGV4dHJhUG9ydHM6IFtdCiAgICBleHRyYVN0YXRpY0NvbmZpZzoKICAgICAgYWNjZXNzTG9nOgogICAgICAgIGZpZWxkczoKICAgICAgICAgIGhlYWRlcnM6CiAgICAgICAgICAgIG5hbWVzOgogICAgICAgICAgICAgIEF1dGhvcml6YXRpb246IHJlZGFjdGVkCiAgICAgICAgICAgICAgQ29va2llOiByZWRhY3RlZAogICAgICAgICAgICAgIFNldC1Db29raWU6IHJlZGFjdGVkCiAgICAgICAgICAgICAgWC1Yc3JmdG9rZW46IHJlZGFjdGVkCiAgICAgICAgZmlsdGVyczoKICAgICAgICAgIHN0YXR1c0NvZGVzOgogICAgICAgICAgLSA1MDAtNTk5CiAgICAgIGNlcnRpZmljYXRlc1Jlc29sdmVyczoKICAgICAgICBkZWZhdWx0OgogICAgICAgICAgYWNtZToKICAgICAgICAgICAgY2FTZXJ2ZXI6IGh0dHBzOi8vYWNtZS12MDIuYXBpLmxldHNlbmNyeXB0Lm9yZy9kaXJlY3RvcnkKICAgICAgICAgICAgZW1haWw6IDxJTlNFUlRfQ09OVEFDVF9FTUFJTD4KICAgICAgICAgICAgaHR0cENoYWxsZW5nZToKICAgICAgICAgICAgICBlbnRyeVBvaW50OiBodHRwCiAgICAgICAgICAgIHN0b3JhZ2U6IC9ldGMvYWNtZS9hY21lLmpzb24KICAgICAgZW50cnlQb2ludHM6CiAgICAgICAgaHR0cDoKICAgICAgICAgIGFkZHJlc3M6IDo4MDgwCiAgICAgICAgaHR0cHM6CiAgICAgICAgICBhZGRyZXNzOiA6ODQ0MwogICAgICAgICAgdHJhbnNwb3J0OgogICAgICAgICAgICByZXNwb25kaW5nVGltZW91dHM6CiAgICAgICAgICAgICAgaWRsZVRpbWVvdXQ6IDEwbTBzCiAgICAgIGxvZzoKICAgICAgICBsZXZlbDogV0FSTgogICAgICBwcm92aWRlcnM6CiAgICAgICAgZmlsZToKICAgICAgICAgIGZpbGVuYW1lOiAvZXRjL3RyYWVmaWsvZHluYW1pYy55YW1sCiAgICBleHRyYVZvbHVtZU1vdW50czogW10KICAgIGV4dHJhVm9sdW1lczogW10KICAgIGhzdHM6CiAgICAgIGluY2x1ZGVTdWJkb21haW5zOiBmYWxzZQogICAgICBtYXhBZ2U6IDE1NzI0ODAwCiAgICAgIHByZWxvYWQ6IGZhbHNlCiAgICBpbWFnZToKICAgICAgbmFtZTogdHJhZWZpawogICAgICBwdWxsUG9saWN5OiBudWxsCiAgICAgIHB1bGxTZWNyZXRzOiBbXQogICAgICB0YWc6IHYyLjQuMTEueHh4CiAgICBsYWJlbHM6IHt9CiAgICBuZXR3b3JrUG9saWN5OgogICAgICBhbGxvd2VkSW5ncmVzc1BvcnRzOgogICAgICAtIGh0dHAKICAgICAgLSBodHRwcwogICAgICBlZ3Jlc3M6IFtdCiAgICAgIGVncmVzc0FsbG93UnVsZXM6CiAgICAgICAgY2xvdWRNZXRhZGF0YVNlcnZlcjogdHJ1ZQogICAgICAgIGRuc1BvcnRzQ2xvdWRNZXRhZGF0YVNlcnZlcjogdHJ1ZQogICAgICAgIGRuc1BvcnRzS3ViZVN5c3RlbU5hbWVzcGFjZTogdHJ1ZQogICAgICAgIGRuc1BvcnRzUHJpdmF0ZUlQczogdHJ1ZQogICAgICAgIG5vblByaXZhdGVJUHM6IHRydWUKICAgICAgICBwcml2YXRlSVBzOiB0cnVlCiAgICAgIGVuYWJsZWQ6IHRydWUKICAgICAgaW5ncmVzczogW10KICAgICAgaW50ZXJOYW1lc3BhY2VBY2Nlc3NMYWJlbHM6IGlnbm9yZQogICAgbm9kZVNlbGVjdG9yOiB7fQogICAgcGRiOgogICAgICBlbmFibGVkOiBmYWxzZQogICAgICBtYXhVbmF2YWlsYWJsZTogbnVsbAogICAgICBtaW5BdmFpbGFibGU6IDEKICAgIHJlc291cmNlczoge30KICAgIHJldmlzaW9uSGlzdG9yeUxpbWl0OiBudWxsCiAgICBzZXJ2aWNlQWNjb3VudDoKICAgICAgYW5ub3RhdGlvbnM6IHt9CiAgICAgIGNyZWF0ZTogdHJ1ZQogICAgICBuYW1lOiBudWxsCiAgICB0b2xlcmF0aW9uczogW10KcmJhYzoKICBjcmVhdGU6IHRydWUKc2NoZWR1bGluZzoKICBjb3JlUG9kczoKICAgIG5vZGVBZmZpbml0eToKICAgICAgbWF0Y2hOb2RlUHVycG9zZTogcHJlZmVyCiAgICB0b2xlcmF0aW9uczoKICAgIC0gZWZmZWN0OiBOb1NjaGVkdWxlCiAgICAgIGtleTogaHViLmp1cHl0ZXIub3JnL2RlZGljYXRlZAogICAgICBvcGVyYXRvcjogRXF1YWwKICAgICAgdmFsdWU6IGNvcmUKICAgIC0gZWZmZWN0OiBOb1NjaGVkdWxlCiAgICAgIGtleTogaHViLmp1cHl0ZXIub3JnX2RlZGljYXRlZAogICAgICBvcGVyYXRvcjogRXF1YWwKICAgICAgdmFsdWU6IGNvcmUKICBwb2RQcmlvcml0eToKICAgIGRlZmF1bHRQcmlvcml0eTogMAogICAgZW5hYmxlZDogZmFsc2UKICAgIGdsb2JhbERlZmF1bHQ6IGZhbHNlCiAgICBpbWFnZVB1bGxlclByaW9yaXR5OiAtNQogICAgdXNlclBsYWNlaG9sZGVyUHJpb3JpdHk6IC0xMAogIHVzZXJQbGFjZWhvbGRlcjoKICAgIGFubm90YXRpb25zOiB7fQogICAgY29udGFpbmVyU2VjdXJpdHlDb250ZXh0OgogICAgICBhbGxvd1ByaXZpbGVnZUVzY2FsYXRpb246IGZhbHNlCiAgICAgIHJ1bkFzR3JvdXA6IDY1NTM0CiAgICAgIHJ1bkFzVXNlcjogNjU1MzQKICAgIGVuYWJsZWQ6IHRydWUKICAgIGltYWdlOgogICAgICBuYW1lOiByZWdpc3RyeS5rOHMuaW8vcGF1c2UKICAgICAgcHVsbFBvbGljeTogbnVsbAogICAgICBwdWxsU2VjcmV0czogW10KICAgICAgdGFnOiAiMy45IgogICAgbGFiZWxzOiB7fQogICAgcmVwbGljYXM6IDAKICAgIHJlc291cmNlczoge30KICAgIHJldmlzaW9uSGlzdG9yeUxpbWl0OiBudWxsCiAgdXNlclBvZHM6CiAgICBub2RlQWZmaW5pdHk6CiAgICAgIG1hdGNoTm9kZVB1cnBvc2U6IHByZWZlcgogICAgdG9sZXJhdGlvbnM6CiAgICAtIGVmZmVjdDogTm9TY2hlZHVsZQogICAgICBrZXk6IGh1Yi5qdXB5dGVyLm9yZy9kZWRpY2F0ZWQKICAgICAgb3BlcmF0b3I6IEVxdWFsCiAgICAgIHZhbHVlOiB1c2VyCiAgICAtIGVmZmVjdDogTm9TY2hlZHVsZQogICAgICBrZXk6IGh1Yi5qdXB5dGVyLm9yZ19kZWRpY2F0ZWQKICAgICAgb3BlcmF0b3I6IEVxdWFsCiAgICAgIHZhbHVlOiB1c2VyCiAgdXNlclNjaGVkdWxlcjoKICAgIGFubm90YXRpb25zOiB7fQogICAgY29udGFpbmVyU2VjdXJpdHlDb250ZXh0OgogICAgICBhbGxvd1ByaXZpbGVnZUVzY2FsYXRpb246IGZhbHNlCiAgICAgIHJ1bkFzR3JvdXA6IDY1NTM0CiAgICAgIHJ1bkFzVXNlcjogNjU1MzQKICAgIGVuYWJsZWQ6IHRydWUKICAgIGV4dHJhUG9kU3BlYzoge30KICAgIGltYWdlOgogICAgICBuYW1lOiByZWdpc3RyeS5rOHMuaW8va3ViZS1zY2hlZHVsZXIKICAgICAgcHVsbFBvbGljeTogbnVsbAogICAgICBwdWxsU2VjcmV0czogW10KICAgICAgdGFnOiB2MS4yNi4xMQogICAgbGFiZWxzOiB7fQogICAgbG9nTGV2ZWw6IDQKICAgIG5vZGVTZWxlY3Rvcjoge30KICAgIHBkYjoKICAgICAgZW5hYmxlZDogdHJ1ZQogICAgICBtYXhVbmF2YWlsYWJsZTogMQogICAgICBtaW5BdmFpbGFibGU6IG51bGwKICAgIHBsdWdpbkNvbmZpZzoKICAgIC0gYXJnczoKICAgICAgICBzY29yaW5nU3RyYXRlZ3k6CiAgICAgICAgICByZXNvdXJjZXM6CiAgICAgICAgICAtIG5hbWU6IGNwdQogICAgICAgICAgICB3ZWlnaHQ6IDEKICAgICAgICAgIC0gbmFtZTogbWVtb3J5CiAgICAgICAgICAgIHdlaWdodDogMQogICAgICAgICAgdHlwZTogTW9zdEFsbG9jYXRlZAogICAgICBuYW1lOiBOb2RlUmVzb3VyY2VzRml0CiAgICBwbHVnaW5zOgogICAgICBzY29yZToKICAgICAgICBkaXNhYmxlZDoKICAgICAgICAtIG5hbWU6IE5vZGVSZXNvdXJjZXNCYWxhbmNlZEFsbG9jYXRpb24KICAgICAgICAtIG5hbWU6IE5vZGVBZmZpbml0eQogICAgICAgIC0gbmFtZTogSW50ZXJQb2RBZmZpbml0eQogICAgICAgIC0gbmFtZTogTm9kZVJlc291cmNlc0ZpdAogICAgICAgIC0gbmFtZTogSW1hZ2VMb2NhbGl0eQogICAgICAgIGVuYWJsZWQ6CiAgICAgICAgLSBuYW1lOiBOb2RlQWZmaW5pdHkKICAgICAgICAgIHdlaWdodDogMTQ2MzEKICAgICAgICAtIG5hbWU6IEludGVyUG9kQWZmaW5pdHkKICAgICAgICAgIHdlaWdodDogMTMzMQogICAgICAgIC0gbmFtZTogTm9kZVJlc291cmNlc0ZpdAogICAgICAgICAgd2VpZ2h0OiAxMjEKICAgICAgICAtIG5hbWU6IEltYWdlTG9jYWxpdHkKICAgICAgICAgIHdlaWdodDogMTEKICAgIHJlcGxpY2FzOiAyCiAgICByZXNvdXJjZXM6IHt9CiAgICByZXZpc2lvbkhpc3RvcnlMaW1pdDogbnVsbAogICAgc2VydmljZUFjY291bnQ6CiAgICAgIGFubm90YXRpb25zOiB7fQogICAgICBjcmVhdGU6IHRydWUKICAgICAgbmFtZTogbnVsbAogICAgdG9sZXJhdGlvbnM6IFtdCnNpbmdsZXVzZXI6CiAgYWxsb3dQcml2aWxlZ2VFc2NhbGF0aW9uOiBmYWxzZQogIGNsb3VkTWV0YWRhdGE6CiAgICBibG9ja1dpdGhJcHRhYmxlczogdHJ1ZQogICAgaXA6IDE2OS4yNTQuMTY5LjI1NAogIGNtZDoganVweXRlcmh1Yi1zaW5nbGV1c2VyCiAgY3B1OgogICAgZ3VhcmFudGVlOiBudWxsCiAgICBsaW1pdDogbnVsbAogIGRlZmF1bHRVcmw6IG51bGwKICBldmVudHM6IHRydWUKICBleHRyYUFubm90YXRpb25zOiB7fQogIGV4dHJhQ29udGFpbmVyczogW10KICBleHRyYUVudjoge30KICBleHRyYUZpbGVzOiB7fQogIGV4dHJhTGFiZWxzOgogICAgaHViLmp1cHl0ZXIub3JnL25ldHdvcmstYWNjZXNzLWh1YjogInRydWUiCiAgZXh0cmFOb2RlQWZmaW5pdHk6CiAgICBwcmVmZXJyZWQ6IFtdCiAgICByZXF1aXJlZDogW10KICBleHRyYVBvZEFmZmluaXR5OgogICAgcHJlZmVycmVkOiBbXQogICAgcmVxdWlyZWQ6IFtdCiAgZXh0cmFQb2RBbnRpQWZmaW5pdHk6CiAgICBwcmVmZXJyZWQ6IFtdCiAgICByZXF1aXJlZDogW10KICBleHRyYVBvZENvbmZpZzoge30KICBleHRyYVJlc291cmNlOgogICAgZ3VhcmFudGVlczoge30KICAgIGxpbWl0czoge30KICBleHRyYVRvbGVyYXRpb25zOiBbXQogIGZzR2lkOiAxMDAKICBpbWFnZToKICAgIG5hbWU6IHF1YXkuaW8vanVweXRlcmh1Yi9rOHMtc2luZ2xldXNlci1zYW1wbGUKICAgIHB1bGxQb2xpY3k6IG51bGwKICAgIHB1bGxTZWNyZXRzOiBbXQogICAgdGFnOiAzLjIuMQogIGluaXRDb250YWluZXJzOiBbXQogIGxpZmVjeWNsZUhvb2tzOiB7fQogIG1lbW9yeToKICAgIGd1YXJhbnRlZTogMUcKICAgIGxpbWl0OiBudWxsCiAgbmV0d29ya1BvbGljeToKICAgIGFsbG93ZWRJbmdyZXNzUG9ydHM6IFtdCiAgICBlZ3Jlc3M6IFtdCiAgICBlZ3Jlc3NBbGxvd1J1bGVzOgogICAgICBjbG91ZE1ldGFkYXRhU2VydmVyOiBmYWxzZQogICAgICBkbnNQb3J0c0Nsb3VkTWV0YWRhdGFTZXJ2ZXI6IHRydWUKICAgICAgZG5zUG9ydHNLdWJlU3lzdGVtTmFtZXNwYWNlOiB0cnVlCiAgICAgIGRuc1BvcnRzUHJpdmF0ZUlQczogdHJ1ZQogICAgICBub25Qcml2YXRlSVBzOiB0cnVlCiAgICAgIHByaXZhdGVJUHM6IGZhbHNlCiAgICBlbmFibGVkOiB0cnVlCiAgICBpbmdyZXNzOiBbXQogICAgaW50ZXJOYW1lc3BhY2VBY2Nlc3NMYWJlbHM6IGlnbm9yZQogIG5ldHdvcmtUb29sczoKICAgIGltYWdlOgogICAgICBuYW1lOiBxdWF5LmlvL2p1cHl0ZXJodWIvazhzLW5ldHdvcmstdG9vbHMKICAgICAgcHVsbFBvbGljeTogbnVsbAogICAgICBwdWxsU2VjcmV0czogW10KICAgICAgdGFnOiAzLjIuMQogICAgcmVzb3VyY2VzOiB7fQogIG5vZGVTZWxlY3Rvcjoge30KICBwb2ROYW1lVGVtcGxhdGU6IG51bGwKICBwcm9maWxlTGlzdDogW10KICBzZXJ2aWNlQWNjb3VudE5hbWU6IG51bGwKICBzdGFydFRpbWVvdXQ6IDMwMAogIHN0b3JhZ2U6CiAgICBjYXBhY2l0eTogMTBHaQogICAgZHluYW1pYzoKICAgICAgcHZjTmFtZVRlbXBsYXRlOiBjbGFpbS17dXNlcm5hbWV9e3NlcnZlcm5hbWV9CiAgICAgIHN0b3JhZ2VBY2Nlc3NNb2RlczoKICAgICAgLSBSZWFkV3JpdGVPbmNlCiAgICAgIHN0b3JhZ2VDbGFzczogbnVsbAogICAgICB2b2x1bWVOYW1lVGVtcGxhdGU6IHZvbHVtZS17dXNlcm5hbWV9e3NlcnZlcm5hbWV9CiAgICBleHRyYUxhYmVsczoge30KICAgIGV4dHJhVm9sdW1lTW91bnRzOiBbXQogICAgZXh0cmFWb2x1bWVzOiBbXQogICAgaG9tZU1vdW50UGF0aDogL2hvbWUvam92eWFuCiAgICBzdGF0aWM6CiAgICAgIHB2Y05hbWU6IG51bGwKICAgICAgc3ViUGF0aDogJ3t1c2VybmFtZX0nCiAgICB0eXBlOiBkeW5hbWljCiAgdWlkOiAxMDAw
 kind: Secret
 metadata:
   labels:
@@ -1711,31 +1161,9 @@ metadata:
     chart: jupyterhub-3.2.1
     component: hub
     heritage: Helm
-    release: daskhub
+    release: jupyterhub
   name: hub
 type: Opaque
----
-apiVersion: v1
-kind: Service
-metadata:
-  labels:
-    app.kubernetes.io/instance: daskhub
-    app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/name: dask-gateway
-    app.kubernetes.io/version: 2024.1.0
-    gateway.dask.org/instance: daskhub-dask-gateway
-    helm.sh/chart: dask-gateway-2024.1.0
-  name: api-daskhub-dask-gateway
-spec:
-  ports:
-    - port: 8000
-      protocol: TCP
-      targetPort: 8000
-  selector:
-    app.kubernetes.io/component: gateway
-    app.kubernetes.io/instance: daskhub
-    app.kubernetes.io/name: dask-gateway
-  type: ClusterIP
 ---
 apiVersion: v1
 kind: Service
@@ -1749,7 +1177,7 @@ metadata:
     chart: jupyterhub-3.2.1
     component: hub
     heritage: Helm
-    release: daskhub
+    release: jupyterhub
   name: hub
 spec:
   ports:
@@ -1759,7 +1187,7 @@ spec:
   selector:
     app: jupyterhub
     component: hub
-    release: daskhub
+    release: jupyterhub
   type: ClusterIP
 ---
 apiVersion: v1
@@ -1770,7 +1198,7 @@ metadata:
     chart: jupyterhub-3.2.1
     component: proxy-api
     heritage: Helm
-    release: daskhub
+    release: jupyterhub
   name: proxy-api
 spec:
   ports:
@@ -1779,19 +1207,17 @@ spec:
   selector:
     app: jupyterhub
     component: proxy
-    release: daskhub
+    release: jupyterhub
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  annotations:
-    external-dns.alpha.kubernetes.io/hostname: daskhub.stuff.org
   labels:
     app: jupyterhub
     chart: jupyterhub-3.2.1
     component: autohttps
     heritage: Helm
-    release: daskhub
+    release: jupyterhub
   name: proxy-http
 spec:
   ports:
@@ -1800,20 +1226,18 @@ spec:
   selector:
     app: jupyterhub
     component: proxy
-    release: daskhub
+    release: jupyterhub
   type: ClusterIP
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  annotations:
-    external-dns.alpha.kubernetes.io/hostname: daskhub.stuff.org
   labels:
     app: jupyterhub
     chart: jupyterhub-3.2.1
     component: proxy-public
     heritage: Helm
-    release: daskhub
+    release: jupyterhub
   name: proxy-public
 spec:
   ports:
@@ -1826,30 +1250,8 @@ spec:
   selector:
     app: jupyterhub
     component: autohttps
-    release: daskhub
+    release: jupyterhub
   type: LoadBalancer
----
-apiVersion: v1
-kind: Service
-metadata:
-  labels:
-    app.kubernetes.io/instance: daskhub
-    app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/name: dask-gateway
-    app.kubernetes.io/version: 2024.1.0
-    gateway.dask.org/instance: daskhub-dask-gateway
-    helm.sh/chart: dask-gateway-2024.1.0
-  name: traefik-daskhub-dask-gateway
-spec:
-  ports:
-    - name: web
-      port: 80
-      targetPort: 8000
-  selector:
-    app.kubernetes.io/component: traefik
-    app.kubernetes.io/instance: daskhub
-    app.kubernetes.io/name: dask-gateway
-  type: ClusterIP
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -1859,7 +1261,7 @@ metadata:
     chart: jupyterhub-3.2.1
     component: hub
     heritage: Helm
-    release: daskhub
+    release: jupyterhub
   name: hub-db-dir
 spec:
   accessModes:
@@ -1872,86 +1274,12 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    app.kubernetes.io/instance: daskhub
-    app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/name: dask-gateway
-    app.kubernetes.io/version: 2024.1.0
-    gateway.dask.org/instance: daskhub-dask-gateway
-    helm.sh/chart: dask-gateway-2024.1.0
-  name: api-daskhub-dask-gateway
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app.kubernetes.io/component: gateway
-      app.kubernetes.io/instance: daskhub
-      app.kubernetes.io/name: dask-gateway
-  template:
-    metadata:
-      annotations:
-        checksum/configmap: '0000' # CLEANED FOR TESTING
-      labels:
-        app.kubernetes.io/component: gateway
-        app.kubernetes.io/instance: daskhub
-        app.kubernetes.io/managed-by: Helm
-        app.kubernetes.io/name: dask-gateway
-        app.kubernetes.io/version: 2024.1.0
-        gateway.dask.org/instance: daskhub-dask-gateway
-        helm.sh/chart: dask-gateway-2024.1.0
-        hub.jupyter.org/network-access-hub: 'true'
-    spec:
-      containers:
-        - args:
-            - dask-gateway-server
-            - --config
-            - /etc/dask-gateway/dask_gateway_config.py
-          env:
-            - name: JUPYTERHUB_API_TOKEN
-              valueFrom:
-                secretKeyRef:
-                  key: jupyterhub-api-token
-                  name: api-daskhub-dask-gateway
-          image: ghcr.io/dask/dask-gateway-server:2024.1.0
-          imagePullPolicy:
-          livenessProbe:
-            failureThreshold: 6
-            httpGet:
-              path: /api/health
-              port: api
-            initialDelaySeconds: 5
-            periodSeconds: 10
-            timeoutSeconds: 2
-          name: gateway
-          ports:
-            - containerPort: 8000
-              name: api
-          readinessProbe:
-            failureThreshold: 3
-            httpGet:
-              path: /api/health
-              port: api
-            initialDelaySeconds: 5
-            periodSeconds: 10
-            timeoutSeconds: 2
-          volumeMounts:
-            - mountPath: /etc/dask-gateway/
-              name: configmap
-      serviceAccountName: api-daskhub-dask-gateway
-      volumes:
-        - configMap:
-            name: api-daskhub-dask-gateway
-          name: configmap
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  labels:
     app: jupyterhub
     chart: jupyterhub-3.2.1
     component: autohttps
     heritage: Helm
     kustomization: patch-jupyterhub-autohttps-startup-delay
-    release: daskhub
+    release: jupyterhub
   name: autohttps
 spec:
   replicas: 1
@@ -1959,16 +1287,16 @@ spec:
     matchLabels:
       app: jupyterhub
       component: autohttps
-      release: daskhub
+      release: jupyterhub
   template:
     metadata:
       annotations:
-        checksum/static-config: 2c6b369b3ac56cb757248a03ba940643c62cd989b435f34cbcd3d57eb7e5f6e4
+        checksum/static-config: bf460ddf72e6a698d4a206490cb825db75117b57c82fdc7a43c528f1dea00673
       labels:
         app: jupyterhub
         component: autohttps
         hub.jupyter.org/network-access-proxy-http: 'true'
-        release: daskhub
+        release: jupyterhub
     spec:
       affinity:
         nodeAffinity:
@@ -1981,7 +1309,7 @@ spec:
                       - core
               weight: 100
       containers:
-        - image: traefik:v2.4.11
+        - image: traefik:v2.4.11.xxx
           livenessProbe:
             exec:
               command:
@@ -2010,7 +1338,7 @@ spec:
         - args:
             - watch-save
             - --label=app=jupyterhub
-            - --label=release=daskhub
+            - --label=release=jupyterhub
             - --label=chart=jupyterhub-3.2.1
             - --label=heritage=secret-sync
             - proxy-public-tls-acme
@@ -2073,65 +1401,11 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    app.kubernetes.io/instance: daskhub
-    app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/name: dask-gateway
-    app.kubernetes.io/version: 2024.1.0
-    gateway.dask.org/instance: daskhub-dask-gateway
-    helm.sh/chart: dask-gateway-2024.1.0
-  name: controller-daskhub-dask-gateway
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app.kubernetes.io/component: controller
-      app.kubernetes.io/instance: daskhub
-      app.kubernetes.io/name: dask-gateway
-  strategy:
-    type: Recreate
-  template:
-    metadata:
-      annotations:
-        checksum/configmap: '0000' # CLEANED FOR TESTING
-      labels:
-        app.kubernetes.io/component: controller
-        app.kubernetes.io/instance: daskhub
-        app.kubernetes.io/managed-by: Helm
-        app.kubernetes.io/name: dask-gateway
-        app.kubernetes.io/version: 2024.1.0
-        gateway.dask.org/instance: daskhub-dask-gateway
-        helm.sh/chart: dask-gateway-2024.1.0
-    spec:
-      containers:
-        - args:
-            - dask-gateway-server
-            - kube-controller
-            - --config
-            - /etc/dask-gateway/dask_gateway_config.py
-          image: ghcr.io/dask/dask-gateway-server:2024.1.0
-          imagePullPolicy:
-          name: controller
-          ports:
-            - containerPort: 8000
-              name: api
-          volumeMounts:
-            - mountPath: /etc/dask-gateway/
-              name: configmap
-      serviceAccountName: controller-daskhub-dask-gateway
-      volumes:
-        - configMap:
-            name: controller-daskhub-dask-gateway
-          name: configmap
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  labels:
     app: jupyterhub
     chart: jupyterhub-3.2.1
     component: hub
     heritage: Helm
-    release: daskhub
+    release: jupyterhub
   name: hub
 spec:
   replicas: 1
@@ -2139,7 +1413,7 @@ spec:
     matchLabels:
       app: jupyterhub
       component: hub
-      release: daskhub
+      release: jupyterhub
   strategy:
     type: Recreate
   template:
@@ -2151,7 +1425,7 @@ spec:
         hub.jupyter.org/network-access-proxy-api: 'true'
         hub.jupyter.org/network-access-proxy-http: 'true'
         hub.jupyter.org/network-access-singleuser: 'true'
-        release: daskhub
+        release: jupyterhub
     spec:
       affinity:
         nodeAffinity:
@@ -2168,13 +1442,12 @@ spec:
             - jupyterhub
             - --config
             - /usr/local/etc/jupyterhub/jupyterhub_config.py
-            - --debug
             - --upgrade-db
           env:
             - name: PYTHONUNBUFFERED
               value: '1'
             - name: HELM_RELEASE_NAME
-              value: daskhub
+              value: jupyterhub
             - name: POD_NAMESPACE
               valueFrom:
                 fieldRef:
@@ -2184,8 +1457,6 @@ spec:
                 secretKeyRef:
                   key: hub.config.ConfigurableHTTPProxy.auth_token
                   name: hub
-            - name: EXTRA_PIP_PACKAGES
-              value: boto3 dask_gatway_server
           image: quay.io/jupyterhub/k8s-hub:3.2.1
           livenessProbe:
             failureThreshold: 30
@@ -2255,7 +1526,7 @@ metadata:
     chart: jupyterhub-3.2.1
     component: proxy
     heritage: Helm
-    release: daskhub
+    release: jupyterhub
   name: proxy
 spec:
   replicas: 1
@@ -2263,8 +1534,9 @@ spec:
     matchLabels:
       app: jupyterhub
       component: proxy
-      release: daskhub
+      release: jupyterhub
   strategy:
+    rollingUpdate:
     type: Recreate
   template:
     metadata:
@@ -2274,7 +1546,7 @@ spec:
         component: proxy
         hub.jupyter.org/network-access-hub: 'true'
         hub.jupyter.org/network-access-singleuser: 'true'
-        release: daskhub
+        release: jupyterhub
     spec:
       affinity:
         nodeAffinity:
@@ -2295,7 +1567,6 @@ spec:
             - --default-target=http://hub:$(HUB_SERVICE_PORT)
             - --error-target=http://hub:$(HUB_SERVICE_PORT)/hub/error
             - --port=8000
-            - --log-level=debug
           env:
             - name: CONFIGPROXY_AUTH_TOKEN
               valueFrom:
@@ -2331,8 +1602,6 @@ spec:
             allowPrivilegeEscalation: false
             runAsGroup: 65534
             runAsUser: 65534
-      nodeSelector:
-        lifecycle: OnDemand
       terminationGracePeriodSeconds: 60
       tolerations:
         - effect: NoSchedule
@@ -2348,84 +1617,11 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    app.kubernetes.io/instance: daskhub
-    app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/name: dask-gateway
-    app.kubernetes.io/version: 2024.1.0
-    gateway.dask.org/instance: daskhub-dask-gateway
-    helm.sh/chart: dask-gateway-2024.1.0
-  name: traefik-daskhub-dask-gateway
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app.kubernetes.io/component: traefik
-      app.kubernetes.io/instance: daskhub
-      app.kubernetes.io/name: dask-gateway
-  template:
-    metadata:
-      labels:
-        app.kubernetes.io/component: traefik
-        app.kubernetes.io/instance: daskhub
-        app.kubernetes.io/managed-by: Helm
-        app.kubernetes.io/name: dask-gateway
-        app.kubernetes.io/version: 2024.1.0
-        gateway.dask.org/instance: daskhub-dask-gateway
-        helm.sh/chart: dask-gateway-2024.1.0
-    spec:
-      containers:
-        - args:
-            - --global.checknewversion=false
-            - --global.sendanonymoususage=false
-            - --ping=true
-            - --providers.kubernetescrd
-            - --providers.kubernetescrd.allowcrossnamespace=true
-            - --providers.kubernetescrd.labelselector=gateway.dask.org/instance=daskhub-dask-gateway
-            - --providers.kubernetescrd.throttleduration=2
-            - --log.level=WARN
-            - --entrypoints.traefik.address=:9000
-            - --entrypoints.web.address=:8000
-          image: traefik:2.10.6
-          imagePullPolicy:
-          livenessProbe:
-            failureThreshold: 3
-            httpGet:
-              path: /ping
-              port: 9000
-            initialDelaySeconds: 10
-            periodSeconds: 10
-            successThreshold: 1
-            timeoutSeconds: 2
-          name: traefik
-          ports:
-            - containerPort: 9000
-              name: traefik
-            - containerPort: 8000
-              name: web
-          readinessProbe:
-            failureThreshold: 1
-            httpGet:
-              path: /ping
-              port: 9000
-            initialDelaySeconds: 10
-            periodSeconds: 10
-            successThreshold: 1
-            timeoutSeconds: 2
-          securityContext:
-            runAsGroup: 1000
-            runAsUser: 1000
-      serviceAccountName: traefik-daskhub-dask-gateway
-      terminationGracePeriodSeconds: 60
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  labels:
     app: jupyterhub
     chart: jupyterhub-3.2.1
     component: user-scheduler
     heritage: Helm
-    release: daskhub
+    release: jupyterhub
   name: user-scheduler
 spec:
   replicas: 2
@@ -2433,14 +1629,14 @@ spec:
     matchLabels:
       app: jupyterhub
       component: user-scheduler
-      release: daskhub
+      release: jupyterhub
   template:
     metadata:
       annotations: {}
       labels:
         app: jupyterhub
         component: user-scheduler
-        release: daskhub
+        release: jupyterhub
     spec:
       affinity:
         nodeAffinity:
@@ -2458,7 +1654,7 @@ spec:
             - --config=/etc/user-scheduler/config.yaml
             - --authentication-skip-lookup=true
             - --v=4
-          image: registry.k8s.io/kube-scheduler:v1.32.1
+          image: registry.k8s.io/kube-scheduler:v1.26.11
           livenessProbe:
             httpGet:
               path: /healthz
@@ -2501,7 +1697,7 @@ metadata:
     chart: jupyterhub-3.2.1
     component: user-placeholder
     heritage: Helm
-    release: daskhub
+    release: jupyterhub
   name: user-placeholder
 spec:
   podManagementPolicy: Parallel
@@ -2510,40 +1706,37 @@ spec:
     matchLabels:
       app: jupyterhub
       component: user-placeholder
-      release: daskhub
+      release: jupyterhub
   serviceName: user-placeholder
   template:
     metadata:
       labels:
         app: jupyterhub
         component: user-placeholder
-        release: daskhub
+        release: jupyterhub
     spec:
       affinity:
         nodeAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            nodeSelectorTerms:
-              - matchExpressions:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - preference:
+                matchExpressions:
                   - key: hub.jupyter.org/node-purpose
                     operator: In
                     values:
                       - user
+              weight: 100
       automountServiceAccountToken: false
       containers:
         - image: registry.k8s.io/pause:3.9
           name: pause
           resources:
-            limits:
-              cpu: 4
-              memory: 4G
             requests:
-              cpu: 1
               memory: 1G
           securityContext:
             allowPrivilegeEscalation: false
             runAsGroup: 65534
             runAsUser: 65534
-      schedulerName: daskhub-user-scheduler
+      schedulerName: jupyterhub-user-scheduler
       terminationGracePeriodSeconds: 0
       tolerations:
         - effect: NoSchedule
@@ -2563,7 +1756,7 @@ metadata:
     chart: jupyterhub-3.2.1
     component: user-placeholder
     heritage: Helm
-    release: daskhub
+    release: jupyterhub
   name: user-placeholder
 spec:
   minAvailable: 0
@@ -2571,7 +1764,7 @@ spec:
     matchLabels:
       app: jupyterhub
       component: user-placeholder
-      release: daskhub
+      release: jupyterhub
 ---
 apiVersion: policy/v1
 kind: PodDisruptionBudget
@@ -2581,7 +1774,7 @@ metadata:
     chart: jupyterhub-3.2.1
     component: user-scheduler
     heritage: Helm
-    release: daskhub
+    release: jupyterhub
   name: user-scheduler
 spec:
   maxUnavailable: 1
@@ -2589,7 +1782,74 @@ spec:
     matchLabels:
       app: jupyterhub
       component: user-scheduler
-      release: daskhub
+      release: jupyterhub
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  labels:
+    app: jupyterhub
+    chart: jupyterhub-3.2.1
+    component: continuous-image-puller
+    heritage: Helm
+    release: jupyterhub
+  name: continuous-image-puller
+spec:
+  selector:
+    matchLabels:
+      app: jupyterhub
+      component: continuous-image-puller
+      release: jupyterhub
+  template:
+    metadata:
+      labels:
+        app: jupyterhub
+        component: continuous-image-puller
+        release: jupyterhub
+    spec:
+      automountServiceAccountToken: false
+      containers:
+        - image: registry.k8s.io/pause:3.9
+          name: pause
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsGroup: 65534
+            runAsUser: 65534
+      initContainers:
+        - command:
+            - /bin/sh
+            - -c
+            - echo "Pulling complete"
+          image: quay.io/jupyterhub/k8s-network-tools:3.2.1
+          name: image-pull-metadata-block
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsGroup: 65534
+            runAsUser: 65534
+        - command:
+            - /bin/sh
+            - -c
+            - echo "Pulling complete"
+          image: quay.io/jupyterhub/k8s-singleuser-sample:3.2.1
+          name: image-pull-singleuser
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsGroup: 65534
+            runAsUser: 65534
+      terminationGracePeriodSeconds: 0
+      tolerations:
+        - effect: NoSchedule
+          key: hub.jupyter.org/dedicated
+          operator: Equal
+          value: user
+        - effect: NoSchedule
+          key: hub.jupyter.org_dedicated
+          operator: Equal
+          value: user
+  updateStrategy:
+    rollingUpdate:
+      maxUnavailable: 100%
+    type: RollingUpdate
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -2599,7 +1859,7 @@ metadata:
     chart: jupyterhub-3.2.1
     component: autohttps
     heritage: Helm
-    release: daskhub
+    release: jupyterhub
   name: autohttps
 spec:
   egress:
@@ -2610,7 +1870,7 @@ spec:
             matchLabels:
               app: jupyterhub
               component: proxy
-              release: daskhub
+              release: jupyterhub
     - ports:
         - port: 53
           protocol: UDP
@@ -2661,7 +1921,7 @@ spec:
     matchLabels:
       app: jupyterhub
       component: autohttps
-      release: daskhub
+      release: jupyterhub
   policyTypes:
     - Ingress
     - Egress
@@ -2674,7 +1934,7 @@ metadata:
     chart: jupyterhub-3.2.1
     component: hub
     heritage: Helm
-    release: daskhub
+    release: jupyterhub
   name: hub
 spec:
   egress:
@@ -2685,7 +1945,7 @@ spec:
             matchLabels:
               app: jupyterhub
               component: proxy
-              release: daskhub
+              release: jupyterhub
     - ports:
         - port: 8888
       to:
@@ -2693,7 +1953,7 @@ spec:
             matchLabels:
               app: jupyterhub
               component: singleuser-server
-              release: daskhub
+              release: jupyterhub
     - ports:
         - port: 53
           protocol: UDP
@@ -2740,7 +2000,7 @@ spec:
     matchLabels:
       app: jupyterhub
       component: hub
-      release: daskhub
+      release: jupyterhub
   policyTypes:
     - Ingress
     - Egress
@@ -2753,7 +2013,7 @@ metadata:
     chart: jupyterhub-3.2.1
     component: proxy
     heritage: Helm
-    release: daskhub
+    release: jupyterhub
   name: proxy
 spec:
   egress:
@@ -2764,7 +2024,7 @@ spec:
             matchLabels:
               app: jupyterhub
               component: hub
-              release: daskhub
+              release: jupyterhub
     - ports:
         - port: 8888
       to:
@@ -2772,7 +2032,7 @@ spec:
             matchLabels:
               app: jupyterhub
               component: singleuser-server
-              release: daskhub
+              release: jupyterhub
     - ports:
         - port: 53
           protocol: UDP
@@ -2828,7 +2088,7 @@ spec:
     matchLabels:
       app: jupyterhub
       component: proxy
-      release: daskhub
+      release: jupyterhub
   policyTypes:
     - Ingress
     - Egress
@@ -2841,7 +2101,7 @@ metadata:
     chart: jupyterhub-3.2.1
     component: singleuser
     heritage: Helm
-    release: daskhub
+    release: jupyterhub
   name: singleuser
 spec:
   egress:
@@ -2852,7 +2112,7 @@ spec:
             matchLabels:
               app: jupyterhub
               component: hub
-              release: daskhub
+              release: jupyterhub
     - ports:
         - port: 8000
       to:
@@ -2860,7 +2120,7 @@ spec:
             matchLabels:
               app: jupyterhub
               component: proxy
-              release: daskhub
+              release: jupyterhub
     - ports:
         - port: 8080
         - port: 8443
@@ -2869,7 +2129,7 @@ spec:
             matchLabels:
               app: jupyterhub
               component: autohttps
-              release: daskhub
+              release: jupyterhub
     - ports:
         - port: 53
           protocol: UDP
@@ -2906,63 +2166,202 @@ spec:
     matchLabels:
       app: jupyterhub
       component: singleuser-server
-      release: daskhub
+      release: jupyterhub
   policyTypes:
     - Ingress
     - Egress
 ---
-apiVersion: traefik.io/v1alpha1
-kind: IngressRoute
+# Source: jupyterhub/templates/image-puller/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
 metadata:
+  name: hook-image-awaiter
   labels:
-    app.kubernetes.io/instance: daskhub
-    app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/name: dask-gateway
-    app.kubernetes.io/version: 2024.1.0
-    gateway.dask.org/instance: daskhub-dask-gateway
-    helm.sh/chart: dask-gateway-2024.1.0
-  name: api-daskhub-dask-gateway
-spec:
-  entryPoints:
-    - web
-  routes:
-    - kind: Rule
-      match: PathPrefix(`/services/dask-gateway`)
-      middlewares:
-        - name: api-prefix-daskhub-dask-gateway
-      services:
-        - name: api-daskhub-dask-gateway
-          port: 8000
+    component: image-puller
+    app: jupyterhub
+    release: jupyterhub
+    chart: jupyterhub-3.2.1
+    heritage: Helm
+    hub.jupyter.org/deletable: 'true'
+  annotations:
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+    helm.sh/hook-weight: '0'
 ---
-apiVersion: traefik.io/v1alpha1
-kind: Middleware
+# Source: jupyterhub/templates/image-puller/rbac.yaml
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1
 metadata:
+  name: hook-image-awaiter
   labels:
-    app.kubernetes.io/instance: daskhub
-    app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/name: dask-gateway
-    app.kubernetes.io/version: 2024.1.0
-    gateway.dask.org/instance: daskhub-dask-gateway
-    helm.sh/chart: dask-gateway-2024.1.0
-  name: api-prefix-daskhub-dask-gateway
-spec:
-  stripPrefix:
-    forceSlash: false
-    prefixes:
-      - /services/dask-gateway
+    component: image-puller
+    app: jupyterhub
+    release: jupyterhub
+    chart: jupyterhub-3.2.1
+    heritage: Helm
+    hub.jupyter.org/deletable: 'true'
+  annotations:
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+    helm.sh/hook-weight: '0'
+rules:
+  - apiGroups: [apps]         # "" indicates the core API group
+    resources: [daemonsets]
+    verbs: [get]
 ---
-apiVersion: traefik.io/v1alpha1
-kind: Middleware
+# Source: jupyterhub/templates/image-puller/rbac.yaml
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
 metadata:
+  name: hook-image-awaiter
   labels:
-    app.kubernetes.io/instance: daskhub
-    app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/name: dask-gateway
-    app.kubernetes.io/version: 2024.1.0
-    gateway.dask.org/instance: daskhub-dask-gateway
-    helm.sh/chart: dask-gateway-2024.1.0
-  name: clusters-prefix-daskhub-dask-gateway
+    component: image-puller
+    app: jupyterhub
+    release: jupyterhub
+    chart: jupyterhub-3.2.1
+    heritage: Helm
+    hub.jupyter.org/deletable: 'true'
+  annotations:
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+    helm.sh/hook-weight: '0'
+subjects:
+  - kind: ServiceAccount
+    name: hook-image-awaiter
+    namespace: daskhub
+roleRef:
+  kind: Role
+  name: hook-image-awaiter
+  apiGroup: rbac.authorization.k8s.io
+---
+# Source: jupyterhub/templates/image-puller/daemonset-hook.yaml
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: hook-image-puller
+  labels:
+    component: hook-image-puller
+    app: jupyterhub
+    release: jupyterhub
+    chart: jupyterhub-3.2.1
+    heritage: Helm
+    hub.jupyter.org/deletable: 'true'
+  annotations:
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+    helm.sh/hook-weight: '-10'
 spec:
-  stripPrefixRegex:
-    regex:
-      - /services/dask-gateway/clusters/[a-zA-Z0-9.-]+
+  selector:
+    matchLabels:
+      component: hook-image-puller
+      app: jupyterhub
+      release: jupyterhub
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 100%
+  template:
+    metadata:
+      labels:
+        component: hook-image-puller
+        app: jupyterhub
+        release: jupyterhub
+    spec:
+      tolerations:
+        - effect: NoSchedule
+          key: hub.jupyter.org/dedicated
+          operator: Equal
+          value: user
+        - effect: NoSchedule
+          key: hub.jupyter.org_dedicated
+          operator: Equal
+          value: user
+      terminationGracePeriodSeconds: 0
+      automountServiceAccountToken: false
+      initContainers:
+        - name: image-pull-metadata-block
+          image: quay.io/jupyterhub/k8s-network-tools:3.2.1
+          command:
+            - /bin/sh
+            - -c
+            - echo "Pulling complete"
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsGroup: 65534
+            runAsUser: 65534
+        - name: image-pull-singleuser
+          image: quay.io/jupyterhub/k8s-singleuser-sample:3.2.1
+          command:
+            - /bin/sh
+            - -c
+            - echo "Pulling complete"
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsGroup: 65534
+            runAsUser: 65534
+      containers:
+        - name: pause
+          image: registry.k8s.io/pause:3.9
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsGroup: 65534
+            runAsUser: 65534
+---
+# Source: jupyterhub/templates/image-puller/job.yaml
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: hook-image-awaiter
+  labels:
+    component: image-puller
+    app: jupyterhub
+    release: jupyterhub
+    chart: jupyterhub-3.2.1
+    heritage: Helm
+    hub.jupyter.org/deletable: 'true'
+  annotations:
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+    helm.sh/hook-weight: '10'
+spec:
+  template:
+    # The hook-image-awaiter Job and hook-image-puller DaemonSet was
+    # conditionally created based on this state:
+    #
+    # prePuller.hook.enabled=true
+    # prePuller.hook.pullOnlyOnChanges=true
+    # post-upgrade checksum != pre-upgrade checksum (of the hook-image-puller DaemonSet)
+    # "f68131eb27329b55214af61cdb0cb8f7308a7d6afd93cccd85e0727c11d6067e" != ""
+    #
+    metadata:
+      labels:
+        component: image-puller
+        app: jupyterhub
+        release: jupyterhub
+    spec:
+      restartPolicy: Never
+      serviceAccountName: hook-image-awaiter
+      tolerations:
+        - effect: NoSchedule
+          key: hub.jupyter.org/dedicated
+          operator: Equal
+          value: core
+        - effect: NoSchedule
+          key: hub.jupyter.org_dedicated
+          operator: Equal
+          value: core
+      containers:
+        - image: quay.io/jupyterhub/k8s-image-awaiter:3.2.1
+          name: hook-image-awaiter
+          command:
+            - /image-awaiter
+            - -ca-path=/var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+            - -auth-token-path=/var/run/secrets/kubernetes.io/serviceaccount/token
+            - -api-server-address=https://kubernetes.default.svc:$(KUBERNETES_SERVICE_PORT)
+            - -namespace=daskhub
+            - -daemonset=hook-image-puller
+            - -pod-scheduling-wait-duration=10
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsGroup: 65534
+            runAsUser: 65534

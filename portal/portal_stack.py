@@ -1,6 +1,7 @@
 """
 CDK Stack definition for deploying the Portal module of a HelioCloud instance.
 """
+
 import os.path
 import secrets as pysecrets
 
@@ -187,6 +188,21 @@ class PortalStack(Stack):
                                 "ec2:DeleteKeyPair",
                                 "ec2:AssociateIamInstanceProfile",
                                 "ec2:ReplaceIamInstanceProfileAssociation",
+                                "s3:ListAllMyBuckets",
+                                "s3:CreateBucket",
+                                "s3:DeleteBucket",
+                                "s3:GetBucketLocation",
+                                "s3:ListBucket",
+                                "s3:GetBucketPolicy",
+                                "s3:PutBucketPolicy",
+                                "s3:DeleteBucketPolicy",
+                                "s3:GetObject",
+                                "s3:PutObject",
+                                "s3:DeleteObject",
+                                "s3:ListMultipartUploadParts",
+                                "s3:AbortMultipartUpload",
+                                "s3:PutBucketAcl",
+                                "s3:GetBucketAcl",
                             ],
                             "Resource": "*",
                         }

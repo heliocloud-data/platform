@@ -281,6 +281,14 @@ daskhub:
                       - core
                       - user
                       - dask
+            volumes:
+              - name: dh-helio-efs
+                persistentVolumeClaim:
+                  claimName: efs-persist
+          extraContainerConfig:
+            volumeMounts:
+              - name: dh-helio-efs
+                mountPath: /home/jovyan/scratch_space
         worker:
           extraPodConfig:
             affinity:
@@ -292,6 +300,14 @@ daskhub:
                       operator: In
                       values:
                       - Ec2Spot
+            volumes:
+              - name: dh-helio-efs
+                persistentVolumeClaim:
+                  claimName: efs-persist
+          extraContainerConfig:
+            volumeMounts:
+              - name: dh-helio-efs
+                mountPath: /home/jovyan/scratch_space
 
       extraConfig:
         optionHandler: |

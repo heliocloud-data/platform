@@ -219,7 +219,7 @@ class DaskhubStack(Stack):
             self,
             "DaskhubInstance",
             vpc=base_aws.heliocloud_vpc,
-            machine_image=ec2.MachineImage.latestAmazonLinux2(),
+            machine_image=ec2.MachineImage.latest_amazon_linux2(),
             instance_type=ec2.InstanceType("t2.micro"),
             role=ec2_admin_role,
             user_data=ec2_user_data,

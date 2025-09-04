@@ -120,6 +120,8 @@ class MyHelioCloud(Construct):
                 auth_stack.add_dependency(identity_stack)
             cdk.Tags.of(auth_stack).add("Product", "heliocloud-auth")
 
+            # initialize portal_stack as None so there is no NameError later on
+            portal_stack = None
             # Should the User Portal module be deployed
             if enabled_modules.get("portal", False):
                 portal_stack = PortalStack(
@@ -143,10 +145,13 @@ class MyHelioCloud(Construct):
                     config=self.__config,
                     base_aws=base_stack,
                     base_auth=auth_stack,
+                    portal=portal_stack,
                     env=self.__env,
                 )
                 daskhub_stack.add_dependency(base_stack)
                 daskhub_stack.add_dependency(auth_stack)
+                if enabled_modules.get("portal", False):
+                    daskhub_stack.add_dependency(portal_stack)
                 cdk.Tags.of(daskhub_stack).add("Product", "heliocloud-daskhub-admin")
 
             if enabled_modules.get("registration_page", False):

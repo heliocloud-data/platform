@@ -50,6 +50,7 @@ class DaskhubStack(Stack):
             config: dict,
             base_aws: BaseAwsStack,
             base_auth: Stack,
+            portal: Stack = None,
             **kwargs,
     ) -> None:
         # fmt: on
@@ -396,6 +397,8 @@ class DaskhubStack(Stack):
         cdk.CfnOutput(self, "CognitoDomainPrefix", value=domain_prefix)
         cdk.CfnOutput(self, "CognitoUserPoolId", value=base_auth.userpool.user_pool_id)
 
+        if portal is not None:
+            cdk.CfnOutput(self, "PortalStackName", value=portal.stack_name)
 
     @staticmethod
     def load_configurations(config: dict) -> dict:

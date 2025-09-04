@@ -33,9 +33,11 @@ CLOUDFORMATION_NAME=$(echo $CLOUDFORMATION_ARN | sed 's/^.*stack\///' | cut -d'/
 
 aws cloudformation describe-stacks --stack-name $CLOUDFORMATION_NAME --query 'Stacks[0].Outputs' --output text > stack.txt
 
-# TODO: don't hardcode this
+# Portal stack name might not be in the output if it is disabled - we need to check for it
 PORTAL_CLOUDFORMATION_NAME=$(aws cloudformation describe-stacks --stack-name $CLOUDFORMATION_NAME --query 'Stacks[0].Outputs[?OutputKey==`PortalStackName`].OutputValue' --output text)
-aws cloudformation describe-stacks --stack-name $PORTAL_CLOUDFORMATION_NAME --query 'Stacks[0].Outputs' --output text >> stack.txt
+if [[ "${PORTAL_CLOUDFORMATION_NAME}" != "" ]]; then
+  aws cloudformation describe-stacks --stack-name $PORTAL_CLOUDFORMATION_NAME --query 'Stacks[0].Outputs' --output text >> stack.txt
+fi
 
 
 # grep -lr 'CNF_OUTPUT_'

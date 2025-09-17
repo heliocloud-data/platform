@@ -50,6 +50,7 @@ class BaseAwsStack(Stack):
             public_bucket_arns += [
                 f"arn:aws:s3:::{public_bucket}",
                 f"arn:aws:s3:::{public_bucket}/*",
+                "arn:aws:s3:::heliocloud-portal-*",
             ]
 
         s3_custom_policy_document = iam.PolicyDocument(

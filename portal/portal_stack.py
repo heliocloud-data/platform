@@ -203,6 +203,8 @@ class PortalStack(Stack):
                                 "s3:AbortMultipartUpload",
                                 "s3:PutBucketAcl",
                                 "s3:GetBucketAcl",
+                                "s3:PutBucketTagging",
+                                "s3:GetBucketTagging",
                             ],
                             "Resource": "*",
                         }

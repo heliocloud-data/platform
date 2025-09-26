@@ -1,6 +1,7 @@
 """
 CDK Stack definition for deploying foundational AWS services required for a HelioCloud instance.
 """
+
 from aws_cdk import (
     Stack,
     aws_s3 as s3,
@@ -50,8 +51,13 @@ class BaseAwsStack(Stack):
             public_bucket_arns += [
                 f"arn:aws:s3:::{public_bucket}",
                 f"arn:aws:s3:::{public_bucket}/*",
-                "arn:aws:s3:::heliocloud-portal-*",
             ]
+
+        # Add buckets created from user portal
+        portal_buckets = [
+            "arn:aws:s3:::heliocloud-portal-*",
+            "arn:aws:s3:::heliocloud-portal-*/*",
+        ]
 
         s3_custom_policy_document = iam.PolicyDocument(
             statements=[
@@ -68,7 +74,11 @@ class BaseAwsStack(Stack):
                         "s3:GetBucketLocation",
                         "s3:ListMultipartUploadParts",
                     ],
-                    resources=[user_shared_bucket.bucket_arn, f"{user_shared_bucket.bucket_arn}/*"],
+                    resources=[
+                        user_shared_bucket.bucket_arn,
+                        f"{user_shared_bucket.bucket_arn}/*",
+                        *portal_buckets,
+                    ],
                 ),
                 iam.PolicyStatement(actions=["s3:ListAllMyBuckets"], resources=["*"]),
                 iam.PolicyStatement(

@@ -59,6 +59,12 @@ class BaseAwsStack(Stack):
             "arn:aws:s3:::heliocloud-portal-*/*",
         ]
 
+        # Add buckets created from user portal
+        portal_buckets = [
+            "arn:aws:s3:::heliocloud-portal-*",
+            "arn:aws:s3:::heliocloud-portal-*/*",
+        ]
+
         s3_custom_policy_document = iam.PolicyDocument(
             statements=[
                 iam.PolicyStatement(

@@ -316,64 +316,6 @@ class DaskhubStack(Stack):
 
         )
 
-        oauth_base_url=(f"https://{self.__daskhub_config['daskhub']['domain_record']}."
-            f"{self.__daskhub_config['daskhub']['domain_url']}")
-        callback_url=f"{oauth_base_url}/hub/oauth_callback"
-        logout_url=f"{oauth_base_url}/logout"
-
-        # Add Daskhub as a client to the Cognito user pool
-        # pylint: disable=duplicate-code
-        daskhub_client = base_auth.userpool.add_client(
-            "heliocloud-daskhub",
-            generate_secret=True,
-            o_auth=cognito.OAuthSettings(
-                flows=cognito.OAuthFlows(authorization_code_grant=True),
-                scopes=[
-                    cognito.OAuthScope.PHONE,
-                    cognito.OAuthScope.EMAIL,
-                    cognito.OAuthScope.OPENID,
-                    cognito.OAuthScope.COGNITO_ADMIN,
-                    cognito.OAuthScope.PROFILE,
-                ],
-                callback_urls=[callback_url],
-                logout_urls=[logout_url],
-            ),
-            supported_identity_providers=[cognito.UserPoolClientIdentityProvider.COGNITO],
-            prevent_user_existence_errors=True,
-        )
-
-        # Add OAuth2 Proxy as a client to the Cognito user pool
-        # pylint: disable=duplicate-code
-        if "daskhub_metrics" in config["enabled"] and config["enabled"]["daskhub_metrics"]:
-            oauth_base_url = ("https://"
-                            f"{self.__daskhub_config['monitoring']['cost_analyzer_domain_prefix']}."
-                            f"{self.__daskhub_config['daskhub']['domain_url']}")
-            callback_url = f"{oauth_base_url}/model/oidc/authorize"
-            logout_url = f"{oauth_base_url}/logout"
-
-        kubecost_client = base_auth.userpool.add_client(
-            "heliocloud-kubecost",
-            generate_secret=True,
-            o_auth=cognito.OAuthSettings(
-                flows=cognito.OAuthFlows(authorization_code_grant=True),
-                scopes=[
-                    cognito.OAuthScope.PHONE,
-                    cognito.OAuthScope.EMAIL,
-                    cognito.OAuthScope.OPENID,
-                    cognito.OAuthScope.COGNITO_ADMIN,
-                    cognito.OAuthScope.PROFILE,
-                ],
-                callback_urls=[callback_url],
-                logout_urls=[logout_url],
-            ),
-            supported_identity_providers=[cognito.UserPoolClientIdentityProvider.COGNITO],
-            prevent_user_existence_errors=True,
-        )
-
-        # Set conditional output for the kubecost client
-        cdk.CfnOutput(self, "CognitoClientIdKubeCost",
-                        value=kubecost_client.user_pool_client_id)
-
         self.build_route53_settings()
 
         # AWS KMS key required for K8 to encrypt/decrypt secrets during its deployment
@@ -393,7 +335,7 @@ class DaskhubStack(Stack):
         cdk.CfnOutput(self, "Route53Arn", value=route53_managed_policy.managed_policy_arn)
         cdk.CfnOutput(self, "EFSId", value=file_system.file_system_id)
         cdk.CfnOutput(self, "EFSMountArn", value=efs_mount_managed_policy.managed_policy_arn)
-        cdk.CfnOutput(self, "CognitoClientId", value=daskhub_client.user_pool_client_id)
+        cdk.CfnOutput(self, "CognitoClientId", value=base_auth.client.user_pool_client_id)
         cdk.CfnOutput(self, "CognitoDomainPrefix", value=domain_prefix)
         cdk.CfnOutput(self, "CognitoUserPoolId", value=base_auth.userpool.user_pool_id)
 

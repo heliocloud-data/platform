@@ -56,15 +56,9 @@ class PortalStack(Stack):
         # Extract the important bits from the Portal's config
         portal_url = f'https://{config.get("domain_record")}.' f'{config.get("domain_url")}'
 
-        # Add the Portal as a client of the Cognito user pool for this HelioCloud
-        # pylint: disable=duplicate-code
-        user_pool_client = self.__create_user_pool_client(
-            auth_stack=auth_stack, portal_url=portal_url
-        )
-
         # Create an Identity Pool with the appropriate permissions for Portal Users
         id_pool = self.__create_identity_pool(
-            user_pool=auth_stack.userpool, user_pool_client=user_pool_client
+            user_pool=auth_stack.userpool, user_pool_client=auth_stack.client
         )
 
         # Create the Portal task for Fargate
@@ -89,37 +83,7 @@ class PortalStack(Stack):
         cdk.CfnOutput(self, "Portal_Ec2RoleArn", value=self.ec2_default_role.role_arn)
 
         cdk.CfnOutput(self, "Portal_IdentityPool", value=id_pool.identity_pool_id)
-        cdk.CfnOutput(self, "Portal_CognitoClientId", value=user_pool_client.user_pool_client_id)
         cdk.CfnOutput(self, "Portal_UserPoolId", value=auth_stack.userpool.user_pool_id)
-
-    # pylint: enable=too-many-arguments
-    # pylint: enable=too-many-locals
-
-    def __create_user_pool_client(
-        self, auth_stack: AuthStack, portal_url: str
-    ) -> aws_cdk.aws_cognito.UserPoolClient:
-        """
-        Add the Portal as client of the AWS Cognito User Pool for this HelioCloud instance
-        """
-        client = auth_stack.userpool.add_client(
-            "heliocloud-portal",
-            generate_secret=True,
-            o_auth=cognito.OAuthSettings(
-                flows=cognito.OAuthFlows(authorization_code_grant=True),
-                scopes=[
-                    cognito.OAuthScope.PHONE,
-                    cognito.OAuthScope.EMAIL,
-                    cognito.OAuthScope.OPENID,
-                    cognito.OAuthScope.COGNITO_ADMIN,
-                    cognito.OAuthScope.PROFILE,
-                ],
-                callback_urls=[f"{portal_url}/loggedin"],
-                logout_urls=[f"{portal_url}/logout"],
-            ),
-            supported_identity_providers=[cognito.UserPoolClientIdentityProvider.COGNITO],
-            prevent_user_existence_errors=True,
-        )
-        return client
 
     def __create_identity_pool(
         self, user_pool: cognito.UserPool, user_pool_client: cognito.UserPoolClient

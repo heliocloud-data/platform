@@ -94,6 +94,27 @@ class AuthStack(Stack):
         custom.node.add_dependency(self.userpool)
         # pylint: enable=line-too-long
 
+        auth_url = f"https://oauth-{config['daskhub']['eksctl']['metadata']['name']}-{config['daskhub']['eksctl']['metadata']['region']}.{config['daskhub']['global']['domain_url']}"
+
+        self.client = self.userpool.add_client(
+            "heliocloud-oauth-client",
+            generate_secret=True,
+            o_auth=cognito.OAuthSettings(
+                flows=cognito.OAuthFlows(authorization_code_grant=True),
+                scopes=[
+                    cognito.OAuthScope.PHONE,
+                    cognito.OAuthScope.EMAIL,
+                    cognito.OAuthScope.OPENID,
+                    cognito.OAuthScope.COGNITO_ADMIN,
+                    cognito.OAuthScope.PROFILE,
+                ],
+                callback_urls=[f"{auth_url}/oauth2/callback"],
+                logout_urls=[f"{auth_url}/oauth2/logout"],
+            ),
+            supported_identity_providers=[cognito.UserPoolClientIdentityProvider.COGNITO],
+            prevent_user_existence_errors=True,
+        )
+
     @property
     def domain_prefix(self):
         """

@@ -342,7 +342,7 @@ class DaskhubStack(Stack):
             prevent_user_existence_errors=True,
         )
 
-        # Add OAuth2 PRoxy as a client to the Cognito user pool
+        # Add OAuth2 Proxy as a client to the Cognito user pool
         # pylint: disable=duplicate-code
         if "daskhub_metrics" in config["enabled"] and config["enabled"]["daskhub_metrics"]:
             oauth_base_url = ("https://"

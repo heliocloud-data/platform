@@ -1,7 +1,7 @@
 #!/bin/bash
 # This is a mandatory step to ensure deployment of ingress/authentication proxies
 
-cd ../ingress
+cd ingress
 helm dep update
 helm upgrade \
     heliocloud-ingress ./ \

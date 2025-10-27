@@ -226,6 +226,12 @@ class DaskhubStack(Stack):
             user_data=ec2_user_data,
             vpc_subnets=ec2.SubnetSelection(subnets=base_aws.heliocloud_vpc.private_subnets),
             init=init_data,
+            init_options=ec2.ApplyCloudFormationInitOptions(
+                config_sets=["default"],
+                embed_fingerprint=False,
+                print_log=True,
+                timeout=Duration.minutes(30),
+            ),
         )
 
         ####################################################
@@ -321,8 +327,6 @@ class DaskhubStack(Stack):
         # AWS KMS key required for K8 to encrypt/decrypt secrets during its deployment
         kms_key = kms.Key(self, id=construct_id + "-key", removal_policy=RemovalPolicy.DESTROY)
 
-        auth = config["auth"]
-        domain_prefix = auth.get("domain_prefix", "")
         # pylint: enable=duplicate-code
 
         # Cloudformation outputs
@@ -335,9 +339,11 @@ class DaskhubStack(Stack):
         cdk.CfnOutput(self, "Route53Arn", value=route53_managed_policy.managed_policy_arn)
         cdk.CfnOutput(self, "EFSId", value=file_system.file_system_id)
         cdk.CfnOutput(self, "EFSMountArn", value=efs_mount_managed_policy.managed_policy_arn)
-        cdk.CfnOutput(self, "CognitoClientId", value=base_auth.client.user_pool_client_id)
-        cdk.CfnOutput(self, "CognitoDomainPrefix", value=domain_prefix)
-        cdk.CfnOutput(self, "CognitoUserPoolId", value=base_auth.userpool.user_pool_id)
+
+        # Outputs other stacks
+        # The cluster needs info specific to auth and portal but doesn't
+        # natively have access to the auth/portal references.
+        cdk.CfnOutput(self, "AuthStackName", value=base_auth.stack_name)
 
         if portal is not None:
             cdk.CfnOutput(self, "PortalStackName", value=portal.stack_name)

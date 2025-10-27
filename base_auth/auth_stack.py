@@ -3,6 +3,7 @@ CDK Stack responsible for defining the AWS authorization infrastructure required
 for a HelioCloud instance.
 """
 
+import aws_cdk as cdk
 from aws_cdk import (
     Stack,
     aws_cognito as cognito,
@@ -113,6 +114,24 @@ class AuthStack(Stack):
             ),
             supported_identity_providers=[cognito.UserPoolClientIdentityProvider.COGNITO],
             prevent_user_existence_errors=True,
+        )
+
+        cdk.CfnOutput(
+            self,
+            "CognitoClientId",
+            value=self.client.user_pool_client_id,
+        )
+
+        cdk.CfnOutput(
+            self,
+            "CognitoDomainPrefix",
+            value=self.domain_prefix,
+        )
+
+        cdk.CfnOutput(
+            self,
+            "CognitoUserPoolId",
+            value=self.userpool.user_pool_id,
         )
 
     @property

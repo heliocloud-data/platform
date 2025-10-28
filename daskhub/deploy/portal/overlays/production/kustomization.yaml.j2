@@ -36,6 +36,8 @@ patches:
           value: "<<CNF_OUTPUT_CognitoUserPoolId>>"
         - name: FLASK_SECRET_KEY
           value: {{ hc_config['portal']['api_key'] }}
+        - name: LOGOUT_URL
+          value: https://oauth-{{ config['eksctl']['metadata']['name'] }}-{{ config['eksctl']['metadata']['region'] }}.{{ config['global']['domain_url'] }}/oauth2/sign_out
 - target:
     kind: ServiceAccount
     name: portal-sa

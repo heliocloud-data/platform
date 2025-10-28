@@ -24,7 +24,7 @@ oauth2-proxy:
     oidc-jwks-url: https://cognito-idp.{{ config['eksctl']['metadata']['region'] }}.amazonaws.com/<<CNF_OUTPUT_CognitoUserPoolId>>/.well-known/jwks.json
     oidc-issuer-url: https://cognito-idp.{{ config['eksctl']['metadata']['region'] }}.amazonaws.com/<<CNF_OUTPUT_CognitoUserPoolId>>
     redirect-url: https://oauth-{{ config['eksctl']['metadata']['name'] }}-{{ config['eksctl']['metadata']['region'] }}.{{ config['global']['domain_url'] }}/oauth2/callback
-    backend-logout-url: https://oauth-{{ config['eksctl']['metadata']['name'] }}-{{ config['eksctl']['metadata']['region'] }}.{{ config['global']['domain_url'] }}/oauth2/logout
+    backend-logout-url: https://oauth-{{ config['eksctl']['metadata']['name'] }}-{{ config['eksctl']['metadata']['region'] }}.{{ config['global']['domain_url'] }}/oauth2/sign_out
     whitelist-domain: .{{ config['global']['domain_url'] }}
     cookie-domain: .{{ config['global']['domain_url'] }}
     scope: openid
@@ -33,6 +33,8 @@ oauth2-proxy:
     pass-user-headers: true
     prefer-email-to-user: false
     pass-authorization-header: true
+    skip-auth-strip-headers: false
+    pass-access-token: true
   ingress:
     enabled: true
     hosts:

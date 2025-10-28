@@ -76,6 +76,7 @@ class PortalStack(Stack):
             self, "Portal_Ec2SubnetId", value=aws_stack.heliocloud_vpc.public_subnets[0].subnet_id
         )
         cdk.CfnOutput(self, "Portal_Ec2RoleArn", value=self.ec2_default_role.role_arn)
+        cdk.CfnOutput(self, "Portal_IdentityPool", value=id_pool.identity_pool_id)
 
     def __create_identity_pool(
         self, user_pool: cognito.UserPool, user_pool_client: cognito.UserPoolClient

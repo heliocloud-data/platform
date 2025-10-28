@@ -31,6 +31,9 @@ portal:
   domain_certificate_arn: "arn:aws:acm:${AWS_DEFAULT_REGION}:${HC_AWS_ACCOUNT}:certificate/${HC_PORTAL_CERT_ARN}"
 
 daskhub:
+  global:
+    domain_certificate_arn: "arn:aws:acm:${AWS_DEFAULT_REGION}:${HC_AWS_ACCOUNT}:certificate/${HC_PORTAL_CERT_ARN}"
+    domain_url: "aplscicloud.org"
   daskhub:
     domain_url: "domain"
   monitoring:

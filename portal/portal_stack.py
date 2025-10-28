@@ -25,7 +25,7 @@ from constructs import Construct
 from base_auth.auth_stack import AuthStack
 from base_aws.base_aws_stack import BaseAwsStack
 
-from daskhub.aws_utils import get_instance_types_by_region, find_route53_record_by_type_and_name
+from daskhub.aws_utils import find_route53_record_by_type_and_name
 
 
 class PortalStack(Stack):
@@ -64,11 +64,6 @@ class PortalStack(Stack):
         # Create the Portal task for Fargate
         task = self.__create_ec2_resources(
             vpc=aws_stack.heliocloud_vpc, s3_policy=aws_stack.s3_managed_policy
-        )
-
-        self.__build_hosted_zone(config["domain_url"])
-        self.__build_route53_settings(
-            f"{config['domain_record']}.{config['domain_url']}", config["domain_record"]
         )
 
         # # Cloudformation outputs

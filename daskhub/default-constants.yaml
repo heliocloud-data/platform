@@ -1,3 +1,6 @@
+global:
+  domain_certificate_arn: ""
+  domain_url: '<REPLACE>'
 eksctl:
   metadata:
     name: 'eks-helio'
@@ -42,7 +45,6 @@ daskhub:
   contact_email: # Email to send cert validation emails to, ex. 'jsmith@gmail.com'
 
   # Daskhub will be hosted at <domain_record>.<domain_url>
-  domain_url: '<REPLACE>'
   domain_record: "daskhub"
 
   # HelioCloud docker containers

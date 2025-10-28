@@ -2446,7 +2446,7 @@ spec:
             - --config=/etc/user-scheduler/config.yaml
             - --authentication-skip-lookup=true
             - --v=4
-          image: registry.k8s.io/kube-scheduler:v1.33.1
+          image: registry.k8s.io/kube-scheduler:v1.32.1
           livenessProbe:
             httpGet:
               path: /healthz

@@ -388,7 +388,7 @@ class DaskhubStack(Stack):
         This method creates a CDK route53 construct from a domain lookup under the 
         assumption it already exists.
         """
-        domain_url = self.__daskhub_config['daskhub']['domain_url']
+        domain_url = self.__daskhub_config['global']['domain_url']
         self.hosted_zone = route53.PublicHostedZone.from_lookup(
             self, "HostedZone", domain_name=domain_url
         )
@@ -408,7 +408,7 @@ class DaskhubStack(Stack):
         ttl = Duration.seconds(300)
         domain_name = "0.0.0.0"
         full_name = f"{self.__daskhub_config['daskhub']['domain_record']}." \
-                    f"{self.__daskhub_config['daskhub']['domain_url']}."
+                    f"{self.__daskhub_config['global']['domain_url']}."
 
         record = find_route53_record_by_type_and_name(
             self.hosted_zone.hosted_zone_id, 'CNAME',

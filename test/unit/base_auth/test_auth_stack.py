@@ -1,6 +1,7 @@
 """
 Tests for the AuthStack.
 """
+
 import json
 from unittest.mock import Mock
 
@@ -18,7 +19,13 @@ LOGO_URL = "http://heliocloud.org/static/img/logo_bin.png"
 
 @pytest.fixture(scope="module")
 def config():
-    return {"auth": {"domain_prefix": DOMAIN_PREFIX}}
+    return {
+        "auth": {"domain_prefix": DOMAIN_PREFIX},
+        "daskhub": {
+            "global": {"domain_url": "heliocloud.org"},
+            "eksctl": {"metadata": {"name": "eks-helio", "region": "us-east-1"}},
+        },
+    }
 
 
 def test_auth_stack(config) -> None:

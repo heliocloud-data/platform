@@ -29,6 +29,7 @@ IT-*.xml
 instance/staging-*
 instance/production-*
 instance/*-dev.yaml
+instance/testing-v*
 
 # Output files from the feature tests
 reports/*

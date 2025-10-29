@@ -21,8 +21,8 @@ variables:
     - git config --global user.name "${GIT_USER_NAME}"
     - git config --global --add --bool push.autoSetupRemote true
     # Clone HelioCloud source repository and install the dependencies
-    - echo git clone https://gitlab-ci-token-push:${GITLAB_CI_TOKEN_PUSH}@gitlab.smce.nasa.gov/heliocloud/platform.git
-    - git clone https://gitlab-ci-token-push:${GITLAB_CI_TOKEN_PUSH}@gitlab.smce.nasa.gov/heliocloud/platform.git
+    - echo git clone https://gitlab-ci-token:${GITLAB_CI_TOKEN}@gitlab.smce.nasa.gov/heliocloud/platform.git
+    - git clone https://gitlab-ci-token:${GITLAB_CI_TOKEN}@gitlab.smce.nasa.gov/heliocloud/platform.git
     - cd platform
     # If the integration branch doesn't exist already exist; then we should
     # attempt to patch the working branch.

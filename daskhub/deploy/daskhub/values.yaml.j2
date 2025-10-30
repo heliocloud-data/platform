@@ -81,6 +81,7 @@ daskhub:
       extraConfig:
         00-auth.py: |
           from jupyterhub.auth import Authenticator
+          from jupyter.handlers.login import LogoutHandler
 
           # Custom JupyterHub Authenticator
           # The username proxied with X-Auth-Request-Preferred-Username becomes the
@@ -88,10 +89,20 @@ daskhub:
           # This value is sourced from cognito - users must have 'preferred_username'
           # set as one of their user attributes.
           class ProxiedHeaderAuthenticator(Authenticator):
+            
+            def logout_url(self, base_url):
+              logout_url = (
+                "https://<<CNF_OUTPUT_CognitoDomain>>.auth.{{ config['eksctl']['metadata']['region'] }}.amazoncognito.com/logout"
+                "?client_id=<<CNF_OUTPUT_CognitoClientId>>"
+                "&logout_uri=https://oauth-{{ config['eksctl']['metadata']['name'] }}-{{ config['eksctl']['metadata']['region'] }}.{{ config['global']['domain_url'] }}/oauth2/sign_out"
+              )
+              return logout_url
+            
             async def authenticate(self, handler, data=None):
               headers = handler.request.headers
               username = headers.get("X-Auth-Request-Preferred-Username")
               return username
+
           c.JupyterHub.authenticator_class = ProxiedHeaderAuthenticator
       extraEnv:
         EXTRA_PIP_PACKAGES: >-

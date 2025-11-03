@@ -33,12 +33,20 @@ CLOUDFORMATION_NAME=$(echo $CLOUDFORMATION_ARN | sed 's/^.*stack\///' | cut -d'/
 
 aws cloudformation describe-stacks --stack-name $CLOUDFORMATION_NAME --query 'Stacks[0].Outputs' --output text > stack.txt
 
+# Portal stack name might not be in the output if it is disabled - we need to check for it
+PORTAL_CLOUDFORMATION_NAME=$(aws cloudformation describe-stacks --stack-name $CLOUDFORMATION_NAME --query 'Stacks[0].Outputs[?OutputKey==`PortalStackName`].OutputValue' --output text)
+if [[ "${PORTAL_CLOUDFORMATION_NAME}" != "" ]]; then
+  aws cloudformation describe-stacks --stack-name $PORTAL_CLOUDFORMATION_NAME --query 'Stacks[0].Outputs' --output text >> stack.txt
+fi
+
+
 # grep -lr 'CNF_OUTPUT_'
 FILES=(\
   /home/ssm-user/eksctl/overlays/production/kustomization.yaml
   /home/ssm-user/eksctl-iamidentitymappings/overlays/production/kustomization.yaml
   /home/ssm-user/daskhub-storage/overlays/production/kustomization.yaml
   /home/ssm-user/daskhub/values-production.yaml
+  /home/ssm-user/portal/overlays/production/kustomization.yaml
   /home/ssm-user/monitoring/values-production.yaml
   /home/ssm-user/00-delete-efs-mount-targets.sh
 )
@@ -59,28 +67,43 @@ done < stack.txt
 # Inject it into the necessary resources.
 COGNITO_USER_POOL_ID=$(aws cloudformation describe-stacks --stack-name $CLOUDFORMATION_NAME --query 'Stacks[0].Outputs[?OutputKey==`CognitoUserPoolId`].OutputValue' --output text)
 COGNITO_CLIENT_ID=$(aws cloudformation describe-stacks --stack-name $CLOUDFORMATION_NAME --query 'Stacks[0].Outputs[?OutputKey==`CognitoClientId`].OutputValue' --output text)
-COGNITO_CLIENT_ID_KUBECOST=$(aws cloudformation describe-stacks --stack-name $CLOUDFORMATION_NAME --query 'Stacks[0].Outputs[?OutputKey==`CognitoClientIdKubeCost`].OutputValue' --output text)
 COGNITO_DOMAIN_PREFIX=$(aws cloudformation describe-stacks --stack-name $CLOUDFORMATION_NAME --query 'Stacks[0].Outputs[?OutputKey==`CognitoDomainPrefix`].OutputValue' --output text)
 
 COGNITO_CLIENT_SECRET=$(aws cognito-idp describe-user-pool-client --user-pool-id $COGNITO_USER_POOL_ID --client-id $COGNITO_CLIENT_ID --query 'UserPoolClient.ClientSecret' --output text)
 
-echo $COGNITO_CLIENT_SECRET
 
-COGNITO_CLIENT_SECRET_KUBECOST=$(aws cognito-idp describe-user-pool-client --user-pool-id $COGNITO_USER_POOL_ID --client-id $COGNITO_CLIENT_ID_KUBECOST --query 'UserPoolClient.ClientSecret' --output text)
+COGNITO_CLIENT_ID_KUBECOST=$(aws cloudformation describe-stacks --stack-name $CLOUDFORMATION_NAME --query 'Stacks[0].Outputs[?OutputKey==`CognitoClientIdKubeCost`].OutputValue' --output text)
+if [[ "${COGNITO_CLIENT_ID_KUBECOST}" == "" ]]; then
+  COGNITO_CLIENT_SECRET_KUBECOST=""
+else
+  COGNITO_CLIENT_SECRET_KUBECOST=$(aws cognito-idp describe-user-pool-client --user-pool-id $COGNITO_USER_POOL_ID --client-id $COGNITO_CLIENT_ID_KUBECOST --query 'UserPoolClient.ClientSecret' --output text)
+fi
 
-KEY=CognitoClientSecret
-VALUE=${COGNITO_CLIENT_SECRET}
 
-keys=("CognitoClientSecret" "CognitoClientSecretKubeCost")
-secrets=("${COGNITO_CLIENT_SECRET}" "${COGNITO_CLIENT_SECRET_KUBECOST}")
+COGNITO_CLIENT_ID_PORTAL=$(aws cloudformation describe-stacks --stack-name $PORTAL_CLOUDFORMATION_NAME --query 'Stacks[0].Outputs[?OutputKey==`PortalCognitoClientId`].OutputValue' --output text)
+if [[ "${COGNITO_CLIENT_ID_PORTAL}" == "" ]]; then
+  COGNITO_CLIENT_SECRET_PORTAL=""
+else
+  COGNITO_CLIENT_SECRET_PORTAL=$(aws cognito-idp describe-user-pool-client --user-pool-id $COGNITO_USER_POOL_ID --client-id $COGNITO_CLIENT_ID_PORTAL --query 'UserPoolClient.ClientSecret' --output text)
+fi
 
-for ((i = 0; i < 2; i++))
-do
-    cognito_key="${keys[i]}"
-    cognito_secret="${secrets[i]}"
+
+
+declare -A COGNITO_SECRETS=(\
+  [CognitoClientSecret]="${COGNITO_CLIENT_SECRET}" \
+  [CognitoClientSecretKubeCost]="${COGNITO_CLIENT_SECRET_KUBECOST}" \
+  [PortalCognitoClientSecret]="${COGNITO_CLIENT_SECRET_PORTAL}" \
+)
+
+for cognito_key in "${!COGNITO_SECRETS[@]}"; do
+    cognito_secret="${COGNITO_SECRETS[${cognito_key}]}"
+
+    if [[ "${cognito_secret}" == "" ]]; then
+      continue
+    fi
+
     for j in "${FILES[@]}"
     do
         sed "s#<<CNF_OUTPUT_${cognito_key}>>#${cognito_secret}#g" -i ${j}
     done
 done
-

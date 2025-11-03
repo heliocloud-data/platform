@@ -50,6 +50,7 @@ class DaskhubStack(Stack):
             config: dict,
             base_aws: BaseAwsStack,
             base_auth: Stack,
+            portal: Stack = None,
             **kwargs,
     ) -> None:
         # fmt: on
@@ -58,6 +59,8 @@ class DaskhubStack(Stack):
         self.__daskhub_config = DaskhubStack.load_configurations(config)
         self.build_hosted_zone()
 
+        if 'portal' in config and ('api_key' not in config['portal'] or config['portal']['api_key'] == 'auto'):
+            config['portal']['api_key'] = secrets.token_hex(SECRET_HEX_IN_BYTES)
         if self.__daskhub_config['daskhub']['api_key1'] == 'auto':
             self.__daskhub_config['daskhub']['api_key1'] = secrets.token_hex(SECRET_HEX_IN_BYTES)
         if self.__daskhub_config['daskhub']['api_key2'] == 'auto':
@@ -143,6 +146,7 @@ class DaskhubStack(Stack):
             'stack': self,
             'base_aws': base_aws,
             'config': self.__daskhub_config,
+            'hc_config': config,
             'account': account,
         })
 
@@ -216,7 +220,7 @@ class DaskhubStack(Stack):
             self,
             "DaskhubInstance",
             vpc=base_aws.heliocloud_vpc,
-            machine_image=ec2.MachineImage.latest_amazon_linux(),
+            machine_image=ec2.MachineImage.latest_amazon_linux2(),
             instance_type=ec2.InstanceType("t2.micro"),
             role=ec2_admin_role,
             user_data=ec2_user_data,
@@ -338,7 +342,7 @@ class DaskhubStack(Stack):
             prevent_user_existence_errors=True,
         )
 
-        # Add Daskhub Metrics as a client to the Cognito user pool
+        # Add OAuth2 PRoxy as a client to the Cognito user pool
         # pylint: disable=duplicate-code
         if "daskhub_metrics" in config["enabled"] and config["enabled"]["daskhub_metrics"]:
             oauth_base_url = ("https://"
@@ -347,28 +351,28 @@ class DaskhubStack(Stack):
             callback_url = f"{oauth_base_url}/model/oidc/authorize"
             logout_url = f"{oauth_base_url}/logout"
 
-            kubecost_client = base_auth.userpool.add_client(
-                "heliocloud-kubecost",
-                generate_secret=True,
-                o_auth=cognito.OAuthSettings(
-                    flows=cognito.OAuthFlows(authorization_code_grant=True),
-                    scopes=[
-                        cognito.OAuthScope.PHONE,
-                        cognito.OAuthScope.EMAIL,
-                        cognito.OAuthScope.OPENID,
-                        cognito.OAuthScope.COGNITO_ADMIN,
-                        cognito.OAuthScope.PROFILE,
-                    ],
-                    callback_urls=[callback_url],
-                    logout_urls=[logout_url],
-                ),
-                supported_identity_providers=[cognito.UserPoolClientIdentityProvider.COGNITO],
-                prevent_user_existence_errors=True,
-            )
+        kubecost_client = base_auth.userpool.add_client(
+            "heliocloud-kubecost",
+            generate_secret=True,
+            o_auth=cognito.OAuthSettings(
+                flows=cognito.OAuthFlows(authorization_code_grant=True),
+                scopes=[
+                    cognito.OAuthScope.PHONE,
+                    cognito.OAuthScope.EMAIL,
+                    cognito.OAuthScope.OPENID,
+                    cognito.OAuthScope.COGNITO_ADMIN,
+                    cognito.OAuthScope.PROFILE,
+                ],
+                callback_urls=[callback_url],
+                logout_urls=[logout_url],
+            ),
+            supported_identity_providers=[cognito.UserPoolClientIdentityProvider.COGNITO],
+            prevent_user_existence_errors=True,
+        )
 
-            # Set conditional output for the kubecost client
-            cdk.CfnOutput(self, "CognitoClientIdKubeCost",
-                          value=kubecost_client.user_pool_client_id)
+        # Set conditional output for the kubecost client
+        cdk.CfnOutput(self, "CognitoClientIdKubeCost",
+                        value=kubecost_client.user_pool_client_id)
 
         self.build_route53_settings()
 
@@ -393,6 +397,8 @@ class DaskhubStack(Stack):
         cdk.CfnOutput(self, "CognitoDomainPrefix", value=domain_prefix)
         cdk.CfnOutput(self, "CognitoUserPoolId", value=base_auth.userpool.user_pool_id)
 
+        if portal is not None:
+            cdk.CfnOutput(self, "PortalStackName", value=portal.stack_name)
 
     @staticmethod
     def load_configurations(config: dict) -> dict:

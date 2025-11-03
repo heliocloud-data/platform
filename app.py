@@ -14,7 +14,6 @@ from app_config import load_configs
 from base_auth.identity_stack import IdentityStack
 from base_auth.auth_stack import AuthStack
 from base_aws.base_aws_stack import BaseAwsStack
-from registry.registry_stack import RegistryStack
 from portal.portal_stack import PortalStack
 from daskhub.daskhub_stack import DaskhubStack
 from registration_page.registration_page_stack import RegistrationPageStack
@@ -121,6 +120,8 @@ class MyHelioCloud(Construct):
                 auth_stack.add_dependency(identity_stack)
             cdk.Tags.of(auth_stack).add("Product", "heliocloud-auth")
 
+            # initialize portal_stack as None so there is no NameError later on
+            portal_stack = None
             # Should the User Portal module be deployed
             if enabled_modules.get("portal", False):
                 portal_stack = PortalStack(
@@ -144,10 +145,13 @@ class MyHelioCloud(Construct):
                     config=self.__config,
                     base_aws=base_stack,
                     base_auth=auth_stack,
+                    portal=portal_stack,
                     env=self.__env,
                 )
                 daskhub_stack.add_dependency(base_stack)
                 daskhub_stack.add_dependency(auth_stack)
+                if enabled_modules.get("portal", False):
+                    daskhub_stack.add_dependency(portal_stack)
                 cdk.Tags.of(daskhub_stack).add("Product", "heliocloud-daskhub-admin")
 
             if enabled_modules.get("registration_page", False):
@@ -163,19 +167,6 @@ class MyHelioCloud(Construct):
                 registration_page_stack.add_dependency(base_stack)
                 registration_page_stack.add_dependency(auth_stack)
                 cdk.Tags.of(registration_page_stack).add("Product", "heliocloud-registration-page")
-
-        # Deploy the registry module
-        if enabled_modules.get("registry", False):
-            registry_stack = RegistryStack(
-                self,
-                "Registry",
-                description="HelioCloud data set management.",
-                config=self.__config,
-                env=self.__env,
-                base_aws_stack=base_stack,
-            )
-            registry_stack.add_dependency(base_stack)
-            cdk.Tags.of(registry_stack).add("Product", "heliocloud-registry")
 
 
 def get_instance(cdk_app: cdk.App) -> str:

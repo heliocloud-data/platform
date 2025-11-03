@@ -1,9 +1,11 @@
 """
 CDK Stack definition for deploying the Portal module of a HelioCloud instance.
 """
+
 import os.path
 import secrets as pysecrets
 
+import aws_cdk as cdk
 import aws_cdk.custom_resources
 from aws_cdk import (
     Stack,
@@ -11,18 +13,19 @@ from aws_cdk import (
     aws_cognito as cognito,
     aws_cognito_identitypool_alpha as identity_pool,
     aws_ecs as ecs,
-    aws_ecs_patterns as ecs_patterns,
-    aws_ecr_assets as ecr_assets,
     aws_logs as logs,
-    aws_secretsmanager as sm,
     aws_route53 as route53,
-    aws_certificatemanager as cm,
     aws_ec2 as ec2,
+    aws_route53 as route53,
+    Duration,
+    RemovalPolicy,
 )
 from constructs import Construct
 
 from base_auth.auth_stack import AuthStack
 from base_aws.base_aws_stack import BaseAwsStack
+
+from daskhub.aws_utils import get_instance_types_by_region, find_route53_record_by_type_and_name
 
 
 class PortalStack(Stack):
@@ -64,39 +67,30 @@ class PortalStack(Stack):
             user_pool=auth_stack.userpool, user_pool_client=user_pool_client
         )
 
-        # Create the Fargate cluster that will host the Portal
-        cluster = self.__create_fargate_cluster(vpc=aws_stack.heliocloud_vpc)
-
-        # Create the Docker image for the Portal
-        docker_build_args = {}
-        if "docker" in config and "build_args" in config["docker"]:
-            docker_build_args = config.get("docker").get("build_args")
-        docker_image = self.__create_portal_docker_image(build_args=docker_build_args)
-
         # Create the Portal task for Fargate
-        task = self.__create_fargate_task(
-            app_name=auth_stack.domain_prefix,
-            vpc=aws_stack.heliocloud_vpc,
-            url=portal_url,
-            docker_image=docker_image,
-            s3_policy=aws_stack.s3_managed_policy,
-            id_pool=id_pool,
-            user_pool=auth_stack.userpool,
-            user_pool_client=user_pool_client,
+        task = self.__create_ec2_resources(
+            vpc=aws_stack.heliocloud_vpc, s3_policy=aws_stack.s3_managed_policy
         )
 
-        # Create the load balancer to route traffic to the Portal service
-        cert_arn = config.get("domain_certificate_arn")
-        domain_url = config.get("domain_url")
-        sub_domain = config.get("domain_record")
-        self.__create_load_balancer(
-            cluster=cluster,
-            vpc=aws_stack.heliocloud_vpc,
-            cert_arn=cert_arn,
-            domain=domain_url,
-            sub_domain=sub_domain,
-            task=task,
+        self.__build_hosted_zone(config["domain_url"])
+        self.__build_route53_settings(
+            f"{config['domain_record']}.{config['domain_url']}", config["domain_record"]
         )
+
+        # # Cloudformation outputs
+        # # Return instance ID to make logging into admin instance easier
+        cdk.CfnOutput(self, "Portal_Ec2SecurityGroup", value=self.security_group.security_group_id)
+        cdk.CfnOutput(
+            self, "Portal_Ec2InstanceProfile", value=self.ec2_default_instance_profile.attr_arn
+        )
+        cdk.CfnOutput(
+            self, "Portal_Ec2SubnetId", value=aws_stack.heliocloud_vpc.public_subnets[0].subnet_id
+        )
+        cdk.CfnOutput(self, "Portal_Ec2RoleArn", value=self.ec2_default_role.role_arn)
+
+        cdk.CfnOutput(self, "Portal_IdentityPool", value=id_pool.identity_pool_id)
+        cdk.CfnOutput(self, "Portal_CognitoClientId", value=user_pool_client.user_pool_client_id)
+        cdk.CfnOutput(self, "Portal_UserPoolId", value=auth_stack.userpool.user_pool_id)
 
     # pylint: enable=too-many-arguments
     # pylint: enable=too-many-locals
@@ -194,6 +188,23 @@ class PortalStack(Stack):
                                 "ec2:DeleteKeyPair",
                                 "ec2:AssociateIamInstanceProfile",
                                 "ec2:ReplaceIamInstanceProfileAssociation",
+                                "s3:ListAllMyBuckets",
+                                "s3:CreateBucket",
+                                "s3:DeleteBucket",
+                                "s3:GetBucketLocation",
+                                "s3:ListBucket",
+                                "s3:GetBucketPolicy",
+                                "s3:PutBucketPolicy",
+                                "s3:DeleteBucketPolicy",
+                                "s3:GetObject",
+                                "s3:PutObject",
+                                "s3:DeleteObject",
+                                "s3:ListMultipartUploadParts",
+                                "s3:AbortMultipartUpload",
+                                "s3:PutBucketAcl",
+                                "s3:GetBucketAcl",
+                                "s3:PutBucketTagging",
+                                "s3:GetBucketTagging",
                             ],
                             "Resource": "*",
                         }
@@ -224,188 +235,81 @@ class PortalStack(Stack):
 
         return id_pool
 
-    def __create_fargate_cluster(self, vpc: ec2.Vpc) -> ecs.Cluster:
-        """
-        Creates the Fargate cluster in which the Portal will be hosted
-        """
-        cluster = ecs.Cluster(self, "PortalCluster", vpc=vpc)
-        cluster.add_default_cloud_map_namespace(name="portal.local")
-        return cluster
-
-    def __create_portal_docker_image(self, build_args: dict) -> ecr_assets.DockerImageAsset:
-        """
-        Create the Docker image of the Portal application, for deployment into AWS ECR.
-        """
-        # Construct the Docker image asset that ECR will need
-        # Build args have to get turned into strings for DockerImageAsset to accept them
-        args = {}
-        if build_args is not None:
-            args = {key: str(build_args[key]) for key in build_args.keys()}
-        print(f"Portal Docker Image build is using args: {args}")
-        directory = os.path.dirname(__file__)
-        return ecr_assets.DockerImageAsset(
-            self,
-            "PortalDocker",
-            directory=directory,
-            file="Dockerfile",
-            build_args=args,
-        )
-
     # pylint: disable=too-many-arguments
-    def __create_fargate_task(
-        self,
-        app_name: str,
-        url: str,
-        docker_image: ecr_assets.DockerImageAsset,
-        vpc: ec2.Vpc,
-        s3_policy: iam.ManagedPolicy,
-        id_pool: identity_pool.IdentityPool,
-        user_pool: cognito.UserPool,
-        user_pool_client: cognito.UserPoolClient,
-    ) -> ecs.FargateTaskDefinition:
+    def __create_ec2_resources(self, vpc: ec2.Vpc, s3_policy: iam.ManagedPolicy):
         """
         Create the task in Fargate to run the Portal.
         """
 
         # Create default EC2 security group
-        security_group = ec2.SecurityGroup(
+        self.security_group = ec2.SecurityGroup(
             self,
             "PortalEc2SecurityGroup",
             vpc=vpc,
             allow_all_outbound=True,
         )
-        security_group.add_ingress_rule(ec2.Peer.ipv4("0.0.0.0/0"), ec2.Port.tcp(22))
-        security_group.add_ingress_rule(ec2.Peer.ipv4("0.0.0.0/0"), ec2.Port.tcp(443))
-        security_group.add_ingress_rule(ec2.Peer.ipv4("0.0.0.0/0"), ec2.Port.tcp(80))
-        security_group.add_ingress_rule(ec2.Peer.ipv4("0.0.0.0/0"), ec2.Port.tcp(8000))
-        security_group.add_ingress_rule(ec2.Peer.ipv4("0.0.0.0/0"), ec2.Port.tcp(8000))
+        self.security_group.add_ingress_rule(ec2.Peer.ipv4("0.0.0.0/0"), ec2.Port.tcp(22))
+        self.security_group.add_ingress_rule(ec2.Peer.ipv4("0.0.0.0/0"), ec2.Port.tcp(443))
+        self.security_group.add_ingress_rule(ec2.Peer.ipv4("0.0.0.0/0"), ec2.Port.tcp(80))
+        self.security_group.add_ingress_rule(ec2.Peer.ipv4("0.0.0.0/0"), ec2.Port.tcp(8000))
+        self.security_group.add_ingress_rule(ec2.Peer.ipv4("0.0.0.0/0"), ec2.Port.tcp(8000))
 
         # What is this for?
-        ec2_default_role = iam.Role(
+        self.ec2_default_role = iam.Role(
             self,
             "PortalEc2Role",
             assumed_by=iam.ServicePrincipal("ec2.amazonaws.com"),
             description="Default Portal EC2 Role with S3 access",
         )
-        ec2_default_role.add_managed_policy(s3_policy)
-        ec2_default_instance_profile = iam.CfnInstanceProfile(
+        self.ec2_default_role.add_managed_policy(s3_policy)
+        self.ec2_default_instance_profile = iam.CfnInstanceProfile(
             self,
             "PortalEc2InstanceProfile",
-            roles=[ec2_default_role.role_name],
-        )
-
-        # Create the task & container
-        task = ecs.FargateTaskDefinition(self, "PortalFargateTask", cpu=256, memory_limit_mib=512)
-        task.add_container(
-            "PortalContainer",
-            image=ecs.ContainerImage.from_docker_image_asset(docker_image),
-            essential=True,
-            environment={
-                "APP_NAME": app_name,
-                "REGION": self.region,
-                "PYTHONBUFFERED": "1",
-                "USER_POOL_ID": user_pool.user_pool_id,
-                "SITE_URL": url,
-                "DEFAULT_SECURITY_GROUP_ID": security_group.security_group_id,
-                "DEFAULT_EC2_INSTANCE_PROFILE_ARN": ec2_default_instance_profile.attr_arn,
-                "DEFAULT_EC2_SUBNET_ID": vpc.public_subnets[0].subnet_id,
-            },
-            secrets={
-                # Need the identity pool id
-                "IDENTITY_POOL_ID": ecs.Secret.from_secrets_manager(
-                    sm.Secret(
-                        self,
-                        "portal_identity_pool_id",
-                        secret_string_value=aws_cdk.SecretValue(id_pool.identity_pool_id),
-                    )
-                ),
-                # Need the user pool id
-                "USER_POOL_CLIENT_SECRET": ecs.Secret.from_secrets_manager(
-                    sm.Secret(
-                        self,
-                        "portal_user_pool_client_secret",
-                        secret_string_value=user_pool_client.user_pool_client_secret,
-                    )
-                ),
-                "USER_POOL_CLIENT_ID": ecs.Secret.from_secrets_manager(
-                    sm.Secret(
-                        self,
-                        "portal_user_pool_client_id",
-                        secret_string_value=aws_cdk.SecretValue(
-                            user_pool_client.user_pool_client_id
-                        ),
-                    )
-                ),
-                "FLASK_SECRET_KEY": ecs.Secret.from_secrets_manager(
-                    sm.Secret(
-                        self,
-                        "flask_secret_key",
-                        secret_string_value=aws_cdk.SecretValue(pysecrets.token_hex(16)),
-                    )
-                ),
-            },
-            logging=ecs.LogDrivers.aws_logs(
-                stream_prefix="PortalContainer",
-                log_retention=logs.RetentionDays.ONE_WEEK,
-            ),
-        ).add_port_mappings(ecs.PortMapping(container_port=80, host_port=80))
-
-        return task
-
-    # pylint: enable=too-many-arguments
-
-    # pylint: disable=too-many-arguments
-    def __create_load_balancer(
-        self,
-        cluster: ecs.Cluster,
-        vpc: ec2.Vpc,
-        task: ecs.FargateTaskDefinition,
-        sub_domain: str,
-        domain: str,
-        cert_arn: str,
-    ) -> None:
-        """
-        Creates the Application Load Balancer for routing HTTPs traffic to the
-        Portal service.
-        """
-
-        # Hosted Zone for resolving in DNS
-        zone = route53.PublicHostedZone.from_lookup(self, "PortalHostedZone", domain_name=domain)
-        if zone.is_resource(self):
-            zone = route53.PublicHostedZone(self, "PortalHostedZone", zone_name=domain)
-
-        # Security group
-        security_group = ec2.SecurityGroup(
-            self,
-            "PortalSecurityGroup",
-            vpc=vpc,
-            allow_all_outbound=True,
-        )
-
-        # Set up the load balancer
-        portal_service = ecs_patterns.ApplicationLoadBalancedFargateService(
-            self,
-            "PortalFargate",
-            cluster=cluster,
-            cpu=256,
-            memory_limit_mib=512,
-            desired_count=1,
-            public_load_balancer=True,
-            security_groups=[security_group],
-            task_definition=task,
-            listener_port=443,
-            domain_name=f"{sub_domain}.{domain}",
-            domain_zone=zone,
-            certificate=cm.Certificate.from_certificate_arn(self, "domainCert", cert_arn),
-            record_type=aws_cdk.aws_ecs_patterns.ApplicationLoadBalancedServiceRecordType.ALIAS,
-            redirect_http=True,
-            assign_public_ip=True,
-        )
-
-        # Add a health check
-        portal_service.target_group.configure_health_check(
-            path="/health",
-            healthy_http_codes="200-499",
+            roles=[self.ec2_default_role.role_name],
         )
 
     # pylint: enable=too-many-arguments
+
+    def __build_hosted_zone(self, domain_name):
+        """
+        This method creates a CDK route53 construct from a domain lookup under the
+        assumption it already exists.
+        """
+        self.hosted_zone = route53.PublicHostedZone.from_lookup(
+            self, "PortalHostedZone", domain_name=domain_name
+        )
+        if self.hosted_zone.is_resource(self):
+            self.hosted_zone = route53.PublicHostedZone(
+                self, "PortalHostedZone", zone_name=domain_name
+            )
+
+    def __build_route53_settings(self, full_record_name, record_name):
+        """
+        This method will configure the Route53 settings for daskhub.  These settings
+        will be subsequently updated during the EKSCTL portions of the deployment.  It's safe
+        to run this deployment from a live system.
+        """
+
+        ttl = Duration.seconds(300)
+        domain_name = "0.0.0.0"
+
+        record = find_route53_record_by_type_and_name(
+            self.hosted_zone.hosted_zone_id, "CNAME", full_record_name
+        )
+        if record is not None:
+            print(f"Route53 record set already exists for {full_record_name}")
+            ttl = Duration.seconds(record["TTL"])
+            domain_name = record["ResourceRecords"][0]["Value"]
+            print(f" Using ttl={ttl.to_seconds()}, domain_name={domain_name}")
+
+        cname_record = route53.CnameRecord(
+            self,
+            "CnameRecord",
+            record_name=record_name,
+            zone=self.hosted_zone,
+            ttl=ttl,
+            delete_existing=True,
+            domain_name=domain_name,
+            comment="Initial provisioning from CDK, updated via external-dns.",
+        )
+        cname_record.apply_removal_policy(RemovalPolicy.DESTROY)

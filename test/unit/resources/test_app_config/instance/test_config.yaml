@@ -3,7 +3,7 @@ env:
   region: us-east-100
 
 enabled:
-  registry: True
+  registry: False
 
 registry:
   datasetBucketNames: [

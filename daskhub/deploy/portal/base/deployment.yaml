@@ -1,0 +1,33 @@
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: portal
+  namespace: portal
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: portal
+  template:
+    metadata:
+      labels:
+        app: portal
+    spec:
+      affinity:
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - preference:
+              matchExpressions:
+              - key: hub.jupyter.org/node-purpose
+                operator: In
+                values:
+                - core
+            weight: 100
+      serviceAccountName: portal-sa
+      containers:
+        - name: science-console
+          image: public.ecr.aws/q3h7b4o8/heliocloud/helio-portal:latest
+          ports:
+            - containerPort: 80
+          env: # Provide this in environment specific overlay

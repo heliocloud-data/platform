@@ -7,6 +7,8 @@ pylint-gitlab==1.2.0
 black >=23.0.0,<24.0.0
 pre-commit
 ruamel.yaml==0.17.32
+beautifulsoup4==4.12.3
+html5lib==1.1
 dpath
 behave
 selenium

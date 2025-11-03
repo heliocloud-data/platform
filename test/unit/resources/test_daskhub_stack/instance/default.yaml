@@ -1,4 +1,6 @@
 # Supports unit tests for Daskhub
+env:
+  region: us-east-1
 
 vpc:
   type: "new"
@@ -15,12 +17,6 @@ email:
 
 auth:
   domain_prefix: "apl-helio"
-
-
-registry:
-  datasetBucketNames: [
-    "bucket1", "bucket2"
-  ]
 
 portal:
   domain_url: "heliocloud.org"

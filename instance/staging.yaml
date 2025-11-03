@@ -28,11 +28,10 @@ email:
   from_name: "DEV - APL HelioCloud"
 
 enabled:
-  registry: False
   daskhub: True
   daskhub_metrics: True
   portal: True
-  registration_page: True
+  registration_page: False
 
 auth:
   domain_prefix: "apl-helio"
@@ -43,6 +42,9 @@ portal:
   domain_url: "aplscicloud.org"
   domain_record: "portal-dev"
   domain_certificate_arn: "arn:aws:acm:${AWS_DEFAULT_REGION}:${HC_AWS_ACCOUNT}:certificate/${HC_PORTAL_CERT_ARN}"
+  api_key: auto
+  PORTAL_DOCKER_LOCATION: 'public.ecr.aws/q3h7b4o8/heliocloud/helio-portal'
+  PORTAL_DOCKER_VERSION: '2025.06.09'
 
 registration_page:
   domain_url: "aplscicloud.org"

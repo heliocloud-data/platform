@@ -23,7 +23,6 @@ userSharedBucket:
   destroyOnRemoval: True
 
 enabled:
-  registry: False
   portal: False
 
 portal:

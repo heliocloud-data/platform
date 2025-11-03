@@ -8,5 +8,5 @@ boto3~=1.26.114
 aws-cdk.aws-cognito-identitypool-alpha==2.65.0a0
 pymongo==4.3.3
 
-# Install Portal requirements
--r portal/requirements.txt
+# Install Registration requirements
+-r registration_page/requirements.txt

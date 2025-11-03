@@ -3,17 +3,21 @@ BASE_DIR=temp/daskhub/deploy
 K8_APPS=(\
     amazon-cloudwatch
     daskhub-storage
+    kube-system
+    portal
     eksctl
     eksctl-iamidentitymappings
 )
 
 HELM_APPS=(\
     daskhub
+    ingress
     monitoring
 )
 
 for K8_APP in "${K8_APPS[@]}"
 do
+    echo "mv ${BASE_DIR}/$K8_APP/overlays/production ${BASE_DIR}/$K8_APP/overlays/staging 2> /dev/null"
     mv ${BASE_DIR}/$K8_APP/overlays/production ${BASE_DIR}/$K8_APP/overlays/staging 2> /dev/null
 
 done

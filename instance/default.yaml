@@ -64,7 +64,6 @@ auth:
 # Enable/disable the installation of end-user modules in the HelioCloud instance.
 # Defaulting to false, requiring deployers explicitly enable modules in their override config.
 enabled:
-  registry: False
   portal: False
   daskhub: False
 
@@ -75,51 +74,6 @@ email:
   use_custom_email_domain: False
   user: "no-reply"
   from_name: "APL HelioCloud"
-
-# REGISTRY
-# The registry is responsible for storing and accessible datasets stored in this HelioCloud instance.
-# (REQUIRED) if enabled.registry is True
-registry:
-
-  # (Optional) Allows specification of specific AWS Lambda layers ARNs to include as
-  # dependencies for the AWS Lambdas instantiated by the registry
-  layers:
-    pandas: # example:
-
-  # (REQUIRED): Names for public s3 buckets storing data sets (Required if enabled.registry is True)
-  datasetBucketNames: [
-    # example: s3://edu.myinstitution.myorganization
-  ]
-
-  # (OPTIONAL) Allows use of a specific name for the S3 bucket into which datasets may be uploaded for ingest
-  # into a HelioCloud instance's Registry. Defaults to generated name, though consider providing a name
-  # in development environments for simplicity.
-  ingestBucketName: #Example: my.ingest.bucket
-
-  # (OPTIONAL): Requires 3rd parties pay AWS egress costs to access data in this HelioCloud instance.
-  # Defaults to true to ensure production HelioCloud instances don't incur undue expense when serving up the
-  # data sets in their Registry to other HelioCloud instances or the scientific community at large.
-  # Set to false if your organization is willing to incur these egress expenses.
-  requesterPays: True
-
-  # Settings for the catalog db - a database for storing registry information
-  catalog:
-
-    # (OPTIONAL): Name of the master administrative user for the AWS Document DB resource.
-    # Note: password is automatically generated and stored in an AWS Secret
-    masterUser: master
-
-    # (OPTIONAL): Value to use when populating the name field of catalog.json at the root of each public s3 bucket
-    name: ""
-
-    # (OPTIONAL): Value ot use when populating the contact field of catalog.json at the root of each public s3 bucket
-    contact: ""
-
-
-  # (OPTIONAL): Typically, the catalog db and S3 buckets for ingest and data set storage should be retained even
-  # on destruction of a HelioCloud instance, as these are likely to contain research data sets that shouldn't be lost.
-  # Switching to True is useful in HelioCloud development.
-  destroyOnRemoval: False
 
 # User Portal (Required if enabled.portal is True)
 portal:

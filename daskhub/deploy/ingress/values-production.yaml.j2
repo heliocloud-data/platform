@@ -25,7 +25,7 @@ oauth2-proxy:
     oidc-issuer-url: https://cognito-idp.{{ config['eksctl']['metadata']['region'] }}.amazonaws.com/<<CNF_OUTPUT_CognitoUserPoolId>>
     redirect-url: https://oauth-{{ config['eksctl']['metadata']['name'] }}-{{ config['eksctl']['metadata']['region'] }}.{{ config['global']['domain_url'] }}/oauth2/callback
     backend-logout-url: https://oauth-{{ config['eksctl']['metadata']['name'] }}-{{ config['eksctl']['metadata']['region'] }}.{{ config['global']['domain_url'] }}/oauth2/sign_out
-    whitelist-domain: .{{ config['global']['domain_url'] }}
+    whitelist-domain: ".{{ config['global']['domain_url'] }},.amazoncognito.com"
     cookie-domain: .{{ config['global']['domain_url'] }}
     scope: openid
     set-authorization-header: true

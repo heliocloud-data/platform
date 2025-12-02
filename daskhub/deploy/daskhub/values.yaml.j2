@@ -81,7 +81,8 @@ daskhub:
       extraConfig:
         00-auth.py: |
           from jupyterhub.auth import Authenticator
-          from jupyter.handlers.login import LogoutHandler
+          from jupyterhub.handlers.login import LogoutHandler
+          from urllib.parse import urlencode
 
           # Custom JupyterHub Authenticator
           # The username proxied with X-Auth-Request-Preferred-Username becomes the
@@ -90,20 +91,49 @@ daskhub:
           # set as one of their user attributes.
           class ProxiedHeaderAuthenticator(Authenticator):
             
-            def logout_url(self, base_url):
-              logout_url = (
-                "https://<<CNF_OUTPUT_CognitoDomain>>.auth.{{ config['eksctl']['metadata']['region'] }}.amazoncognito.com/logout"
-                "?client_id=<<CNF_OUTPUT_CognitoClientId>>"
-                "&logout_uri=https://oauth-{{ config['eksctl']['metadata']['name'] }}-{{ config['eksctl']['metadata']['region'] }}.{{ config['global']['domain_url'] }}/oauth2/sign_out"
-              )
-              return logout_url
-            
             async def authenticate(self, handler, data=None):
               headers = handler.request.headers
               username = headers.get("X-Auth-Request-Preferred-Username")
               return username
 
+            def logout_url(self, base_url):
+              return url_path_join(base_url, 'redirect/logout')
+
+          # Custom Logout Handler to redirect to oauth2-proxy and cognito logout
+          class LogoutRedirectHandler(LogoutHandler):
+            async def render_logout_page(self):
+              #self.redirect(
+              #  "https://oauth-{{ config['eksctl']['metadata']['name'] }}-{{ config['eksctl']['metadata']['region'] }}.{{ config['global']['domain_url'] }}/oauth2/sign_out?redirect_uri=https://{{ config['daskhub']['domain_record'] }}.{{ config['global']['domain_url'] }}"
+              #)
+
+              daskhub_url = "https://{{ config['daskhub']['domain_record'] }}.{{ config['global']['domain_url'] }}"
+              client_id = "<<CNF_OUTPUT_CognitoClientId>>"
+              response_type = "code"
+              cognito_url = "https://apl-helio-shumate.auth.{{ config['eksctl']['metadata']['region'] }}.amazoncognito.com/logout"
+              oauth_logout_url = "https://oauth-eks-helio-shumate-us-west-2.aplscicloud.org/oauth2/sign_out"
+
+              params = {
+                "client_id": client_id,
+                "logout_uri": daskhub_url,
+                "response_type": response_type,
+              }
+
+              cognito_logout_full_url = f"{cognito_url}?{urlencode(params)}"
+
+              params_oauth2 = {
+                  "rd": cognito_logout_full_url,
+              }
+
+              oauth2_logout_full_url = f"{oauth_logout_url}?{urlencode(params_oauth2)}"
+
+              print("Redirecting to logout URL:", oauth2_logout_full_url)
+
+              self.redirect(oauth2_logout_full_url)
+
+          # Need to set jupyterhhub default handlers to include this one
+
           c.JupyterHub.authenticator_class = ProxiedHeaderAuthenticator
+          c.JupyterHub.extra_handlers.append((r'redirect/logout', LogoutRedirectHandler))
       extraEnv:
         EXTRA_PIP_PACKAGES: >-
           boto3

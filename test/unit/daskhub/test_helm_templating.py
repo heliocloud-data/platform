@@ -100,7 +100,6 @@ def test_with_values_with_kustomize_daskhub_deployment(snapshot):
                 "/spec/template/metadata/annotations/checksum?auth-token",
                 "/spec/template/metadata/annotations/checksum?proxy-secret",
                 "/spec/template/metadata/annotations/checksum?proxy-secret",
-                "/spec/strategy/rollingUpdate",  # This guy appears on GitLab CI for some reason
             ],
         },
     )
@@ -152,7 +151,6 @@ def test_with_values_no_kustomize_daskhub_deployment_next(snapshot):
                 "/spec/template/metadata/annotations/checksum?secret",
                 "/spec/template/metadata/annotations/checksum?auth-token",
                 "/spec/template/metadata/annotations/checksum?proxy-secret",
-                "/spec/strategy/rollingUpdate",  # This guy appears on GitLab CI for some reason
             ],
         },
     )

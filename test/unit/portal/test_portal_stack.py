@@ -27,6 +27,7 @@ def test_portal_stack():
         "auth": {"domain_prefix": "helio"},
         "portal": {
             "domain_record": "portal",
+            "domain_url": "hctest.org",
             "domain_certificate_arn": "arn:aws:acm:us-east-1:123456789012:certificate"
             "/abcdefg01-a0b0-c0f0-1mb09mf01fp1",
             "pip_timeout": 100,
@@ -38,6 +39,7 @@ def test_portal_stack():
                 "/abcdefg01-a0b0-c0f0-1mb09mf01fp1",
             },
             "eksctl": {"metadata": {"name": "eks-helio", "region": "us-east-1"}},
+            "daskhub": {"domain_record": "daskhub"},
         },
     }
 

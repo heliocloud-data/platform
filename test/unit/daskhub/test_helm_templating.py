@@ -38,7 +38,12 @@ HELIOCLOUD_DASKHUB_RENDER_PARAMS = {
             "MLTF_DOCKER_VERSION": "<MLTF_DOCKER_VERSION>",
             "domain_record": "daskhub",
         },
-    }
+    },
+    "hc_config": {
+        "auth": {
+            "domain_prefix": "<CNF_OUTPUT_CognitoDomainPrefix>",
+        }
+    },
 }
 
 

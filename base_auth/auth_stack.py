@@ -97,6 +97,18 @@ class AuthStack(Stack):
 
         auth_url = f"https://oauth-{config['daskhub']['eksctl']['metadata']['name']}-{config['daskhub']['eksctl']['metadata']['region']}.{config['daskhub']['global']['domain_url']}"
 
+        logout_urls = []
+
+        # add daskhub and portal urls for redirect if either are being deployed
+        if config["daskhub"]:
+            logout_urls.append(
+                f"https://{config['daskhub']['daskhub']['domain_record']}.{config['daskhub']['global']['domain_url']}"
+            )
+        if config["portal"]:
+            logout_urls.append(
+                f"https://{config['portal']['domain_record']}.{config['portal']['domain_url']}"
+            )
+
         self.client = self.userpool.add_client(
             "heliocloud-oauth-client",
             generate_secret=True,
@@ -110,7 +122,7 @@ class AuthStack(Stack):
                     cognito.OAuthScope.PROFILE,
                 ],
                 callback_urls=[f"{auth_url}/oauth2/callback"],
-                logout_urls=[f"{auth_url}/oauth2/logout"],
+                logout_urls=logout_urls,
             ),
             supported_identity_providers=[cognito.UserPoolClientIdentityProvider.COGNITO],
             prevent_user_existence_errors=True,

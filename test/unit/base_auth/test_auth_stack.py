@@ -24,7 +24,9 @@ def config():
         "daskhub": {
             "global": {"domain_url": "heliocloud.org"},
             "eksctl": {"metadata": {"name": "eks-helio", "region": "us-east-1"}},
+            "daskhub": {"domain_record": "daskhub"},
         },
+        "portal": {"domain_record": "portal", "domain_url": "heliocloud.org"},
     }
 
 

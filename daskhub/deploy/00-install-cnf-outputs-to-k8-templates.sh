@@ -65,6 +65,7 @@ FILES=(\
   /home/ssm-user/eksctl-iamidentitymappings/overlays/production/kustomization.yaml
   /home/ssm-user/daskhub-storage/overlays/production/kustomization.yaml
   /home/ssm-user/daskhub/values-production.yaml
+  /home/ssm-user/daskhub/values.yaml
   /home/ssm-user/portal/overlays/production/kustomization.yaml
   /home/ssm-user/monitoring/values-production.yaml
   /home/ssm-user/ingress/values-production.yaml

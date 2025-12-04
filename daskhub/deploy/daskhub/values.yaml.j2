@@ -43,7 +43,7 @@ daskhub:
       userScheduler:
         image:
           name: registry.k8s.io/kube-scheduler
-          tag: v1.32.1
+          tag: v1.33.1
         plugins:
           score:
             disabled:
@@ -157,7 +157,7 @@ daskhub:
             # this is slightly hacky but the only alternative is depricated
             # or a full custom flask app service would have to replace it
             def get_handlers(self, app):
-              return super().get_handlers(app) + [("redirect/logout", LogoutRedirectHandler)]
+              return super().get_handlers(None) + [("redirect/logout", LogoutRedirectHandler)]
 
           # overrides the default authenticator
           c.JupyterHub.authenticator_class = ProxiedHeaderAuthenticator
@@ -359,10 +359,11 @@ daskhub:
                   - matchExpressions:
                     - key: hub.jupyter.org/node-purpose
                       operator: In
-                      values:
-                      - core
-                      - user
-                      - dask
+                      values: [core, user, dask]
+          extraContainerConfig:
+            volumeMounts:
+            - name: dh-helio-efs
+              mountPath: /home/jovyan/scratch_space
         worker:
           extraPodConfig:
             affinity:
@@ -372,8 +373,11 @@ daskhub:
                   - matchExpressions:
                     - key: lifecycle
                       operator: In
-                      values:
-                      - Ec2Spot
+                      values: [Ec2Spot]
+          extraContainerConfig:
+            volumeMounts:
+            - name: dh-helio-efs
+              mountPath: /home/jovyan/scratch_space
 
       extraConfig:
         optionHandler: |
@@ -480,6 +484,20 @@ daskhub:
               },
             }
           }
+
+          EFS_VOLUME_NAME = "dh-helio-efs"
+          efs_volume = {
+            "name": EFS_VOLUME_NAME,
+            "persistentVolumeClaim": {"claimName": "efs-persist"}
+          }
+          efs_mount = {"name": EFS_VOLUME_NAME, "mountPath": "/home/jovyan/scratch_space"}
+
+          def _inject_efs_volume(pod_cfg: dict) -> dict:
+            pod_cfg = copy.deepcopy(pod_cfg)
+            pod_cfg.setdefault("volumes", [])
+            if not any(v.get("name") == EFS_VOLUME_NAME for v in pod_cfg["volumes"]):
+              pod_cfg["volumes"].append(efs_volume)
+            return pod_cfg
 
           def get_extra_pod_config_from_profile(options, user, pod_config_key):
             extra_toleration_user_config = {

@@ -83,6 +83,24 @@ daskhub:
           from jupyterhub.auth import Authenticator
           from jupyterhub.handlers.login import LogoutHandler
           from urllib.parse import urlencode
+          import base64
+          import json
+
+          # decode JWT from cognito
+          def decode_jwt_no_verify(token: str):
+              header_b64, payload_b64, signature_b64 = token.split('.')
+
+              # Add padding if necessary
+              def fix_padding(b64_str):
+                  return b64_str + "=" * (-len(b64_str) % 4)
+
+              header_json = base64.urlsafe_b64decode(fix_padding(header_b64)).decode()
+              payload_json = base64.urlsafe_b64decode(fix_padding(payload_b64)).decode()
+
+              header = json.loads(header_json)
+              payload = json.loads(payload_json)
+
+              return header, payload, signature_b64
 
           # Custom Logout Handler to redirect to oauth2-proxy and cognito logout
           class LogoutRedirectHandler(LogoutHandler):
@@ -117,16 +135,19 @@ daskhub:
                   await super().render_logout_page()
 
           # Custom JupyterHub Authenticator
-          # The username proxied with X-Auth-Request-Preferred-Username becomes the
-          # username in jupyterhub. Without it, it would be a UUID from cognito.
-          # This value is sourced from cognito - users must have 'preferred_username'
-          # set as one of their user attributes.
+          # The username is pulled from the access token from cognito
+          # The token needs to be decoded
           class ProxiedHeaderAuthenticator(Authenticator):
             
             async def authenticate(self, handler, data=None):
-              headers = handler.request.headers
-              username = headers.get("X-Auth-Request-Preferred-Username")
-              return username
+              token = handler.request.headers.get("X-Auth-Request-Access-Token")
+              try:
+                  _, claims, _ = decode_jwt_no_verify(token)
+                  username = claims.get("username")   # This is the access token username claim
+                  return username
+              except Exception as e:
+                  print("Error decoding JWT:", e)
+                  return None
 
             # override the logout url to redirect to the custom logout handler
             def logout_url(self, base_url):
@@ -135,8 +156,8 @@ daskhub:
             # appends the custom logout handler to jupyterhub's base handlers
             # this is slightly hacky but the only alternative is depricated
             # or a full custom flask app service would have to replace it
-            def get_handlers(self):
-              return super().get_handlers() + [("redirect/logout", LogoutRedirectHandler)]
+            def get_handlers(self, app):
+              return super().get_handlers(app) + [("redirect/logout", LogoutRedirectHandler)]
 
           # overrides the default authenticator
           c.JupyterHub.authenticator_class = ProxiedHeaderAuthenticator

@@ -27,7 +27,7 @@ oauth2-proxy:
     backend-logout-url: https://oauth-{{ config['eksctl']['metadata']['name'] }}-{{ config['eksctl']['metadata']['region'] }}.{{ config['global']['domain_url'] }}/oauth2/sign_out
     whitelist-domain: ".{{ config['global']['domain_url'] }},.amazoncognito.com"
     cookie-domain: .{{ config['global']['domain_url'] }}
-    scope: openid
+    scope: "openid profile email"
     set-authorization-header: true
     set-xauthrequest: true
     pass-user-headers: true

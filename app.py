@@ -19,7 +19,6 @@ from portal.portal_stack import PortalStack
 from daskhub.daskhub_stack import DaskhubStack
 from registration_page.registration_page_stack import RegistrationPageStack
 
-
 class MyHelioCloud(Construct):
     """
     AWS CDK Construct for instantiating a HelioCloud.  This construct will resolve out the specific
@@ -96,6 +95,8 @@ class MyHelioCloud(Construct):
         )
         shared_bucket_stack.add_dependency(base_stack)
         cdk.Tags.of(shared_bucket_stack).add("Product", "heliocloud-usershared")
+
+
 
         # Next, determine if the Auth module is needed
         enabled_modules = self.__config.get("enabled")

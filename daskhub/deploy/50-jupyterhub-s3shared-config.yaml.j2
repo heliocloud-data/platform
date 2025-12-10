@@ -1,0 +1,13 @@
+{% if user_shared_mount_enabled %}
+singleuser:
+  storage:
+    extraVolumes:
+      - name: s3shared
+        hostPath:
+          path: {{ user_shared_mount_path | quote }}
+          type: Directory
+    extraVolumeMounts:
+      - name: s3shared
+        mountPath: {{ user_shared_mount_path | quote }}
+        readOnly: false
+{% endif %}

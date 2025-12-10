@@ -63,7 +63,14 @@ class PortalStack(Stack):
 
         # Create the Portal task for Fargate
         task = self.__create_ec2_resources(
-            vpc=aws_stack.heliocloud_vpc(), s3_policy=aws_stack.s3_managed_policy  # added ()
+        task = self.__create_ec2_resources(
+            vpc=aws_stack.heliocloud_vpc,
+            s3_policy=aws_stack.s3_managed_policy,
+        )
+
+        self.__build_hosted_zone(config["domain_url"])
+        self.__build_route53_settings(
+            f"{config['domain_record']}.{config['domain_url']}", config["domain_record"]
         )
 
         # # Cloudformation outputs

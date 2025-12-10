@@ -5,7 +5,7 @@ import json
 
 import aws_cdk as cdk
 from aws_cdk.assertions import Template
-from utils import create_dumpfile
+from ..utils import create_dumpfile
 
 from base_aws.base_aws_stack import BaseAwsStack
 

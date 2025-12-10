@@ -51,12 +51,22 @@ class DaskhubStack(Stack):
             base_aws: BaseAwsStack,
             base_auth: Stack,
             portal: Stack = None,
+            user_shared_mount_path: str = "/mnt/s3shared",
+            user_shared_bucket_name: str = "",
+            user_shared_mount_enabled: bool = True,
+            user_shared_bucket_prefix: str = "",
             **kwargs,
     ) -> None:
         # fmt: on
         super().__init__(scope, construct_id, **kwargs)
 
         self.__daskhub_config = DaskhubStack.load_configurations(config)
+        
+        self.user_shared_mount_path = user_shared_mount_path
+        self.user_shared_bucket_name = user_shared_bucket_name
+        self.user_shared_mount_enabled = user_shared_mount_enabled
+        self.user_shared_bucket_prefix = user_shared_bucket_prefix
+        
         self.build_hosted_zone()
 
         if 'portal' in config and ('api_key' not in config['portal'] or config['portal']['api_key'] == 'auto'):
@@ -148,6 +158,10 @@ class DaskhubStack(Stack):
             'config': self.__daskhub_config,
             'hc_config': config,
             'account': account,
+            'user_shared_mount_path': self.user_shared_mount_path,
+            'user_shared_bucket_name': self.user_shared_bucket_name,
+            'user_shared_mount_enabled': self.user_shared_mount_enabled,
+            'user_shared_bucket_prefix': self.user_shared_bucket_prefix,
         })
 
         deploy_dirs = [template_dest_folder, template_src_folder]

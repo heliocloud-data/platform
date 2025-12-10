@@ -8,7 +8,10 @@ vpc:
 # Destroying so we can clean up dev
 userSharedBucket:
   destroyOnRemoval: True
-
+  mountEnabled: True
+  mountPath: "/mnt/s3shared"
+  bucketPrefix: "myorganization-s3"
+  
 enabled:
   daskhub: True
   portal: True

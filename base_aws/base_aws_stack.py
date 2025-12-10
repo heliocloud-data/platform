@@ -37,7 +37,7 @@ class BaseAwsStack(Stack):
         # Create S3 Bucket for shared user storage #
         ###############################################
         destroy_on_removal = config.get("userSharedBucket").get("destroyOnRemoval")
-        user_shared_bucket = s3.Bucket(
+        self._user_shared_bucket = s3.Bucket(
             self,
             "UserSharedBucket",
             removal_policy=RemovalPolicy.DESTROY if destroy_on_removal else RemovalPolicy.RETAIN,
@@ -81,8 +81,8 @@ class BaseAwsStack(Stack):
                         "s3:ListMultipartUploadParts",
                     ],
                     resources=[
-                        user_shared_bucket.bucket_arn,
-                        f"{user_shared_bucket.bucket_arn}/*",
+                        self._user_shared_bucket.bucket_arn,
+                        f"{self._user_shared_bucket.bucket_arn}/*",
                         *portal_buckets,
                     ],
                 ),
@@ -134,6 +134,12 @@ class BaseAwsStack(Stack):
             raise BaseAwsStackException(message=f"Unrecognized vpc type: {vpc_type}")
 
     @property
+    def user_shared_bucket(self) -> s3.Bucket:
+        """
+        The S3 bucket shared among HelioCloud users (userSharedBucket)
+        """
+        return self._user_shared_bucket
+
     def heliocloud_vpc(self) -> ec2.Vpc:
         """
         The VPC this HelioCloud instance will be instantiated in.

@@ -45,12 +45,13 @@ unit-test:
   before_script:
     - mkdir -p public/badges
   script:
-    - export PYTHONPATH=.
+    - export PYTHONPATH="$CI_PROJECT_DIR"
     - python -m pip install -r requirements.txt
     - python -m pip install -r requirements-dev.txt
     - bash .gitlab-ci/scripts/install-deps.sh
     - curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 > get_helm.sh && bash get_helm.sh -v v3.27.1 && rm -rf get_helm.sh
     - curl https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv5.6.0/kustomize_v5.6.0_linux_amd64.tar.gz --silent --location --remote-name && tar zxvf kustomize_v5.6.0_linux_amd64.tar.gz && mv kustomize /usr/local/bin/ && rm -rf kustomize_v5.6.0_linux_amd64.tar.gz
+    - cd "$CI_PROJECT_DIR"
     - pytest -c pytest-unit.ini --junit-xml=TEST-HelioCloud-platform.xml --junit-prefix=HelioCloud-platform
   artifacts:
     when: always
@@ -66,12 +67,13 @@ unit-test:
 coverage:
   stage: test
   script:
-    - export PYTHONPATH=.
+    - export PYTHONPATH="$CI_PROJECT_DIR"
     - python -m pip install -r requirements.txt
     - python -m pip install -r requirements-dev.txt
     - bash .gitlab-ci/scripts/install-deps.sh
     - curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 > get_helm.sh && bash get_helm.sh -v v3.27.1 && rm -rf get_helm.sh
     - curl https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv5.6.0/kustomize_v5.6.0_linux_amd64.tar.gz --silent --location --remote-name && tar zxvf kustomize_v5.6.0_linux_amd64.tar.gz && mv kustomize /usr/local/bin/ && rm -rf kustomize_v5.6.0_linux_amd64.tar.gz
+    - cd "$CI_PROJECT_DIR"
     - coverage run -m pytest -c pytest-unit.ini
     - coverage report
     - coverage xml
@@ -111,7 +113,7 @@ static-analysis:
   script:
     - printenv
     - pwd
-    - export PYTHONPATH=.
+    - export PYTHONPATH="$CI_PROJECT_DIR"
     - python -m pip install -r requirements.txt
     - python -m pip install -r requirements-dev.txt
     - pylint --exit-zero --output-format=text $(find -type f -name "*.py" ! -path "**/.venv/**" | grep -v '/test/' | grep -v '/cdk.out/') | tee ${PYLINT_TEXT_OUTPUT_FILE}
@@ -134,7 +136,7 @@ static-analysis:
 black:
   stage: test
   script:
-    - export PYTHONPATH=.
+    - export PYTHONPATH="$CI_PROJECT_DIR"
     - python -m pip install -r requirements-dev.txt
     - black --check .
   rules:

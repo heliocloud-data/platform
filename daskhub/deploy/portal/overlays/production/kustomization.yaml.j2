@@ -29,22 +29,15 @@ patches:
         - name: SITE_URL
           value: https://{{ hc_config['portal']['domain_record'] }}.{{ hc_config['portal']['domain_url'] }}
         - name: USER_POOL_CLIENT_SECRET
-          value: "<<CNF_OUTPUT_PortalCognitoClientSecret>>"
+          value: "<<CNF_OUTPUT_CognitoClientSecret>>"
         - name: USER_POOL_CLIENT_ID
-          value: "<<CNF_OUTPUT_PortalCognitoClientId>>"
+          value: "<<CNF_OUTPUT_CognitoClientId>>"
         - name: USER_POOL_ID
-          value: "<<CNF_OUTPUT_PortalUserPoolId>>"
+          value: "<<CNF_OUTPUT_CognitoUserPoolId>>"
         - name: FLASK_SECRET_KEY
           value: {{ hc_config['portal']['api_key'] }}
-{%- if 'portal' in hc_config and 'PORTAL_DOCKER_LOCATION' in hc_config['portal']  and 'PORTAL_DOCKER_VERSION' in hc_config['portal'] %}
-- target:
-    kind: Deployment
-    name: portal
-  patch: |
-    - op: replace
-      path: /spec/template/spec/containers/0/image
-      value: {{ hc_config['portal']['PORTAL_DOCKER_LOCATION'] }}:{{ hc_config['portal']['PORTAL_DOCKER_VERSION'] }}
-{%- endif %}
+        - name: LOGOUT_URL
+          value: https://oauth-{{ config['eksctl']['metadata']['name'] }}-{{ config['eksctl']['metadata']['region'] }}.{{ config['global']['domain_url'] }}/oauth2/sign_out
 - target:
     kind: ServiceAccount
     name: portal-sa
@@ -53,16 +46,16 @@ patches:
       path: /metadata/annotations/eks.amazonaws.com~1role-arn
       value: "<<CNF_OUTPUT_PortalEc2RoleArn>>"
 - target:
-    kind: Service
-    name: portal
+    kind: Ingress
+    name: portal-ingress
   patch: |
     - op: replace
-      path: /metadata/annotations/external-dns.alpha.kubernetes.io~1hostname
+      path: /spec/rules/0/host
       value: {{ hc_config['portal']['domain_record'] }}.{{ hc_config['portal']['domain_url'] }}
     - op: replace
-      path: /metadata/annotations/service.beta.kubernetes.io~1aws-load-balancer-backend-protocol
-      value: tcp
+      path: /metadata/annotations/nginx.ingress.kubernetes.io~1auth-url
+      value: "https://oauth-{{ config['eksctl']['metadata']['name'] }}-{{ config['eksctl']['metadata']['region'] }}.{{ config['global']['domain_url'] }}/oauth2/auth"
     - op: replace
-      path: /metadata/annotations/service.beta.kubernetes.io~1aws-load-balancer-ssl-cert
-      value: {{ hc_config['portal']['domain_certificate_arn'] }}
+      path: /metadata/annotations/nginx.ingress.kubernetes.io~1auth-signin
+      value: "https://oauth-{{ config['eksctl']['metadata']['name'] }}-{{ config['eksctl']['metadata']['region'] }}.{{ config['global']['domain_url'] }}/oauth2/start"
 

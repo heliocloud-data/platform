@@ -22,6 +22,7 @@ POSTJINJA_DASKHUB_HELM_CHART_PATH = "temp/daskhub/deploy/daskhub"
 
 HELIOCLOUD_DASKHUB_RENDER_PARAMS = {
     "config": {
+        "global": {"domain_url": "<INSERT_DOMAIN_URL>"},
         "eksctl": {"metadata": {"name": "eks-helio"}},
         "daskhub": {
             "namespace": "daskhub",
@@ -36,9 +37,13 @@ HELIOCLOUD_DASKHUB_RENDER_PARAMS = {
             "MLTF_DOCKER_LOCATION": "<MLTF_DOCKER_LOCATION>",
             "MLTF_DOCKER_VERSION": "<MLTF_DOCKER_VERSION>",
             "domain_record": "daskhub",
-            "domain_url": "stuff.org",
         },
-    }
+    },
+    "hc_config": {
+        "auth": {
+            "domain_prefix": "<CNF_OUTPUT_CognitoDomainPrefix>",
+        }
+    },
 }
 
 
@@ -51,80 +56,6 @@ def before():
     os.system("helm repo add jupyterhub https://hub.jupyter.org/helm-chart/")
     os.system("helm repo update")
     os.system(f"helm pull jupyterhub/jupyterhub --version={HELM_OPT_JUPYTERHUB_VERSION}")
-
-
-@pytest.mark.skipif(which("helm") is None, reason="helm not installed")
-def test_with_values_no_kustomize_jupyterhub_deployment_autohttps_enabled(snapshot):
-    """
-    This test checks that the output produced by the helm template
-    consistent w/ what we expect.  It's also a living document intended
-    to show how kustomize fits into our chain.
-    """
-
-    do_execute_helm_template(
-        snapshot,
-        params={
-            "repo_name": "jupyterhub",
-            "chart": {
-                "name": "jupyterhub/jupyterhub",
-                "version": HELM_OPT_JUPYTERHUB_VERSION,
-            },
-            "namespace": "daskhub",
-            "values": [
-                f"{PATH_TO_RESOURCES}/jupyterhub-letsencrypt-values-{HELM_OPT_JUPYTERHUB_VERSION}.yaml",
-            ],
-            "extra_opts": "--debug --dry-run",
-            "output_filename": "test_with_values_no_kustomize_jupyterhub_deployment_autohttps_enabled.yaml",
-            "values_to_remove_from_snapshot": [
-                "/data/hub.config.ConfigurableHTTPProxy.auth_token",
-                "/data/hub.config.JupyterHub.cookie_secret",
-                "/data/hub.config.CryptKeeper.keys",
-                "/spec/template/metadata/annotations/checksum?config-map",
-                "/spec/template/metadata/annotations/checksum?secret",
-                "/spec/template/metadata/annotations/checksum?auth-token",
-                "/spec/template/metadata/annotations/checksum?proxy-secret",
-            ],
-        },
-    )
-
-
-@pytest.mark.skipif(which("kustomize") is None, reason="kustomize not installed")
-@pytest.mark.skipif(which("helm") is None, reason="helm not installed")
-def test_with_values_with_kustomize_jupyterhub_deployment_autohttps_enabled(snapshot):
-    """
-    This test checks that the output produced by the helm template
-    consistent w/ what we expect.  It's also a living document intended
-    to show how kustomize fits into our chain.
-    """
-
-    do_execute_helm_template(
-        snapshot,
-        params={
-            "repo_name": "jupyterhub",
-            "chart": {
-                "name": "jupyterhub/jupyterhub",
-                "version": HELM_OPT_JUPYTERHUB_VERSION,
-            },
-            "namespace": "daskhub",
-            "values": [
-                f"{PATH_TO_RESOURCES}/jupyterhub-letsencrypt-values-{HELM_OPT_JUPYTERHUB_VERSION}.yaml",
-            ],
-            "post_render_hook": "./kustomize-post-renderer-hook.sh",
-            "wd": PREJINJA_DASKHUB_HELM_CHART_PATH,
-            "extra_opts": "--debug --dry-run",
-            "output_filename": "test_with_values_with_kustomize_jupyterhub_deployment_autohttps_enabled.yaml",
-            "values_to_remove_from_snapshot": [
-                "/data/checksum_hook-image-puller",
-                "/data/hub.config.ConfigurableHTTPProxy.auth_token",
-                "/data/hub.config.JupyterHub.cookie_secret",
-                "/data/hub.config.CryptKeeper.keys",
-                "/spec/template/metadata/annotations/checksum?config-map",
-                "/spec/template/metadata/annotations/checksum?secret",
-                "/spec/template/metadata/annotations/checksum?auth-token",
-                "/spec/template/metadata/annotations/checksum?proxy-secret",
-            ],
-        },
-    )
 
 
 @pytest.mark.skipif(which("kustomize") is None, reason="kustomize not installed")
@@ -169,7 +100,6 @@ def test_with_values_with_kustomize_daskhub_deployment(snapshot):
                 "/spec/template/metadata/annotations/checksum?auth-token",
                 "/spec/template/metadata/annotations/checksum?proxy-secret",
                 "/spec/template/metadata/annotations/checksum?proxy-secret",
-                "/spec/strategy/rollingUpdate",  # This guy appears on GitLab CI for some reason
             ],
         },
     )
@@ -221,7 +151,6 @@ def test_with_values_no_kustomize_daskhub_deployment_next(snapshot):
                 "/spec/template/metadata/annotations/checksum?secret",
                 "/spec/template/metadata/annotations/checksum?auth-token",
                 "/spec/template/metadata/annotations/checksum?proxy-secret",
-                "/spec/strategy/rollingUpdate",  # This guy appears on GitLab CI for some reason
             ],
         },
     )

@@ -3,6 +3,7 @@ CDK Stack responsible for defining the AWS authorization infrastructure required
 for a HelioCloud instance.
 """
 
+import aws_cdk as cdk
 from aws_cdk import (
     Stack,
     aws_cognito as cognito,
@@ -93,6 +94,57 @@ class AuthStack(Stack):
         )
         custom.node.add_dependency(self.userpool)
         # pylint: enable=line-too-long
+
+        auth_url = f"https://oauth-{config['daskhub']['eksctl']['metadata']['name']}-{config['daskhub']['eksctl']['metadata']['region']}.{config['daskhub']['global']['domain_url']}"
+
+        logout_urls = []
+
+        # add daskhub and portal urls for redirect if either are being deployed
+        if config["daskhub"]:
+            logout_urls.append(
+                f"https://{config['daskhub']['daskhub']['domain_record']}.{config['daskhub']['global']['domain_url']}"
+            )
+        if config["portal"]:
+            logout_urls.append(
+                f"https://{config['portal']['domain_record']}.{config['portal']['domain_url']}"
+            )
+
+        self.client = self.userpool.add_client(
+            "heliocloud-oauth-client",
+            generate_secret=True,
+            o_auth=cognito.OAuthSettings(
+                flows=cognito.OAuthFlows(authorization_code_grant=True),
+                scopes=[
+                    cognito.OAuthScope.PHONE,
+                    cognito.OAuthScope.EMAIL,
+                    cognito.OAuthScope.OPENID,
+                    cognito.OAuthScope.COGNITO_ADMIN,
+                    cognito.OAuthScope.PROFILE,
+                ],
+                callback_urls=[f"{auth_url}/oauth2/callback"],
+                logout_urls=logout_urls,
+            ),
+            supported_identity_providers=[cognito.UserPoolClientIdentityProvider.COGNITO],
+            prevent_user_existence_errors=True,
+        )
+
+        cdk.CfnOutput(
+            self,
+            "CognitoClientId",
+            value=self.client.user_pool_client_id,
+        )
+
+        cdk.CfnOutput(
+            self,
+            "CognitoDomainPrefix",
+            value=self.domain_prefix,
+        )
+
+        cdk.CfnOutput(
+            self,
+            "CognitoUserPoolId",
+            value=self.userpool.user_pool_id,
+        )
 
     @property
     def domain_prefix(self):

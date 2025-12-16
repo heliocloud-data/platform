@@ -12,6 +12,9 @@ portal:
   domain_certificate_arn:
 
 daskhub:
+  global:
+    domain_certificate_arn: ""
+    domain_url: "ludicolo.org"
   eksctl:
     metadata:
       name: 'eks-alola'
@@ -23,7 +26,6 @@ daskhub:
       - ketchap1
     contact_email: ash.ketchum@jhuapl.edu
 
-    domain_url: "ludicolo.org"
     domain_record: daskhub-tapubulu
 
     GENERIC_DOCKER_LOCATION: 'public.ecr.aws/a/tapukoko-notebook'
@@ -34,8 +36,6 @@ daskhub:
     MLTRCH_DOCKER_VERSION: '363'
     ANOTHER_KLEFKI: '707'
 
-  monitoring:
-    AWS_LOAD_BALANCER_SSL_CERT: 'ABC'
 
 
 

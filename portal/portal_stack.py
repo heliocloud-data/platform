@@ -25,7 +25,7 @@ from constructs import Construct
 from base_auth.auth_stack import AuthStack
 from base_aws.base_aws_stack import BaseAwsStack
 
-from daskhub.aws_utils import get_instance_types_by_region, find_route53_record_by_type_and_name
+from daskhub.aws_utils import find_route53_record_by_type_and_name
 
 
 class PortalStack(Stack):
@@ -56,25 +56,14 @@ class PortalStack(Stack):
         # Extract the important bits from the Portal's config
         portal_url = f'https://{config.get("domain_record")}.' f'{config.get("domain_url")}'
 
-        # Add the Portal as a client of the Cognito user pool for this HelioCloud
-        # pylint: disable=duplicate-code
-        user_pool_client = self.__create_user_pool_client(
-            auth_stack=auth_stack, portal_url=portal_url
-        )
-
         # Create an Identity Pool with the appropriate permissions for Portal Users
         id_pool = self.__create_identity_pool(
-            user_pool=auth_stack.userpool, user_pool_client=user_pool_client
+            user_pool=auth_stack.userpool, user_pool_client=auth_stack.client
         )
 
         # Create the Portal task for Fargate
         task = self.__create_ec2_resources(
             vpc=aws_stack.heliocloud_vpc, s3_policy=aws_stack.s3_managed_policy
-        )
-
-        self.__build_hosted_zone(config["domain_url"])
-        self.__build_route53_settings(
-            f"{config['domain_record']}.{config['domain_url']}", config["domain_record"]
         )
 
         # # Cloudformation outputs
@@ -87,39 +76,7 @@ class PortalStack(Stack):
             self, "Portal_Ec2SubnetId", value=aws_stack.heliocloud_vpc.public_subnets[0].subnet_id
         )
         cdk.CfnOutput(self, "Portal_Ec2RoleArn", value=self.ec2_default_role.role_arn)
-
         cdk.CfnOutput(self, "Portal_IdentityPool", value=id_pool.identity_pool_id)
-        cdk.CfnOutput(self, "Portal_CognitoClientId", value=user_pool_client.user_pool_client_id)
-        cdk.CfnOutput(self, "Portal_UserPoolId", value=auth_stack.userpool.user_pool_id)
-
-    # pylint: enable=too-many-arguments
-    # pylint: enable=too-many-locals
-
-    def __create_user_pool_client(
-        self, auth_stack: AuthStack, portal_url: str
-    ) -> aws_cdk.aws_cognito.UserPoolClient:
-        """
-        Add the Portal as client of the AWS Cognito User Pool for this HelioCloud instance
-        """
-        client = auth_stack.userpool.add_client(
-            "heliocloud-portal",
-            generate_secret=True,
-            o_auth=cognito.OAuthSettings(
-                flows=cognito.OAuthFlows(authorization_code_grant=True),
-                scopes=[
-                    cognito.OAuthScope.PHONE,
-                    cognito.OAuthScope.EMAIL,
-                    cognito.OAuthScope.OPENID,
-                    cognito.OAuthScope.COGNITO_ADMIN,
-                    cognito.OAuthScope.PROFILE,
-                ],
-                callback_urls=[f"{portal_url}/loggedin"],
-                logout_urls=[f"{portal_url}/logout"],
-            ),
-            supported_identity_providers=[cognito.UserPoolClientIdentityProvider.COGNITO],
-            prevent_user_existence_errors=True,
-        )
-        return client
 
     def __create_identity_pool(
         self, user_pool: cognito.UserPool, user_pool_client: cognito.UserPoolClient
@@ -267,49 +224,3 @@ class PortalStack(Stack):
             "PortalEc2InstanceProfile",
             roles=[self.ec2_default_role.role_name],
         )
-
-    # pylint: enable=too-many-arguments
-
-    def __build_hosted_zone(self, domain_name):
-        """
-        This method creates a CDK route53 construct from a domain lookup under the
-        assumption it already exists.
-        """
-        self.hosted_zone = route53.PublicHostedZone.from_lookup(
-            self, "PortalHostedZone", domain_name=domain_name
-        )
-        if self.hosted_zone.is_resource(self):
-            self.hosted_zone = route53.PublicHostedZone(
-                self, "PortalHostedZone", zone_name=domain_name
-            )
-
-    def __build_route53_settings(self, full_record_name, record_name):
-        """
-        This method will configure the Route53 settings for daskhub.  These settings
-        will be subsequently updated during the EKSCTL portions of the deployment.  It's safe
-        to run this deployment from a live system.
-        """
-
-        ttl = Duration.seconds(300)
-        domain_name = "0.0.0.0"
-
-        record = find_route53_record_by_type_and_name(
-            self.hosted_zone.hosted_zone_id, "CNAME", full_record_name
-        )
-        if record is not None:
-            print(f"Route53 record set already exists for {full_record_name}")
-            ttl = Duration.seconds(record["TTL"])
-            domain_name = record["ResourceRecords"][0]["Value"]
-            print(f" Using ttl={ttl.to_seconds()}, domain_name={domain_name}")
-
-        cname_record = route53.CnameRecord(
-            self,
-            "CnameRecord",
-            record_name=record_name,
-            zone=self.hosted_zone,
-            ttl=ttl,
-            delete_existing=True,
-            domain_name=domain_name,
-            comment="Initial provisioning from CDK, updated via external-dns.",
-        )
-        cname_record.apply_removal_policy(RemovalPolicy.DESTROY)

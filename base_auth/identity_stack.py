@@ -19,7 +19,7 @@ class IdentityStack(Stack):
 
     def __init__(self, scope: Construct, construct_id: str, config: dict, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
-        domain_url = config["portal"]["domain_url"]
+        domain_url = config["daskhub"]["global"]["domain_url"]
         user = config["email"]["user"]
         from_name = config["email"]["from_name"]
 

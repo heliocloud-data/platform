@@ -63,13 +63,9 @@ class PortalStack(Stack):
 
         # Create the Portal task for Fargate
         task = self.__create_ec2_resources(
-<<<<<<< HEAD
         task = self.__create_ec2_resources(
             vpc=aws_stack.heliocloud_vpc,
             s3_policy=aws_stack.s3_managed_policy,
-=======
-            vpc=aws_stack.heliocloud_vpc(), s3_policy=aws_stack.s3_managed_policy  # added ()
->>>>>>> ae17cf3 (creates and mounts S3 vis s3fs, issue #124)
         )
 
         self.__build_hosted_zone(config["domain_url"])

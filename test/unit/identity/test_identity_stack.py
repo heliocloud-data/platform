@@ -3,7 +3,7 @@ Tests for the IdentityStack
 """
 from aws_cdk.assertions import Template
 import aws_cdk as cdk
-from utils import create_dumpfile
+from ..utils import create_dumpfile
 import json
 
 from base_auth.identity_stack import IdentityStack

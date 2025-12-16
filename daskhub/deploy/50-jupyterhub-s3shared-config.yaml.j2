@@ -4,10 +4,10 @@ singleuser:
     extraVolumes:
       - name: s3shared
         hostPath:
-          path: {{ user_shared_mount_path | quote }}
+          path: "{{ user_shared_mount_path }}"
           type: Directory
     extraVolumeMounts:
       - name: s3shared
-        mountPath: {{ user_shared_mount_path | quote }}
+        mountPath: "{{ user_shared_mount_path }}"
         readOnly: false
 {% endif %}

@@ -1,7 +1,7 @@
 import os
 
 import pytest
-from utils import (
+from ..utils import (
     which,
     do_execute_helm_template,
 )

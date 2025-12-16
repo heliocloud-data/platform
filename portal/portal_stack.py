@@ -63,7 +63,6 @@ class PortalStack(Stack):
 
         # Create the Portal task for Fargate
         task = self.__create_ec2_resources(
-        task = self.__create_ec2_resources(
             vpc=aws_stack.heliocloud_vpc,
             s3_policy=aws_stack.s3_managed_policy,
         )

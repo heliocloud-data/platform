@@ -97,11 +97,6 @@ class MyHelioCloud(Construct):
         shared_bucket_stack.add_dependency(base_stack)
         cdk.Tags.of(shared_bucket_stack).add("Product", "heliocloud-usershared")
 
-<<<<<<< HEAD
-
-
-=======
->>>>>>> ae17cf3 (creates and mounts S3 vis s3fs, issue #124)
         # Next, determine if the Auth module is needed
         enabled_modules = self.__config.get("enabled")
         if (

@@ -335,7 +335,6 @@ class DaskhubStack(Stack):
             "DaskhubEFS",
             encrypted=True,
             enable_automatic_backups=True,
-
         )
 
         self.build_route53_settings()

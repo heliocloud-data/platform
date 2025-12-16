@@ -72,11 +72,6 @@ class PortalStack(Stack):
             s3_policy=aws_stack.s3_managed_policy,
         )
 
-        self.__build_hosted_zone(config["domain_url"])
-        self.__build_route53_settings(
-            f"{config['domain_record']}.{config['domain_url']}", config["domain_record"]
-        )
-
         # # Cloudformation outputs
         # # Return instance ID to make logging into admin instance easier
         cdk.CfnOutput(self, "Portal_Ec2SecurityGroup", value=self.security_group.security_group_id)

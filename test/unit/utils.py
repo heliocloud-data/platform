@@ -1,6 +1,7 @@
 """
 Contains utility functions to support unit testing.
 """
+
 import os
 import re
 import dpath

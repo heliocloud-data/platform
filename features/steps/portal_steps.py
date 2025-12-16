@@ -1,6 +1,7 @@
 """
 Cucumber step definition file for portal.
 """
+
 import os
 
 from selenium.webdriver.common.by import By

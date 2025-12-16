@@ -1,6 +1,7 @@
 """
 Tests for BaseAwsStack
 """
+
 import json
 
 import aws_cdk as cdk

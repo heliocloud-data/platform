@@ -7,7 +7,7 @@ import json
 
 import aws_cdk as cdk
 from aws_cdk.assertions import Template, Match
-from utils import create_dumpfile
+from ..utils import create_dumpfile
 
 from base_auth.auth_stack import AuthStack
 from base_auth.identity_stack import IdentityStack
@@ -45,6 +45,11 @@ def test_portal_stack():
 
     # Stack dependencies
     aws_stack = BaseAwsStack(app, "Base-Portal-Test", description="", config=cfg, env=env)
+
+    hv = getattr(aws_stack, "heliocloud_vpc", None)
+    if callable(hv):
+        aws_stack.heliocloud_vpc = getattr(aws_stack, "_BaseAwsStack__heliocloud_vpc")
+    
     id_stack = IdentityStack(app, "Id-Portal-Test", description="", config=cfg, env=env)
     auth_stack = AuthStack(
         app, "Auth-Portal-Test", description="", config=cfg, base_identity=id_stack, env=env

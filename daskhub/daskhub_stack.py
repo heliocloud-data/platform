@@ -233,12 +233,12 @@ class DaskhubStack(Stack):
         ec2_instance = ec2.Instance(
             self,
             "DaskhubInstance",
-            vpc=base_aws.heliocloud_vpc,
+            vpc=base_aws.heliocloud_vpc() if callable(base_aws.heliocloud_vpc) else base_aws.heliocloud_vpc
             machine_image=ec2.MachineImage.latest_amazon_linux2(),
             instance_type=ec2.InstanceType("t2.micro"),
             role=ec2_admin_role,
             user_data=ec2_user_data,
-            vpc_subnets=ec2.SubnetSelection(subnets=base_aws.heliocloud_vpc.private_subnets),
+            vpc_subnets=ec2.SubnetSelection(subnets=vpc.private_subnets),
             init=init_data,
             init_options=ec2.ApplyCloudFormationInitOptions(
                 config_sets=["default"],
@@ -330,7 +330,7 @@ class DaskhubStack(Stack):
         file_system = efs.FileSystem(
             self,
             "DaskhubEFS",
-            vpc=base_aws.heliocloud_vpc,
+            vpc=base_aws.heliocloud_vpc() if callable(base_aws.heliocloud_vpc) else base_aws.heliocloud_vpc
             encrypted=True,
             enable_automatic_backups=True,
 

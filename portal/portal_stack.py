@@ -61,9 +61,10 @@ class PortalStack(Stack):
             user_pool=auth_stack.userpool, user_pool_client=auth_stack.client
         )
 
+        vpc=aws_stack.heliocloud_vpc() if callable(aws_stack.heliocloud_vpc) else aws_stack.heliocloud_vpc,
         # Create the Portal task for Fargate
         task = self.__create_ec2_resources(
-            vpc=aws_stack.heliocloud_vpc,
+            vpc=vpc,
             s3_policy=aws_stack.s3_managed_policy,
         )
 
@@ -79,7 +80,7 @@ class PortalStack(Stack):
             self, "Portal_Ec2InstanceProfile", value=self.ec2_default_instance_profile.attr_arn
         )
         cdk.CfnOutput(
-            self, "Portal_Ec2SubnetId", value=aws_stack.heliocloud_vpc.public_subnets[0].subnet_id
+            self, "Portal_Ec2SubnetId", value=vpc.public_subnets[0].subnet_id
         )
         cdk.CfnOutput(self, "Portal_Ec2RoleArn", value=self.ec2_default_role.role_arn)
         cdk.CfnOutput(self, "Portal_IdentityPool", value=id_pool.identity_pool_id)

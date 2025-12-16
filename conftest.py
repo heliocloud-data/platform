@@ -3,9 +3,6 @@ import os
 import sys
 from pathlib import Path
 
-print("CWD:",os.getcwd())
-print("sys.path[0:5]:",sys.path[:5])
-
 # This file is imported by pytest before tests are collected.
 # Ensure the project root (the directory that contains base_aws/, base_auth/, daskhub/, etc.)
 # is on sys.path so absolute imports work in CI.

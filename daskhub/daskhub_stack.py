@@ -331,8 +331,8 @@ class DaskhubStack(Stack):
         vpc=base_aws.heliocloud_vpc() if callable(base_aws.heliocloud_vpc) else base_aws.heliocloud_vpc
         file_system = efs.FileSystem(
             self,
-            vpc=vpc,
             "DaskhubEFS",
+            vpc=vpc,
             encrypted=True,
             enable_automatic_backups=True,
         )

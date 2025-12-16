@@ -230,10 +230,11 @@ class DaskhubStack(Stack):
         # pylint: enable=line-too-long
 
         # Create admin instance and attach role
+        vpc=base_aws.heliocloud_vpc() if callable(base_aws.heliocloud_vpc) else base_aws.heliocloud_vpc
         ec2_instance = ec2.Instance(
             self,
             "DaskhubInstance",
-            vpc=base_aws.heliocloud_vpc() if callable(base_aws.heliocloud_vpc) else base_aws.heliocloud_vpc
+            vpc=vpc,
             machine_image=ec2.MachineImage.latest_amazon_linux2(),
             instance_type=ec2.InstanceType("t2.micro"),
             role=ec2_admin_role,
@@ -327,10 +328,11 @@ class DaskhubStack(Stack):
             self, "EfsMountManagedPolicy", document=efs_mount_policy_document
         )
 
+        vpc=base_aws.heliocloud_vpc() if callable(base_aws.heliocloud_vpc) else base_aws.heliocloud_vpc
         file_system = efs.FileSystem(
             self,
+            vpc=vpc,
             "DaskhubEFS",
-            vpc=base_aws.heliocloud_vpc() if callable(base_aws.heliocloud_vpc) else base_aws.heliocloud_vpc
             encrypted=True,
             enable_automatic_backups=True,
 

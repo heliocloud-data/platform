@@ -1,6 +1,7 @@
 """
 Cucumber step definition file for AWS stuff.
 """
+
 import ssl
 
 import boto3

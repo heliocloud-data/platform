@@ -1,6 +1,7 @@
 """
 Utility functions to fetch data from AWS necessary for creation of the Daskhub Stack.
 """
+
 import boto3
 import botocore.exceptions
 

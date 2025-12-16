@@ -49,7 +49,7 @@ def test_portal_stack():
     hv = getattr(aws_stack, "heliocloud_vpc", None)
     if callable(hv):
         aws_stack.heliocloud_vpc = getattr(aws_stack, "_BaseAwsStack__heliocloud_vpc")
-    
+
     id_stack = IdentityStack(app, "Id-Portal-Test", description="", config=cfg, env=env)
     auth_stack = AuthStack(
         app, "Auth-Portal-Test", description="", config=cfg, base_identity=id_stack, env=env

@@ -80,7 +80,7 @@ class RegistrationPageTests(unittest.TestCase):
         """
         payload = {
             "username": "test_user",
-            "email": "test_user@example.com"
+            "email": "test_user@example.com",
             # Missing 'affiliation'
         }
 

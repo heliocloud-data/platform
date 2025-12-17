@@ -1,6 +1,7 @@
 """
 Cucumber step definition file for common stuff.
 """
+
 import time
 
 from utils.heliocloud_utils import get_base_url

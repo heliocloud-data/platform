@@ -8,7 +8,7 @@ from unittest.mock import Mock
 import pytest
 from aws_cdk import aws_cognito
 from aws_cdk.assertions import Template, Match
-from utils import create_dumpfile
+from ..utils import create_dumpfile
 
 from base_auth.auth_stack import AuthStack
 from base_auth.identity_stack import IdentityStack

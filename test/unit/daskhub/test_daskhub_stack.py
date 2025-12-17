@@ -5,7 +5,7 @@ import aws_cdk as cdk
 import pytest
 import yaml
 from aws_cdk.assertions import Match, Template
-from utils import which, create_dumpfile
+from ..utils import which, create_dumpfile
 
 from app_config import load_configs
 from base_auth.auth_stack import AuthStack

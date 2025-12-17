@@ -51,12 +51,22 @@ class DaskhubStack(Stack):
             base_aws: BaseAwsStack,
             base_auth: Stack,
             portal: Stack = None,
+            user_shared_mount_path: str = "/mnt/s3shared",
+            user_shared_bucket_name: str = "",
+            user_shared_mount_enabled: bool = True,
+            user_shared_bucket_prefix: str = "",
             **kwargs,
     ) -> None:
         # fmt: on
         super().__init__(scope, construct_id, **kwargs)
 
         self.__daskhub_config = DaskhubStack.load_configurations(config)
+        
+        self.user_shared_mount_path = user_shared_mount_path
+        self.user_shared_bucket_name = user_shared_bucket_name
+        self.user_shared_mount_enabled = user_shared_mount_enabled
+        self.user_shared_bucket_prefix = user_shared_bucket_prefix
+        
         self.build_hosted_zone()
 
         if 'portal' in config and ('api_key' not in config['portal'] or config['portal']['api_key'] == 'auto'):
@@ -148,6 +158,10 @@ class DaskhubStack(Stack):
             'config': self.__daskhub_config,
             'hc_config': config,
             'account': account,
+            'user_shared_mount_path': self.user_shared_mount_path,
+            'user_shared_bucket_name': self.user_shared_bucket_name,
+            'user_shared_mount_enabled': self.user_shared_mount_enabled,
+            'user_shared_bucket_prefix': self.user_shared_bucket_prefix,
         })
 
         deploy_dirs = [template_dest_folder, template_src_folder]
@@ -216,15 +230,16 @@ class DaskhubStack(Stack):
         # pylint: enable=line-too-long
 
         # Create admin instance and attach role
+        vpc=base_aws.heliocloud_vpc() if callable(base_aws.heliocloud_vpc) else base_aws.heliocloud_vpc
         ec2_instance = ec2.Instance(
             self,
             "DaskhubInstance",
-            vpc=base_aws.heliocloud_vpc,
+            vpc=vpc,
             machine_image=ec2.MachineImage.latest_amazon_linux2(),
             instance_type=ec2.InstanceType("t2.micro"),
             role=ec2_admin_role,
             user_data=ec2_user_data,
-            vpc_subnets=ec2.SubnetSelection(subnets=base_aws.heliocloud_vpc.private_subnets),
+            vpc_subnets=ec2.SubnetSelection(subnets=vpc.private_subnets),
             init=init_data,
             init_options=ec2.ApplyCloudFormationInitOptions(
                 config_sets=["default"],
@@ -313,13 +328,13 @@ class DaskhubStack(Stack):
             self, "EfsMountManagedPolicy", document=efs_mount_policy_document
         )
 
+        vpc=base_aws.heliocloud_vpc() if callable(base_aws.heliocloud_vpc) else base_aws.heliocloud_vpc
         file_system = efs.FileSystem(
             self,
             "DaskhubEFS",
-            vpc=base_aws.heliocloud_vpc,
+            vpc=vpc,
             encrypted=True,
             enable_automatic_backups=True,
-
         )
 
         self.build_route53_settings()

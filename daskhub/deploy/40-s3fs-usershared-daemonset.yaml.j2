@@ -1,0 +1,49 @@
+{% if user_shared_mount_enabled %}
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: s3fs-usershared
+  namespace: kube-system
+  labels:
+    app: s3fs-usershared
+spec:
+  selector:
+    matchLabels:
+      app: s3fs-usershared
+  template:
+    metadata:
+      labels:
+        app: s3fs-usershared
+    spec:
+      hostNetwork: true
+      containers:
+        - name: s3fs
+          image: xueshanf/awscli-s3fs:latest
+          securityContext:
+            privileged: true
+          env:
+            - name: S3_BUCKET
+              value: "{{ user_shared_bucket_name }}"
+            - name: MOUNT_PATH
+              value: "{{ user_shared_mount_path }}"
+            - name: S3FS_ARGS
+              value: "-o iam_role=auto -o allow_other -o mp_umask=002"
+          volumeMounts:
+            - name: mnt-s3shared
+              mountPath: "{{ user_shared_mount_path }}"
+          command:
+            - /bin/sh
+            - -c
+            - >
+              mkdir -p ${MOUNT_PATH} &&
+              chmod 0777 ${MOUNT_PATH} &&
+              s3fs ${S3_BUCKET} ${MOUNT_PATH} ${S3FS_ARGS} &&
+              sleep infinity
+      volumes:
+        - name: mnt-s3shared
+          hostPath:
+            path: "{{ user_shared_mount_path }}"
+            type: DirectoryOrCreate
+---
+# Jupyter singleuser pods get hostPath via k8s config the deploy scripts apply.
+{% endif %}

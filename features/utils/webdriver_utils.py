@@ -2,6 +2,7 @@
 Contains functions for interacting with the selenium
 webdriver.
 """
+
 import os
 import time
 

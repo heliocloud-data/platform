@@ -49,3 +49,11 @@ pylint *
 Provided you get clean feedback from black & pylint and your tests pass, you should feel
 pretty comfortable any merge request you post would get rejected for not adhering to the 
 codebase conventions.
+
+
+## Updating Components
+
+Stacks may import/export values with other stacks. For instance, the Auth stack exports Cognito client info to the Daskhub/Portal stacks.
+
+This creates a coupling that makes altering these tools difficult. If an update needs to be made to the cognito clients or any other exported service,
+the old service must remain to ensure dependency is maintained. Once the new service is deployed, the stack can be redeployed with the old service deleted.

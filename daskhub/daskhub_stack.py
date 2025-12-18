@@ -339,7 +339,7 @@ class DaskhubStack(Stack):
 
         # Keep old daskhub client. Needed for cfn output migration
         oauth_base_url=(f"https://{self.__daskhub_config['daskhub']['domain_record']}."
-            f"{self.__daskhub_config['daskhub']['global']['domain_url']}")
+            f"{self.__daskhub_config['global']['domain_url']}")
         callback_url=f"{oauth_base_url}/hub/oauth_callback"
         logout_url=f"{oauth_base_url}/logout"
 
@@ -367,7 +367,7 @@ class DaskhubStack(Stack):
         if "daskhub_metrics" in config["enabled"] and config["enabled"]["daskhub_metrics"]:
             oauth_base_url = ("https://"
                             f"{self.__daskhub_config['monitoring']['cost_analyzer_domain_prefix']}."
-                            f"{self.__daskhub_config['daskhub']['global']['domain_url']}")
+                            f"{self.__daskhub_config['global']['domain_url']}")
             callback_url = f"{oauth_base_url}/model/oidc/authorize"
             logout_url = f"{oauth_base_url}/logout"
 

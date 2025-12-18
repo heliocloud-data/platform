@@ -166,10 +166,44 @@ staging-cdk-deploy:
     - envsubst < instance/staging.yaml > instance/staging-${CI_COMMIT_REF_SLUG}.yaml
     # For an incremental deployment, we must deploy each stack, but not Daskhub.  That one
     # has must be done via eksctl/kubect.
-    - cdk deploy staging-${CI_COMMIT_REF_SLUG}/Base -c instance=staging-${CI_COMMIT_REF_SLUG} --require-approval never -v
-    - cdk deploy staging-${CI_COMMIT_REF_SLUG}/Identity -c instance=staging-${CI_COMMIT_REF_SLUG} --require-approval never -v
-    - cdk deploy staging-${CI_COMMIT_REF_SLUG}/Auth -c instance=staging-${CI_COMMIT_REF_SLUG} --require-approval never -v
-    - cdk deploy staging-${CI_COMMIT_REF_SLUG}/Portal -c instance=staging-${CI_COMMIT_REF_SLUG} --require-approval never -v
+    - |
+      set -euo pipefail
+
+      INSTANCE="staging-${CI_COMMIT_REF_SLUG}"
+      DEPLOY_OPTS=( -c "instance=${INSTANCE}" --require-approval never -v )
+
+      STACK_BASE="${INSTANCE}/Base"
+      STACK_IDENTITY="${INSTANCE}/Identity"
+      STACK_AUTH="${INSTANCE}/Auth"
+      STACK_PORTAL="${INSTANCE}/Portal"
+      STACK_DASKHUB="${INSTANCE}/Daskhub"
+
+      stack_exists () {
+        aws cloudformation describe-stacks --stack-name "$1" >/dev/null 2>&1
+      }
+
+      deploy () {
+        cdk deploy "$1" "${DEPLOY_OPTS[@]}" --exclusively
+      }
+
+      if stack_exists "$STACK_BASE"; then
+        echo "Incremental deploy detected → consumers first"
+
+        deploy "$STACK_PORTAL"
+        deploy "$STACK_DASKHUB"
+
+        deploy "$STACK_BASE"
+        deploy "$STACK_IDENTITY"
+        deploy "$STACK_AUTH"
+      else
+        echo "Blank deploy detected → producers first"
+
+        cdk deploy "$STACK_BASE"     "${DEPLOY_OPTS[@]}"
+        cdk deploy "$STACK_IDENTITY" "${DEPLOY_OPTS[@]}"
+        cdk deploy "$STACK_AUTH"     "${DEPLOY_OPTS[@]}"
+        cdk deploy "$STACK_PORTAL"   "${DEPLOY_OPTS[@]}"
+        cdk deploy "$STACK_DASKHUB"  "${DEPLOY_OPTS[@]}"
+      fi
   artifacts:
     when: always
     paths:

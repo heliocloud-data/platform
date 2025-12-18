@@ -169,7 +169,7 @@ staging-cdk-deploy:
     - |
       set -euo pipefail
 
-      INSTANCE="staging-develop"
+      INSTANCE="staging-${CI_COMMIT_REF_SLUG}"
       DEPLOY_OPTS=( -c "instance=${INSTANCE}" --require-approval never -v )
 
       STACK_BASE="${INSTANCE}/Base"
@@ -177,6 +177,10 @@ staging-cdk-deploy:
       STACK_AUTH="${INSTANCE}/Auth"
       STACK_PORTAL="${INSTANCE}/Portal"
       STACK_DASKHUB="${INSTANCE}/Daskhub"
+
+      BASE_STACK_NAME=$(aws cloudformation list-stacks \
+        --query "StackSummaries[?starts_with(StackName, 'stagingdevelopBase')].StackName" \
+        --output text)
 
       stack_exists () {
         aws cloudformation describe-stacks --stack-name "$1" >/dev/null 2>&1
@@ -186,7 +190,7 @@ staging-cdk-deploy:
         cdk deploy "$1" "${DEPLOY_OPTS[@]}" --exclusively
       }
 
-      if stack_exists "$STACK_BASE"; then
+      if stack_exists "${BASE_STACK_NAME}"; then
         echo "Incremental deploy detected → consumers first"
 
         deploy "$STACK_PORTAL"

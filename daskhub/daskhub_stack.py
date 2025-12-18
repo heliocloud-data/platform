@@ -391,8 +391,8 @@ class DaskhubStack(Stack):
         )
 
         # Set conditional output for the kubecost client
-        # cdk.CfnOutput(self, "CognitoClientIdKubeCost",
-        #                 value=kubecost_client.user_pool_client_id)
+        cdk.CfnOutput(self, "CognitoClientIdKubeCost",
+                        value=kubecost_client.user_pool_client_id)
 
         self.build_route53_settings()
 

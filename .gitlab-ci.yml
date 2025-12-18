@@ -169,7 +169,7 @@ staging-cdk-deploy:
     - |
       set -euo pipefail
 
-      INSTANCE="staging-${CI_COMMIT_REF_SLUG}"
+      INSTANCE="staging-develop"
       DEPLOY_OPTS=( -c "instance=${INSTANCE}" --require-approval never -v )
 
       STACK_BASE="${INSTANCE}/Base"

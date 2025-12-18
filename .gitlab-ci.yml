@@ -163,6 +163,10 @@ staging-cdk-deploy:
     - curl "https://s3.amazonaws.com/session-manager-downloads/plugin/latest/ubuntu_64bit/session-manager-plugin.deb" -o "session-manager-plugin.deb"
     - dpkg -i session-manager-plugin.deb
     - apt-get update && apt-get install -y gettext
+    - curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+    - unzip -q awscliv2.zip
+    - ./aws/install
+    - aws --version
     - envsubst < instance/staging.yaml > instance/staging-${CI_COMMIT_REF_SLUG}.yaml
     # For an incremental deployment, we must deploy each stack, but not Daskhub.  That one
     # has must be done via eksctl/kubect.

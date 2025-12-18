@@ -167,6 +167,7 @@ staging-cdk-deploy:
     - unzip -q awscliv2.zip
     - ./aws/install
     - aws --version
+    - aws cloudformation list-stacks --query "StackSummaries[?starts_with(StackName, 'stagingdevelopBase')].StackName" --output text
     - envsubst < instance/staging.yaml > instance/staging-${CI_COMMIT_REF_SLUG}.yaml
     # For an incremental deployment, we must deploy each stack, but not Daskhub.  That one
     # has must be done via eksctl/kubect.

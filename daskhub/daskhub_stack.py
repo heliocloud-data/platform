@@ -412,6 +412,13 @@ class DaskhubStack(Stack):
         cdk.CfnOutput(self, "EFSId", value=file_system.file_system_id)
         cdk.CfnOutput(self, "EFSMountArn", value=efs_mount_managed_policy.managed_policy_arn)
 
+        # old cognito outputs for migration
+        cdk.CfnOutput(self, "CognitoClientId", value=daskhub_client.user_pool_client_id)
+        auth = config["auth"]
+        domain_prefix = auth.get("domain_prefix", "")
+        cdk.CfnOutput(self, "CognitoDomainPrefix", value=domain_prefix)
+        cdk.CfnOutput(self, "CognitoUserPoolId", value=base_auth.userpool.user_pool_id)
+
         # Outputs other stacks
         # The cluster needs info specific to auth and portal but doesn't
         # natively have access to the auth/portal references.

@@ -146,13 +146,6 @@ class AuthStack(Stack):
             value=self.userpool.user_pool_id,
         )
 
-        cdk.CfnOutput(
-            self,
-            "CognitoUserPoolId",
-            value="Poolheliocloudportal12745481-Je0zW153iKWt",
-            export_name="stagingdevelopAuthACCC0F00:ExportsOutputRefPoolheliocloudportal1274548109A9A2E4",
-        )
-
     @property
     def domain_prefix(self):
         """

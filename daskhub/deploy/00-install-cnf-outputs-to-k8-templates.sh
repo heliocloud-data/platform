@@ -39,13 +39,13 @@ PORTAL_CLOUDFORMATION_NAME=$(aws cloudformation describe-stacks --stack-name $CL
 
 aws cloudformation describe-stacks \
   --region "$AWS_REGION" \
-  --stack-name "$CLOUDFORMATION_NAME" \
+  --stack-name "$AUTH_CLOUDFORMATION_NAME" \
   --query 'Stacks[0].Outputs[].{Key:OutputKey,Value:OutputValue}' \
   --output text > stack.txt
 
 aws cloudformation describe-stacks \
   --region "$AWS_REGION" \
-  --stack-name "$AUTH_CLOUDFORMATION_NAME" \
+  --stack-name "$CLOUDFORMATION_NAME" \
   --query 'Stacks[0].Outputs[].{Key:OutputKey,Value:OutputValue}' \
   --output text >> stack.txt
 

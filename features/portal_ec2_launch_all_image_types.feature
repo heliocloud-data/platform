@@ -47,7 +47,7 @@ Feature: Log into portal and launch an EC2 instance
 
     Examples:
       | instance_name                 | img_os_tab   | ami_name                                                                           | instance_type_group | instance_type | volume_size_in_gb |
-      | helioptile-ec2-image-type-001 | Amazon Linux | al2023-ami-2023.6.20250211.0-kernel-6.1-x86_64                                     | General Purpose     | t2.micro      |                 9 |
+      | helioptile-ec2-image-type-001 | Amazon Linux | al2023-ami-2023.9.20250929.0-kernel-6.12-x86_64                                     | General Purpose     | t2.micro      |                 9 |
       | helioptile-ec2-image-type-002 | Amazon Linux | Deep Learning OSS Nvidia Driver AMI GPU PyTorch 2.5.1 (Amazon Linux 2023) 20250216 | General Purpose     | t2.micro      |                 9 |
       | helioptile-ec2-image-type-003 | Ubuntu       | ubuntu/images/hvm-ssd-gp3/ubuntu-noble-24.04-amd64-server-20250214                 | General Purpose     | t2.micro      |                 9 |
       | helioptile-ec2-image-type-004 | Ubuntu       | Deep Learning OSS Nvidia Driver AMI GPU PyTorch 2.5.1 (Ubuntu 22.04) 20250216      | General Purpose     | t2.micro      |                20 |

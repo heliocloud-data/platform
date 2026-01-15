@@ -82,11 +82,11 @@ daskhub:
 
     # HelioCloud docker containers
     GENERIC_DOCKER_LOCATION: 'public.ecr.aws/q3h7b4o8/heliocloud/helio-daskhub-core'
-    GENERIC_DOCKER_VERSION: '2025.01.29'
+    GENERIC_DOCKER_VERSION: '2025.12.19'
     MLTF_DOCKER_LOCATION: 'public.ecr.aws/q3h7b4o8/heliocloud/helio-daskhub-mltf'
-    MLTF_DOCKER_VERSION: '2025.01.29'
+    MLTF_DOCKER_VERSION: '2025.12.19'
     MLTRCH_DOCKER_LOCATION: 'public.ecr.aws/q3h7b4o8/heliocloud/helio-daskhub-mltrch'
-    MLTRCH_DOCKER_VERSION: '2025.01.29'
+    MLTRCH_DOCKER_VERSION: '2025.12.19'
   monitoring:
     grafana_domain_prefix: grafana-test
     cost_analyzer_domain_prefix: kubecost-test

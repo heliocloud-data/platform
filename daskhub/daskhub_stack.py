@@ -6,6 +6,7 @@ import glob
 import os
 import secrets
 import shutil
+import base64
 import yaml
 
 import aws_cdk as cdk
@@ -61,12 +62,12 @@ class DaskhubStack(Stack):
         super().__init__(scope, construct_id, **kwargs)
 
         self.__daskhub_config = DaskhubStack.load_configurations(config)
-        
+
         self.user_shared_mount_path = user_shared_mount_path
         self.user_shared_bucket_name = user_shared_bucket_name
         self.user_shared_mount_enabled = user_shared_mount_enabled
         self.user_shared_bucket_prefix = user_shared_bucket_prefix
-        
+
         self.build_hosted_zone()
 
         if 'portal' in config and ('api_key' not in config['portal'] or config['portal']['api_key'] == 'auto'):
@@ -110,7 +111,6 @@ class DaskhubStack(Stack):
                             to_remove.append(instanceType)
                     for rem in to_remove:
                         nodeGroup['instancesDistribution']['instanceTypes'].remove(rem)
-                    # TODO: If list is empty at this point... Fail.
 
         # EC2 admin instance can create AWS resources needed to control
         # EKS (Kubernetes) backing Daskhub, can access through SSM opposed to SSH
@@ -418,6 +418,9 @@ class DaskhubStack(Stack):
         domain_prefix = auth.get("domain_prefix", "")
         cdk.CfnOutput(self, "CognitoDomainPrefix", value=domain_prefix)
         cdk.CfnOutput(self, "CognitoUserPoolId", value=base_auth.userpool.user_pool_id)
+
+        # Set secret for oauth2 proxy cookie encryption
+        cdk.CfnOutput(self, "CookieSecret", value=base64.urlsafe_b64encode(os.urandom(32)).decode())
 
         # Outputs other stacks
         # The cluster needs info specific to auth and portal but doesn't

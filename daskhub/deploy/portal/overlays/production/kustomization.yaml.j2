@@ -57,5 +57,5 @@ patches:
       value: "https://oauth-{{ config['eksctl']['metadata']['name'] }}-{{ config['eksctl']['metadata']['region'] }}.{{ config['global']['domain_url'] }}/oauth2/auth"
     - op: replace
       path: /metadata/annotations/nginx.ingress.kubernetes.io~1auth-signin
-      value: "https://oauth-{{ config['eksctl']['metadata']['name'] }}-{{ config['eksctl']['metadata']['region'] }}.{{ config['global']['domain_url'] }}/oauth2/start"
+      value: "https://oauth-{{ config['eksctl']['metadata']['name'] }}-{{ config['eksctl']['metadata']['region'] }}.{{ config['global']['domain_url'] }}/oauth2/start?rd=https://$host"
 

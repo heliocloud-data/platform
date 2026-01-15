@@ -27,6 +27,8 @@ oauth2-proxy:
     backend-logout-url: https://oauth-{{ config['eksctl']['metadata']['name'] }}-{{ config['eksctl']['metadata']['region'] }}.{{ config['global']['domain_url'] }}/oauth2/sign_out
     whitelist-domain: ".{{ config['global']['domain_url'] }},.amazoncognito.com"
     cookie-domain: .{{ config['global']['domain_url'] }}
+    cookie-name: "_oauth2_proxy_<<CNF_OUTPUT_CognitoDomainPrefix>>"
+    cookie-secret: "<<CNF_OUTPUT_CookieSecret>>"
     scope: "openid profile email"
     set-authorization-header: true
     set-xauthrequest: true
@@ -35,6 +37,9 @@ oauth2-proxy:
     pass-authorization-header: true
     skip-auth-strip-headers: false
     pass-access-token: true
+    cookie-samesite: "none"
+    reverse-proxy: true
+    cookie-secure: true
   ingress:
     enabled: true
     hosts:

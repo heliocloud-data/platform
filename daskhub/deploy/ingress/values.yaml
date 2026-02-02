@@ -6,6 +6,7 @@ ingress-nginx:
       compute-full-forwarded-for: "true"
       large-client-header-buffers: "8 64k"
       client-header-buffer-size: "64k"
+      proxy-body-size: "0"
     ingressClassResource:
       name: nginx
       enabled: true

@@ -1,13 +1,13 @@
 global:
   domain_certificate_arn: ""
-  domain_url: '<REPLACE>'
+  domain_url: "<REPLACE>"
 eksctl:
   metadata:
-    name: 'eks-helio'
+    name: "eks-helio"
     region: # Example: us-east-1
   availabilityZones:
     # Availablity zones listed here, should be at least two,
-    # First zone will 
+    # First zone will
   iamIdentityMappings:
     # Add custom RBAC configuration settings to your aws-auth config
     # map
@@ -19,12 +19,26 @@ eksctl:
     # ng-burst-compute-spot
     - instancesDistribution:
         instanceTypes:
-          - "m5n.8xlarge"
-          - "m5.8xlarge"
-          - "m4.8xlarge"
-          - "m5dn.8xlarge"
-          - "r5n.8xlarge"
-          - "r5dn.8xlarge"
+          [
+          "h1.8xlarge",
+          "m5.8xlarge",
+          "m5a.8xlarge",
+          "m5ad.8xlarge",
+          "m5d.8xlarge",
+          "m5dn.8xlarge",
+          "m5n.8xlarge",
+          "m6a.8xlarge",
+          "m6i.8xlarge",
+          "m6id.8xlarge",
+          "m6idn.8xlarge",
+          "m6in.8xlarge",
+          "m7a.8xlarge",
+          "m7i-flex.8xlarge",
+          "m7i.8xlarge",
+          "m8a.8xlarge",
+          "m8i-flex.8xlarge",
+          "m8i.8xlarge"
+        ]
 
 daskhub_storage:
   efs-persist:
@@ -48,9 +62,9 @@ daskhub:
   domain_record: "daskhub"
 
   # HelioCloud docker containers
-  GENERIC_DOCKER_LOCATION: 'public.ecr.aws/q3h7b4o8/heliocloud/helio-daskhub-core'
-  GENERIC_DOCKER_VERSION: '2025.12.19'
-  MLTF_DOCKER_LOCATION: 'public.ecr.aws/q3h7b4o8/heliocloud/helio-daskhub-mltf'
-  MLTF_DOCKER_VERSION: '2025.12.19'
-  MLTRCH_DOCKER_LOCATION: 'public.ecr.aws/q3h7b4o8/heliocloud/helio-daskhub-mltrch'
-  MLTRCH_DOCKER_VERSION: '2025.12.19'
+  GENERIC_DOCKER_LOCATION: "public.ecr.aws/q3h7b4o8/heliocloud/helio-daskhub-core"
+  GENERIC_DOCKER_VERSION: "2026.02.06"
+  MLTF_DOCKER_LOCATION: "public.ecr.aws/q3h7b4o8/heliocloud/helio-daskhub-mltf"
+  MLTF_DOCKER_VERSION: "2026.02.06"
+  MLTRCH_DOCKER_LOCATION: "public.ecr.aws/q3h7b4o8/heliocloud/helio-daskhub-mltrch"
+  MLTRCH_DOCKER_VERSION: "2026.02.06"

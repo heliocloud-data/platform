@@ -15,17 +15,6 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   labels:
-    app: jupyterhub
-    chart: jupyterhub-3.2.1
-    component: autohttps
-    heritage: Helm
-    release: daskhub
-  name: autohttps
----
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  labels:
     app.kubernetes.io/instance: daskhub
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: dask-gateway
@@ -60,27 +49,6 @@ metadata:
     heritage: Helm
     release: daskhub
   name: user-scheduler
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: Role
-metadata:
-  labels:
-    app: jupyterhub
-    chart: jupyterhub-3.2.1
-    component: autohttps
-    heritage: Helm
-    release: daskhub
-  name: autohttps
-rules:
-  - apiGroups:
-      - ''
-    resources:
-      - secrets
-    verbs:
-      - get
-      - patch
-      - list
-      - create
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
@@ -448,25 +416,6 @@ metadata:
   labels:
     app: jupyterhub
     chart: jupyterhub-3.2.1
-    component: autohttps
-    heritage: Helm
-    release: daskhub
-  name: autohttps
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: Role
-  name: autohttps
-subjects:
-  - apiGroup:
-    kind: ServiceAccount
-    name: autohttps
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
-metadata:
-  labels:
-    app: jupyterhub
-    chart: jupyterhub-3.2.1
     component: hub
     heritage: Helm
     release: daskhub
@@ -667,26 +616,35 @@ data:
             "matchExpressions": [{
               "key": "heliocloud.org/dask-worker",
               "operator": "In",
-              "values": ["true"]
+              "values": [
+                "true",
+              ]
             }]
           }]
         }
       }
     }
 
+    # Enumerate all the instance profiles that we want to support dask scheduling
+    # for.  We'll need corresponding node groups in the cluster.  We control this
+    # via the cluster-config.yaml.
     profiles = {
       "default": {
         "extra_node_selectors": {
           "nvidia.com/gpu": "false",
           "heliocloud.org/dask-worker": "true",
         },
+
         "extra_node_affinity": [{
           "matchExpressions": [{
             "key": "nvidia.com/gpu",
             "operator": "In",
-            "values": ["false"]
+            "values": [
+              "false",
+            ]
           }]
         }],
+
         "scheduler_extra_pod_config": {
           "affinity": extra_pod_affinity_config,
           "tolerations": [{
@@ -710,19 +668,24 @@ data:
       "gpu-xlarge": {
         "overrides": {
           "worker_cores": 3.5,
-          "worker_memory": "14G",  # ok, this string is accepted by DG
+          "worker_memory": "14G",
         },
+
         "extra_node_selectors": {
           "nvidia.com/gpu": "true",
           "heliocloud.org/dask-worker": "true",
         },
+
         "extra_node_affinity": [{
           "matchExpressions": [{
             "key": "nvidia.com/gpu",
             "operator": "In",
-            "values": ["true"]
+            "values": [
+              "true",
+            ]
           }]
         }],
+
         "scheduler_extra_pod_config": {
           "affinity": extra_pod_affinity_config,
           "tolerations": [{
@@ -768,53 +731,65 @@ data:
         "value": user.name,
         "effect": "NoSchedule",
       }
+
       extra_pod_config = copy.deepcopy(profiles[options.profile][pod_config_key])
 
-      # ensure lists exist
-      extra_pod_config.setdefault("tolerations", [])
-      extra_pod_config["tolerations"].append(extra_toleration_user_config)
+      if 'tolerations' not in extra_pod_config:
+        extra_pod_config['tolerations'] = []
 
+      # Inject tolerations associated w/ this user.
+      extra_pod_config['tolerations'].append(extra_toleration_user_config)
+
+      # Apply any additional node selectors for the given profile
+      # configuration
       if 'extra_node_selectors' in profiles[options.profile]:
-        extra_pod_config["nodeSelector"] = profiles[options.profile]['extra_node_selectors']
+        extra_pod_config['nodeSelector'] = profiles[options.profile]['extra_node_selectors']
 
-      if profiles[options.profile].get("extra_node_affinity"):
-        extra_pod_config.setdefault("affinity", {}).setdefault("nodeAffinity", {}).setdefault(
-          "requiredDuringSchedulingIgnoredDuringExecution", {}).setdefault("nodeSelectorTerms", []).extend(
-            profiles[options.profile]["extra_node_affinity"]
-        )
+      # Apply any additional node affinity for the given profile
+      # configuration
+      if 'extra_node_affinity' in profiles[options.profile] and len(profiles[options.profile]['extra_node_affinity']) > 0:
+        if 'affinity' not in extra_pod_config:
+          extra_pod_config['affinity'] = {}
+        if 'nodeAffinity' not in extra_pod_config['affinity']:
+          extra_pod_config['affinity']['nodeAffinity'] = {}
+        if 'requiredDuringSchedulingIgnoredDuringExecution' not in extra_pod_config['affinity']['nodeAffinity']:
+          extra_pod_config['affinity']['nodeAffinity']['requiredDuringSchedulingIgnoredDuringExecution'] = {}
+        if 'nodeSelectorTerms' not in extra_pod_config['affinity']['nodeAffinity']['requiredDuringSchedulingIgnoredDuringExecution']:
+          extra_pod_config['affinity']['nodeAffinity']['requiredDuringSchedulingIgnoredDuringExecution']['nodeSelectorTerms'] = []
+        for extra_node_selector in profiles[options.profile]['extra_node_affinity']:
+          extra_pod_config['affinity']['nodeAffinity']['requiredDuringSchedulingIgnoredDuringExecution']['nodeSelectorTerms'].append(extra_node_selector)
 
-      # *** inject EFS volume here ***
-      extra_pod_config = _inject_efs_volume(extra_pod_config)
       return extra_pod_config
 
     def option_handler(options, user):
       environment = copy.deepcopy(profiles[options.profile]['environment'])
+
       worker_extra_pod_config = get_extra_pod_config_from_profile(options, user, 'worker_extra_pod_config')
       scheduler_extra_pod_config = get_extra_pod_config_from_profile(options, user, 'scheduler_extra_pod_config')
 
-      extra_annotations = {"hub.jupyter.org/username": user.name}
-      extra_labels = {"hub.jupyter.org/username": user.name}
+      extra_annotations = {
+        "hub.jupyter.org/username": user.name,
+      }
+
+      extra_labels = {
+        "hub.jupyter.org/username": user.name,
+      }
 
       if ":" not in options.image:
         raise ValueError("When specifying an image you must also provide a tag")
 
       return {
         "image": options.image,
-        "worker_cores": profiles[options.profile].get("overrides",{}).get("worker_cores", options.worker_cores),
+        "worker_cores": profiles[options.profile].get("overrides",{}).get("worker_cores",options.worker_cores),
         "worker_memory": profiles[options.profile].get("overrides",{}).get("worker_memory", int(options.worker_memory * 2 ** 30)),
         "scheduler_extra_pod_annotations": extra_annotations,
         "worker_extra_pod_annotations": extra_annotations,
         "scheduler_extra_pod_labels": extra_labels,
         "worker_extra_pod_labels": extra_labels,
-        # pod configs with EFS volume
+        "environment": environment,
         "worker_extra_pod_config": worker_extra_pod_config,
         "scheduler_extra_pod_config": scheduler_extra_pod_config,
-        # container configs with EFS mount
-        "worker_extra_container_config": {"volumeMounts": [efs_mount]},
-        "scheduler_extra_container_config": {"volumeMounts": [efs_mount]},
-        "environment": environment,
       }
-
     c.Backend.cluster_options = Options(
       String("image", default="<GENERIC_DOCKER_LOCATION>:<GENERIC_DOCKER_VERSION>", label="Image"),
       Integer("worker_cores", default=1, min=1, max=4, label="Worker Cores"),
@@ -832,105 +807,6 @@ metadata:
     gateway.dask.org/instance: daskhub-dask-gateway
     helm.sh/chart: dask-gateway-2024.1.0
   name: api-daskhub-dask-gateway
----
-apiVersion: v1
-data:
-  dynamic.yaml: |
-    http:
-      middlewares:
-        hsts:
-          headers:
-            stsIncludeSubdomains: false
-            stsPreload: false
-            stsSeconds: 15724800
-        redirect:
-          redirectScheme:
-            permanent: true
-            scheme: https
-        scheme:
-          headers:
-            customRequestHeaders:
-              X-Scheme: https
-      routers:
-        default:
-          entrypoints:
-          - https
-          middlewares:
-          - hsts
-          - scheme
-          rule: PathPrefix(`/`)
-          service: default
-          tls:
-            certResolver: default
-            domains:
-            - main: daskhub.stuff.org
-            options: default
-        insecure:
-          entrypoints:
-          - http
-          middlewares:
-          - redirect
-          rule: PathPrefix(`/`)
-          service: default
-      services:
-        default:
-          loadBalancer:
-            servers:
-            - url: http://proxy-http:8000/
-    tls:
-      options:
-        default:
-          cipherSuites:
-          - TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384
-          - TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384
-          - TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256
-          - TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256
-          - TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305
-          - TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305
-          minVersion: VersionTLS12
-          sniStrict: true
-  traefik.yaml: |
-    accessLog:
-      fields:
-        headers:
-          names:
-            Authorization: redacted
-            Cookie: redacted
-            Set-Cookie: redacted
-            X-Xsrftoken: redacted
-      filters:
-        statusCodes:
-        - 500-599
-    certificatesResolvers:
-      default:
-        acme:
-          caServer: https://acme-v02.api.letsencrypt.org/directory
-          email: <INSERT_CONTACT_EMAIL>
-          httpChallenge:
-            entryPoint: http
-          storage: /etc/acme/acme.json
-    entryPoints:
-      http:
-        address: :8080
-      https:
-        address: :8443
-        transport:
-          respondingTimeouts:
-            idleTimeout: 10m0s
-    log:
-      level: DEBUG
-    providers:
-      file:
-        filename: /etc/traefik/dynamic.yaml
-kind: ConfigMap
-metadata:
-  labels:
-    app: jupyterhub
-    chart: jupyterhub-3.2.1
-    component: autohttps
-    heritage: Helm
-    release: daskhub
-  name: autohttps
 ---
 apiVersion: v1
 data:
@@ -1772,30 +1648,6 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  annotations:
-    external-dns.alpha.kubernetes.io/hostname: daskhub.stuff.org
-  labels:
-    app: jupyterhub
-    chart: jupyterhub-3.2.1
-    component: autohttps
-    heritage: Helm
-    release: daskhub
-  name: proxy-http
-spec:
-  ports:
-    - port: 8000
-      targetPort: http
-  selector:
-    app: jupyterhub
-    component: proxy
-    release: daskhub
-  type: ClusterIP
----
-apiVersion: v1
-kind: Service
-metadata:
-  annotations:
-    external-dns.alpha.kubernetes.io/hostname: daskhub.stuff.org
   labels:
     app: jupyterhub
     chart: jupyterhub-3.2.1
@@ -1805,17 +1657,14 @@ metadata:
   name: proxy-public
 spec:
   ports:
-    - name: https
-      port: 443
-      targetPort: https
     - name: http
       port: 80
       targetPort: http
   selector:
     app: jupyterhub
-    component: autohttps
+    component: proxy
     release: daskhub
-  type: LoadBalancer
+  type: ClusterIP
 ---
 apiVersion: v1
 kind: Service
@@ -1934,133 +1783,6 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    app: jupyterhub
-    chart: jupyterhub-3.2.1
-    component: autohttps
-    heritage: Helm
-    kustomization: patch-jupyterhub-autohttps-startup-delay
-    release: daskhub
-  name: autohttps
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: jupyterhub
-      component: autohttps
-      release: daskhub
-  template:
-    metadata:
-      annotations:
-        checksum/static-config: 2c6b369b3ac56cb757248a03ba940643c62cd989b435f34cbcd3d57eb7e5f6e4
-      labels:
-        app: jupyterhub
-        component: autohttps
-        hub.jupyter.org/network-access-proxy-http: 'true'
-        release: daskhub
-    spec:
-      affinity:
-        nodeAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-            - preference:
-                matchExpressions:
-                  - key: hub.jupyter.org/node-purpose
-                    operator: In
-                    values:
-                      - core
-              weight: 100
-      containers:
-        - image: traefik:v2.4.11
-          livenessProbe:
-            exec:
-              command:
-                - grep
-                - main
-                - /etc/acme/acme.json
-            failureThreshold: 3
-            initialDelaySeconds: 30
-            periodSeconds: 10
-            timeoutSeconds: 3
-          name: traefik
-          ports:
-            - containerPort: 8080
-              name: http
-            - containerPort: 8443
-              name: https
-          securityContext:
-            allowPrivilegeEscalation: false
-            runAsGroup: 65534
-            runAsUser: 65534
-          volumeMounts:
-            - mountPath: /etc/traefik
-              name: traefik-config
-            - mountPath: /etc/acme
-              name: certificates
-        - args:
-            - watch-save
-            - --label=app=jupyterhub
-            - --label=release=daskhub
-            - --label=chart=jupyterhub-3.2.1
-            - --label=heritage=secret-sync
-            - proxy-public-tls-acme
-            - acme.json
-            - /etc/acme/acme.json
-          env:
-            - name: PYTHONUNBUFFERED
-              value: 'True'
-          image: quay.io/jupyterhub/k8s-secret-sync:3.2.1
-          name: secret-sync
-          securityContext:
-            allowPrivilegeEscalation: false
-            runAsGroup: 65534
-            runAsUser: 65534
-          volumeMounts:
-            - mountPath: /etc/acme
-              name: certificates
-      initContainers:
-        - command:
-            - sh
-            - -c
-            - sleep 30
-          image: busybox:stable
-          name: startup-delay
-        - args:
-            - load
-            - proxy-public-tls-acme
-            - acme.json
-            - /etc/acme/acme.json
-          env:
-            - name: PYTHONUNBUFFERED
-              value: 'True'
-          image: quay.io/jupyterhub/k8s-secret-sync:3.2.1
-          name: load-acme
-          securityContext:
-            allowPrivilegeEscalation: false
-            runAsGroup: 65534
-            runAsUser: 65534
-          volumeMounts:
-            - mountPath: /etc/acme
-              name: certificates
-      serviceAccountName: autohttps
-      tolerations:
-        - effect: NoSchedule
-          key: hub.jupyter.org/dedicated
-          operator: Equal
-          value: core
-        - effect: NoSchedule
-          key: hub.jupyter.org_dedicated
-          operator: Equal
-          value: core
-      volumes:
-        - emptyDir: {}
-          name: certificates
-        - configMap:
-            name: autohttps
-          name: traefik-config
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  labels:
     app.kubernetes.io/instance: daskhub
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: dask-gateway
@@ -2173,7 +1895,7 @@ spec:
                   key: hub.config.ConfigurableHTTPProxy.auth_token
                   name: hub
             - name: EXTRA_PIP_PACKAGES
-              value: boto3 dask_gatway_server
+              value: boto3 dask_gateway_server
           image: quay.io/jupyterhub/k8s-hub:3.2.1
           livenessProbe:
             failureThreshold: 30
@@ -2319,8 +2041,6 @@ spec:
             allowPrivilegeEscalation: false
             runAsGroup: 65534
             runAsUser: 65534
-      nodeSelector:
-        lifecycle: OnDemand
       terminationGracePeriodSeconds: 60
       tolerations:
         - effect: NoSchedule
@@ -2446,7 +2166,7 @@ spec:
             - --config=/etc/user-scheduler/config.yaml
             - --authentication-skip-lookup=true
             - --v=4
-          image: registry.k8s.io/kube-scheduler:v1.32.1
+          image: registry.k8s.io/kube-scheduler:v1.33.1
           livenessProbe:
             httpGet:
               path: /healthz
@@ -2580,79 +2300,34 @@ spec:
       release: daskhub
 ---
 apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
+kind: Ingress
 metadata:
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/auth-response-headers: X-Auth-Request-Access-Token
+    nginx.ingress.kubernetes.io/auth-signin: https://oauth-eks-helio-.<INSERT_DOMAIN_URL>/oauth2/start
+    nginx.ingress.kubernetes.io/auth-url: https://oauth-eks-helio-.<INSERT_DOMAIN_URL>/oauth2/auth
+    nginx.ingress.kubernetes.io/proxy-buffer-size: 8k
+    nginx.ingress.kubernetes.io/proxy-buffering: on
   labels:
     app: jupyterhub
     chart: jupyterhub-3.2.1
-    component: autohttps
+    component: ingress
     heritage: Helm
     release: daskhub
-  name: autohttps
+  name: jupyterhub
 spec:
-  egress:
-    - ports:
-        - port: 8000
-      to:
-        - podSelector:
-            matchLabels:
-              app: jupyterhub
-              component: proxy
-              release: daskhub
-    - ports:
-        - port: 53
-          protocol: UDP
-        - port: 53
-          protocol: TCP
-      to:
-        - ipBlock:
-            cidr: 169.254.169.254/32
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: kube-system
-        - ipBlock:
-            cidr: 10.0.0.0/8
-        - ipBlock:
-            cidr: 172.16.0.0/12
-        - ipBlock:
-            cidr: 192.168.0.0/16
-    - to:
-        - ipBlock:
-            cidr: 0.0.0.0/0
-            except:
-              - 10.0.0.0/8
-              - 172.16.0.0/12
-              - 192.168.0.0/16
-              - 169.254.169.254/32
-    - to:
-        - ipBlock:
-            cidr: 10.0.0.0/8
-        - ipBlock:
-            cidr: 172.16.0.0/12
-        - ipBlock:
-            cidr: 192.168.0.0/16
-    - to:
-        - ipBlock:
-            cidr: 169.254.169.254/32
-  ingress:
-    - ports:
-        - port: http
-        - port: https
-    - from:
-        - podSelector:
-            matchLabels:
-              hub.jupyter.org/network-access-proxy-http: 'true'
-      ports:
-        - port: http
-        - port: https
-  podSelector:
-    matchLabels:
-      app: jupyterhub
-      component: autohttps
-      release: daskhub
-  policyTypes:
-    - Ingress
-    - Egress
+  rules:
+    - host: daskhub.<INSERT_DOMAIN_URL>
+      http:
+        paths:
+          - backend:
+              service:
+                name: proxy-public
+                port:
+                  name: http
+            path: /
+            pathType: Prefix
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy

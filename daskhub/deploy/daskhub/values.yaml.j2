@@ -78,6 +78,7 @@ daskhub:
       config:
         Authenticator:
           auto_login: true
+          admin_users: {{ config['daskhub']['admin_users'] }}
       extraConfig:
         00-auth.py: |
           from jupyterhub.auth import Authenticator

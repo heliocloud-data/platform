@@ -263,7 +263,7 @@ daskhub:
               value: 'big-user'
               effect: 'NoSchedule'
       - display_name: "GPU Server - PyTorch"
-        description: "Notebook server with access to an NVidia T4 GPU. Up to 32GB RAM/8 CPU. <b>$0.73/hr</b>"
+        description: "Notebook server with access to an NVidia T4 GPU. Up to 32GB RAM/8 CPU. <b>$0.73/hr</b><br><i>This may take up to 15 minutes to start. Grab a coffee!</i>"
         kubespawner_override:
           mem_guarantee: 28G
           mem_limit: 28G
@@ -285,7 +285,7 @@ daskhub:
               effect: 'NoSchedule'
           extra_resource_limits: {"nvidia.com/gpu": "1"}
       - display_name: "GPU Server - Tensor Flow"
-        description: "Notebook server with access to an NVidia T4 GPU. Up to 32GB RAM/8 CPU. <b>$0.73/hr</b>"
+        description: "Notebook server with access to an NVidia T4 GPU. Up to 32GB RAM/8 CPU. <b>$0.73/hr</b><br><i>This may take up to 15 minutes to start. Grab a coffee!</i>"
         kubespawner_override:
           mem_guarantee: 28G
           mem_limit: 28G

@@ -287,15 +287,11 @@ managedNodeGroups:
         efs: true
         fsx: true
     instanceTypes:
-      - g4ad.xlarge
       - g4dn.xlarge
       - g5.xlarge
-      - g5g.xlarge
       - g6.xlarge
       - g6e.xlarge
       - g6f.xlarge
-      - inf1.xlarge
-      - inf2.xlarge
     labels:
       aws.amazon.com/spot: 'true'
       heliocloud.org/dask-worker: 'true'

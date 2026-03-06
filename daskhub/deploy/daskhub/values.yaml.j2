@@ -353,6 +353,11 @@ daskhub:
       backend:
         scheduler:
           extraPodConfig:
+            spec:
+              volumes:
+              - name: dh-helio-efs
+                persistentVolumeClaim:
+                  claimName: efs-persist
             affinity:
               nodeAffinity:
                 requiredDuringSchedulingIgnoredDuringExecution:
@@ -362,11 +367,17 @@ daskhub:
                       operator: In
                       values: [core, user, dask]
           extraContainerConfig:
-            volumeMounts:
-            - name: dh-helio-efs
-              mountPath: /home/jovyan/scratch_space
+            spec:
+              volumeMounts:
+              - name: dh-helio-efs
+                mountPath: /home/jovyan/scratch_space
         worker:
           extraPodConfig:
+            spec:
+              volumes:
+              - name: dh-helio-efs
+                persistentVolumeClaim:
+                  claimName: efs-persist
             affinity:
               nodeAffinity:
                 requiredDuringSchedulingIgnoredDuringExecution:
@@ -376,9 +387,10 @@ daskhub:
                       operator: In
                       values: [Ec2Spot]
           extraContainerConfig:
-            volumeMounts:
-            - name: dh-helio-efs
-              mountPath: /home/jovyan/scratch_space
+            spec:
+              volumeMounts:
+              - name: dh-helio-efs
+                mountPath: /home/jovyan/scratch_space
 
       extraConfig:
         optionHandler: |

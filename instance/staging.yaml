@@ -85,11 +85,11 @@ daskhub:
     contact_email: nicholas.lenzi@jhuapl.edu
 
     GENERIC_DOCKER_LOCATION: 'public.ecr.aws/q3h7b4o8/heliocloud/helio-daskhub-core'
-    GENERIC_DOCKER_VERSION: '2026.02.06'
+    GENERIC_DOCKER_VERSION: '2026.03.09'
     MLTF_DOCKER_LOCATION: 'public.ecr.aws/q3h7b4o8/heliocloud/helio-daskhub-mltf'
-    MLTF_DOCKER_VERSION: '2026.02.06'
+    MLTF_DOCKER_VERSION: '2026.03.09'
     MLTRCH_DOCKER_LOCATION: 'public.ecr.aws/q3h7b4o8/heliocloud/helio-daskhub-mltrch'
-    MLTRCH_DOCKER_VERSION: '2026.02.06'
+    MLTRCH_DOCKER_VERSION: '2026.03.09'
     domain_url: "aplscicloud.org"
     domain_record: "daskhub-dev"
 

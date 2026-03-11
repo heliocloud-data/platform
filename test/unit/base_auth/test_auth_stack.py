@@ -14,7 +14,7 @@ from base_auth.auth_stack import AuthStack
 from base_auth.identity_stack import IdentityStack
 
 DOMAIN_PREFIX = "sample-domain-prefix"
-LOGO_URL = "http://heliocloud.org/static/img/logo_bin.png"
+LOGO_URL = "https://s3.us-east-1.amazonaws.com/heliocloud.org/static/img/logo_bin.png"
 
 
 @pytest.fixture(scope="module")

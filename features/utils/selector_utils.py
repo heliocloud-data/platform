@@ -7,6 +7,7 @@ import time
 
 from selenium.webdriver import ActionChains
 from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
 from selenium.common.exceptions import NoSuchElementException
 
 from utils.webdriver_utils import webdriver_screenshot
@@ -49,6 +50,19 @@ def get_url(base_url, page):
     raise NotImplementedError(f"page {page} not supported")
 
 
+def do_delete_all_text(driver, field, page):
+    """
+    Find a text input and enter text into it.
+    """
+    input_element = find_element_by_text_type_page(driver, field, "input", page)
+    try:
+        print(input_element.get_attribute("innerHTML"))
+        input_element.send_keys(Keys.CONTROL + "a", Keys.DELETE)
+    except:
+        print(input_element.get_attribute("innerHTML"))
+        raise
+
+
 def do_enter_text(driver, text, field, page):
     """
     Find a text input and enter text into it.
@@ -71,6 +85,8 @@ def do_click(driver, text, page, element_type="button"):
     # Some links require mouse over before clicking.
     ActionChains(driver).move_to_element(button).perform()
 
+    print(f"About to click button: {button}")
+    print(button.get_attribute("innerHTML"))
     try:
         button.click()
     except:

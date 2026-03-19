@@ -23,6 +23,8 @@ if [ "$PIP_GLOBAL_INDEX_URL" != "" ]; then
     " > ~/.pip/pip.conf
 fi
 
+wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | sudo tee /etc/apt/trusted.gpg.d/google.asc >/dev/null
+
 # Installs nodejs/npm
 bash scripts/install-deps-nodejs.sh || exit 1
 

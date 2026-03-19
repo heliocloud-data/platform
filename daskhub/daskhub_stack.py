@@ -471,6 +471,9 @@ class DaskhubStack(Stack):
         assumption it already exists.
         """
         domain_url = self.__daskhub_config['global']['domain_url']
+        if domain_url == '' or domain_url is None:
+            raise ValueError(f"Missing required configuration 'daskhub.domain_url', check to make sure it's set within your instance YAML file")
+
         self.hosted_zone = route53.PublicHostedZone.from_lookup(
             self, "HostedZone", domain_name=domain_url
         )

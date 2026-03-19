@@ -39,4 +39,4 @@ curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 > get
 bash get_helm.sh -v v3.9.4
 rm -rf get_helm.sh
 
-apt-get install jq -y
+apt-get install jq less -y

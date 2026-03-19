@@ -8,6 +8,7 @@ from utils.heliocloud_utils import get_base_url
 
 from utils.selector_utils import (
     get_url,
+    do_delete_all_text,
     do_enter_text,
     do_click,
     do_double_click,
@@ -63,6 +64,7 @@ def step_impl(context, msg):
 
 @then('enter "{text}" in the "{field}" field')
 def step_impl(context, field, text):
+    do_delete_all_text(context.browser, field, context.current_page)
     do_enter_text(context.browser, text, field, context.current_page)
 
     if field == "username":

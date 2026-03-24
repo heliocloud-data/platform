@@ -35,14 +35,14 @@ Feature: Log into daskhub, launch a server and do stuff
       And wait up to <max_wait_time> seconds for execution to complete
 
     Examples:
-      |      folder       |         notebook           | max_wait_time |
-      | science-tutorials | 01-Intro-Tutorial.ipynb    |            15 |
-      | science-tutorials | CloudCatalog-Demo.ipynb    |            60 |
-      | science-tutorials | Dask-Gateway-Example.ipynb |           450 |
-      | science-tutorials | MMS-Catalog-Demo.ipynb     |            30 |
-      | science-tutorials | S3-Access-Demo.ipynb       |            30 |
-      | science-tutorials | S3-Dask-Demo.ipynb         |           450 |
-      | science-tutorials | SDO-Demo.ipynb             |          1200 |
+      |      folder       |         notebook              | max_wait_time |
+      | science-tutorials | 01_Testing_Notebook.ipynb     |            60 |
+      | science-tutorials | 02a_AGU_Demo-Bare.ipynb       |            30 |
+      | science-tutorials | 02b_AGU_Demo-Populated.ipynb  |            60 |
+      | science-tutorials | 03_S3_Explained.ipynb         |            30 |
+      | science-tutorials | 04_Dask_Explained.ipynb       |           450 |
+      | science-tutorials | 05_CloudCatalog_Demo.ipynb    |            60 |
+      | science-tutorials | 06_SDO_Demo.ipynb             |          1200 |
 
   Scenario: Stop My Server and Logout of Daskhub
     Given a fully deployed instance of HelioCloud

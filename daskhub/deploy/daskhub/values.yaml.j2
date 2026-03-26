@@ -70,7 +70,7 @@ daskhub:
       enabled: true
     cull:
       enabled: true
-      timeout: 1801
+      timeout: 7201
       every: 300
     # JupyterHub configuration goes here.
     # See https://github.com/jupyterhub/zero-to-jupyterhub-k8s/blob/master/jupyterhub/values.yaml
@@ -586,8 +586,8 @@ daskhub:
             handler=option_handler,
           )
         idle: |
-          # timeout after 30 minutes of inactivity
-          c.KubeClusterConfig.idle_timeout = 1800
+          # timeout after 2 hours of inactivity
+          c.KubeClusterConfig.idle_timeout = 7200
 
     traefik: # Traefik is unavoidable here - tightly coupled with Dask Gateway. See: https://dask.discourse.group/t/deploying-dask-gateway-without-traefik/3554
       service:

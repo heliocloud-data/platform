@@ -602,8 +602,8 @@ data:
         raise ValueError("Unknown authenticator type %r" % auth_type)
 
     # From gateway.extraConfig.idle
-    # timeout after 30 minutes of inactivity
-    c.KubeClusterConfig.idle_timeout = 1800
+    # timeout after 2 hours of inactivity
+    c.KubeClusterConfig.idle_timeout = 7200
 
     # From gateway.extraConfig.optionHandler
     from dask_gateway_server.options import Options, Integer, Float, String, Select

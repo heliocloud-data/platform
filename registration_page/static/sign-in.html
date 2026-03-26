@@ -84,7 +84,7 @@
         } else {
           alert('User registered successfully!');
           // Send the signed agreement to the specified email address
-          window.location.href = `mailto:gsfc-dl-hsdcloud-admin@mail.nasa.gov?subject=Signed HelioCloud user agreement from ${username}`;
+          window.location.href = `mailto:{{ email_addr }}?subject=Signed HelioCloud user agreement from ${username}`;
         }
       })
       .catch(error => console.error('Error:', error));

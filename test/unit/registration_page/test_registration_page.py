@@ -1,7 +1,8 @@
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, call
 from botocore.exceptions import ClientError
 import json
+import os
 
 # Mock boto required environment variables so it can setup a dummy client
 with patch("os.getenv") as mock_getenv:
@@ -10,6 +11,8 @@ with patch("os.getenv") as mock_getenv:
         "USER_POOL_CLIENT_SECRET": "mock-secret-key",
         "USER_POOL_CLIENT_ID": "mock-client-id",
         "REGION": "mock-region",
+        "HELIOCLOUD_REGISTRATION_PAGE_USER_AGREEMENT_URL": "https://nasa.gov",
+        "HELIOCLOUD_REGISTRATION_PAGE_DEST_EMAIL_ADDR": "no-reply@nasa.gov",
     }
 
     from registration_page.app import app
@@ -88,29 +91,45 @@ class RegistrationPageTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 400)
 
-    def test_serve_index(self):
+    @patch("os.getenv", return_value="abc")
+    def test_serve_index(self, os_getenv):
         """
         Test the root endpoint serving index.html.
         """
-        with patch("registration_page.app.send_from_directory") as mock_send:
+        with patch("registration_page.app.render_template") as mock_send:
             mock_send.return_value = "index.html content"
 
             response = self.client.get("/")
 
             self.assertEqual(response.status_code, 200)
-            mock_send.assert_called_with(app.static_folder, "index.html")
+            mock_send.assert_called_with("index.html", user_agreement_url="abc", email_addr="abc")
+            os_getenv.has_calls(
+                [
+                    call("HELIOCLOUD_REGISTRATION_PAGE_USER_AGREEMENT_URL"),
+                    call("HELIOCLOUD_REGISTRATION_PAGE_DEST_EMAIL_ADDR"),
+                ]
+            )
 
-    def test_user_agreement(self):
+    @patch("os.getenv", return_value="abc")
+    def test_user_agreement(self, os_getenv):
         """
         Test the user agreement endpoint serving user_agreement.html.
         """
-        with patch("registration_page.app.send_from_directory") as mock_send:
+        with patch("registration_page.app.render_template") as mock_send:
             mock_send.return_value = "user_agreement.html content"
 
             response = self.client.get("/user_agreement")
 
             self.assertEqual(response.status_code, 200)
-            mock_send.assert_called_with(app.static_folder, "user_agreement.html")
+            mock_send.assert_called_with(
+                "user_agreement.html", user_agreement_url="abc", email_addr="abc"
+            )
+            os_getenv.has_calls(
+                [
+                    call("HELIOCLOUD_REGISTRATION_PAGE_USER_AGREEMENT_URL"),
+                    call("HELIOCLOUD_REGISTRATION_PAGE_DEST_EMAIL_ADDR"),
+                ]
+            )
 
     def test_health_check(self):
         """

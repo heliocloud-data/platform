@@ -29,6 +29,7 @@ oauth2-proxy:
     cookie-domain: .{{ config['global']['domain_url'] }}
     cookie-name: "_oauth2_proxy_<<CNF_OUTPUT_CognitoDomainPrefix>>"
     cookie-secret: "<<CNF_OUTPUT_CookieSecret>>"
+    cookie-refresh: 30m
     scope: "openid profile email"
     set-authorization-header: true
     set-xauthrequest: true

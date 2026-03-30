@@ -34,6 +34,7 @@ variables:
 stages:
   - update
   - test
+  - integration
   - staging
   - deploy
 
@@ -141,6 +142,20 @@ black:
     - black --check .
   rules:
     - if: $CI_PIPELINE_SOURCE == "push"
+
+smoke-test:
+  stage: integration
+  tags:
+    - dind
+  variables:
+    DEBIAN_FRONTEND: noninteractive
+  script:
+    - python -m pip install -r requirements.txt
+    # Dependencies for CDK
+    - bash .gitlab-ci/scripts/install-deps.sh
+    - npm install -g npm
+    - npm install -g aws-cdk
+    - cdk --version
 
 staging-cdk-deploy:
   stage: staging

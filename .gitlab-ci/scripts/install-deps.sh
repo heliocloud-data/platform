@@ -9,7 +9,9 @@
 apt-get update &&  apt-get install -y ca-certificates curl gnupg && mkdir -p /etc/apt/keyrings
 curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg
 export NODE_MAJOR=22 && echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_$NODE_MAJOR.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list
-apt-get update && apt-get install -y nodejs
+
+export NODE_PKG_VERSION=22.22.1-1nodesource1
+apt-get update && apt-get install -y nodejs=${NODE_PKG_VERSION} --allow-downgrades
 
 node --version
 if [[ $? != 0 ]]; then

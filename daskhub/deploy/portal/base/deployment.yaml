@@ -27,7 +27,7 @@ spec:
       serviceAccountName: portal-sa
       containers:
         - name: science-console
-          image: public.ecr.aws/q3h7b4o8/heliocloud/helio-portal:latest
+          image: public.ecr.aws/q3h7b4o8/heliocloud/helio-portal:2026.01.15
           ports:
             - containerPort: 80
           env: # Provide this in environment specific overlay

@@ -2,6 +2,7 @@
 Contains various functions for interacting with heliocloud
 configurations.
 """
+
 from app_config import load_configs
 
 # pylint: disable=line-too-long

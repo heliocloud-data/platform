@@ -1,24 +1,33 @@
 """
 Tests for the AuthStack.
 """
+
 import json
 from unittest.mock import Mock
 
 import pytest
 from aws_cdk import aws_cognito
 from aws_cdk.assertions import Template, Match
-from utils import create_dumpfile
+from ..utils import create_dumpfile
 
 from base_auth.auth_stack import AuthStack
 from base_auth.identity_stack import IdentityStack
 
 DOMAIN_PREFIX = "sample-domain-prefix"
-LOGO_URL = "http://heliocloud.org/static/img/logo_bin.png"
+LOGO_URL = "https://s3.us-east-1.amazonaws.com/heliocloud.org/static/img/logo_bin.png"
 
 
 @pytest.fixture(scope="module")
 def config():
-    return {"auth": {"domain_prefix": DOMAIN_PREFIX}}
+    return {
+        "auth": {"domain_prefix": DOMAIN_PREFIX},
+        "daskhub": {
+            "global": {"domain_url": "heliocloud.org"},
+            "eksctl": {"metadata": {"name": "eks-helio", "region": "us-east-1"}},
+            "daskhub": {"domain_record": "daskhub"},
+        },
+        "portal": {"domain_record": "portal", "domain_url": "heliocloud.org"},
+    }
 
 
 def test_auth_stack(config) -> None:

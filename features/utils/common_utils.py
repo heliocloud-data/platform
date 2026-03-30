@@ -1,6 +1,7 @@
 """
 Contains common utilities for feature tests.
 """
+
 import time
 
 # pylint: disable=keyword-arg-before-vararg

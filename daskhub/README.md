@@ -59,6 +59,24 @@ in your instance configuration file stored at `instance/name_of_instance.yaml`(s
 
 ## Kubernetes Installation
 
+### Environment Setup
+During this stage, we're going to setup the deployment environment on the admin EC2 instance.
+
+This stage assumes you have connected to and are operating on the admin EC2 instance. 
+
+1. Install dependencies
+To automatically install tools needed to operate with EKS and the future cluster, simply type:
+> ./00-tools.sh
+
+2. Populate configuration files
+To automatically bootstrap the local environment and configuration files, simply type:
+> ./00-bootstrap.sh
+
+3. Delete preliminary EFS mounts
+To automatically delete prelimary efs mounts, simply type:
+> ./00-delete-efs-mount-targets.sh
+
+
 ### Cluster (EKS) Configuration and Deployment
 During this stage, we're going to standup a Kubernetes cluster in EKS using `eksctl` and `kustomize`, deploy some required resources to the `kube-system` namespace and, enable `amazon-cloudwatch`.
 
@@ -98,45 +116,6 @@ Type the following:
 kustomize build amazon-cloudwatch/overlays/production | kubectl apply -f -
 ```
 
-### DaskHub Storage Deployment
-During this stage, we're going to deploy the daskhub namespace and the storage related resources (`persistentvolume` and `persistentvolumeclaims`) required for the HelioCloud DaskHub Deployment.  Afterwards, a separate EFS Mount Target, that's addressable from the Kubernetes Environment, will be created.
-
-Kubernetes .  For more details on how to tailor storage for your environment, consult the [Persistent Volumes](https://kubernetes.io/docs/concepts/storage/persistent-volumes/) section of the Kubernetes Documentation.
-
-The default configuration contains shared scratch space between all users on Dashhub (sometimes this is refered to as the "EFS mount").  This can be removed from your deployement by skipping this step and removing all `efs-persist` related references from the DaskHub Helm Chart values in the DaskHub deployment stage.
-
-To automatically bring up the Kubernetes cluster w/ the required changes to the `kube-system` namespace, simply type:
-> ./02-deploy-daskhub-storage.sh
-
-This task should only take a few seconds to complete.  Once complete, move on to the DaskHub Helm section.  Advanced users, may decompose these tests, if so, review the following steps:
-
-
-1. Creating the daskhub related storage resources
-The base layer of the daskhub storage is defined in `daskhub-storage/base/` with the environment specific settings stored in `daskhub-storage/overlays/production/kustomization.yaml`.  The default configuration shouldn't
-require any modifications to deploy, but can be changed as needed.
-
-Type the following:
-```
-kustomize build daskhub-storage/overlays/production | kubectl apply -f -
-```
-
-2. Create an EFS Mount Target within the EKS 
-Within this step, a new EFS mount target addressable from the EKS cluster will be created.
-
-Type the following, where `EFS_ID`, `EKS_NAME`, `AWS_REGION`, `AWS_AZ_PRIMARY` are the identifier of the EFS volume, the name of the EKS cluster, the AWS region and the primary availablity zone of your EKS cluster respectively:
-```
-SUBNET_IDS=`aws eks describe-cluster --name $EKS_NAME --region $AWS_REGION --query cluster.resourcesVpcConfig.subnetIds --output text`
-SG_ID=`aws eks describe-cluster --name $EKS_NAME --region $AWS_REGION --query cluster.resourcesVpcConfig.clusterSecurityGroupId --output text`
-
-SUBNET_ID=`aws ec2 describe-subnets --subnet-ids $SUBNET_IDS --filters "Name=availability-zone,Values=$AWS_AZ_PRIMARY" --query "Subnets[0].SubnetId" --output text`
-
-aws efs create-mount-target \
-    --file-system-id $EFS_ID \
-    --subnet-id $SUBNET_ID \
-    --security-groups $SG_ID
-
-```
-
 ### Ingress
 During this stage, we're going to deploy the ingress controller and oauth2 proxy that subsequent deployment steps will use.
 
@@ -174,12 +153,50 @@ helm upgrade \
     --install --timeout 5m --debug
 ```
 
+### DaskHub Storage Deployment
+During this stage, we're going to deploy the daskhub namespace and the storage related resources (`persistentvolume` and `persistentvolumeclaims`) required for the HelioCloud DaskHub Deployment.  Afterwards, a separate EFS Mount Target, that's addressable from the Kubernetes Environment, will be created.
+
+For more details on how to tailor storage for your environment, consult the [Persistent Volumes](https://kubernetes.io/docs/concepts/storage/persistent-volumes/) section of the Kubernetes Documentation.
+
+The default configuration contains shared scratch space between all users on Dashhub (sometimes refered to as the "EFS mount").  This can be removed from your deployment by skipping this step and removing all `efs-persist` related references from the DaskHub Helm Chart values in the DaskHub deployment stage.
+
+To automatically bring up the Kubernetes cluster w/ the required changes to the `kube-system` namespace, simply type:
+> ./03-deploy-daskhub-storage.sh
+
+This task should only take a few seconds to complete.  Once complete, move on to the DaskHub Helm section.  Advanced users, may decompose these tests, if so, review the following steps:
+
+
+1. Creating the daskhub related storage resources
+The base layer of the daskhub storage is defined in `daskhub-storage/base/` with the environment specific settings stored in `daskhub-storage/overlays/production/kustomization.yaml`.  The default configuration shouldn't
+require any modifications to deploy, but can be changed as needed.
+
+Type the following:
+```
+kustomize build daskhub-storage/overlays/production | kubectl apply -f -
+```
+
+2. Create an EFS Mount Target within the EKS 
+Within this step, a new EFS mount target addressable from the EKS cluster will be created.
+
+Type the following, where `EFS_ID`, `EKS_NAME`, `AWS_REGION`, `AWS_AZ_PRIMARY` are the identifier of the EFS volume, the name of the EKS cluster, the AWS region and the primary availablity zone of your EKS cluster respectively:
+```
+SUBNET_IDS=`aws eks describe-cluster --name $EKS_NAME --region $AWS_REGION --query cluster.resourcesVpcConfig.subnetIds --output text`
+SG_ID=`aws eks describe-cluster --name $EKS_NAME --region $AWS_REGION --query cluster.resourcesVpcConfig.clusterSecurityGroupId --output text`
+
+SUBNET_ID=`aws ec2 describe-subnets --subnet-ids $SUBNET_IDS --filters "Name=availability-zone,Values=$AWS_AZ_PRIMARY" --query "Subnets[0].SubnetId" --output text`
+
+aws efs create-mount-target \
+    --file-system-id $EFS_ID \
+    --subnet-id $SUBNET_ID \
+    --security-groups $SG_ID
+
+```
 
 ### DaskHub Helm Deployment
 During this stage, we're going to standup the DaskHub!
 
 To automatically deploy the DaskHub and register the domain in Route53, simply type:
-> ./03-deploy-daskhub.sh
+> ./04-deploy-daskhub.sh
 
 Initial deploy of the DaskHub can take up to 30 minutes to complete.  Once complete, move on to the Log into DaskHub section.  Advanced users, may decompose this deployment into individual tasks, if so, review the following step(s):
 
@@ -203,6 +220,25 @@ helm upgrade \
 
 See more details on [DNS routing](https://saturncloud.io/blog/jupyterhub_security/) and [https](https://zero-to-jupyterhub.readthedocs.io/en/latest/administrator/security.html#set-up-automatic-https).
 
+### Portal Deployment
+During this stage, we're going to deploy the HelioCloud Portal to the cluster. This deployment is responsible for bringing up a web app. All other infrastructure for the Portal was managed through the cdk deployment. 
+
+*If the Portal was not enabled during initial deployment, skip this step.*
+
+To automatically deploy the Portal, simply type:
+> ./04-deploy-portal.sh
+
+
+### Monitoring Helm Deployment
+During this stage, we're going to deploy the HelioCloud cluster monitoring suite. The following apps will be deployed during this step:
+- Prometheus: cluster metric time series data manager
+- Grafana: time series visualization tool
+- Kubecost: kubernetes cost visualization tool
+
+*If monitoring was not enabled during initial deployment, skip this step.*
+
+To automatically deploy the monitoring tools, simply type:
+> ./05-deploy-monitoring.sh
 
 ## Log into DaskHub
 
@@ -216,7 +252,6 @@ When successful, all pods within the `daskhub` namespace should be in `RUNNING` 
 
 NAME                                              READY   STATUS    RESTARTS   AGE
 api-daskhub-dask-gateway-d4c57fdf7-96sw9          1/1     Running   0          29m
-autohttps-7796dd569d-kwngk                        2/2     Running   0          29m
 controller-daskhub-dask-gateway-f9d87c4f6-t7x42   1/1     Running   0          29m
 hub-68d67c569d-4hbnf                              1/1     Running   0          63m
 proxy-5c96bb5bb-pmnb5                             1/1     Running   0          63m
@@ -232,7 +267,7 @@ Congratulations! At this point you should have a working HelioCloud DaskHub envi
 If you are using AWS Cognito (our default configuration) you will have to create users for the DaskHub via the AWS Web Console or similar (e.g. AWS CLI).  
    - First find the relevant AWS Cognito User Pool
      - Log into the AWS Console
-     - Find the CloudFormation Auth deployment associated with your HelioCloud instance by first going searchinging `CloudFormation` in the search bar, then select the the Auth stack associated by your instance (ex. `<instance_name>AUTH####`) and select the resources, find the associated User Pool and click on the arrow to link you to the Cognito User Pool ![finding cognito user pool](instruction_images/find_cognito_user_pool.png)
+     - Find the CloudFormation Auth deployment associated with your HelioCloud instance by first going searching `CloudFormation` in the search bar, then select the the Auth stack associated by your instance (ex. `<instance_name>AUTH####`) and select the resources, find the associated User Pool and click on the arrow to link you to the Cognito User Pool ![finding cognito user pool](instruction_images/find_cognito_user_pool.png)
    - Once at the Cognito User Pool, click `Create User`
    ![finding create user button](instruction_images/user_pool_create_user_button.png)
    - Make an admin account that uses the same admin name as one given in the HelioCloud instance configuration (`/daskhub/daskhub/admin_users`).  Be sure to click `Invitation message: send an email invitation` if you use `generate a password` or it will not tell you what password it generated (or you can set your own password).

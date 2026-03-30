@@ -1,7 +1,9 @@
 """
 Cucumber step definition file for AWS stuff.
 """
+
 import ssl
+import time
 
 import boto3
 
@@ -17,6 +19,7 @@ from features.utils.aws_utils import (
     delete_user,
     find_keypair_by_name,
     terminate_instances_by_name,
+    find_ec2_instances_by_name,
 )
 
 # pylint: disable=undefined-variable
@@ -24,6 +27,27 @@ from features.utils.aws_utils import (
 # pylint: disable=missing-function-docstring
 # pylint: disable=function-redefined
 # pylint: disable=line-too-long
+
+
+def wait_until_ec2_instance_with_name_exists(client, ec2_name, wait_time_in_s):
+    client = boto3.client("ec2")
+
+    ec2_arr = None
+
+    if wait_time_in_s <= 0:
+        ec2_arr = find_ec2_instances_by_name(client, ec2_name)
+    else:
+        start_time = time.time()
+
+        while (time.time() - start_time) < wait_time_in_s:
+            ec2_arr = find_ec2_instances_by_name(client, ec2_name)
+            if ec2_arr is not None and len(ec2_arr) > 0:
+                break
+
+            time.sleep(0.5)
+
+    if ec2_arr is None or len(ec2_arr) == 0:
+        raise ValueError(f"Unable to locate ec2 instance with name: {ec2_name}")
 
 
 def get_user_pool_id_by_heliocloud_name(hc_instance):
@@ -94,6 +118,18 @@ def test_step_aws_create_user(context, user_name):
     update_user_set_password(client, user_pool_id, user_name, password, True)
 
 
+@then('verify ec2 instance named "{ec2_name}" exists')
+def then_verify_ec2_instance_exists(context, ec2_name):
+    client = boto3.client("ec2")
+    wait_until_ec2_instance_with_name_exists(client, ec2_name, 0)
+
+
+@then('wait up to {wait_time_in_sec} seconds for ec2 instance named "{ec2_name}" to exist')
+def then_verify_ec2_instance_exists(context, ec2_name, wait_time_in_sec):
+    client = boto3.client("ec2")
+    wait_until_ec2_instance_with_name_exists(client, ec2_name, int(wait_time_in_sec))
+
+
 @then('delete a user with the name "{user_name}"')
 def test_step_aws_delete_user(context, user_name):
     user_pool_id = get_user_pool_id_by_heliocloud_name(context.hc_instance)
@@ -111,4 +147,4 @@ def then_terminate_ec2_instance_if_exists(context, ec2_name):
 
     if resp is not None and 200 != resp["ResponseMetadata"]["HTTPStatusCode"]:
         print(resp)
-        raise ValueError("Falied to termine ec2 instances; name: {ec2_name}")
+        raise ValueError(f"Failed to terminate ec2 instances; name: {ec2_name}")

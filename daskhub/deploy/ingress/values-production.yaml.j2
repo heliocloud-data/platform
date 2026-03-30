@@ -1,0 +1,51 @@
+ingress-nginx:
+  controller:
+    service:
+      annotations:
+        service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+        service.beta.kubernetes.io/aws-load-balancer-scheme: "internet-facing"
+    {%- if 'monitoring' in config %} 
+        service.beta.kubernetes.io/aws-load-balancer-ssl-cert: {{ config['global']['domain_certificate_arn'] }}
+    {%- endif %}
+        service.beta.kubernetes.io/aws-load-balancer-ssl-ports: "https"
+        service.beta.kubernetes.io/aws-load-balancer-backend-protocol: "http"
+        service.beta.kubernetes.io/aws-load-balancer-attributes: "idle_timeout.timeout_seconds=120"
+
+oauth2-proxy:
+  config:
+    clientID: "<<CNF_OUTPUT_CognitoClientId>>"
+    clientSecret: "<<CNF_OUTPUT_CognitoClientSecret>>"
+    configFile: |-
+      email_domains = [ "*" ]
+      upstreams = [ "file:///dev/null" ]
+
+  extraArgs:
+    provider: oidc
+    oidc-jwks-url: https://cognito-idp.{{ config['eksctl']['metadata']['region'] }}.amazonaws.com/<<CNF_OUTPUT_CognitoUserPoolId>>/.well-known/jwks.json
+    oidc-issuer-url: https://cognito-idp.{{ config['eksctl']['metadata']['region'] }}.amazonaws.com/<<CNF_OUTPUT_CognitoUserPoolId>>
+    redirect-url: https://oauth-{{ config['eksctl']['metadata']['name'] }}-{{ config['eksctl']['metadata']['region'] }}.{{ config['global']['domain_url'] }}/oauth2/callback
+    backend-logout-url: https://oauth-{{ config['eksctl']['metadata']['name'] }}-{{ config['eksctl']['metadata']['region'] }}.{{ config['global']['domain_url'] }}/oauth2/sign_out
+    whitelist-domain: ".{{ config['global']['domain_url'] }},.amazoncognito.com"
+    cookie-domain: .{{ config['global']['domain_url'] }}
+    cookie-name: "_oauth2_proxy_<<CNF_OUTPUT_CognitoDomainPrefix>>"
+    cookie-secret: "<<CNF_OUTPUT_CookieSecret>>"
+    cookie-refresh: 30m
+    scope: "openid profile email"
+    set-authorization-header: true
+    set-xauthrequest: true
+    pass-user-headers: true
+    prefer-email-to-user: false
+    pass-authorization-header: true
+    skip-auth-strip-headers: false
+    pass-access-token: true
+    cookie-samesite: "none"
+    reverse-proxy: true
+    cookie-secure: true
+  ingress:
+    enabled: true
+    hosts:
+      - oauth-{{ config['eksctl']['metadata']['name'] }}-{{ config['eksctl']['metadata']['region'] }}.{{ config['global']['domain_url'] }}
+    annotations:
+      kubernetes.io/ingress.class: "nginx"
+      nginx.ingress.kubernetes.io/proxy-buffer-size: "16k"
+      nginx.ingress.kubernetes.io/proxy-buffers-number: "8"

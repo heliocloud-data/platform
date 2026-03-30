@@ -1,9 +1,10 @@
 """
 Tests for the IdentityStack
 """
+
 from aws_cdk.assertions import Template
 import aws_cdk as cdk
-from utils import create_dumpfile
+from ..utils import create_dumpfile
 import json
 
 from base_auth.identity_stack import IdentityStack
@@ -19,10 +20,12 @@ def test_identity_stack() -> None:
     from_name = "Test User"
 
     cfg = {
-        "portal": {
-            "domain_url": domain,
-        },
         "email": {"use_custom_email_domain": True, "user": user, "from_name": from_name},
+        "daskhub": {
+            "global": {
+                "domain_url": domain,
+            },
+        },
     }
     env = cdk.Environment(region="us-east1", account="unit-test")
     identity_stack = IdentityStack(None, "constructid", config=cfg, env=env)

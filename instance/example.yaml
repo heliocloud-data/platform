@@ -32,7 +32,9 @@ email:
   user: "no-reply"
   from_name: "My Organization"
 
-
-
-
-
+# Destroying so we can clean up dev
+userSharedBucket:
+  destroyOnRemoval: True
+  mountEnabled: True
+  mountPath: "/mnt/s3shared"
+  bucketPrefix: "myorganization-s3"

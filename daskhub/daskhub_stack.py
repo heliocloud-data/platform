@@ -6,6 +6,7 @@ import glob
 import os
 import secrets
 import shutil
+import base64
 import yaml
 
 import aws_cdk as cdk
@@ -51,12 +52,22 @@ class DaskhubStack(Stack):
             base_aws: BaseAwsStack,
             base_auth: Stack,
             portal: Stack = None,
+            user_shared_mount_path: str = "/mnt/s3shared",
+            user_shared_bucket_name: str = "",
+            user_shared_mount_enabled: bool = True,
+            user_shared_bucket_prefix: str = "",
             **kwargs,
     ) -> None:
         # fmt: on
         super().__init__(scope, construct_id, **kwargs)
 
         self.__daskhub_config = DaskhubStack.load_configurations(config)
+
+        self.user_shared_mount_path = user_shared_mount_path
+        self.user_shared_bucket_name = user_shared_bucket_name
+        self.user_shared_mount_enabled = user_shared_mount_enabled
+        self.user_shared_bucket_prefix = user_shared_bucket_prefix
+
         self.build_hosted_zone()
 
         if 'portal' in config and ('api_key' not in config['portal'] or config['portal']['api_key'] == 'auto'):
@@ -100,7 +111,6 @@ class DaskhubStack(Stack):
                             to_remove.append(instanceType)
                     for rem in to_remove:
                         nodeGroup['instancesDistribution']['instanceTypes'].remove(rem)
-                    # TODO: If list is empty at this point... Fail.
 
         # EC2 admin instance can create AWS resources needed to control
         # EKS (Kubernetes) backing Daskhub, can access through SSM opposed to SSH
@@ -148,6 +158,10 @@ class DaskhubStack(Stack):
             'config': self.__daskhub_config,
             'hc_config': config,
             'account': account,
+            'user_shared_mount_path': self.user_shared_mount_path,
+            'user_shared_bucket_name': self.user_shared_bucket_name,
+            'user_shared_mount_enabled': self.user_shared_mount_enabled,
+            'user_shared_bucket_prefix': self.user_shared_bucket_prefix,
         })
 
         deploy_dirs = [template_dest_folder, template_src_folder]
@@ -216,16 +230,23 @@ class DaskhubStack(Stack):
         # pylint: enable=line-too-long
 
         # Create admin instance and attach role
+        vpc=base_aws.heliocloud_vpc() if callable(base_aws.heliocloud_vpc) else base_aws.heliocloud_vpc
         ec2_instance = ec2.Instance(
             self,
             "DaskhubInstance",
-            vpc=base_aws.heliocloud_vpc,
+            vpc=vpc,
             machine_image=ec2.MachineImage.latest_amazon_linux2(),
             instance_type=ec2.InstanceType("t2.micro"),
             role=ec2_admin_role,
             user_data=ec2_user_data,
-            vpc_subnets=ec2.SubnetSelection(subnets=base_aws.heliocloud_vpc.private_subnets),
+            vpc_subnets=ec2.SubnetSelection(subnets=vpc.private_subnets),
             init=init_data,
+            init_options=ec2.ApplyCloudFormationInitOptions(
+                config_sets=["default"],
+                embed_fingerprint=False,
+                print_log=True,
+                timeout=Duration.minutes(30),
+            ),
         )
 
         ####################################################
@@ -307,17 +328,18 @@ class DaskhubStack(Stack):
             self, "EfsMountManagedPolicy", document=efs_mount_policy_document
         )
 
+        vpc=base_aws.heliocloud_vpc() if callable(base_aws.heliocloud_vpc) else base_aws.heliocloud_vpc
         file_system = efs.FileSystem(
             self,
             "DaskhubEFS",
-            vpc=base_aws.heliocloud_vpc,
+            vpc=vpc,
             encrypted=True,
             enable_automatic_backups=True,
-
         )
 
+        # Keep old daskhub client. Needed for cfn output migration
         oauth_base_url=(f"https://{self.__daskhub_config['daskhub']['domain_record']}."
-            f"{self.__daskhub_config['daskhub']['domain_url']}")
+            f"{self.__daskhub_config['global']['domain_url']}")
         callback_url=f"{oauth_base_url}/hub/oauth_callback"
         logout_url=f"{oauth_base_url}/logout"
 
@@ -342,12 +364,10 @@ class DaskhubStack(Stack):
             prevent_user_existence_errors=True,
         )
 
-        # Add OAuth2 PRoxy as a client to the Cognito user pool
-        # pylint: disable=duplicate-code
         if "daskhub_metrics" in config["enabled"] and config["enabled"]["daskhub_metrics"]:
             oauth_base_url = ("https://"
                             f"{self.__daskhub_config['monitoring']['cost_analyzer_domain_prefix']}."
-                            f"{self.__daskhub_config['daskhub']['domain_url']}")
+                            f"{self.__daskhub_config['global']['domain_url']}")
             callback_url = f"{oauth_base_url}/model/oidc/authorize"
             logout_url = f"{oauth_base_url}/logout"
 
@@ -379,8 +399,6 @@ class DaskhubStack(Stack):
         # AWS KMS key required for K8 to encrypt/decrypt secrets during its deployment
         kms_key = kms.Key(self, id=construct_id + "-key", removal_policy=RemovalPolicy.DESTROY)
 
-        auth = config["auth"]
-        domain_prefix = auth.get("domain_prefix", "")
         # pylint: enable=duplicate-code
 
         # Cloudformation outputs
@@ -393,9 +411,21 @@ class DaskhubStack(Stack):
         cdk.CfnOutput(self, "Route53Arn", value=route53_managed_policy.managed_policy_arn)
         cdk.CfnOutput(self, "EFSId", value=file_system.file_system_id)
         cdk.CfnOutput(self, "EFSMountArn", value=efs_mount_managed_policy.managed_policy_arn)
+
+        # old cognito outputs for migration
         cdk.CfnOutput(self, "CognitoClientId", value=daskhub_client.user_pool_client_id)
+        auth = config["auth"]
+        domain_prefix = auth.get("domain_prefix", "")
         cdk.CfnOutput(self, "CognitoDomainPrefix", value=domain_prefix)
         cdk.CfnOutput(self, "CognitoUserPoolId", value=base_auth.userpool.user_pool_id)
+
+        # Set secret for oauth2 proxy cookie encryption
+        cdk.CfnOutput(self, "CookieSecret", value=base64.urlsafe_b64encode(os.urandom(32)).decode())
+
+        # Outputs other stacks
+        # The cluster needs info specific to auth and portal but doesn't
+        # natively have access to the auth/portal references.
+        cdk.CfnOutput(self, "AuthStackName", value=base_auth.stack_name)
 
         if portal is not None:
             cdk.CfnOutput(self, "PortalStackName", value=portal.stack_name)
@@ -440,7 +470,10 @@ class DaskhubStack(Stack):
         This method creates a CDK route53 construct from a domain lookup under the 
         assumption it already exists.
         """
-        domain_url = self.__daskhub_config['daskhub']['domain_url']
+        domain_url = self.__daskhub_config['global']['domain_url']
+        if domain_url == '' or domain_url is None:
+            raise ValueError(f"Missing required configuration 'daskhub.domain_url', check to make sure it's set within your instance YAML file")
+
         self.hosted_zone = route53.PublicHostedZone.from_lookup(
             self, "HostedZone", domain_name=domain_url
         )
@@ -460,7 +493,7 @@ class DaskhubStack(Stack):
         ttl = Duration.seconds(300)
         domain_name = "0.0.0.0"
         full_name = f"{self.__daskhub_config['daskhub']['domain_record']}." \
-                    f"{self.__daskhub_config['daskhub']['domain_url']}."
+                    f"{self.__daskhub_config['global']['domain_url']}."
 
         record = find_route53_record_by_type_and_name(
             self.hosted_zone.hosted_zone_id, 'CNAME',

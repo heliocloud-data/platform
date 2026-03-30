@@ -14,6 +14,7 @@ from app_config import load_configs
 from base_auth.identity_stack import IdentityStack
 from base_auth.auth_stack import AuthStack
 from base_aws.base_aws_stack import BaseAwsStack
+from base_aws.shared_user_bucket_stack import SharedUserBucketStack
 from portal.portal_stack import PortalStack
 from daskhub.daskhub_stack import DaskhubStack
 from registration_page.registration_page_stack import RegistrationPageStack
@@ -84,6 +85,18 @@ class MyHelioCloud(Construct):
         )
         cdk.Tags.of(base_stack).add("Product", "heliocloud-base")
 
+        # Shared user S3 bucket + mount configuration
+        shared_bucket_stack = SharedUserBucketStack(
+            self,
+            "UserSharedBucket",
+            description="Shared S3 bucket and mount configuration for HelioCloud users.",
+            config=self.__config,
+            base_aws=base_stack,
+            env=self.__env,
+        )
+        shared_bucket_stack.add_dependency(base_stack)
+        cdk.Tags.of(shared_bucket_stack).add("Product", "heliocloud-usershared")
+
         # Next, determine if the Auth module is needed
         enabled_modules = self.__config.get("enabled")
         if (
@@ -147,9 +160,14 @@ class MyHelioCloud(Construct):
                     base_auth=auth_stack,
                     portal=portal_stack,
                     env=self.__env,
+                    user_shared_mount_path=shared_bucket_stack.mount_path,
+                    user_shared_bucket_name=shared_bucket_stack.bucket.bucket_name,
+                    user_shared_mount_enabled=shared_bucket_stack.mount_enabled,
+                    user_shared_bucket_prefix=shared_bucket_stack.bucket_prefix,
                 )
                 daskhub_stack.add_dependency(base_stack)
                 daskhub_stack.add_dependency(auth_stack)
+                daskhub_stack.add_dependency(shared_bucket_stack)
                 if enabled_modules.get("portal", False):
                     daskhub_stack.add_dependency(portal_stack)
                 cdk.Tags.of(daskhub_stack).add("Product", "heliocloud-daskhub-admin")

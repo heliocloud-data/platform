@@ -1,6 +1,7 @@
 """
 Contains helpful functions for interacting with the AWS.
 """
+
 from botocore.exceptions import ClientError
 
 
@@ -18,7 +19,7 @@ def find_cloudformation_stack_name_starts_with(client, name_starts_with):
     obj = None
 
     resp = client.list_stacks(
-        StackStatusFilter=["CREATE_COMPLETE", "UPDATE_COMPLETE"],
+        StackStatusFilter=["CREATE_COMPLETE", "UPDATE_COMPLETE", "UPDATE_ROLLBACK_COMPLETE"],
     )
 
     for item in resp["StackSummaries"]:

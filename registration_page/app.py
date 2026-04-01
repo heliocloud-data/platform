@@ -4,7 +4,7 @@ cognito interface backend.
 """
 
 import os
-from flask import Flask, send_from_directory, jsonify, request
+from flask import Flask, render_template, send_from_directory, jsonify, request
 import boto3
 from botocore.exceptions import ClientError
 
@@ -22,7 +22,7 @@ class Config:
 
 cognito_client = boto3.client("cognito-idp", region_name=Config.AWS_REGION)
 
-app = Flask(__name__, static_folder="static")
+app = Flask(__name__, static_folder="static", template_folder="static")
 
 
 @app.route("/register", methods=["POST"])
@@ -64,7 +64,11 @@ def serve_index():
     """
     Default endpoint.
     """
-    return send_from_directory(app.static_folder, "index.html")
+    return render_template(
+        "index.html",
+        user_agreement_url=os.getenv("HELIOCLOUD_REGISTRATION_PAGE_USER_AGREEMENT_URL"),
+        email_addr=os.getenv("HELIOCLOUD_REGISTRATION_PAGE_DEST_EMAIL_ADDR"),
+    )
 
 
 @app.route("/user_agreement")
@@ -72,7 +76,12 @@ def user_agreement():
     """
     User agreement endpoint.
     """
-    return send_from_directory(app.static_folder, "user_agreement.html")
+    # return send_from_directory(app.static_folder, "user_agreement.html")
+    return render_template(
+        "user_agreement.html",
+        user_agreement_url=os.getenv("HELIOCLOUD_REGISTRATION_PAGE_USER_AGREEMENT_URL"),
+        email_addr=os.getenv("HELIOCLOUD_REGISTRATION_PAGE_DEST_EMAIL_ADDR"),
+    )
 
 
 @app.route("/health")

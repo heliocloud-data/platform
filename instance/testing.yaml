@@ -44,7 +44,7 @@ portal:
 
 registration_page:
   domain_url: "aplscicloud.org"
-  domain_record: "registration"
+  domain_record: "registration-testing-${AWS_DEFAULT_REGION}"
   domain_certificate_arn: "arn:aws:acm:${AWS_DEFAULT_REGION}:${HC_AWS_ACCOUNT}:certificate/${HC_PORTAL_CERT_ARN}"
 
 daskhub:

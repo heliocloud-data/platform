@@ -1,5 +1,5 @@
 """
-CDK Stack definition for deploying the Regsistration Page module of a HelioCloud instance.
+CDK Stack definition for deploying the Registration Page module of a HelioCloud instance.
 """
 
 import os.path
@@ -26,11 +26,11 @@ from base_aws.base_aws_stack import BaseAwsStack
 
 class RegistrationPageStack(Stack):
     """
-    Stack to install the Heliocloud Regsistration Page module.
+    Stack to install the Heliocloud Registration Page module.
     There are two major components to this stack:
     - the creation of the user in AWS Cognito, for authentication purposes
-    - the creation of an AWS Fargate cluster in which the Regsistration Page will run
-    - the creation of a Regsistration Page Docker image and its deployment into the Fargate cluster
+    - the creation of an AWS Fargate cluster in which the Registration Page will run
+    - the creation of a Registration Page Docker image and its deployment into the Fargate cluster
     """
 
     # pylint: disable=too-many-arguments
@@ -46,43 +46,54 @@ class RegistrationPageStack(Stack):
         **kwargs,
     ) -> None:
         """
-        Instantiates a Regsistration Page stack.
+        Instantiates a Registration Page stack.
         """
         super().__init__(scope=scope, id=construct_id, **kwargs)
 
-        # Extract the important bits from the Regsistration Page's config
+        # Extract the important bits from the Registration Page's config
         registration_url = f'https://{config.get("domain_record")}.' f'{config.get("domain_url")}'
+        self.envs = {}
+        if "envs" in config:
+            self.envs = config["envs"]
 
-        # Add the Regsistration Page as a client of the Cognito user pool for this HelioCloud
+        # Add the Registration Page as a client of the Cognito user pool for this HelioCloud
         # pylint: disable=duplicate-code
         user_pool_client = self.__create_user_pool_client(
             auth_stack=auth_stack, registration_url=registration_url
         )
 
-        # Create the Fargate cluster that will host the Regsistration Page
-        cluster = self.__create_fargate_cluster(vpc=aws_stack.heliocloud_vpc)
+        # Create the Fargate cluster that will host the Registration Page
+        cluster = self.__create_fargate_cluster(
+            vpc=aws_stack.heliocloud_vpc()
+            if callable(aws_stack.heliocloud_vpc)
+            else aws_stack.heliocloud_vpc
+        )
 
-        # Create the Docker image for the Regsistration Page
+        # Create the Docker image for the Registration Page
         docker_build_args = {}
         if "docker" in config and "build_args" in config["docker"]:
             docker_build_args = config.get("docker").get("build_args")
         docker_image = self.__create_registration_docker_image(build_args=docker_build_args)
 
-        # Create the Regsistration Page task for Fargate
+        # Create the Registration Page task for Fargate
         task = self.__create_fargate_task(
-            vpc=aws_stack.heliocloud_vpc,
+            vpc=aws_stack.heliocloud_vpc()
+            if callable(aws_stack.heliocloud_vpc)
+            else aws_stack.heliocloud_vpc,
             docker_image=docker_image,
             user_pool=auth_stack.userpool,
             user_pool_client=user_pool_client,
         )
 
-        # Create the load balancer to route traffic to the Regsistration Page service
+        # Create the load balancer to route traffic to the Registration Page service
         cert_arn = config.get("domain_certificate_arn")
         domain_url = config.get("domain_url")
         sub_domain = config.get("domain_record")
         self.__create_load_balancer(
             cluster=cluster,
-            vpc=aws_stack.heliocloud_vpc,
+            vpc=aws_stack.heliocloud_vpc()
+            if callable(aws_stack.heliocloud_vpc)
+            else aws_stack.heliocloud_vpc,
             cert_arn=cert_arn,
             domain=domain_url,
             sub_domain=sub_domain,
@@ -96,7 +107,7 @@ class RegistrationPageStack(Stack):
         self, auth_stack: AuthStack, registration_url: str
     ) -> aws_cdk.aws_cognito.UserPoolClient:
         """
-        Add the Regsistration Page as client of the AWS Cognito User Pool
+        Add the Registration Page as client of the AWS Cognito User Pool
         for this HelioCloud instance.
         """
         client = auth_stack.userpool.add_client(
@@ -121,7 +132,7 @@ class RegistrationPageStack(Stack):
 
     def __create_fargate_cluster(self, vpc: ec2.Vpc) -> ecs.Cluster:
         """
-        Creates the Fargate cluster in which the Regsistration Page will be hosted
+        Creates the Fargate cluster in which the Registration Page will be hosted
         """
         cluster = ecs.Cluster(self, "RegistrationCluster", vpc=vpc)
         cluster.add_default_cloud_map_namespace(name="registration.local")
@@ -129,7 +140,7 @@ class RegistrationPageStack(Stack):
 
     def __create_registration_docker_image(self, build_args: dict) -> ecr_assets.DockerImageAsset:
         """
-        Create the Docker image of the Regsistration Page application, for deployment into AWS ECR.
+        Create the Docker image of the Registration Page application, for deployment into AWS ECR.
         """
         # Construct the Docker image asset that ECR will need
         # Build args have to get turned into strings for DockerImageAsset to accept them
@@ -155,7 +166,7 @@ class RegistrationPageStack(Stack):
         user_pool_client: cognito.UserPoolClient,
     ) -> ecs.FargateTaskDefinition:
         """
-        Create the task in Fargate to run the Regsistration Page.
+        Create the task in Fargate to run the Registration Page.
         """
 
         # Create default EC2 security group
@@ -193,16 +204,21 @@ class RegistrationPageStack(Stack):
 
         # Create the task & container
         task = ecs.FargateTaskDefinition(
-            self, "RegsistrationFargateTask", cpu=256, memory_limit_mib=512, task_role=task_role
+            self, "RegistrationFargateTask", cpu=256, memory_limit_mib=512, task_role=task_role
         )
+
+        environment = {
+            "REGION": self.region,
+            "USER_POOL_ID": user_pool.user_pool_id,
+        }
+        for k, v in self.envs.items():
+            environment[k] = v
+
         task.add_container(
             "RegistrationContainer",
             image=ecs.ContainerImage.from_docker_image_asset(docker_image),
             essential=True,
-            environment={
-                "REGION": self.region,
-                "USER_POOL_ID": user_pool.user_pool_id,
-            },
+            environment=environment,
             secrets={
                 # Need the user pool id
                 "USER_POOL_CLIENT_SECRET": ecs.Secret.from_secrets_manager(
@@ -244,7 +260,7 @@ class RegistrationPageStack(Stack):
     ) -> None:
         """
         Creates the Application Load Balancer for routing HTTPs traffic to the
-        Regsistration Page service.
+        Registration Page service.
         """
 
         # Hosted Zone for resolving in DNS

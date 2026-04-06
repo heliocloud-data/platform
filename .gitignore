@@ -38,3 +38,26 @@ TESTS-*.xml
 cdk.context.json
 
 .DS_store
+
+# OpenTofu/Terraform files
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+*.tfvars.json
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc
+
+# Secrets (if you have them)
+**/secrets.tfvars
+**/*.pem
+**/*.key
+
+# OS files
+.DS_Store
+Thumbs.db

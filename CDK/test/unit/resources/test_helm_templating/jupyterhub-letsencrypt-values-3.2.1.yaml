@@ -1,0 +1,20 @@
+# jupyterhub:
+#   debug:
+#     enabled: true
+#   hub:
+#     image:
+#       name: jupyterhub/k8s-hub
+#       tag: "1.2.0"
+proxy:
+  https:
+    enabled: true
+    hosts:
+      - <INSERT_HOST_NAME> # From above example: example.com
+    letsencrypt:
+      # Insert email for Let's Encrypt to contact about keeping certs valid
+      contactEmail: <INSERT_CONTACT_EMAIL>
+  traefik:
+    image:
+      name: traefik
+      tag: "v2.4.11.xxx"
+

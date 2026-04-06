@@ -1,0 +1,106 @@
+# The following file is used for deploying to the staging environment on GitLab.
+#
+# To run w/ this instance locally, type the following commands:
+#   export CI_COMMIT_SHORT_SHA=<something>
+#   envsubst < instance/gitlab-integration.yaml > instance/gitlab-integration-${CI_COMMIT_SHORT_SHA}.yaml
+#
+# Per-commit configurations should use: CI_COMMIT_SHORT_SHA
+# Per-branch configurations should use: CI_COMMIT_REF_SLUG
+#
+#  See:
+#   https://docs.gitlab.com/ee/ci/variables/predefined_variables.html
+
+env:
+  account: ${HC_AWS_ACCOUNT}
+  region: ${AWS_DEFAULT_REGION}
+
+# new VPC every time
+vpc:
+  type: new
+
+# Destroying so we can clean up dev
+userSharedBucket:
+  destroyOnRemoval: True
+
+# Only working on the registry right now
+enabled:
+  registry: False
+  daskhub: True
+  daskhub_metrics: False
+  portal: False
+  registration_page: False
+
+auth:
+  domain_prefix: "apl-helio"
+  deletion_protection: False
+  removal_policy: DESTROY
+
+# Simple bucket names
+registry:
+  datasetBucketNames: [
+     "heliocloud-testing-${AWS_DEFAULT_REGION}-datasets-1",
+  ]
+
+  ingestBucketName: "heliocloud-testing-${AWS_DEFAULT_REGION}-uploads-1"
+  requesterPays: True
+  catalog:
+    masterUser: master
+    name: "Chris Jeschke"
+    contact: "chris.jeschke@jhuapl.edu"
+  destroyOnRemoval: True
+  layers:
+    pandas: "arn:aws:lambda:${AWS_DEFAULT_REGION}:336392948345:layer:AWSSDKPandas-Python39:6"
+
+portal:
+  domain_url: "aplscicloud.org"
+  domain_record: "portal-testing-${AWS_DEFAULT_REGION}"
+  domain_certificate_arn: "arn:aws:acm:${AWS_DEFAULT_REGION}:${HC_AWS_ACCOUNT}:certificate/${HC_PORTAL_CERT_ARN}"
+
+registration_page:
+  domain_url: "aplscicloud.org"
+  domain_record: "registration"
+  domain_certificate_arn: "arn:aws:acm:${AWS_DEFAULT_REGION}:${HC_AWS_ACCOUNT}:certificate/${HC_PORTAL_CERT_ARN}"
+
+daskhub:
+  eksctl:
+    metadata:
+      name: 'eks-helio'
+      region: '${AWS_DEFAULT_REGION}'
+    availabilityZones:
+    - ${AWS_DEFAULT_REGION}a
+    - ${AWS_DEFAULT_REGION}b
+    iamIdentityMappings:
+      - arn: arn:aws:iam::006885615091:role/CT-PowerUser-HelioCloud
+        groups:
+        - eks-console-dashboard-full-access-group
+      - arn: arn:aws:iam::006885615091:user/CT-PowerUser-HelioCloud-nicholas.lenzi@jhuapl.edu-401
+        groups:
+        - eks-console-dashboard-full-access-group
+        - daskhub-admin-access-group
+        username: lenzinm1
+  daskhub_storage:
+    efs-persist:
+      storage: 10Gi
+
+  daskhub:
+    namespace: daskhub
+    api_key1: auto
+    api_key2: auto
+    admin_users:
+     - lenzinm1
+    contact_email: nicholas.lenzi@jhuapl.edu
+
+    GENERIC_DOCKER_LOCATION: 'public.ecr.aws/q3h7b4o8/heliocloud/helio-daskhub-core'
+    GENERIC_DOCKER_VERSION: '2025.01.29'
+    MLTF_DOCKER_LOCATION: 'public.ecr.aws/q3h7b4o8/heliocloud/helio-daskhub-mltf'
+    MLTF_DOCKER_VERSION: '2025.01.29'
+    MLTRCH_DOCKER_LOCATION: 'public.ecr.aws/q3h7b4o8/heliocloud/helio-daskhub-mltrch'
+    MLTRCH_DOCKER_VERSION: '2025.01.29'
+
+    domain_url: "aplscicloud.org"
+    domain_record: "daskhub-testing-${AWS_DEFAULT_REGION}"
+
+  monitoring:
+    AWS_LOAD_BALANCER_SSL_CERT: "arn:aws:acm:${AWS_DEFAULT_REGION}:${HC_AWS_ACCOUNT}:certificate/${HC_PORTAL_CERT_ARN}"
+    grafana_domain_prefix: grafana-testing-${AWS_DEFAULT_REGION}
+    cost_analyzer_domain_prefix: kubecost-testing-${AWS_DEFAULT_REGION}

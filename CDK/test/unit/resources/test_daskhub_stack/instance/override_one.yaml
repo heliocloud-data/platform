@@ -1,0 +1,25 @@
+# This file is used to support unit tests for
+# test_config.py.
+auth:
+  domain_prefix: "apl-helio"
+
+enabled:
+  daskhub_metrics: false
+
+portal:
+  domain_url:
+  domain_record:
+  domain_certificate_arn:
+
+daskhub:
+  daskhub:
+    domain_url: "ludicolo.org"
+
+
+
+
+
+
+
+
+

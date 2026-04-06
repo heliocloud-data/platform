@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% block content %}
+
+<p>New to the portal? Check out our <a href="quickstart">quickstart</a> guide to get started!</p>
+
+<!-- Spend header-->
+<div class="row">
+    <div class="col col-md-6">
+        <div class="card">
+          <div class="card-header">
+            <h2 class="mb-3">Accumulated Spend</h2>
+          </div>
+          <div class="card-body">
+            <blockquote class="blockquote mb-0">
+              <p class="text-center">${{ cost.overall }}</p>
+            </blockquote>
+          </div>
+        </div>
+    </div>
+    <div class="col col-md-6">
+        <div class="card">
+          <div class="card-header">
+            <h2 class="mb-3">Spend Over Last 7 Days</h2>
+          </div>
+          <div class="card-body">
+            <blockquote class="blockquote mb-0">
+              <p class="text-center">${{ cost.week }}</p>
+            </blockquote>
+          </div>
+        </div>
+    </div>
+</div>
+
+<!-- Running Instance Cards-->
+<div class="container">
+    <h2>Running Instances</h2>
+    <div class="card-group">
+        {% if running_instances|length > 0 %}
+            {% for instance in running_instances %}
+                <div class="card">
+                    <div class="card-body text-center">
+                        <p class="card-text"><b>Instance Name</b>: {{instance.instance_name}}</p>
+                        <p class="card-text"><b>OS Platform</b>: {{instance.platform_inferred}}</p>
+                        <p class="card-text"><b>Image</b>: {{instance.image_name}}</p>
+                        <p class="card-text"><b>Type</b>: {{instance.InstanceType}}</p>
+                        <p class="card-text"><b>Duration</b>: {{ instance.time_since_start }}</p>
+                        <p class="card-text"><b>State</b>: {{ instance.instance_state }}</p>
+                        {% if instance.ssh_user != 'None' %}
+                            <p class="card-text"><b>Connect via SSH</b>: ssh -i "{{instance.KeyName}}.pem" {{instance.ssh_user}}@{{instance.PublicDnsName}}</p>
+                        {% endif %}
+                        <!-- <p><a href="http://{{instance.PublicDnsName}}:8888/?token={{instance.nbtoken}}" target="_blank" rel="noreferrer noopener" class="btn btn-info" role="button">Jupyter Connect</a></p>-->
+                        <a href="instance_action?action=stop&instance_id={{instance.InstanceId}}" class="btn btn-danger" role="button">Stop Instance</a>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="card-body text-center">
+                <p>No instances currently running.</p>
+                <p><a href="launch_instance" class="btn btn-primary" role="button">Launch an Instance</a></p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Stopped Instance Cards-->
+<div class="container">
+    <h2>Previously Stopped Instances</h2>
+    <div class="card-group">
+        {% if stopped_instances|length > 0 %}
+            {% for instance in stopped_instances %}
+                {% set modal_id = instance.InstanceId %}
+                {% set modal_target = '#'+modal_id %}
+                {% set modal_label = modal_id+'label' %}
+                <div class="card">
+                    <div class="card-body text-center">
+                        <p class="card-text"><b>Instance Name</b>: {{instance.instance_name}}</p>
+                        <p class="card-text"><b>OS Platform</b>: {{instance.platform_inferred}}</p>
+                        <p class="card-text"><b>Image</b>: {{instance.image_name}}</p>
+                        <p class="card-text"><b>Type</b>: {{instance.InstanceType}}</p>
+                        <div class="dropdown">
+                              <button class="btn btn-primary dropdown-toggle" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                Actions
+                              </button>
+                              <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                                <a class="dropdown-item" href="instance_action?action=start&instance_id={{instance.InstanceId}}">Start Instance</a>
+                                <a class="dropdown-item" data-bs-toggle="modal" data-bs-target={{modal_target}}>Terminate Instance</a>
+                              </div>
+                            </div>
+                    </div>
+                </div>
+                <!-- Terminate Modal -->
+
+                <div class="modal fade" id={{modal_id}} tabindex="-1" aria-labelledby={{modal_label}} aria-hidden="true">
+                  <div class="modal-dialog">
+                    <div class="modal-content">
+                      <div class="modal-header">
+                        <h5 class="modal-title" id={{modal_label}}>Terminate Instance</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                      </div>
+                      <div class="modal-body">
+                        Terminating permanently deletes this instance and cannot be undone. Are you sure you want to terminate <b>{{instance.instance_name}}</b>?
+                      </div>
+                      <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <a href="instance_action?action=terminate&instance_id={{instance.InstanceId}}" class="btn btn-danger" role="button">Terminate</a>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <p>No instances previously stopped.</p>
+        {% endif %}
+    </div>
+</div>
+
+
+
+{% endblock %}

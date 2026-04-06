@@ -1,0 +1,13 @@
+apiVersion: v2
+appVersion: jh1.2.0-dg2022.6.1
+dependencies:
+- name: cost-analyzer
+  repository: https://kubecost.github.io/cost-analyzer/
+  version: 2.0.2
+description: K8s Cost Analyser for HelioCloud's multi-user JupyterHub and Dask deployment.
+icon: https://avatars3.githubusercontent.com/u/17131925?v=3&s=200
+maintainers:
+- email: nicholas.lenzi@jhuapl.edu
+  name: Nicholas Lenzi
+name: heliocloud-monitoring
+version: 1.0.0

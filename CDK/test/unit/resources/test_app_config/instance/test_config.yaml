@@ -1,0 +1,12 @@
+env:
+  account: 123456789
+  region: us-east-100
+
+enabled:
+  registry: True
+
+registry:
+  datasetBucketNames: [
+    "suds-datasets-1"
+  ]
+  ingestBucketName: "acid-reflux"

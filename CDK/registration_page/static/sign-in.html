@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en" class="dark:bg-zinc-900 dark:text-white">
+<head>
+  <meta charset="UTF-8">
+  <title>HelioCloud Login</title>
+  <script src="static/js/tailwindcss-3.4.16.js"></script>
+  <style>
+    body {
+      background: white;
+      color: white;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      background-image: url('static/assets/logo.png');
+      background-size: cover;
+      background-position: center;
+    }
+    input::placeholder {
+      color: red;
+      opacity: 0.7;
+    }
+    input {
+      color: red;
+    }
+    h1 {
+      color: black;
+    }
+    .center {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+  </style>
+</head>
+<body class="bg-white text-zinc-900 font-sans antialiased">
+  <div class="container mx-auto px-4 max-w-sm bg-white p-8 rounded-lg shadow-lg">
+    <h1 class="text-3xl mb-6 font-bold text-center">HelioCloud User Registration</h1>
+    <form action="/register" method="post" onsubmit="submitForm(event)">
+      <div class="mb-4">
+        <label for="username" class="sr-only">Username</label>
+        <input type="text" id="username" name="username" placeholder="Enter your username" class="bg-zinc-100 border rounded-lg px-4 py-2 w-full text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" required>
+      </div>
+      <div class="mb-6">
+        <label for="password" class="sr-only">Password</label>
+        <input type="password" id="password" name="password" placeholder="Enter your password" class="bg-zinc-100 border rounded-lg px-4 py-2 w-full text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" required>
+      </div>
+      <div class="flex justify-center">
+        <button type="submit" class="bg-blue-500 text-white p-2 rounded-lg">Login</button>
+      </div>
+    </form>
+  </div>
+  <script>
+    function submitForm(event) {
+      event.preventDefault();
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
+
+      // if (password !== confirmPassword) {
+      //   alert('Passwords do not match');
+      //   return;
+      // }
+
+      // Prepare the data to send in the request
+      const userData = {
+        username: username,
+        email: email,
+        password: password,
+        affiliation: affiliation
+      };
+
+      // Send user data to Flask backend
+      fetch('/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(userData)
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.error) {
+          alert('Error: ' + data.error);
+        } else {
+          alert('User registered successfully!');
+          // Send the signed agreement to the specified email address
+          window.location.href = `mailto:gsfc-dl-hsdcloud-admin@mail.nasa.gov?subject=Signed HelioCloud user agreement from ${username}`;
+        }
+      })
+      .catch(error => console.error('Error:', error));
+    }
+  </script>
+</body>
+</html>

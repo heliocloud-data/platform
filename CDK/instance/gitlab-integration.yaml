@@ -1,0 +1,41 @@
+# The following file is used for integration testing on GitLab.
+#
+# To run w/ this instance locally, type the following commands:
+#   export CI_COMMIT_SHORT_SHA=<something>
+#   envsubst < instance/gitlab-integration.yaml > instance/gitlab-integration-${CI_COMMIT_SHORT_SHA}.yaml
+#
+# Per-commit configurations should use: CI_COMMIT_SHORT_SHA
+# Per-branch configurations should use: CI_COMMIT_REF_SLUG
+#
+#  See:
+#   https://docs.gitlab.com/ee/ci/variables/predefined_variables.html
+
+env:
+  account: ${HC_AWS_ACCOUNT}
+  region: ${AWS_DEFAULT_REGION}
+
+# new VPC every time
+vpc:
+  type: new
+
+# Destroying so we can clean up dev
+userSharedBucket:
+  destroyOnRemoval: True
+
+enabled:
+  registry: False
+  portal: False
+
+portal:
+  domain_url: "aplscicloud.org"
+  domain_record: "portal-${CI_COMMIT_REF_SLUG}"
+  domain_certificate_arn: "arn:aws:acm:${AWS_DEFAULT_REGION}:${HC_AWS_ACCOUNT}:certificate/${HC_PORTAL_CERT_ARN}"
+
+daskhub:
+  daskhub:
+    domain_url: "domain"
+  monitoring:
+    AWS_LOAD_BALANCER_SSL_CERT: "arn:aws:acm:${AWS_DEFAULT_REGION}:${HC_AWS_ACCOUNT}:certificate/${HC_PORTAL_CERT_ARN}"
+    grafana_domain_prefix: "grafana-${CI_COMMIT_REF_SLUG}"
+    cost_analyzer_domain_prefix: "kubecost-${CI_COMMIT_REF_SLUG}"
+    

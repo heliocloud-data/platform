@@ -1,0 +1,35 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: efs-mount
+  namespace: kube-system
+spec:
+  template:
+    spec:
+      containers:
+      - name: efs-mount
+        image: amazon/aws-cli
+        command: ["bash", "/scripts/exec.sh"]
+        env:
+        - name: EFS_ID
+          value:
+        - name: AWS_AZ_PRIMARY
+          value: 
+        - name: EKS_NAME
+          value:
+        volumeMounts:
+        - name: config
+          mountPath: "/scripts"
+          readOnly: true
+      volumes:
+      - name: config
+        configMap:
+          name: efs-mount
+          items:
+          - key: "delete-efs-mount-targets.sh"
+            path: "delete-efs-mount-targets.sh"
+          - key: "create-efs-mount-targets.sh"
+            path: "create-efs-mount-targets.sh"
+          - key: "exec.sh"
+            path: "exec.sh"
+      restartPolicy: Never

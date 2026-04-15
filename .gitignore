@@ -1,44 +1,3 @@
-.idea/
-.venv/
-cdk.out/
-*~
-
-# Python files to ignore
-__pycache__/
-*.py[cod]
-*.$py.class
-
-# Output files from pytest
-TEST-*.xml
-temp/
-
-# Output files from code coverage
-.coverage
-coverage.xml
-htmlcov
-
-# Output files from static-analysis
-codeclimate.json
-pylint.txt
-
-# Output files from the integration tests
-instance/gitlab-integration-*
-IT-*.xml
-
-# Output files from deployments
-instance/staging-*
-instance/production-*
-instance/*-dev.yaml
-
-# Output files from the feature tests
-reports/*
-TESTS-*.xml
-
-# CDK/AWS Account information
-cdk.context.json
-
-.DS_store
-
 # OpenTofu/Terraform files
 **/.terraform/*
 *.tfstate
@@ -51,7 +10,11 @@ override.tf.json
 *_override.tf
 *_override.tf.json
 .terraformrc
+.terraform
+.terraform/
+.terraformed
 terraform.rc
+.terraform.lock.hcl
 
 # Secrets (if you have them)
 **/secrets.tfvars
@@ -61,3 +24,8 @@ terraform.rc
 # OS files
 .DS_Store
 Thumbs.db
+
+*.deb
+
+# devcontainer
+*.env

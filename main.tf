@@ -297,6 +297,19 @@ module "heliocloud_eks_addon_cluster_autoscaler" {
   worker_node_role_name = aws_iam_role.nodegroup.name
 }
 
+module "cognito" {
+  source = "./modules/heliocloud_cognito"
+
+  user_pool_name        = "${replace(var.cluster_name, "_", "-")}-user-pool"
+  domain_prefix         = replace(var.cluster_name, "_", "-")
+  user_pool_client_name = "${replace(var.cluster_name, "_", "-")}-client"
+
+  deletion_protection = false
+  callback_urls       = var.cognito_callback_urls
+  logout_urls         = var.cognito_logout_urls
+  tags                = var.tags
+}
+
 output "aws_region" {
   value = var.aws_region
 }

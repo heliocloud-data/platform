@@ -56,3 +56,21 @@ variable "kubernetes_version" {
     error_message = "Value must not be empty."
   }
 }
+
+variable "tags" {
+  description = "Tags to apply to resources"
+  type        = map(string)
+  default     = {}
+}
+
+variable "cognito_callback_urls" {
+  description = "Allowed callback URLs for the Cognito user pool client"
+  type        = list(string)
+  default     = ["http://localhost:8000/oauth_callback"] # These need to be updated with actual urls when they are available.
+}
+
+variable "cognito_logout_urls" {
+  description = "Allowed logout URLs for the Cognito user pool client"
+  type        = list(string)
+  default     = ["http://localhost:8000"] # These need to be updated with actual urls when they are available.
+}

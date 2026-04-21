@@ -27,8 +27,8 @@ variable "aws_eks_az2" {
   sensitive   = false
   validation {
     condition = (
-        length(var.aws_eks_az2) > 0 &&
-        var.aws_eks_az2 != var.aws_eks_az1
+      length(var.aws_eks_az2) > 0 &&
+      var.aws_eks_az2 != var.aws_eks_az1
     )
 
     error_message = "Value must not be empty and must not be equal to 'var.aws_eks_az1'."

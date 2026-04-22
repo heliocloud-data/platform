@@ -16,4 +16,3 @@ example top block:
     # Backend resource names (S3 bucket names must be globally unique)
     BUCKET_NAME="${PROJECT_NAME}-tofu-state-bucket-${ORG_NAME}"
     TABLE_NAME="${PROJECT_NAME}-tofu-state-lock-${ORG_NAME}"
-

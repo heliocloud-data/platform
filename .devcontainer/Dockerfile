@@ -1,6 +1,6 @@
 FROM ghcr.io/opentofu/opentofu:minimal AS tofu
 
-FROM python:3.9
+FROM python:3.13.2
 
 # Copy the tofu binary
 COPY --from=tofu /usr/local/bin/tofu /usr/local/bin/tofu

@@ -52,3 +52,6 @@ else
   # TODO: Add support for downloading this
   echo "warning: Unable to locate 'google-chrome-stable_current_amd64.deb' installer, attempting to continue"
 fi
+
+python3.13 -m pip install --user pre-commit || exit 8
+pre-commit install || exit 9

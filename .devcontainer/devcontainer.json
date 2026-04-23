@@ -23,6 +23,11 @@
             "target": "${env:HOME}${env:USERPROFILE}/.aws,type=bind",
             "type": "bind",
         },
+        {
+            "source": "${env:HOME}${env:USERPROFILE}/.kube",
+            "target": "${env:HOME}${env:USERPROFILE}/.kube,type=bind",
+            "type": "bind",
+        },
     ],
     "containerUser": "${env:USER}",
     "updateRemoteUserUID": "true",

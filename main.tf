@@ -1,12 +1,12 @@
 provider "aws" {
- region = var.aws_region
+  region = var.aws_region
 }
 
 resource "aws_vpc" "myvpc" {
- cidr_block = "192.168.0.0/16"
- tags = {
-   Name = "${var.cluster_name}/VPC"
- }
+  cidr_block = "192.168.0.0/16"
+  tags = {
+    Name = "${var.cluster_name}/VPC"
+  }
 }
 
 resource "aws_nat_gateway" "nat_gateway" {
@@ -14,7 +14,7 @@ resource "aws_nat_gateway" "nat_gateway" {
   availability_mode = "regional"
 
   tags = {
-   Name = "${var.cluster_name}/NATGateway"
+    Name = "${var.cluster_name}/NATGateway"
   }
 }
 
@@ -23,7 +23,7 @@ resource "aws_route_table" "private" {
 
   route {
     cidr_block = "0.0.0.0/0"
-    gateway_id  = aws_nat_gateway.nat_gateway.id
+    gateway_id = aws_nat_gateway.nat_gateway.id
   }
 
   route {
@@ -32,36 +32,36 @@ resource "aws_route_table" "private" {
   }
 
   tags = {
-   Name = "${var.cluster_name}/RouteTablePrivate"
+    Name = "${var.cluster_name}/RouteTablePrivate"
   }
 }
 
 
 resource "aws_subnet" "subnet_private_01" {
- vpc_id = aws_vpc.myvpc.id
- cidr_block = "192.168.0.0/19"
- availability_zone = var.aws_eks_az1
- tags = {
-   Name = "${var.cluster_name}/SubnetPrivate-${var.aws_eks_az1}"
- }
+  vpc_id            = aws_vpc.myvpc.id
+  cidr_block        = "192.168.0.0/19"
+  availability_zone = var.aws_eks_az1
+  tags = {
+    Name = "${var.cluster_name}/SubnetPrivate-${var.aws_eks_az1}"
+  }
 }
 
 resource "aws_subnet" "subnet_private_02" {
- vpc_id = aws_vpc.myvpc.id
- cidr_block = "192.168.32.0/19"
- availability_zone = var.aws_eks_az2
- tags = {
-   Name = "${var.cluster_name}/SubnetPrivate-${var.aws_eks_az2}"
- }
+  vpc_id            = aws_vpc.myvpc.id
+  cidr_block        = "192.168.32.0/19"
+  availability_zone = var.aws_eks_az2
+  tags = {
+    Name = "${var.cluster_name}/SubnetPrivate-${var.aws_eks_az2}"
+  }
 }
 
 resource "aws_route_table_association" "route_table_association_subnet_private_01" {
-  subnet_id = aws_subnet.subnet_private_01.id
+  subnet_id      = aws_subnet.subnet_private_01.id
   route_table_id = aws_route_table.private.id
 }
 
 resource "aws_route_table_association" "route_table_association_subnet_private_02" {
-  subnet_id = aws_subnet.subnet_private_02.id
+  subnet_id      = aws_subnet.subnet_private_02.id
   route_table_id = aws_route_table.private.id
 }
 
@@ -77,7 +77,7 @@ resource "aws_route_table" "public" {
 
   route {
     cidr_block = "0.0.0.0/0"
-    gateway_id  = aws_internet_gateway.gw.id
+    gateway_id = aws_internet_gateway.gw.id
   }
 
   route {
@@ -86,37 +86,37 @@ resource "aws_route_table" "public" {
   }
 
   tags = {
-   Name = "${var.cluster_name}/RouteTablePublic"
+    Name = "${var.cluster_name}/RouteTablePublic"
   }
 }
 
 resource "aws_subnet" "subnet_public_01" {
- vpc_id = aws_vpc.myvpc.id
- cidr_block = "192.168.64.0/19"
- availability_zone = var.aws_eks_az1
- map_public_ip_on_launch = true
- tags = {
-   Name = "${var.cluster_name}/SubnetPublic-${var.aws_eks_az1}"
- }
+  vpc_id                  = aws_vpc.myvpc.id
+  cidr_block              = "192.168.64.0/19"
+  availability_zone       = var.aws_eks_az1
+  map_public_ip_on_launch = true
+  tags = {
+    Name = "${var.cluster_name}/SubnetPublic-${var.aws_eks_az1}"
+  }
 }
 
 resource "aws_subnet" "subnet_public_02" {
- vpc_id = aws_vpc.myvpc.id
- cidr_block = "192.168.96.0/19"
- availability_zone = var.aws_eks_az2
- map_public_ip_on_launch = true
- tags = {
-   Name = "${var.cluster_name}/SubnetPublic-${var.aws_eks_az2}"
- }
+  vpc_id                  = aws_vpc.myvpc.id
+  cidr_block              = "192.168.96.0/19"
+  availability_zone       = var.aws_eks_az2
+  map_public_ip_on_launch = true
+  tags = {
+    Name = "${var.cluster_name}/SubnetPublic-${var.aws_eks_az2}"
+  }
 }
 
 resource "aws_route_table_association" "route_table_association_subnet_public_01" {
-  subnet_id = aws_subnet.subnet_public_01.id
+  subnet_id      = aws_subnet.subnet_public_01.id
   route_table_id = aws_route_table.public.id
 }
 
 resource "aws_route_table_association" "route_table_association_subnet_public_02" {
-  subnet_id = aws_subnet.subnet_public_02.id
+  subnet_id      = aws_subnet.subnet_public_02.id
   route_table_id = aws_route_table.public.id
 }
 
@@ -125,8 +125,8 @@ resource "aws_iam_role" "cluster" {
   assume_role_policy = jsonencode({
     Version = "2012-10-17",
     Statement = [{
-      Action = ["sts:AssumeRole"]
-      Effect = "Allow"
+      Action    = ["sts:AssumeRole"]
+      Effect    = "Allow"
       Principal = { Service = "eks.amazonaws.com" }
     }]
   })
@@ -134,9 +134,8 @@ resource "aws_iam_role" "cluster" {
 
 resource "aws_iam_role_policy_attachment" "cluster_AmazonEKSClusterPolicy" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
-  role = aws_iam_role.cluster.name
+  role       = aws_iam_role.cluster.name
 }
-
 
 resource "aws_iam_role" "nodegroup" {
   name = "${var.cluster_name}-nodegroup"
@@ -154,32 +153,32 @@ resource "aws_iam_role" "nodegroup" {
 
 resource "aws_iam_role_policy_attachment" "nodegroup_AmazonEC2ContainerRegistryReadOnly" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
-  role = aws_iam_role.nodegroup.name
+  role       = aws_iam_role.nodegroup.name
 }
 
 resource "aws_iam_role_policy_attachment" "nodegroup_AmazonEC2RoleforSSM" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM"
-  role = aws_iam_role.nodegroup.name
+  role       = aws_iam_role.nodegroup.name
 }
 
 resource "aws_iam_role_policy_attachment" "nodegroup_AmazonEKS_CNI_Policy" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy"
-  role = aws_iam_role.nodegroup.name
+  role       = aws_iam_role.nodegroup.name
 }
 
 resource "aws_iam_role_policy_attachment" "nodegroup_AmazonEKSWorkerNodePolicy" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy"
-  role = aws_iam_role.nodegroup.name
+  role       = aws_iam_role.nodegroup.name
 }
 
 resource "aws_iam_role_policy_attachment" "nodegroup_AmazonRoute53AutoNamingRegistrantAccess" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonRoute53AutoNamingRegistrantAccess"
-  role = aws_iam_role.nodegroup.name
+  role       = aws_iam_role.nodegroup.name
 }
 
 resource "aws_iam_role_policy_attachment" "nodegroup_CloudWatchAgentServerPolicy" {
   policy_arn = "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
-  role = aws_iam_role.nodegroup.name
+  role       = aws_iam_role.nodegroup.name
 }
 
 
@@ -189,12 +188,17 @@ resource "aws_eks_cluster" "private" {
   role_arn = aws_iam_role.cluster.arn
   version  = var.kubernetes_version
 
+  access_config {
+    authentication_mode                         = "API_AND_CONFIG_MAP"
+    bootstrap_cluster_creator_admin_permissions = true
+  }
+
   vpc_config {
     subnet_ids = [
-        aws_subnet.subnet_private_01.id,    
-        aws_subnet.subnet_private_02.id,    
-        aws_subnet.subnet_public_01.id,    
-        aws_subnet.subnet_public_02.id
+      aws_subnet.subnet_private_01.id,
+      aws_subnet.subnet_private_02.id,
+      aws_subnet.subnet_public_01.id,
+      aws_subnet.subnet_public_02.id
     ]
 
     # Disable public endpoint - API only accessible within VPC
@@ -217,7 +221,7 @@ resource "aws_eks_node_group" "mng_daskhub_service" {
 
   # heliocould had a constraint for using a single AZ, so I'll keep that configuration
   # here.
-  subnet_ids      = [aws_subnet.subnet_public_01.id]
+  subnet_ids = [aws_subnet.subnet_public_01.id]
 
   instance_types = ["t3a.medium"]
 
@@ -232,12 +236,12 @@ resource "aws_eks_node_group" "mng_daskhub_service" {
   }
 
   labels = {
-    lifecycle = "OnDemand"
+    lifecycle                      = "OnDemand"
     "hub.jupyter.org/node-purpose" = "core"
   }
 
   tags = {
-    "k8s.io/cluster-autoscaler/node-template/label/lifecycle" = "OnDemand"
+    "k8s.io/cluster-autoscaler/node-template/label/lifecycle"                    = "OnDemand"
     "k8s.io/cluster-autoscaler/node-template/label/hub.jupyter.org/node-purpose" = "core"
   }
 
@@ -258,8 +262,8 @@ resource "aws_eks_node_group" "mng_daskhub_service" {
 module "heliocloud_eks_node_group_jupyterhub_user_compute" {
   source = "./modules/heliocloud_eks_node_group_jupyterhub_user_compute"
 
-  cluster_name    = aws_eks_cluster.private.name
-  node_role_arn   = aws_iam_role.nodegroup.arn
+  cluster_name  = aws_eks_cluster.private.name
+  node_role_arn = aws_iam_role.nodegroup.arn
 
   # heliocould had a constraint for using a single AZ, so I'll keep that configuration
   # here.
@@ -277,4 +281,19 @@ module "heliocloud_eks_node_group_jupyterhub_user_compute" {
     aws_iam_role_policy_attachment.nodegroup_AmazonRoute53AutoNamingRegistrantAccess,
     aws_iam_role_policy_attachment.nodegroup_CloudWatchAgentServerPolicy
   ]
+}
+
+module "heliocloud_eks_addon_cluster_autoscaler" {
+  source = "./modules/heliocloud_eks_addon_cluster_autoscaler"
+
+  cluster_name          = aws_eks_cluster.private.name
+  worker_node_role_name = aws_iam_role.nodegroup.name
+}
+
+output "aws_region" {
+  value = var.aws_region
+}
+
+output "eks_cluster_name" {
+  value = var.cluster_name
 }

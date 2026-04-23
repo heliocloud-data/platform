@@ -7,7 +7,7 @@ variable "subnet_ids" {
 
 variable "node_role_arn" {
   type = any
-  
+
 }
 
 variable "cluster_name" {

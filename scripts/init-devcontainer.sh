@@ -5,6 +5,10 @@
 # and pypi.org.
 touch ${USER}.env
 
+# The devcontainer mounts the .aws and .kube folders, which contin their configurations.
+mkdir -p ~/.aws
+mkdir -p ~/.kube
+
 WORKSPACE_FOLDER=$(pwd)
 devcontainer build --workspace-folder=${WORKSPACE_FOLDER}
 devcontainer up --workspace-folder=${WORKSPACE_FOLDER}

@@ -2,7 +2,7 @@
 
 # SES Identity (for email verification)
 resource "aws_ses_domain_identity" "domain_identity" {
-  count = var.create_ses_identity ? 1 : 0
+  count  = var.create_ses_identity ? 1 : 0
   domain = var.domain_name
 }
 

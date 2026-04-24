@@ -6,7 +6,7 @@ repos:
     hooks:
       - id: tofu-fmt
         name: tofu fmt
-        entry: tofu fmt -recursive
+        entry: tofu fmt -check -recursive
         language: system
         pass_filenames: false
         files: \.(tf|tfvars|tftest\.hcl)$

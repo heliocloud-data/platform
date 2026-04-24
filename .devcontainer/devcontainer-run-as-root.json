@@ -1,5 +1,5 @@
 {
-    "image": "python:3.9",
+    "image": "python:3.13.2",
 
     // Will want to connect for dind to work, we'll be
     // installing this container on the local network

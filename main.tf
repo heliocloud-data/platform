@@ -297,6 +297,13 @@ module "heliocloud_eks_addon_cluster_autoscaler" {
   worker_node_role_name = aws_iam_role.nodegroup.name
 }
 
+module "heliocloud_eks_addon_external_dns" {
+  source = "./modules/heliocloud_eks_addon_external_dns"
+
+  cluster_name          = aws_eks_cluster.private.name
+  worker_node_role_name = aws_iam_role.nodegroup.name
+}
+
 module "cognito" {
   source = "./modules/heliocloud_cognito"
 

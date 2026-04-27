@@ -16,6 +16,11 @@ aws eks update-kubeconfig --region $(cat environments/dev/terraform.tfvars.json 
 kubectl get nodes
 ```
 
+Deploy Kube Admin
+```
+kustomize build kube/kubeadm/cluster-autoscaler/overlays/dev | kubectl apply -f -
+```
+
 
 Deleting a cluster
 ```

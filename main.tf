@@ -283,6 +283,13 @@ module "heliocloud_eks_node_group_jupyterhub_user_compute" {
   ]
 }
 
+module "heliocloud_eks_addon_pod_identity" {
+  source = "./modules/heliocloud_eks_addon_pod_identity"
+
+  cluster_name       = aws_eks_cluster.private.name
+  kubernetes_version = var.kubernetes_version
+}
+
 module "heliocloud_eks_addon_cluster_autoscaler" {
   source = "./modules/heliocloud_eks_addon_cluster_autoscaler"
 

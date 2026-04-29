@@ -1,4 +1,5 @@
-
+# HelioCloud Auth Module Test - Basic Plan Validation
+# Covers: Basic plan validation with a realistic variable set, including all required variables and some optional
 
 variables {
   user_pool_name              = "tofu-auth-user-pool"
@@ -40,9 +41,9 @@ run "plan_heliocloud_auth_module" {
 
   assert {
     condition = contains(
-  aws_cognito_user_pool.user_pool.auto_verified_attributes,
-  "email"
-)
+      aws_cognito_user_pool.user_pool.auto_verified_attributes,
+      "email"
+    )
     error_message = "Expected email to remain the auto-verified attribute."
   }
 

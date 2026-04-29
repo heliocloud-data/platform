@@ -4,53 +4,50 @@
 # Intended use: regular CI after smoke tests or pre-merge verification.
 
 variables {
-  aws_region            = "us-east-1"
-  aws_eks_az1           = "us-east-1a"
-  aws_eks_az2           = "us-east-1b"
-  cluster_name          = "tofu-int-root"
-  kubernetes_version    = "1.33"
-  cognito_callback_urls = ["https://example.test/oauth/callback"]
-  cognito_logout_urls   = ["https://example.test/logout"]
-  tags = {
-    managed-by = "tofu-test"
-    test-tier  = "integration"
+    aws_region          = "us-east-1"
+    cluster_name        = "test-cluster"
+    kubernetes_version  = "1.29"
+    aws_eks_az1         = "us-east-1a"
+    aws_eks_az2         = "us-east-1b"
+    cognito_callback_urls = ["https://example.com/callback"]
+    cognito_logout_urls   = ["https://example.com/logout"]
+    tags = {
+      Environment = "test"
+    }
   }
-}
 
-run "plan_root_module_minimal_stack" {
+run "plan_basic_infra" {
   command = plan
 
-  plan_options {
-    refresh = false
+  
+
+  assert {
+    condition = aws_vpc.myvpc.cidr_block == "192.168.0.0/16"
+    error_message = "VPC CIDR block is incorrect"
   }
 
   assert {
-    condition     = aws_iam_role.cluster.name == "tofu-int-root-cluster-role"
-    error_message = "Expected the root cluster IAM role name to be derived from the cluster name."
+    condition = aws_subnet.subnet_private_01.id != ""
+    error_message = "Private subnet 01 not created"
   }
 
   assert {
-    condition     = module.cognito.user_pool_domain == "tofu-int-root"
-    error_message = "Expected the Cognito hosted UI domain output to match the sanitized cluster name."
+    condition = length(aws_subnet.subnet_public_01.id) > 0
+    error_message = "Public subnet 01 not created"
   }
 
   assert {
-    condition     = output.cognito_user_pool_domain == "tofu-int-root"
-    error_message = "Expected the root output to expose the Cognito user pool domain."
+    condition = aws_eks_cluster.private.name == var.cluster_name
+    error_message = "EKS cluster name mismatch"
   }
 
   assert {
-    condition     = aws_eks_cluster.private.version == "1.33"
-    error_message = "Expected the configured Kubernetes version to be passed into the EKS cluster."
+    condition = aws_eks_cluster.private.vpc_config[0].endpoint_public_access == true
+    error_message = "EKS public endpoint should be enabled"
   }
 
   assert {
-    condition     = output.cognito_client_id == module.cognito.user_pool_client_id
-    error_message = "Expected the root output to forward the Cognito client ID."
-  }
-
-  assert {
-    condition     = output.eks_cluster_name == "tofu-int-root"
-    error_message = "Expected the root output to expose the configured EKS cluster name."
+    condition = aws_eks_node_group.mng_daskhub_service.scaling_config[0].desired_size == 2
+    error_message = "Node group desired size should be 2"
   }
 }

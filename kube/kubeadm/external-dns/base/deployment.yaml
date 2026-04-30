@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: external-dns
+  namespace: kube-system
+  labels:
+    k8s-addon: external-dns.addons.k8s.io
+    k8s-app: external-dns
+spec:
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      k8s-addon: external-dns.addons.k8s.io
+      k8s-app: external-dns
+  template:
+    metadata:
+      labels:
+        k8s-addon: external-dns.addons.k8s.io
+        k8s-app: external-dns
+    spec:
+      serviceAccountName: external-dns
+      containers:
+      - name: external-dns
+        image: registry.k8s.io/external-dns/external-dns:v0.14.1
+        args:
+        - --source=service
+        - --source=ingress
+        - --domain-filter=$(EXTERNAL_DNS_DOMAIN_FILTER)
+        - --provider=aws
+        - --policy=upsert-only # would prevent ExternalDNS from deleting any records, omit to enable full synchronization
+        - --aws-zone-type=public # only look at public hosted zones (valid values are public, private or no value for both)
+        - --registry=noop
+        - --log-level=debug
+        - --aws-prefer-cname
+        env:
+        - name: EXTERNAL_DNS_DOMAIN_FILTER
+          value: ""
+      securityContext:
+        fsGroup: 65534 # For ExternalDNS to be able to read Kubernetes and AWS token files

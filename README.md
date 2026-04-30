@@ -19,6 +19,7 @@ kubectl get nodes
 Deploy Kube Admin
 ```
 kustomize build kube/kubeadm/cluster-autoscaler/overlays/dev | kubectl apply -f -
+kustomize build kube/kubeadm/external-dns/overlays/dev | kubectl apply -f -
 ```
 
 

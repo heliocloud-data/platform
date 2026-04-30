@@ -63,10 +63,19 @@ variable "tags" {
   default     = {}
 }
 
+variable "root_domain" {
+  description = "The root domain this heliocloud is being served from.  Is used for constructing URLs to the various services of the HelioCloud Platform.  For example 'heliocloud.org'"
+  type        = string
+  validation {
+    condition     = length(var.root_domain) > 0
+    error_message = "Value must not be empty."
+  }
+}
+
 variable "cognito_callback_urls" {
   description = "Allowed callback URLs for the Cognito user pool client"
   type        = list(string)
-  default     = ["http://localhost:8000/oauth_callback"] # These need to be updated with actual urls when they are available.
+  default     = ["http://localhost:8000/oauth2/callback"] # These need to be updated with actual urls when they are available.
 }
 
 variable "cognito_logout_urls" {

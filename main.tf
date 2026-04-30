@@ -317,10 +317,31 @@ module "heliocloud_auth" {
   tags                = var.tags
 }
 
+module "efs" {
+  source               = "terraform-aws-modules/efs/aws"
+  version              = "~> 2.0"
+  name                 = "heliocloud-efs-user-share"
+  creation_token       = "heliocloud-efs-user-share-token"
+  encrypted            = true
+  performance_mode     = "generalPurpose"
+  enable_backup_policy = true
+
+  mount_targets = {
+    "${var.aws_eks_az1}" = { subnet_id = aws_subnet.subnet_public_01.id }
+    "${var.aws_eks_az2}" = { subnet_id = aws_subnet.subnet_public_02.id }
+  }
+  security_group_vpc_id = aws_vpc.myvpc.id
+  tags                  = var.tags
+}
+
 output "aws_region" {
   value = var.aws_region
 }
 
 output "eks_cluster_name" {
   value = var.cluster_name
+}
+
+output "efs_file_system_id" {
+  value = module.efs.id
 }

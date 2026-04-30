@@ -34,28 +34,29 @@ jobs:
     name: Discover Modules
     runs-on: ubuntu-latest
     needs: formatting
+    outputs:
+      modules: ${{ steps.modules.outputs.modules }}
 
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
 
       - name: Find all modules
+        id: modules
         run: |
-          find modules -mindepth 1 -maxdepth 1 -type d | sort > modules.txt
-          cat modules.txt
-
-      - name: Upload modules list
-        uses: actions/upload-artifact@v4
-        with:
-          name: modules-list
-          path: modules.txt
-          retention-days: 1
+          MODULES=$(find modules -mindepth 1 -maxdepth 1 -type d | sort | jq -R . | jq -s .)
+          echo "modules=$MODULES" >> $GITHUB_OUTPUT
 
   tofu-validate:
     name: Validate Terraform Modules
     runs-on: ubuntu-latest
     needs: discover-modules
 
+    strategy:
+      fail-fast: false
+      matrix:
+        module: ${{ fromJson(needs.discover-modules.outputs.modules) }}
+
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -65,36 +66,34 @@ jobs:
         with:
           tofu_wrapper: false
 
-      - name: Download modules list
-        uses: actions/download-artifact@v4
-        with:
-          name: modules-list
+      - name: Initialize module
+        run: tofu -chdir="${{ matrix.module }}" init
 
-      - name: Initialize and validate each module
+      - name: Validate (${{ matrix.module }})
         run: |
-          FAILED_MODULES=""
-          while IFS= read -r module; do
-            echo "Initializing module: $module"
-            tofu -chdir="$module" init
-            echo "Validating module: $module"
-            if tofu -chdir="$module" validate; then
-              echo "Validation passed for $module"
-            else
-              echo "Validation failed for $module"
-              FAILED_MODULES="$FAILED_MODULES $module"
-            fi
-          done < modules.txt
-          
-          # Fail if any module validations failed
-          if [ -n "$FAILED_MODULES" ]; then
-            echo "The following modules failed validation:$FAILED_MODULES"
+          if tofu -chdir="${{ matrix.module }}" validate; then
+            echo "### ${{ matrix.module }} passed validation" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "### ${{ matrix.module }} failed validation" >> $GITHUB_STEP_SUMMARY
             exit 1
           fi
+
+      - name: Upload validation result
+        uses: actions/upload-artifact@v4
+        with:
+          name: validate-${{ matrix.module }}
+          path: validate.json
+          retention-days: 1
 
   tofu-test:
     name: Run Terraform Tests
     runs-on: ubuntu-latest
-    needs: discover-modules
+    needs: [discover-modules, tofu-validate]
+
+    strategy:
+      fail-fast: false
+      matrix:
+        module: ${{ fromJson(needs.discover-modules.outputs.modules) }}
 
     steps:
       - name: Check out repository
@@ -105,28 +104,63 @@ jobs:
         with:
           tofu_wrapper: false
 
-      - name: Download modules list
-        uses: actions/download-artifact@v4
-        with:
-          name: modules-list
+      - name: Initialize module
+        run: tofu -chdir="${{ matrix.module }}" init
 
-      - name: Initialize and run tests for each module
+      - name: Test (${{ matrix.module }})
         run: |
-          FAILED_MODULES=""
-          while IFS= read -r module; do
-            echo "Initializing module: $module"
-            tofu -chdir="$module" init
-            echo "Running tests for module: $module"
-            if tofu -chdir="$module" test; then
-              echo "Tests passed for $module"
-            else
-              echo "Tests failed for $module"
-              FAILED_MODULES="$FAILED_MODULES $module"
-            fi
-          done < modules.txt
-          
-          # Fail if any module tests failed
-          if [ -n "$FAILED_MODULES" ]; then
-            echo "The following modules failed tests:$FAILED_MODULES"
+          if tofu -chdir="${{ matrix.module }}" test; then
+            echo "### ${{ matrix.module }} passed testing" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "### ${{ matrix.module }} failed testing" >> $GITHUB_STEP_SUMMARY
             exit 1
           fi
+
+      - name: Upload test result
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-${{ matrix.module }}
+          path: test.json
+          retention-days: 1
+
+  summarize:
+    name: Summarize Results
+    runs-on: ubuntu-latest
+    needs: [tofu-validate, tofu-test]
+
+    steps:
+      - name: Download all validation artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: validate-*
+          path: validate-results
+          merge-multiple: true
+
+      - name: Download all test artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: test-*
+          path: test-results
+          merge-multiple: true
+
+      - name: Generate summary
+        run: |
+          echo "## Validation Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          for f in validate-results/*; do
+            if [ -f "$f" ]; then
+              cat "$f" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+            fi
+          done
+          
+          echo "## Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          for f in test-results/*; do
+            if [ -f "$f" ]; then
+              cat "$f" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+            fi
+          done

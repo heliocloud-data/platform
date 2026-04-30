@@ -78,13 +78,6 @@ jobs:
             exit 1
           fi
 
-      - name: Upload validation result
-        uses: actions/upload-artifact@v4
-        with:
-          name: validate-${{ matrix.module }}
-          path: validate.json
-          retention-days: 1
-
   tofu-test:
     name: Run Terraform Tests
     runs-on: ubuntu-latest
@@ -115,52 +108,3 @@ jobs:
             echo "### ${{ matrix.module }} failed testing" >> $GITHUB_STEP_SUMMARY
             exit 1
           fi
-
-      - name: Upload test result
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-${{ matrix.module }}
-          path: test.json
-          retention-days: 1
-
-  summarize:
-    name: Summarize Results
-    runs-on: ubuntu-latest
-    needs: [tofu-validate, tofu-test]
-
-    steps:
-      - name: Download all validation artifacts
-        uses: actions/download-artifact@v4
-        with:
-          pattern: validate-*
-          path: validate-results
-          merge-multiple: true
-
-      - name: Download all test artifacts
-        uses: actions/download-artifact@v4
-        with:
-          pattern: test-*
-          path: test-results
-          merge-multiple: true
-
-      - name: Generate summary
-        run: |
-          echo "## Validation Results" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          
-          for f in validate-results/*; do
-            if [ -f "$f" ]; then
-              cat "$f" >> $GITHUB_STEP_SUMMARY
-              echo "" >> $GITHUB_STEP_SUMMARY
-            fi
-          done
-          
-          echo "## Test Results" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          
-          for f in test-results/*; do
-            if [ -f "$f" ]; then
-              cat "$f" >> $GITHUB_STEP_SUMMARY
-              echo "" >> $GITHUB_STEP_SUMMARY
-            fi
-          done

@@ -95,6 +95,8 @@ run "plan_heliocloud_auth_module" {
 
 # Validation failure tests for all variables with validation blocks, covering empty strings etc.
 
+
+
 run "reject_empty_user_pool_name" {
   command = plan
 
@@ -149,10 +151,7 @@ run "reject_empty_certificate_arn_when_provided" {
   command = plan
 
   variables {
-    user_pool_name        = "tofu-invalid-auth-user-pool"
-    domain_prefix         = "tofu-invalid-auth"
-    user_pool_client_name = "tofu-invalid-auth-client"
-    certificate_arn       = ""
+    certificate_arn = ""
   }
 
   expect_failures = [var.certificate_arn]
@@ -162,9 +161,6 @@ run "reject_non_positive_access_token_validity" {
   command = plan
 
   variables {
-    user_pool_name              = "tofu-invalid-auth-user-pool"
-    domain_prefix               = "tofu-invalid-auth"
-    user_pool_client_name       = "tofu-invalid-auth-client"
     access_token_validity_hours = 0
   }
 
@@ -175,9 +171,6 @@ run "reject_non_positive_id_token_validity" {
   command = plan
 
   variables {
-    user_pool_name          = "tofu-invalid-auth-user-pool"
-    domain_prefix           = "tofu-invalid-auth"
-    user_pool_client_name   = "tofu-invalid-auth-client"
     id_token_validity_hours = 0
   }
 
@@ -188,9 +181,6 @@ run "reject_non_positive_refresh_token_validity" {
   command = plan
 
   variables {
-    user_pool_name              = "tofu-invalid-auth-user-pool"
-    domain_prefix               = "tofu-invalid-auth"
-    user_pool_client_name       = "tofu-invalid-auth-client"
     refresh_token_validity_days = 0
   }
 
@@ -201,10 +191,7 @@ run "reject_empty_callback_url_entry" {
   command = plan
 
   variables {
-    user_pool_name        = "tofu-invalid-auth-user-pool"
-    domain_prefix         = "tofu-invalid-auth"
-    user_pool_client_name = "tofu-invalid-auth-client"
-    callback_urls         = [""]
+    callback_urls = [""]
   }
 
   expect_failures = [var.callback_urls]
@@ -214,10 +201,7 @@ run "reject_empty_logout_url_entry" {
   command = plan
 
   variables {
-    user_pool_name        = "tofu-invalid-auth-user-pool"
-    domain_prefix         = "tofu-invalid-auth"
-    user_pool_client_name = "tofu-invalid-auth-client"
-    logout_urls           = [""]
+    logout_urls = [""]
   }
 
   expect_failures = [var.logout_urls]
@@ -227,9 +211,6 @@ run "reject_incomplete_email_configuration" {
   command = plan
 
   variables {
-    user_pool_name        = "tofu-invalid-auth-user-pool"
-    domain_prefix         = "tofu-invalid-auth"
-    user_pool_client_name = "tofu-invalid-auth-client"
     email_configuration = {
       from_email = ""
       source_arn = ""

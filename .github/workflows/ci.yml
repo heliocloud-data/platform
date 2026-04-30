@@ -30,8 +30,8 @@ jobs:
       - name: Run pre-commit checks
         run: pre-commit run --all-files --show-diff-on-failure
 
-  tofu-validate:
-    name: Validate Terraform Modules
+  discover-modules:
+    name: Discover Modules
     runs-on: ubuntu-latest
     needs: formatting
 
@@ -39,28 +39,22 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Set up OpenTofu
-        uses: opentofu/setup-opentofu@v1
+      - name: Find all modules
+        run: |
+          find modules -mindepth 1 -maxdepth 1 -type d | sort > modules.txt
+          cat modules.txt
+
+      - name: Upload modules list
+        uses: actions/upload-artifact@v4
         with:
-          tofu_wrapper: false
+          name: modules-list
+          path: modules.txt
+          retention-days: 1
 
-      - name: Find all module directories
-        id: modules
-        run: |
-          MODULES=$(find modules -mindepth 1 -maxdepth 1 -type d | sort)
-          echo "modules=$MODULES" >> $GITHUB_OUTPUT
-
-      - name: Validate each module
-        run: |
-          for module in ${{ steps.modules.outputs.modules }}; do
-            echo "Validating module: $module"
-            tofu -chdir="$module" validate || exit 1
-          done
-
-  tofu-test:
-    name: Run Terraform Tests
+  tofu-validate:
+    name: Validate Terraform Modules
     runs-on: ubuntu-latest
-    needs: tofu-validate
+    needs: discover-modules
 
     steps:
       - name: Check out repository
@@ -71,16 +65,68 @@ jobs:
         with:
           tofu_wrapper: false
 
-      - name: Find modules with test files
-        id: test-modules
-        run: |
-          TEST_MODULES=$(find modules -mindepth 1 -maxdepth 1 -type d -exec sh -c 'ls "$1"/*.tftest.hcl 2>/dev/null && echo "$1"' _ {} | sort)
-          echo "test_modules=$TEST_MODULES" >> $GITHUB_OUTPUT
+      - name: Download modules list
+        uses: actions/download-artifact@v4
+        with:
+          name: modules-list
 
-      - name: Run tofu test for each module
-        if: steps.test-modules.outputs.test_modules != ''
+      - name: Initialize and validate each module
         run: |
-          for module in ${{ steps.test-modules.outputs.test_modules }}; do
+          FAILED_MODULES=""
+          while IFS= read -r module; do
+            echo "Initializing module: $module"
+            tofu -chdir="$module" init
+            echo "Validating module: $module"
+            if tofu -chdir="$module" validate; then
+              echo "Validation passed for $module"
+            else
+              echo "Validation failed for $module"
+              FAILED_MODULES="$FAILED_MODULES $module"
+            fi
+          done < modules.txt
+          
+          # Fail if any module validations failed
+          if [ -n "$FAILED_MODULES" ]; then
+            echo "The following modules failed validation:$FAILED_MODULES"
+            exit 1
+          fi
+
+  tofu-test:
+    name: Run Terraform Tests
+    runs-on: ubuntu-latest
+    needs: discover-modules
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up OpenTofu
+        uses: opentofu/setup-opentofu@v1
+        with:
+          tofu_wrapper: false
+
+      - name: Download modules list
+        uses: actions/download-artifact@v4
+        with:
+          name: modules-list
+
+      - name: Initialize and run tests for each module
+        run: |
+          FAILED_MODULES=""
+          while IFS= read -r module; do
+            echo "Initializing module: $module"
+            tofu -chdir="$module" init
             echo "Running tests for module: $module"
-            tofu -chdir="$module" test || exit 1
-          done
+            if tofu -chdir="$module" test; then
+              echo "Tests passed for $module"
+            else
+              echo "Tests failed for $module"
+              FAILED_MODULES="$FAILED_MODULES $module"
+            fi
+          done < modules.txt
+          
+          # Fail if any module tests failed
+          if [ -n "$FAILED_MODULES" ]; then
+            echo "The following modules failed tests:$FAILED_MODULES"
+            exit 1
+          fi

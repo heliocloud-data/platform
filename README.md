@@ -23,6 +23,13 @@ kustomize build kube/kubeadm/external-dns/overlays/dev | kubectl apply -f -
 ```
 
 
+Deploy HelioCloud
+```
+kustomize build kube/apps/storage/overlays/dev | kubectl apply -f -
+
+```
+
+
 Deleting a cluster
 ```
 #collect the outputs

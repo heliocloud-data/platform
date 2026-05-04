@@ -304,6 +304,14 @@ module "heliocloud_eks_addon_external_dns" {
   worker_node_role_name = aws_iam_role.nodegroup.name
 }
 
+module "heliocloud_eks_addon_ebs" {
+  source = "./modules/heliocloud_eks_addon_ebs"
+
+  cluster_name          = aws_eks_cluster.private.name
+  kubernetes_version    = var.kubernetes_version
+  worker_node_role_name = aws_iam_role.nodegroup.name
+}
+
 module "heliocloud_auth" {
   source = "./modules/heliocloud_auth"
 

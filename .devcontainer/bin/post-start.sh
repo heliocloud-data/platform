@@ -8,7 +8,7 @@
 # Installs certificate at OS level
 if [ "$CA_CERT_URL" != "" ]; then
     CA_CERT=/usr/local/share/ca-certificates/CA_CERT.crt
-    echo "Installing cert from url ${CA_CERT_URL}."
+    echo "Installing cert from url ${CA_CERT_URL} ..."
     sudo curl ${CA_CERT_URL} -o ${CA_CERT}
     sudo update-ca-certificates --verbose
 else
@@ -53,5 +53,14 @@ else
   echo "warning: Unable to locate 'google-chrome-stable_current_amd64.deb' installer, attempting to continue"
 fi
 
-python3.13 -m pip install --user -r requirements-dev.txt || exit 8
-pre-commit install || exit 9
+if [[ "${POST_START_PIP_INSTALL_REQUIREMENTS}" == "true" ]]; then
+  for pip_req_file in ./requirements*.txt; do
+    echo "Installing deps of ${pip_req_file} ..."
+    pip install --user -r ${pip_req_file} || exit 8
+  done
+ 
+fi
+
+if [[ "${POST_START_PRE_COMMIT_INSTALL_HOOKS}" == "true" ]]; then
+  pre-commit install || exit 9
+fi

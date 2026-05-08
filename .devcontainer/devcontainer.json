@@ -33,6 +33,7 @@
     "updateRemoteUserUID": "true",
     "containerEnv": {
         "POST_START_PIP_INSTALL_REQUIREMENTS": "true",
+        "POST_START_PRE_COMMIT_INSTALL_HOOKS": "false",
     },
     "postStartCommand": "bash .devcontainer/bin/post-start.sh",
 }

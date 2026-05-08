@@ -21,4 +21,4 @@ RUN \
 USER $DEV_CONTAINER_USER
 
 # Add user python bin is on the path
-ENV PATH=${HOME}/.local/bin:${PATH}
+ENV PATH=/home/${DEV_CONTAINER_USER}/.local/bin:${PATH}

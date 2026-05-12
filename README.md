@@ -16,6 +16,8 @@ aws eks update-kubeconfig --region $(cat environments/dev/terraform.tfvars.json 
 kubectl get nodes
 ```
 
+Render the environment specific k8s resources
+
 Deploy Kube Admin
 ```
 kustomize build kube/kubeadm/cluster-autoscaler/overlays/dev | kubectl apply -f -
@@ -27,6 +29,15 @@ Deploy HelioCloud
 ```
 kustomize build kube/apps/storage/overlays/dev | kubectl apply -f -
 
+cd kube/apps/daskhub
+helm dep update
+helm upgrade \
+    daskhub ./ \
+    --namespace daskhub \
+    --values=values.yaml \
+    --values=values-dev.yaml \
+    --post-renderer=./kustomize-post-renderer-hook.sh \
+    --install --timeout 30m30s --debug
 ```
 
 

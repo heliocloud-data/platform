@@ -1,0 +1,35 @@
+# See:
+#  https://kubectl.docs.kubernetes.io/references/kustomize/
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# There must be agreement w/ the input resource name
+# and the file produces within the post-renderer script
+# (kustomize-post-renderer-hook.sh).
+resources:
+- all.yaml
+
+patches:
+  # Added when upgrading to kube-scheduler 1.26
+  #  1.) This version only supports apiVersion v1beta3 or v1.  This configuration
+  #      is defined in the ConfigMap.  There were a few additional changes within
+  #      this resource as well.  The values included here are the current daskhub
+  #      version 2024.1.1.
+  #
+  # Updated when upgrading to kube-scheduler 1.27
+  #  1.) This version only supports apiVersion v1.  The first version of daskhub
+  #      to support this apiVersion is 2024.1.0, these patches must remain until
+  #      then
+  - path: patch-jupyterhub-user-scheduler-configMap-apiVersion-v1.yaml
+    target:
+      kind: ConfigMap
+      name: user-scheduler
+
+  # Added when upgrading to kube-scheduler 1.32
+  #  1.) This version appears to require an additional resource volumeattachments
+  #      for the storage.k8s.io API group.  There doesn't appear to be an option
+  #      to specify this via the values.yaml file.
+  - path: patch-jupyterhub-user-scheduler-clusterRole.yaml
+    target:
+      kind: ClusterRole
+      name: daskhub-user-scheduler

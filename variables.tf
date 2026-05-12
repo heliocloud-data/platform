@@ -113,3 +113,16 @@ variable "cognito_logout_urls" {
   type        = list(string)
   default     = ["http://localhost:8000"] # These need to be updated with actual urls when they are available.
 }
+
+variable "oauth2_proxy_cookie_secret" {
+  description = "Cookie secret for oauth2-proxy."
+  type        = string
+  default     = null
+  sensitive   = true
+}
+
+variable "ingress_load_balancer_ssl_certificate_arn" {
+  description = "Optional ACM certificate ARN for TLS termination on the ingress load balancer."
+  type        = string
+  default     = null
+}

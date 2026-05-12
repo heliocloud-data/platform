@@ -362,9 +362,30 @@ module "heliocloud_auth" {
   user_pool_client_name = "${replace(var.cluster_name, "_", "-")}-client"
 
   deletion_protection = false
-  callback_urls       = var.cognito_callback_urls
+  callback_urls       = distinct(concat(var.cognito_callback_urls, [local.oauth2_proxy_callback_url]))
   logout_urls         = var.cognito_logout_urls
   tags                = var.tags
+}
+
+module "heliocloud_eks_ingress" {
+  source = "./modules/heliocloud_eks_ingress"
+
+  cluster_name                      = aws_eks_cluster.private.name
+  aws_region                        = var.aws_region
+  root_domain                       = var.root_domain
+  cognito_user_pool_id              = module.heliocloud_auth.user_pool_id
+  cognito_user_pool_domain          = module.heliocloud_auth.user_pool_domain
+  cognito_client_id                 = module.heliocloud_auth.user_pool_client_id
+  cognito_client_secret             = module.heliocloud_auth.user_pool_client_secret
+  oauth2_proxy_cookie_secret        = coalesce(var.oauth2_proxy_cookie_secret, random_id.oauth2_proxy_cookie_secret.b64_std)
+  load_balancer_ssl_certificate_arn = var.ingress_load_balancer_ssl_certificate_arn
+
+  depends_on = [
+    aws_eks_cluster.private,
+    aws_eks_node_group.mng_daskhub_service,
+    module.heliocloud_eks_node_group_jupyterhub_user_compute,
+    module.heliocloud_auth
+  ]
 }
 
 module "efs" {

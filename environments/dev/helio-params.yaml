@@ -4,9 +4,3 @@ heritage_params:
       admin_users:
       - lenzinm1
       api_key2: auto
-      domain_record: daskhub-opentofu-us-west-1
-    global:
-      domain_url: aplscicloud.org
-  hc_config:
-    auth:
-      domain_prefix: auth-opentofu-us-west-1

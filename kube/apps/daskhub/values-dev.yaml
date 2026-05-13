@@ -3,7 +3,7 @@ daskhub:
     gateway:
       auth:
         jupyterhub:
-          apiToken: 1327202a55ad95f335cfa99ec1c526ffbf40b3a6e5ad1397bc7dd55b5e7f37df
+          apiToken: 36f4c62327b550ddc77afe982d1a0c6b7159f7ff63b3afff4e86ab8c95322804
 
   jupyterhub:
     ingress:
@@ -23,7 +23,7 @@ daskhub:
           admin_users: ['lenzinm1']
       services:
         dask-gateway:
-          apiToken: 1327202a55ad95f335cfa99ec1c526ffbf40b3a6e5ad1397bc7dd55b5e7f37df
+          apiToken: 36f4c62327b550ddc77afe982d1a0c6b7159f7ff63b3afff4e86ab8c95322804
       extraEnv:
         DASKHUB_URL: "https://daskhub-opentofu-us-west-1.aplscicloud.org"
         CLIENT_ID: "16fnrgg4jjbu5rjjj7btfgk9lkc3u1qa9m5tiig7ksjd6r5bml8r"

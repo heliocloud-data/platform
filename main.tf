@@ -2,6 +2,48 @@ provider "aws" {
   region = var.aws_region
 }
 
+resource "aws_route53_zone" "HelioCloud_PrimaryZone" {
+  name = var.root_domain
+
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
+resource "aws_route53_record" "HelioCloud_Daskhub_Record" {
+  zone_id = aws_route53_zone.HelioCloud_PrimaryZone.zone_id
+  name    = "${var.daskhub_subdomain}.${var.root_domain}"
+  type    = "CNAME"
+  ttl     = 300
+
+  # External DNS Kubernetes application will update this record with the LoadBalancer
+  # created during the Kubernetes deployment.
+  records        = ["0.0.0.0"]
+
+  lifecycle {
+    ignore_changes = [
+      records,
+    ]
+  }
+}
+
+resource "aws_route53_record" "HelioCloud_Auth_Record" {
+  zone_id = aws_route53_zone.HelioCloud_PrimaryZone.zone_id
+  name    = "${var.auth_subdomain}.${var.root_domain}"
+  type    = "CNAME"
+  ttl     = 300
+
+  # External DNS Kubernetes application will update this record with the LoadBalancer
+  # created during the Kubernetes deployment.
+  records        = ["0.0.0.0"]
+
+  lifecycle {
+    ignore_changes = [
+      records,
+    ]
+  }
+}
+
 resource "aws_vpc" "myvpc" {
   cidr_block = "192.168.0.0/16"
   tags = {
@@ -340,16 +382,4 @@ module "efs" {
   }
   security_group_vpc_id = aws_vpc.myvpc.id
   tags                  = var.tags
-}
-
-output "aws_region" {
-  value = var.aws_region
-}
-
-output "eks_cluster_name" {
-  value = var.cluster_name
-}
-
-output "efs_file_system_id" {
-  value = module.efs.id
 }

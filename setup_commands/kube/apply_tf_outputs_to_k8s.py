@@ -2,6 +2,7 @@
 Utils for working with Jinja templates.
 """
 
+import argparse
 import glob
 from pathlib import Path
 
@@ -9,6 +10,7 @@ import jinja2
 import json
 import os
 import secrets
+import subprocess
 import yaml
 
 SECRET_HEX_IN_BYTES = 32
@@ -49,19 +51,59 @@ def apply_jinja_templates_by_dir(
                 if not doc.endswith("\n"):
                     dest_file_obj.write("\n")
 
+parser = argparse.ArgumentParser(description="Utility script for applying tf outputs to k8s manifests")
+
+parser.add_argument("env", type=str, nargs=1, help="The name of the terraform environment")
+parser.add_argument("--tf_input_file", type=str, nargs='+', help="Terraform input files, defaults to './environments/<env>/terraform.tfvars.json'")
+parser.add_argument("--tf_output_file", type=str, nargs='+', help="Terraform output files, defaults to the contents of 'tofu output -var-file=environments/<env>/terraform.tfvars.json -json'")
+
+args = parser.parse_args()
+
 render_params = {
     'tf': {}
 }
 
-env = "dev" # TODO make command-line arg
+env = args.env[0]
+print(args)
 
-# TODO: Auto-wire
-with open("tf_inputs.json", 'r', encoding='utf-8') as file:
-    render_params['tf']['vars'] = json.load(file) 
+tf_input_files = args.tf_input_file
+if tf_input_files is None or len(tf_input_files) == 0:
+    tf_input_files = [f"./environments/{env}/terraform.tfvars.json"]
 
-# TODO: Auto-wire
-with open("tf_outputs.json", 'r', encoding='utf-8') as file:
-    render_params['tf']['outputs'] = json.load(file) 
+tf_output_files = args.tf_output_file
+if tf_output_files is None or len(tf_output_files) == 0:
+    tf_output_file = "tf_outputs.json"
+    cmd_args = [
+        "tofu",
+        "output",
+        f"-var-file=environments/{env}/terraform.tfvars.json",
+        "-json",
+        "-show-sensitive"
+    ]
+
+    result = subprocess.run(cmd_args, capture_output=True, text=True)
+
+    print(result.stdout)
+    
+    with open(tf_output_file, 'w', encoding='utf-8') as file:
+        file.write(result.stdout)
+
+    tf_output_files = [tf_output_file]
+
+
+for tf_input_file in tf_input_files:
+    print(f"loading params from {tf_input_file}")
+
+    with open(tf_input_file, 'r', encoding='utf-8') as file:
+        render_params['tf']['vars'] = json.load(file)
+
+
+for tf_output_file in tf_output_files:
+    print(f"loading outputs from {tf_output_file}")
+
+    with open(tf_output_file, 'r', encoding='utf-8') as file:
+        render_params['tf']['outputs'] = json.load(file) 
+
 
 helio_params_file = f"environments/{env}/helio-params.yaml"
 with open(helio_params_file, 'r') as file:
@@ -75,7 +117,6 @@ if 'heritage_params' in render_params and \
     'daskhub' in render_params['heritage_params']['config'] and \
     'api_key1' in render_params['heritage_params']['config']['daskhub'] and \
     render_params['heritage_params']['config']['daskhub']['api_key1'] == 'auto':
-    print("!!!!")
     render_params['heritage_params']['config']['daskhub']['api_key1'] = secrets.token_hex(SECRET_HEX_IN_BYTES)
 render_params['env'] = env
 

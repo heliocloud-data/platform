@@ -15,5 +15,5 @@ patches:
       path: /spec/template/spec/containers/0/env
       value: [{
           "name": "EXTERNAL_DNS_DOMAIN_FILTER",
-          "value": "aplscicloud.org"
+          "value": "{{ tf['outputs']['root_domain']['value'] }}"
         }]

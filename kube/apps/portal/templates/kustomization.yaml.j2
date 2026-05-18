@@ -1,0 +1,60 @@
+# See:
+#  https://kubectl.docs.kubernetes.io/references/kustomize/
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+- ../../base/
+
+patches:
+- target:
+    kind: Deployment
+    name: portal
+  patch: |
+    - op: replace
+      path: /spec/template/spec/containers/0/env
+      value:
+        - name: APP_NAME
+          value: "{{ tf['vars']['cognito_subdomain'] }}"
+        - name: DEFAULT_SECURITY_GROUP_ID
+          value: "{{ tf['outputs']['portal_security_group_id']['value'] }}"
+        - name: DEFAULT_EC2_INSTANCE_PROFILE_ARN
+          value: "{{ tf['outputs']['portal_ec2_instance_profile_arn']['value'] }}"
+        - name: DEFAULT_EC2_SUBNET_ID
+          value: "{{ tf['outputs']['portal_subnet_id']['value'] }}"
+        - name: IDENTITY_POOL_ID
+          value: "{{ tf['outputs']['portal_identity_pool_id']['value'] }}"
+        - name: REGION
+          value: {{ tf['outputs']['aws_region']['value'] }}
+        - name: SITE_URL
+          value: https://{{ tf['outputs']['portal_fqdn']['value'] }}
+        - name: USER_POOL_CLIENT_SECRET
+          value: "{{ tf['outputs']['cognito_client_secret']['value'] }}"
+        - name: USER_POOL_CLIENT_ID
+          value: "{{ tf['outputs']['cognito_client_id']['value'] }}"
+        - name: USER_POOL_ID
+          value: "{{ tf['outputs']['cognito_user_pool_id']['value'] }}"
+        - name: FLASK_SECRET_KEY
+          value: {{  heritage_params['config']['portal']['api_key'] }}
+        - name: LOGOUT_URL
+          value: "https://{{ tf['outputs']['auth_fqdn']['value'] }}/oauth2/sign_out"
+- target:
+    kind: ServiceAccount
+    name: portal-sa
+  patch: |
+    - op: replace
+      path: /metadata/annotations/eks.amazonaws.com~1role-arn
+      value: {{ tf['outputs']['portal_user_role_arn']['value'] }}
+- target:
+    kind: Ingress
+    name: portal-ingress
+  patch: |
+    - op: replace
+      path: /spec/rules/0/host
+      value: {{ tf['outputs']['portal_fqdn']['value'] }}
+    - op: replace
+      path: /metadata/annotations/nginx.ingress.kubernetes.io~1auth-url
+      value: "https://{{ tf['outputs']['auth_fqdn']['value'] }}/oauth2/auth"
+    - op: replace
+      path: /metadata/annotations/nginx.ingress.kubernetes.io~1auth-signin
+      value: "https://{{ tf['outputs']['auth_fqdn']['value'] }}/oauth2/start?rd=https://$host"

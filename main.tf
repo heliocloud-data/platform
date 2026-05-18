@@ -46,6 +46,23 @@ resource "aws_route53_record" "HelioCloud_Daskhub_Record" {
   }
 }
 
+resource "aws_route53_record" "HelioCloud_Portal_Record" {
+  zone_id = aws_route53_zone.HelioCloud_PrimaryZone.zone_id
+  name    = "${var.portal_subdomain}.${var.root_domain}"
+  type    = "CNAME"
+  ttl     = 300
+
+  # External DNS Kubernetes application will update this record with the LoadBalancer
+  # created during the Kubernetes deployment.
+  records = ["0.0.0.0"]
+
+  lifecycle {
+    ignore_changes = [
+      records,
+    ]
+  }
+}
+
 resource "aws_route53_record" "HelioCloud_Auth_Record" {
   zone_id = aws_route53_zone.HelioCloud_PrimaryZone.zone_id
   name    = "${var.auth_subdomain}.${var.root_domain}"
@@ -68,62 +85,6 @@ resource "aws_vpc" "myvpc" {
   tags = {
     Name = "${var.cluster_name}/VPC"
   }
-}
-
-resource "aws_nat_gateway" "nat_gateway" {
-  vpc_id            = aws_vpc.myvpc.id
-  availability_mode = "regional"
-
-  tags = {
-    Name = "${var.cluster_name}/NATGateway"
-  }
-}
-
-resource "aws_route_table" "private" {
-  vpc_id = aws_vpc.myvpc.id
-
-  route {
-    cidr_block = "0.0.0.0/0"
-    gateway_id = aws_nat_gateway.nat_gateway.id
-  }
-
-  route {
-    cidr_block = aws_vpc.myvpc.cidr_block
-    gateway_id = "local"
-  }
-
-  tags = {
-    Name = "${var.cluster_name}/RouteTablePrivate"
-  }
-}
-
-
-resource "aws_subnet" "subnet_private_01" {
-  vpc_id            = aws_vpc.myvpc.id
-  cidr_block        = "192.168.0.0/19"
-  availability_zone = var.aws_eks_az1
-  tags = {
-    Name = "${var.cluster_name}/SubnetPrivate-${var.aws_eks_az1}"
-  }
-}
-
-resource "aws_subnet" "subnet_private_02" {
-  vpc_id            = aws_vpc.myvpc.id
-  cidr_block        = "192.168.32.0/19"
-  availability_zone = var.aws_eks_az2
-  tags = {
-    Name = "${var.cluster_name}/SubnetPrivate-${var.aws_eks_az2}"
-  }
-}
-
-resource "aws_route_table_association" "route_table_association_subnet_private_01" {
-  subnet_id      = aws_subnet.subnet_private_01.id
-  route_table_id = aws_route_table.private.id
-}
-
-resource "aws_route_table_association" "route_table_association_subnet_private_02" {
-  subnet_id      = aws_subnet.subnet_private_02.id
-  route_table_id = aws_route_table.private.id
 }
 
 resource "aws_internet_gateway" "gw" {
@@ -181,8 +142,8 @@ resource "aws_route_table_association" "route_table_association_subnet_public_02
   route_table_id = aws_route_table.public.id
 }
 
-resource "aws_iam_role" "cluster" {
-  name = "${var.cluster_name}-cluster-role"
+resource "aws_iam_role" "HelioCloud_EKS_ClusterRole" {
+  name = "HelioCloud_${var.cluster_name}_ClusterRole"
   assume_role_policy = jsonencode({
     Version = "2012-10-17",
     Statement = [{
@@ -195,11 +156,11 @@ resource "aws_iam_role" "cluster" {
 
 resource "aws_iam_role_policy_attachment" "cluster_AmazonEKSClusterPolicy" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
-  role       = aws_iam_role.cluster.name
+  role       = aws_iam_role.HelioCloud_EKS_ClusterRole.name
 }
 
-resource "aws_iam_role" "nodegroup" {
-  name = "${var.cluster_name}-nodegroup"
+resource "aws_iam_role" "HelioCloud_EKS_NodeGroupRole" {
+  name = "HelioCloud_${var.cluster_name}_NodeGroupRole"
   assume_role_policy = jsonencode({
     Version = "2012-10-17",
     Statement = [{
@@ -214,39 +175,39 @@ resource "aws_iam_role" "nodegroup" {
 
 resource "aws_iam_role_policy_attachment" "nodegroup_AmazonEC2ContainerRegistryReadOnly" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
-  role       = aws_iam_role.nodegroup.name
+  role       = aws_iam_role.HelioCloud_EKS_NodeGroupRole.name
 }
 
 resource "aws_iam_role_policy_attachment" "nodegroup_AmazonEC2RoleforSSM" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM"
-  role       = aws_iam_role.nodegroup.name
+  role       = aws_iam_role.HelioCloud_EKS_NodeGroupRole.name
 }
 
 resource "aws_iam_role_policy_attachment" "nodegroup_AmazonEKS_CNI_Policy" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy"
-  role       = aws_iam_role.nodegroup.name
+  role       = aws_iam_role.HelioCloud_EKS_NodeGroupRole.name
 }
 
 resource "aws_iam_role_policy_attachment" "nodegroup_AmazonEKSWorkerNodePolicy" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy"
-  role       = aws_iam_role.nodegroup.name
+  role       = aws_iam_role.HelioCloud_EKS_NodeGroupRole.name
 }
 
 resource "aws_iam_role_policy_attachment" "nodegroup_AmazonRoute53AutoNamingRegistrantAccess" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonRoute53AutoNamingRegistrantAccess"
-  role       = aws_iam_role.nodegroup.name
+  role       = aws_iam_role.HelioCloud_EKS_NodeGroupRole.name
 }
 
 resource "aws_iam_role_policy_attachment" "nodegroup_CloudWatchAgentServerPolicy" {
   policy_arn = "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
-  role       = aws_iam_role.nodegroup.name
+  role       = aws_iam_role.HelioCloud_EKS_NodeGroupRole.name
 }
 
 
 
 resource "aws_eks_cluster" "private" {
   name     = var.cluster_name
-  role_arn = aws_iam_role.cluster.arn
+  role_arn = aws_iam_role.HelioCloud_EKS_ClusterRole.arn
   version  = var.kubernetes_version
 
   access_config {
@@ -256,8 +217,6 @@ resource "aws_eks_cluster" "private" {
 
   vpc_config {
     subnet_ids = [
-      aws_subnet.subnet_private_01.id,
-      aws_subnet.subnet_private_02.id,
       aws_subnet.subnet_public_01.id,
       aws_subnet.subnet_public_02.id
     ]
@@ -278,7 +237,7 @@ resource "aws_eks_cluster" "private" {
 resource "aws_eks_node_group" "mng_daskhub_service" {
   cluster_name    = aws_eks_cluster.private.name
   node_group_name = "mng_daskhub_service"
-  node_role_arn   = aws_iam_role.nodegroup.arn
+  node_role_arn   = aws_iam_role.HelioCloud_EKS_NodeGroupRole.arn
 
   # heliocould had a constraint for using a single AZ, so I'll keep that configuration
   # here.
@@ -310,7 +269,7 @@ resource "aws_eks_node_group" "mng_daskhub_service" {
   # Otherwise, EKS will not be able to properly delete EC2 Instances and Elastic Network Interfaces.
   depends_on = [
     aws_internet_gateway.gw,
-    aws_iam_role.nodegroup,
+    aws_iam_role.HelioCloud_EKS_NodeGroupRole,
     aws_iam_role_policy_attachment.nodegroup_AmazonEKSWorkerNodePolicy,
     aws_iam_role_policy_attachment.nodegroup_AmazonEC2RoleforSSM,
     aws_iam_role_policy_attachment.nodegroup_AmazonEKS_CNI_Policy,
@@ -324,7 +283,7 @@ module "heliocloud_eks_node_group_jupyterhub_user_compute" {
   source = "./modules/heliocloud_eks_node_group_jupyterhub_user_compute"
 
   cluster_name  = aws_eks_cluster.private.name
-  node_role_arn = aws_iam_role.nodegroup.arn
+  node_role_arn = aws_iam_role.HelioCloud_EKS_NodeGroupRole.arn
 
   # heliocould had a constraint for using a single AZ, so I'll keep that configuration
   # here.
@@ -334,7 +293,7 @@ module "heliocloud_eks_node_group_jupyterhub_user_compute" {
   # Otherwise, EKS will not be able to properly delete EC2 Instances and Elastic Network Interfaces.
   depends_on = [
     aws_internet_gateway.gw,
-    aws_iam_role.nodegroup,
+    aws_iam_role.HelioCloud_EKS_NodeGroupRole,
     aws_iam_role_policy_attachment.nodegroup_AmazonEKSWorkerNodePolicy,
     aws_iam_role_policy_attachment.nodegroup_AmazonEC2RoleforSSM,
     aws_iam_role_policy_attachment.nodegroup_AmazonEKS_CNI_Policy,
@@ -355,14 +314,14 @@ module "heliocloud_eks_addon_cluster_autoscaler" {
   source = "./modules/heliocloud_eks_addon_cluster_autoscaler"
 
   cluster_name          = aws_eks_cluster.private.name
-  worker_node_role_name = aws_iam_role.nodegroup.name
+  worker_node_role_name = aws_iam_role.HelioCloud_EKS_NodeGroupRole.name
 }
 
 module "heliocloud_eks_addon_external_dns" {
   source = "./modules/heliocloud_eks_addon_external_dns"
 
   cluster_name          = aws_eks_cluster.private.name
-  worker_node_role_name = aws_iam_role.nodegroup.name
+  worker_node_role_name = aws_iam_role.HelioCloud_EKS_NodeGroupRole.name
 }
 
 module "heliocloud_eks_addon_ebs" {
@@ -370,14 +329,14 @@ module "heliocloud_eks_addon_ebs" {
 
   cluster_name          = aws_eks_cluster.private.name
   kubernetes_version    = var.kubernetes_version
-  worker_node_role_name = aws_iam_role.nodegroup.name
+  worker_node_role_name = aws_iam_role.HelioCloud_EKS_NodeGroupRole.name
 }
 
 module "heliocloud_auth" {
   source = "./modules/heliocloud_auth"
 
   user_pool_name        = "${replace(var.cluster_name, "_", "-")}-user-pool"
-  domain_prefix         = replace(var.cluster_name, "_", "-")
+  domain_prefix         = replace(var.cognito_subdomain, "_", "-")
   user_pool_client_name = "${replace(var.cluster_name, "_", "-")}-client"
 
   deletion_protection = false
@@ -422,4 +381,14 @@ module "efs" {
   }
   security_group_vpc_id = aws_vpc.myvpc.id
   tags                  = var.tags
+}
+
+module "heliocloud_portal" {
+  source = "./modules/heliocloud_portal"
+
+  aws_az1                     = var.aws_eks_az1
+  aws_az2                     = var.aws_eks_az2
+  identity_provider_client_id = module.heliocloud_auth.user_pool_client_id
+  identity_provider_name      = "cognito-idp.${var.aws_region}.amazonaws.com/${module.heliocloud_auth.user_pool_id}"
+
 }

@@ -1,6 +1,4 @@
 locals {
-  oauth2_proxy_host = "oauth-${var.cluster_name}-${var.aws_region}.${var.root_domain}"
-
   ingress_service_annotations = merge(
     {
       "service.beta.kubernetes.io/aws-load-balancer-type"             = "nlb"
@@ -44,8 +42,8 @@ resource "helm_release" "ingress" {
         extraArgs = {
           "oidc-jwks-url"      = "https://cognito-idp.${var.aws_region}.amazonaws.com/${var.cognito_user_pool_id}/.well-known/jwks.json"
           "oidc-issuer-url"    = "https://cognito-idp.${var.aws_region}.amazonaws.com/${var.cognito_user_pool_id}"
-          "redirect-url"       = "https://${local.oauth2_proxy_host}/oauth2/callback"
-          "backend-logout-url" = "https://${local.oauth2_proxy_host}/oauth2/sign_out"
+          "redirect-url"       = "https://${var.oauth2_proxy_host}/oauth2/callback"
+          "backend-logout-url" = "https://${var.oauth2_proxy_host}/oauth2/sign_out"
           "whitelist-domain"   = ".${var.root_domain},.amazoncognito.com"
           "cookie-domain"      = ".${var.root_domain}"
           "cookie-name"        = "_oauth2_proxy_${var.cognito_user_pool_domain}"
@@ -53,7 +51,7 @@ resource "helm_release" "ingress" {
         }
         ingress = {
           enabled = true
-          hosts   = [local.oauth2_proxy_host]
+          hosts   = [var.oauth2_proxy_host]
           annotations = {
             "kubernetes.io/ingress.class"                      = "nginx"
             "nginx.ingress.kubernetes.io/proxy-buffer-size"    = "16k"

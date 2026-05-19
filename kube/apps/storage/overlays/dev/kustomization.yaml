@@ -16,7 +16,7 @@ patches:
       value: 10Gi
     - op: replace
       path: /spec/nfs/server
-      value: fs-0cb8705e449145528.efs.us-west-1.amazonaws.com
+      value: fs-02c78c366580584b7.efs.us-west-2.amazonaws.com
 - target:
     kind: PersistentVolumeClaim
     name: efs-persist

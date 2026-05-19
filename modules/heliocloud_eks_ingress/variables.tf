@@ -1,10 +1,10 @@
-variable "cluster_name" {
-  description = "The name of the EKS cluster."
+variable "aws_region" {
+  description = "The AWS region hosting the EKS cluster and Cognito resources."
   type        = string
 }
 
-variable "aws_region" {
-  description = "The AWS region hosting the EKS cluster and Cognito resources."
+variable "oauth2_proxy_host" {
+  description = "Public hostname for the oauth2-proxy ingress."
   type        = string
 }
 

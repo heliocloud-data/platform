@@ -74,8 +74,8 @@ variable "root_domain" {
 
 variable "daskhub_subdomain" {
   description = "The subdomain of this heliocloud instance of daskhub is being served from.  It's prepended to the root domain specified by 'root_domain' to derive the output 'daskhub_fqdn'."
-  type = string
-  default = "daskhub"
+  type        = string
+  default     = "daskhub"
   validation {
     condition     = length(var.daskhub_subdomain) > 0
     error_message = "Value must not be empty."
@@ -84,8 +84,8 @@ variable "daskhub_subdomain" {
 
 variable "auth_subdomain" {
   description = "The subdomain of this heliocloud instance of auth is being served from.  It's prepended to the root domain specified by 'root_domain' to derive the output 'auth_fqdn'."
-  type = string
-  default = "auth"
+  type        = string
+  default     = "auth"
   validation {
     condition     = length(var.auth_subdomain) > 0
     error_message = "Value must not be empty."
@@ -94,8 +94,8 @@ variable "auth_subdomain" {
 
 variable "cognito_subdomain" {
   description = "The subdomain of this heliocloud's AWS cognito.  It's prepended to the auth.<var.aws_region>.amazoncognito.com domain to derive the output 'cognito_fqdn'."
-  type = string
-  default = "auth"
+  type        = string
+  default     = "auth"
   validation {
     condition     = length(var.cognito_subdomain) > 0
     error_message = "Value must not be empty."

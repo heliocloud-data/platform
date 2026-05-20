@@ -35,6 +35,3 @@ Thumbs.db
 # Helm dependency artifacts
 **/Chart.lock
 **/charts/*.tgz
-
-# Personal environment overlays
-environments/peter_env/

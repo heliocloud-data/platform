@@ -43,7 +43,7 @@ variable "oauth2_proxy_cookie_secret" {
 variable "namespace" {
   description = "Namespace to install ingress into."
   type        = string
-  default     = "ingress-nginx"
+  default     = "kube-system"
 }
 
 variable "release_name" {

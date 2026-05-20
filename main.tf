@@ -389,18 +389,15 @@ module "heliocloud_auth" {
 module "heliocloud_eks_ingress" {
   source = "./modules/heliocloud_eks_ingress"
 
-  aws_region                 = var.aws_region
-  oauth2_proxy_host          = local.oauth2_proxy_host
-  root_domain                = var.root_domain
-  cognito_user_pool_id       = module.heliocloud_auth.user_pool_id
-  cognito_user_pool_domain   = module.heliocloud_auth.user_pool_domain
-  cognito_client_id          = module.heliocloud_auth.user_pool_client_id
-  cognito_client_secret      = module.heliocloud_auth.user_pool_client_secret
-  oauth2_proxy_cookie_secret = coalesce(var.oauth2_proxy_cookie_secret, random_password.oauth2_proxy_cookie_secret.result)
-  load_balancer_ssl_certificate_arn = coalesce(
-    var.ingress_load_balancer_ssl_certificate_arn,
-    aws_acm_certificate.HelioCloud_Certificate_Wildcard.arn
-  )
+  aws_region                        = var.aws_region
+  oauth2_proxy_host                 = local.oauth2_proxy_host
+  root_domain                       = var.root_domain
+  cognito_user_pool_id              = module.heliocloud_auth.user_pool_id
+  cognito_user_pool_domain          = module.heliocloud_auth.user_pool_domain
+  cognito_client_id                 = module.heliocloud_auth.user_pool_client_id
+  cognito_client_secret             = module.heliocloud_auth.user_pool_client_secret
+  oauth2_proxy_cookie_secret        = coalesce(var.oauth2_proxy_cookie_secret, random_password.oauth2_proxy_cookie_secret.result)
+  load_balancer_ssl_certificate_arn = aws_acm_certificate.HelioCloud_Certificate_Wildcard.arn
 
   depends_on = [
     aws_eks_cluster.private,

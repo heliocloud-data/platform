@@ -19,5 +19,5 @@ patches:
         },
         {
           "name": "AWS_REGION",
-          "value": "us-west-2"
+          "value": "us-west-1"
         }]

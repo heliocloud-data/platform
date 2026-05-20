@@ -120,9 +120,3 @@ variable "oauth2_proxy_cookie_secret" {
   default     = null
   sensitive   = true
 }
-
-variable "ingress_load_balancer_ssl_certificate_arn" {
-  description = "Optional ACM certificate ARN for TLS termination on the ingress load balancer."
-  type        = string
-  default     = null
-}

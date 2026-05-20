@@ -16,7 +16,7 @@ locals {
 resource "helm_release" "ingress" {
   name              = var.release_name
   namespace         = var.namespace
-  chart             = "${path.module}/../../kube/apps/ingress"
+  chart             = "${path.module}/../../kube/kubeadm/ingress"
   version           = var.chart_version
   create_namespace  = true
   dependency_update = true
@@ -25,7 +25,7 @@ resource "helm_release" "ingress" {
   timeout           = 600
 
   values = [
-    file("${path.module}/../../kube/apps/ingress/values.yaml"),
+    file("${path.module}/../../kube/kubeadm/ingress/values.yaml"),
     yamlencode({
       "ingress-nginx" = {
         controller = {

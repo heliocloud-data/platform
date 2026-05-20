@@ -2,6 +2,25 @@ provider "aws" {
   region = var.aws_region
 }
 
+locals {
+  oauth2_proxy_host         = "${var.auth_subdomain}.${var.root_domain}"
+  oauth2_proxy_callback_url = "https://${local.oauth2_proxy_host}/oauth2/callback"
+}
+
+resource "random_password" "oauth2_proxy_cookie_secret" {
+  length  = 32
+  special = false
+}
+
+resource "aws_acm_certificate" "HelioCloud_Certificate_Wildcard" {
+  domain_name       = "*.${var.root_domain}"
+  validation_method = "DNS"
+
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
 resource "aws_route53_zone" "HelioCloud_PrimaryZone" {
   name = var.root_domain
 
@@ -18,7 +37,7 @@ resource "aws_route53_record" "HelioCloud_Daskhub_Record" {
 
   # External DNS Kubernetes application will update this record with the LoadBalancer
   # created during the Kubernetes deployment.
-  records        = ["0.0.0.0"]
+  records = ["0.0.0.0"]
 
   lifecycle {
     ignore_changes = [
@@ -35,7 +54,7 @@ resource "aws_route53_record" "HelioCloud_Auth_Record" {
 
   # External DNS Kubernetes application will update this record with the LoadBalancer
   # created during the Kubernetes deployment.
-  records        = ["0.0.0.0"]
+  records = ["0.0.0.0"]
 
   lifecycle {
     ignore_changes = [
@@ -163,7 +182,7 @@ resource "aws_route_table_association" "route_table_association_subnet_public_02
 }
 
 resource "aws_iam_role" "cluster" {
-  name = "eks-cluster-role"
+  name = "${var.cluster_name}-cluster-role"
   assume_role_policy = jsonencode({
     Version = "2012-10-17",
     Statement = [{
@@ -362,9 +381,30 @@ module "heliocloud_auth" {
   user_pool_client_name = "${replace(var.cluster_name, "_", "-")}-client"
 
   deletion_protection = false
-  callback_urls       = var.cognito_callback_urls
+  callback_urls       = distinct(concat(var.cognito_callback_urls, [local.oauth2_proxy_callback_url]))
   logout_urls         = var.cognito_logout_urls
   tags                = var.tags
+}
+
+module "heliocloud_eks_ingress" {
+  source = "./modules/heliocloud_eks_ingress"
+
+  aws_region                        = var.aws_region
+  oauth2_proxy_host                 = local.oauth2_proxy_host
+  root_domain                       = var.root_domain
+  cognito_user_pool_id              = module.heliocloud_auth.user_pool_id
+  cognito_user_pool_domain          = module.heliocloud_auth.user_pool_domain
+  cognito_client_id                 = module.heliocloud_auth.user_pool_client_id
+  cognito_client_secret             = module.heliocloud_auth.user_pool_client_secret
+  oauth2_proxy_cookie_secret        = coalesce(var.oauth2_proxy_cookie_secret, random_password.oauth2_proxy_cookie_secret.result)
+  load_balancer_ssl_certificate_arn = aws_acm_certificate.HelioCloud_Certificate_Wildcard.arn
+
+  depends_on = [
+    aws_eks_cluster.private,
+    aws_eks_node_group.mng_daskhub_service,
+    module.heliocloud_eks_node_group_jupyterhub_user_compute,
+    module.heliocloud_auth
+  ]
 }
 
 module "efs" {

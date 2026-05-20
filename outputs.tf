@@ -10,6 +10,11 @@ output "auth_fqdn" {
   value = aws_route53_record.HelioCloud_Auth_Record.name
 }
 
+output "oauth2_proxy_callback_url" {
+  description = "OAuth2 callback URL for the ingress oauth2-proxy."
+  value       = module.heliocloud_eks_ingress.oauth2_proxy_callback_url
+}
+
 output "cognito_fqdn" {
   value = "${var.cognito_subdomain}.auth.${var.aws_region}.amazoncognito.com"
 }

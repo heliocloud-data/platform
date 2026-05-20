@@ -102,6 +102,11 @@ resource "aws_cognito_user_pool_client" "client" {
   generate_secret = true
 
   # OAuth settings
+  allowed_oauth_flows_user_pool_client = true
+  allowed_oauth_flows                  = ["code"]
+  allowed_oauth_scopes                 = ["openid", "profile", "email"]
+  supported_identity_providers         = ["COGNITO"]
+
   explicit_auth_flows = [
     "ALLOW_USER_SRP_AUTH",
     "ALLOW_REFRESH_TOKEN_AUTH"

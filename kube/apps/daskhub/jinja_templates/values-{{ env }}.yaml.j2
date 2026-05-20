@@ -8,6 +8,7 @@ daskhub:
   jupyterhub:
     ingress:
         enabled: true
+        ingressClassName: nginx
         hosts:
           - {{ tf['outputs']['daskhub_fqdn']['value'] }}
         annotations:
@@ -26,6 +27,6 @@ daskhub:
           apiToken: {{  heritage_params['config']['daskhub']['api_key2'] }}
       extraEnv:
         DASKHUB_URL: "https://{{ tf['outputs']['daskhub_fqdn']['value'] }}"
-        CLIENT_ID: "{{ tf['outputs']['cognito_client_secret']['value'] }}"
+        CLIENT_ID: "{{ tf['outputs']['cognito_client_id']['value'] }}"
         COGNITO_URL: "https://{{ tf['outputs']['cognito_fqdn']['value'] }}/logout"
         OAUTH_LOGOUT_URL: "https://{{ tf['outputs']['auth_fqdn']['value'] }}/oauth2/sign_out"

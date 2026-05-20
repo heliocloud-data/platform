@@ -4,8 +4,8 @@
 terraform {
   backend "s3" {
     bucket         = "heliocloud-tofu-state-bucket-hsdcloud"
-    key            = "hsdcloud-dev/terraform.tfstate"
-    region         = "us-west-1"
+    key            = "peter-env/terraform.tfstate"
+    region         = "us-west-2"
     encrypt        = true
     dynamodb_table = "heliocloud-tofu-state-lock-hsdcloud"
 

@@ -31,3 +31,7 @@ Thumbs.db
 
 # python
 .venv/
+
+# Helm dependency artifacts
+**/Chart.lock
+**/charts/*.tgz

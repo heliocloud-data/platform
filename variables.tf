@@ -74,8 +74,8 @@ variable "root_domain" {
 
 variable "daskhub_subdomain" {
   description = "The subdomain of this heliocloud instance of daskhub is being served from.  It's prepended to the root domain specified by 'root_domain' to derive the output 'daskhub_fqdn'."
-  type = string
-  default = "daskhub"
+  type        = string
+  default     = "daskhub"
   validation {
     condition     = length(var.daskhub_subdomain) > 0
     error_message = "Value must not be empty."
@@ -84,8 +84,8 @@ variable "daskhub_subdomain" {
 
 variable "auth_subdomain" {
   description = "The subdomain of this heliocloud instance of auth is being served from.  It's prepended to the root domain specified by 'root_domain' to derive the output 'auth_fqdn'."
-  type = string
-  default = "auth"
+  type        = string
+  default     = "auth"
   validation {
     condition     = length(var.auth_subdomain) > 0
     error_message = "Value must not be empty."
@@ -94,8 +94,8 @@ variable "auth_subdomain" {
 
 variable "cognito_subdomain" {
   description = "The subdomain of this heliocloud's AWS cognito.  It's prepended to the auth.<var.aws_region>.amazoncognito.com domain to derive the output 'cognito_fqdn'."
-  type = string
-  default = "auth"
+  type        = string
+  default     = "auth"
   validation {
     condition     = length(var.cognito_subdomain) > 0
     error_message = "Value must not be empty."
@@ -112,4 +112,11 @@ variable "cognito_logout_urls" {
   description = "Allowed logout URLs for the Cognito user pool client"
   type        = list(string)
   default     = ["http://localhost:8000"] # These need to be updated with actual urls when they are available.
+}
+
+variable "oauth2_proxy_cookie_secret" {
+  description = "Cookie secret for oauth2-proxy."
+  type        = string
+  default     = null
+  sensitive   = true
 }

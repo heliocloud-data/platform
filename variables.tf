@@ -82,6 +82,16 @@ variable "daskhub_subdomain" {
   }
 }
 
+variable "portal_subdomain" {
+  description = "The subdomain of this heliocloud instance of portal is being served from.  It's prepended to the root domain specified by 'root_domain' to derive the output 'portal_fqdn'."
+  type        = string
+  default     = "portal"
+  validation {
+    condition     = length(var.portal_subdomain) > 0
+    error_message = "Value must not be empty."
+  }
+}
+
 variable "auth_subdomain" {
   description = "The subdomain of this heliocloud instance of auth is being served from.  It's prepended to the root domain specified by 'root_domain' to derive the output 'auth_fqdn'."
   type        = string

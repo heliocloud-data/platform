@@ -42,6 +42,17 @@ Render the environment specific k8s resources
 ```
 kustomize build kube/kubeadm/cluster-autoscaler/overlays/dev | kubectl apply -f -
 kustomize build kube/kubeadm/external-dns/overlays/dev | kubectl apply -f -
+
+cd kube/kubeadmin/ingress
+helm dep update
+helm upgrade \
+    ingress ./ \
+    
+    --namespace kube-system \
+    --values=values.yaml \
+    --values=values-dev.yaml \
+    --install --debug
+cd ../../../
 ```
 
 ### Deploy the HelioCloud Kubernetes Applications
@@ -59,6 +70,10 @@ helm upgrade \
     --values=values-dev.yaml \
     --post-renderer=./kustomize-post-renderer-hook.sh \
     --install --timeout 30m30s --debug
+cd ../../../
+
+kustomize build kube/apps/portal/overlays/dev/ | kubectl apply -f -
+
 ```
 
 # Tear Down HelioCloud

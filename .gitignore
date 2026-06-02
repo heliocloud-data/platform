@@ -14,6 +14,9 @@ override.tf.json
 .terraformed
 terraform.rc
 .terraform.lock.hcl
+kube/apps/daskhub/charts/
+kube/apps/ingress/charts/
+Chart.lock
 
 # Secrets (if you have them)
 **/secrets.tfvars

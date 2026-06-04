@@ -167,6 +167,8 @@ for template_src_folder in glob.glob(f"{base_dir}/**/templates", recursive=True)
 
     print(f"{template_src_folder} -> {template_dest_folder}")
     apply_jinja_templates_by_dir(template_src_folder, template_dest_folder, render_params)
+    print("")
+
 for template_src_folder in glob.glob(f"{base_dir}/**/jinja_templates", recursive=True):
     if dest_folder is None or dest_folder == "":
         template_dest_folder = Path(f"{template_src_folder}/..").resolve()
@@ -176,3 +178,4 @@ for template_src_folder in glob.glob(f"{base_dir}/**/jinja_templates", recursive
 
     print(f"{template_src_folder} -> {template_dest_folder}")
     apply_jinja_templates_by_dir(template_src_folder, template_dest_folder, render_params)
+    print("")

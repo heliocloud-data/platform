@@ -386,6 +386,8 @@ module "efs" {
 module "heliocloud_portal" {
   source = "./modules/heliocloud_portal"
 
+  cluster_name = var.cluster_name
+
   aws_az1                     = var.aws_eks_az1
   aws_az2                     = var.aws_eks_az2
   identity_provider_client_id = module.heliocloud_auth.user_pool_client_id

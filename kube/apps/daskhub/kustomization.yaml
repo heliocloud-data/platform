@@ -8,6 +8,7 @@ kind: Kustomization
 # (kustomize-post-renderer-hook.sh).
 resources:
 - all.yaml
+- serviceaccount.yaml
 
 patches:
   # Added when upgrading to kube-scheduler 1.26

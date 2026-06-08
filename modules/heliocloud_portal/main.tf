@@ -85,6 +85,41 @@ resource "aws_iam_policy" "HelioCloud_Portal_UserS3Policy" {
   policy = local.iam_policy_document_json_UserS3Policy
 }
 
+data "aws_iam_policy_document" "pod_assume_role" {
+  statement {
+    effect = "Allow"
+
+    principals {
+      type        = "Service"
+      identifiers = ["pods.eks.amazonaws.com"]
+    }
+
+    actions = [
+      "sts:AssumeRole",
+      "sts:TagSession"
+    ]
+  }
+}
+
+
+resource "aws_iam_role" "HelioCloud_Portal_ServiceAccount" {
+  name               = "HelioCloud_${var.cluster_name}_Portal_ServiceAccount"
+  assume_role_policy = data.aws_iam_policy_document.pod_assume_role.json
+}
+
+resource "aws_iam_role_policy_attachment" "HelioCloud_Portal_PolicyAttachment" {
+  policy_arn = aws_iam_policy.HelioCloud_Portal_UserS3Policy.arn
+  role       = aws_iam_role.HelioCloud_Portal_ServiceAccount.name
+}
+
+resource "aws_eks_pod_identity_association" "HelioCloud_Portal_PodIdentityAssociation" {
+  cluster_name    = var.cluster_name
+  namespace       = var.kubernetes_namespace
+  service_account = var.kubernetes_service_account
+  role_arn        = aws_iam_role.HelioCloud_Portal_ServiceAccount.arn
+}
+
+
 resource "aws_iam_role_policy_attachment" "HelioCloud_Portal_UserS3Policy_Attachment" {
   policy_arn = aws_iam_policy.HelioCloud_Portal_UserS3Policy.arn
   role       = aws_iam_role.HelioCloud_Portal_UserRole.name

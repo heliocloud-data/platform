@@ -8,7 +8,9 @@
                 "eks:DescribeCluster",
                 "elasticfilesystem:CreateMountTarget",
                 "elasticfilesystem:DeleteMountTarget",
-                "elasticfilesystem:DescribeMountTargets"
+                "elasticfilesystem:DescribeMountTargets",
+                "elasticfilesystem:DescribeFileSystems",
+                "elasticfilesystem:DescribeAccessPoints"
             ],
             "Resource": "*",
             "Effect": "Allow"

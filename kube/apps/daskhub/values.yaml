@@ -176,29 +176,16 @@ daskhub:
         extraVolumes:
           - name: dh-helio-efs
             persistentVolumeClaim:
-              claimName: efs-persist
+              claimName: efs-scratch-space
           - name: shm-volume
             emptyDir:
               medium: Memory
         extraVolumeMounts:
           - name: dh-helio-efs
             mountPath: /home/jovyan/scratch_space
-          - name: dh-helio-efs
-            mountPath: /efs
           - name: shm-volume
             mountPath: /dev/shm
       initContainers:
-        - name: nfs-fixer
-          image: alpine:3
-          securityContext:
-            runAsUser: 0
-          volumeMounts:
-          - name: dh-helio-efs
-            mountPath: /efs
-          command:
-          - sh
-          - -c
-          - (chmod 0775 /efs; chown 1000:100 /efs)
         - name: deploy-science-tutorials
           image: public.ecr.aws/q3h7b4o8/helio-science-tutorials:latest
           securityContext:
@@ -207,20 +194,6 @@ daskhub:
           - sh
           - -c
           - (mkdir /home/jovyan/science-tutorials && cd /home/jovyan/science-tutorials && git clone https://github.com/heliocloud-data/science-tutorials.git . && chown 1000:100 -R /home/jovyan/science-tutorials) || echo "warning files already exist"
-          volumeMounts:
-          - name: volume-{username}{servername}
-            mountPath: /home/jovyan
-        # This initContainer is responsible some basic file cleanup by removing the old
-        # mount point (/home/jovyan/efs) which has been replaced with
-        # (/home/jovyan/scratch_space).
-        - name: remove-old-efs-mount-folder
-          image: alpine:3
-          securityContext:
-            runAsUser: 0
-          command:
-          - sh
-          - -c
-          - (rm -rf /home/jovyan/efs || echo "warning unable to delete old mount directory /home/jovyan/efs")
           volumeMounts:
           - name: volume-{username}{servername}
             mountPath: /home/jovyan
@@ -378,7 +351,7 @@ daskhub:
               volumes:
               - name: dh-helio-efs
                 persistentVolumeClaim:
-                  claimName: efs-persist
+                  claimName: efs-scratch-space
             affinity:
               nodeAffinity:
                 requiredDuringSchedulingIgnoredDuringExecution:
@@ -502,7 +475,7 @@ daskhub:
           EFS_VOLUME_NAME = "dh-helio-efs"
           efs_volume = {
             "name": EFS_VOLUME_NAME,
-            "persistentVolumeClaim": {"claimName": "efs-persist"}
+            "persistentVolumeClaim": {"claimName": "efs-scratch-space"}
           }
           efs_mount = {"name": EFS_VOLUME_NAME, "mountPath": "/home/jovyan/scratch_space"}
 

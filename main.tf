@@ -332,6 +332,15 @@ module "heliocloud_eks_addon_ebs" {
   worker_node_role_name = aws_iam_role.HelioCloud_EKS_NodeGroupRole.name
 }
 
+module "heliocloud_eks_addon_efs" {
+  source = "./modules/heliocloud_eks_addon_efs"
+
+  cluster_name          = aws_eks_cluster.private.name
+  kubernetes_version    = var.kubernetes_version
+  qualifier             = "${aws_eks_cluster.private.region}_${aws_eks_cluster.private.name}"
+  worker_node_role_name = aws_iam_role.HelioCloud_EKS_NodeGroupRole.name
+}
+
 module "heliocloud_auth" {
   source = "./modules/heliocloud_auth"
 
@@ -380,7 +389,14 @@ module "efs" {
     "${var.aws_eks_az2}" = { subnet_id = aws_subnet.subnet_public_02.id }
   }
   security_group_vpc_id = aws_vpc.myvpc.id
-  tags                  = var.tags
+  security_group_ingress_rules = {
+    vpc_1 = {
+      # relying on the defaults provided for EFS/NFS (2049/TCP + ingress)
+      description                  = "NFS ingress from EKS Cluster (Managed by Terraform)"
+      referenced_security_group_id = aws_eks_cluster.private.vpc_config[0].cluster_security_group_id
+    }
+  }
+  tags = var.tags
 }
 
 module "heliocloud_portal" {

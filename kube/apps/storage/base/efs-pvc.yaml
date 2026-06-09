@@ -1,10 +1,10 @@
 kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
-  name: efs-persist
+  name: efs-scratch-space
   namespace: daskhub
 spec:
-  storageClassName: ""
+  storageClassName: "efs"
   accessModes:
     - ReadWriteMany
   resources:

@@ -394,3 +394,10 @@ module "heliocloud_portal" {
   identity_provider_name      = "cognito-idp.${var.aws_region}.amazonaws.com/${module.heliocloud_auth.user_pool_id}"
 
 }
+
+resource "aws_eks_pod_identity_association" "HelioCloud_Daskhub_PodIdentityAssociation" {
+  cluster_name    = var.cluster_name
+  namespace       = "daskhub"
+  service_account = "helio-dh-role"
+  role_arn        = module.heliocloud_portal.HelioCloud_Portal_ServiceAccount.arn
+}

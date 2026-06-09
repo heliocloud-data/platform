@@ -23,3 +23,8 @@ output "portal_user_role_arn" {
   description = ""
   value       = aws_iam_role.HelioCloud_Portal_UserRole.arn
 }
+
+output "HelioCloud_Portal_ServiceAccount" {
+  description = ""
+  value       = aws_iam_role.HelioCloud_Portal_ServiceAccount
+}

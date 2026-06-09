@@ -8,18 +8,15 @@ resources:
 
 patches:
 - target:
-    kind: PersistentVolume
-    name: efs-persist
+    kind: StorageClass
+    name: efs
   patch: |
     - op: replace
-      path: /spec/capacity/storage
-      value: 10Gi
-    - op: replace
-      path: /spec/nfs/server
-      value: {{ tf['outputs']['efs_file_system_id']['value'] }}.efs.{{ tf['outputs']['aws_region']['value'] }}.amazonaws.com
+      path: /parameters/fileSystemId
+      value: {{ tf['outputs']['efs_file_system_id']['value'] }}
 - target:
     kind: PersistentVolumeClaim
-    name: efs-persist
+    name: efs-scratch-space
   patch: |
     - op: replace
       path: /spec/resources/requests/storage

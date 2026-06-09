@@ -10,6 +10,6 @@ resources:
 # automatically create this resource correctly.  It's possible that this might
 # be a bug (or a misconfiguration), if so this item can safely be removed.
 - ebs-storageclass.yaml
-- efs-pv.yaml
+- efs-storageclass.yaml
 - efs-pvc.yaml
 - namespace.yaml

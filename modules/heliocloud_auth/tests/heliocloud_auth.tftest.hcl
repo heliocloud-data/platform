@@ -91,6 +91,29 @@ run "plan_heliocloud_auth_module" {
     condition     = output.user_pool_domain == "tofu-auth"
     error_message = "Expected the module output to expose the configured Cognito domain."
   }
+
+  assert {
+    condition     = output.user_pool_id != ""
+    error_message = "Expected the module to output a non-empty user pool ID."
+  }
+
+  assert {
+    condition     = output.user_pool_client_id != ""
+    error_message = "Expected the module to output a non-empty user pool client ID."
+  }
+
+  assert {
+    condition     = aws_cognito_user_pool.user_pool.tags["managed-by"] == "tofu-test"
+    error_message = "Expected tags to propagate to the Cognito user pool."
+  }
+
+  assert {
+    condition     = aws_cognito_user_pool.user_pool.tags["test-tier"] == "module"
+    error_message = "Expected all provided tags to propagate correctly."
+  }
+
+  # NOTE: Cannot assert relationships using IDs at plan time because they are unknown.
+  # These would require apply-time validation or different test strategy.
 }
 
 # Validation failure tests for all variables with validation blocks, covering empty strings etc.

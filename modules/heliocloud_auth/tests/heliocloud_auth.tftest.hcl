@@ -1,6 +1,16 @@
 # HelioCloud Auth Module Test - Basic Plan Validation
 # Covers: Basic plan validation with a realistic variable set, including all required variables and some optional
 
+# Fake AWS provider to allow plan without real credentials
+provider "aws" {
+  region                      = "us-east-1"
+  access_key                  = "mock"
+  secret_key                  = "mock"
+  skip_credentials_validation = true
+  skip_metadata_api_check     = true
+  skip_requesting_account_id  = true
+}
+
 variables {
   user_pool_name              = "tofu-auth-user-pool"
   domain_prefix               = "tofu-auth"

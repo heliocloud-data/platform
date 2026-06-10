@@ -8,19 +8,15 @@ locals {
 }
 
 data "aws_eks_addon_version" "aws-efs-csi-driver" {
+  count              = var.enable_addon_version_lookup ? 1 : 0
   addon_name         = local.name
   kubernetes_version = var.kubernetes_version
   most_recent        = true
-
-  # depends_on = [
-  # aws_iam_role_policy_attachment.nodegroup_AmazonEBSCSIDriverPolicy_ServiceAccount,
-  # aws_iam_role_policy_attachment.nodegroup_AmazonEBSCSIDriverPolicyV2_ServiceAccount
-  # ]
 }
 resource "aws_eks_addon" "efs" {
   cluster_name                = var.cluster_name
   addon_name                  = local.name
-  addon_version               = data.aws_eks_addon_version.aws-efs-csi-driver.version
+  addon_version               = var.enable_addon_version_lookup ? data.aws_eks_addon_version.aws-efs-csi-driver[0].version : null
   resolve_conflicts_on_update = "OVERWRITE"
 
   tags = { Name = local.name }

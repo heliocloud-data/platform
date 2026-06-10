@@ -2,6 +2,12 @@ variable "worker_node_role_name" {
   type = any
 }
 
+variable "enable_addon_version_lookup" {
+  type        = bool
+  description = "Enable AWS lookup for addon version (disable for tests/CI)"
+  default     = false
+}
+
 variable "qualifier" {
   type        = string
   description = "The instance qualifier included in all AWS derived resources, used to differentiate"

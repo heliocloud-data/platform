@@ -1,5 +1,15 @@
 # HelioCloud EKS Pod Identity Agent Module Tests
 
+# Fake AWS provider to allow plan without real credentials
+provider "aws" {
+  region                      = "us-east-1"
+  access_key                  = "mock"
+  secret_key                  = "mock"
+  skip_credentials_validation = true
+  skip_metadata_api_check     = true
+  skip_requesting_account_id  = true
+}
+
 variables {
   cluster_name       = "tofu-cluster"
   kubernetes_version = "1.29"

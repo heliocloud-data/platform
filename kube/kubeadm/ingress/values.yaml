@@ -13,39 +13,155 @@ ingress-nginx:
       default: true
     ingressClass: nginx
     service:
-      annotations:
-        service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
-        service.beta.kubernetes.io/aws-load-balancer-scheme: "internet-facing"
-        service.beta.kubernetes.io/aws-load-balancer-ssl-ports: "https"
-        service.beta.kubernetes.io/aws-load-balancer-backend-protocol: "http"
-        service.beta.kubernetes.io/aws-load-balancer-attributes: "idle_timeout.timeout_seconds=120"
       targetPorts:
         http: http
         https: http
       ports:
         http: 80
         https: 443
-      type: LoadBalancer
+      type: LoadBalancer # MUST remain LoadBalancer for ingress from Internet
 
 oauth2-proxy:
   service:
     type: ClusterIP
     portNumber: 80
-  config:
-    configFile: |-
-      email_domains = [ "*" ]
-      upstreams = [ "file:///dev/null" ]
   extraArgs:
-    provider: oidc
-    cookie-refresh: 30m
-    scope: "openid profile email"
-    set-authorization-header: true
-    set-xauthrequest: true
-    pass-user-headers: true
-    prefer-email-to-user: false
-    pass-authorization-header: true
-    skip-auth-strip-headers: false
-    pass-access-token: true
-    cookie-samesite: "none"
-    reverse-proxy: true
-    cookie-secure: true
+    session-store-type: redis
+    redis-connection-url: redis://ingress-redis.kube-system.svc.cluster.local:6379
+    redis-password: $(REDIS_PASSWORD)
+  extraEnv:
+  - name: REDIS_PASSWORD
+    valueFrom:
+      secretKeyRef:
+        name: ingress-redis
+        key: redis-password
+redis:
+  architecture: replication
+
+  global:
+    storageClass: "gp2"
+
+  auth:
+    enabled: true
+    password: ""  # Will be auto-generated
+    existingSecret: ""
+    existingSecretPasswordKey: ""
+
+  master:
+    count: 1
+
+    persistence:
+      enabled: true
+      size: 20Gi
+      storageClass: "gp2"
+      accessModes: "ReadWriteOnce"
+
+    resources:
+      requests:
+        memory: 1Gi
+        cpu: 500m
+      limits:
+        memory: 2Gi
+        cpu: 1000m
+
+    configuration: |
+      # Memory
+      maxmemory 1800mb
+      maxmemory-policy allkeys-lru
+      maxmemory-samples 5
+
+      # Persistence
+      appendonly yes
+      appendfsync everysec
+      no-appendfsync-on-rewrite no
+      auto-aof-rewrite-percentage 100
+      auto-aof-rewrite-min-size 64mb
+
+      # Performance
+      tcp-keepalive 300
+      timeout 0
+      tcp-backlog 511
+
+      # Lazy freeing
+      lazyfree-lazy-eviction yes
+      lazyfree-lazy-expire yes
+      lazyfree-lazy-server-del yes
+
+      # Disable dangerous commands
+      rename-command FLUSHDB ""
+      rename-command FLUSHALL ""
+      rename-command DEBUG ""
+
+    podAntiAffinityPreset: hard
+
+    nodeSelector:
+      hub.jupyter.org/node-purpose: core
+
+    tolerations:
+    - effect: "NoSchedule"
+      key: "hub.jupyter.org/dedicated"
+      operator: "Equal"
+      value: "core"
+
+    podSecurityContext:
+      enabled: true
+      fsGroup: 1001
+
+    containerSecurityContext:
+      enabled: true
+      runAsUser: 1001
+      runAsNonRoot: true
+
+  replica:
+    replicaCount: 2
+
+    persistence:
+      enabled: true
+      size: 20Gi
+      storageClass: "gp2"
+
+    resources:
+      requests:
+        memory: 1Gi
+        cpu: 500m
+      limits:
+        memory: 2Gi
+        cpu: 1000m
+
+    podAntiAffinityPreset: hard
+
+    nodeSelector:
+      hub.jupyter.org/node-purpose: core
+
+    tolerations:
+    - effect: "NoSchedule"
+      key: "hub.jupyter.org/dedicated"
+      operator: "Equal"
+      value: "core"
+
+  sentinel:
+    enabled: true
+    masterSet: mymaster
+    quorum: 2
+    downAfterMilliseconds: 10000
+    failoverTimeout: 180000
+
+    resources:
+      requests:
+        memory: 64Mi
+        cpu: 50m
+      limits:
+        memory: 256Mi
+        cpu: 200m
+
+  networkPolicy:
+    enabled: true
+    allowExternal: false
+
+  metrics:
+    enabled: false
+
+
+  pdb:
+    create: true
+    minAvailable: 1

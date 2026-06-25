@@ -24,7 +24,8 @@ output "root_domain_cert_arn" {
 
 output "oauth2_proxy_callback_url" {
   description = "OAuth2 callback URL for the ingress oauth2-proxy."
-  value       = module.heliocloud_eks_ingress.oauth2_proxy_callback_url
+  value       = "https://${local.oauth2_proxy_host}/oauth2/callback"
+  # value       = module.heliocloud_eks_ingress.oauth2_proxy_callback_url
 }
 
 output "cognito_user_pool_id" {
@@ -83,4 +84,10 @@ output "portal_security_group_id" {
 output "portal_user_role_arn" {
   description = ""
   value       = module.heliocloud_portal.portal_user_role_arn
+}
+
+output "ingress_cookie_secret" {
+  description = "Contains the cookie secret used by ingress"
+  value       = coalesce(var.oauth2_proxy_cookie_secret, random_password.oauth2_proxy_cookie_secret.result)
+  sensitive   = true
 }

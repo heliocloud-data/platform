@@ -38,3 +38,11 @@ Thumbs.db
 # Helm dependency artifacts
 **/Chart.lock
 **/charts/*.tgz
+
+# Test output files
+__pycache__
+.heliocloud-context-*.json
+temp/
+reports/
+TEST*.xml
+*.pyc

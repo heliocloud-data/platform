@@ -1,0 +1,7 @@
+boto3~=1.26.114
+ruamel.yaml==0.17.32
+beautifulsoup4==4.12.3
+html5lib==1.1
+behave
+selenium~=4.45.0
+webdriver-manager

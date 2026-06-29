@@ -1,0 +1,40 @@
+# See:
+#  https://kubectl.docs.kubernetes.io/references/kustomize/
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+- ../../base/
+
+patches:
+# Applying this setting as a patch on-top of the nvidia provided kubernetes
+# resources.
+- target:
+    kind: DaemonSet
+    name: nvidia-device-plugin-daemonset
+  patch: |
+    - op: replace
+      path: /spec/template/spec/tolerations
+      value:
+      - key: CriticalAddonsOnly
+        operator: Exists
+      - effect: NoSchedule
+        key: nvidia.com/gpu
+        operator: Equal
+        value: 'true'
+      - key: hub.jupyter.org/dedicated
+        value: user
+    # Ensures that the pods spawned by this daemonset only run on
+    # matching nodes
+    - op: replace
+      path: /spec/template/spec/nodeSelector
+      value:
+        nvidia.com/gpu: 'true'
+    # Controls the behavior on initialization errors.  If true, the
+    # pod will immediately exit.  When diagnosing configuration errors,
+    # it's sometimes useful to leave the pod running for inspection.
+    - op: add
+      path: /spec/template/spec/containers/0/env
+      value:
+      - name: FAIL_ON_INIT_ERROR
+        value: "true"

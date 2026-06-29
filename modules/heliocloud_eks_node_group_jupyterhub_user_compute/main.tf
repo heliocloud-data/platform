@@ -8,6 +8,9 @@ resource "aws_eks_node_group" "mng_jupyterhub_user_compute" {
   node_group_name = "mng_jupyterhub_user_compute"
   node_role_arn   = var.node_role_arn
 
+  ami_type  = "AL2023_x86_64_STANDARD"
+  disk_size = 80
+
   subnet_ids = var.subnet_ids
 
   instance_types = ["m5.2xlarge"]
@@ -56,6 +59,9 @@ resource "aws_eks_node_group" "mng_jupyterhub_user_compute_big" {
   cluster_name    = var.cluster_name
   node_group_name = "mng_jupyterhub_user_compute_big"
   node_role_arn   = var.node_role_arn
+
+  ami_type  = "AL2023_x86_64_STANDARD"
+  disk_size = 80
 
   subnet_ids = var.subnet_ids
 
@@ -111,6 +117,9 @@ resource "aws_eks_node_group" "mng_jupyterhub_user_compute_gpu_2xlarge" {
   node_group_name = "mng_jupyterhub_user_compute_gpu_2xlarge"
   node_role_arn   = var.node_role_arn
 
+  ami_type  = "AL2023_x86_64_NVIDIA"
+  disk_size = 80
+
   subnet_ids = var.subnet_ids
 
   instance_types = ["g4dn.2xlarge"]
@@ -148,14 +157,15 @@ resource "aws_eks_node_group" "mng_jupyterhub_user_compute_gpu_2xlarge" {
   }
 
   tags = {
-    "k8s.io/cluster-autoscaler/node-template/label/lifecycle"                    = "OnDemand"
-    "k8s.io/cluster-autoscaler/node-template/label/intent"                       = "apps"
-    "k8s.io/cluster-autoscaler/node-template/label/nvidia.com/gpu"               = "false"
-    "k8s.io/cluster-autoscaler/node-template/label/node-purpose"                 = "user"
-    "k8s.io/cluster-autoscaler/node-template/label/hub.jupyter.org/node-purpose" = "user"
-    "k8s.io/cluster-autoscaler/node-template/label/heliocloud.org/instance-type" = "2xlarge"
-    "k8s.io/cluster-autoscaler/node-template/taint/nvidia.com/gpu"               = "true:NoSchedule"
-    "k8s.io/cluster-autoscaler/node-template/taint/hub.jupyter.org/dedicated"    = "user:NoSchedule"
+    "k8s.io/cluster-autoscaler/node-template/label/lifecycle"                     = "OnDemand"
+    "k8s.io/cluster-autoscaler/node-template/label/intent"                        = "apps"
+    "k8s.io/cluster-autoscaler/node-template/label/nvidia.com/gpu"                = "true"
+    "k8s.io/cluster-autoscaler/node-template/label/k8s.amazonaws.com/accelerator" = "nvidia-tesla-t4"
+    "k8s.io/cluster-autoscaler/node-template/label/node-purpose"                  = "user"
+    "k8s.io/cluster-autoscaler/node-template/label/hub.jupyter.org/node-purpose"  = "user"
+    "k8s.io/cluster-autoscaler/node-template/label/heliocloud.org/instance-type"  = "2xlarge"
+    "k8s.io/cluster-autoscaler/node-template/taint/nvidia.com/gpu"                = "true:NoSchedule"
+    "k8s.io/cluster-autoscaler/node-template/taint/hub.jupyter.org/dedicated"     = "user:NoSchedule"
   }
 
 }

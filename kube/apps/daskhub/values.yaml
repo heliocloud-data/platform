@@ -496,6 +496,9 @@ daskhub:
 
             extra_pod_config = copy.deepcopy(profiles[options.profile][pod_config_key])
 
+            extra_pod_config['serviceAccountName'] = 'helio-dh-role'
+            extra_pod_config['serviceAccount'] = 'helio-dh-role'
+
             if 'tolerations' not in extra_pod_config:
               extra_pod_config['tolerations'] = []
 

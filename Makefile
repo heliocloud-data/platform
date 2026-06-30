@@ -29,3 +29,6 @@ feature-tests-portal:
 
 feature-tests-daskhub:
 	python3 -m behave --junit --tags=@Daskhub features
+
+feature-test-daskhub-server_launch:
+	python3 -m behave --junit features/daskhub_server_launch.feature

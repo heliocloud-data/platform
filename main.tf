@@ -303,6 +303,31 @@ module "heliocloud_eks_node_group_jupyterhub_user_compute" {
   ]
 }
 
+module "heliocloud_eks_node_group_jupyterhub_burst_compute" {
+  source = "./modules/heliocloud_eks_node_group_jupyterhub_burst_compute"
+
+  aws_region    = var.aws_region
+  cluster_name  = aws_eks_cluster.private.name
+  node_role_arn = aws_iam_role.HelioCloud_EKS_NodeGroupRole.arn
+
+  # heliocould had a constraint for using a single AZ, so I'll keep that configuration
+  # here.
+  subnet_ids = [aws_subnet.subnet_public_01.id]
+
+  # Ensure that IAM Role permissions are created before and deleted after EKS Node Group handling.
+  # Otherwise, EKS will not be able to properly delete EC2 Instances and Elastic Network Interfaces.
+  depends_on = [
+    aws_internet_gateway.gw,
+    aws_iam_role.HelioCloud_EKS_NodeGroupRole,
+    aws_iam_role_policy_attachment.nodegroup_AmazonEKSWorkerNodePolicy,
+    aws_iam_role_policy_attachment.nodegroup_AmazonEC2RoleforSSM,
+    aws_iam_role_policy_attachment.nodegroup_AmazonEKS_CNI_Policy,
+    aws_iam_role_policy_attachment.nodegroup_AmazonEC2ContainerRegistryReadOnly,
+    aws_iam_role_policy_attachment.nodegroup_AmazonRoute53AutoNamingRegistrantAccess,
+    aws_iam_role_policy_attachment.nodegroup_CloudWatchAgentServerPolicy
+  ]
+}
+
 module "heliocloud_eks_addon_pod_identity" {
   source = "./modules/heliocloud_eks_addon_pod_identity"
 

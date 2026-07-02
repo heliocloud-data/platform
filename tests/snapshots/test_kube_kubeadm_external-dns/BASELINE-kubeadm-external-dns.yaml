@@ -1,0 +1,100 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  labels:
+    k8s-addon: external-dns.addons.k8s.io
+    k8s-app: external-dns
+  name: external-dns
+  namespace: kube-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    k8s-addon: external-dns.addons.k8s.io
+    k8s-app: external-dns
+  name: external-dns
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - services
+  - endpoints
+  - pods
+  verbs:
+  - get
+  - watch
+  - list
+- apiGroups:
+  - extensions
+  - networking.k8s.io
+  resources:
+  - ingresses
+  verbs:
+  - get
+  - watch
+  - list
+- apiGroups:
+  - ""
+  resources:
+  - nodes
+  verbs:
+  - list
+  - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  labels:
+    k8s-addon: external-dns.addons.k8s.io
+    k8s-app: external-dns
+  name: external-dns
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: external-dns
+subjects:
+- kind: ServiceAccount
+  name: external-dns
+  namespace: kube-system
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    k8s-addon: external-dns.addons.k8s.io
+    k8s-app: external-dns
+  name: external-dns
+  namespace: kube-system
+spec:
+  selector:
+    matchLabels:
+      k8s-addon: external-dns.addons.k8s.io
+      k8s-app: external-dns
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        k8s-addon: external-dns.addons.k8s.io
+        k8s-app: external-dns
+    spec:
+      containers:
+      - args:
+        - --source=service
+        - --source=ingress
+        - --domain-filter=$(EXTERNAL_DNS_DOMAIN_FILTER)
+        - --provider=aws
+        - --policy=upsert-only
+        - --aws-zone-type=public
+        - --registry=noop
+        - --log-level=debug
+        - --aws-prefer-cname
+        env:
+        - name: EXTERNAL_DNS_DOMAIN_FILTER
+          value: silly-domain.pizza
+        image: registry.k8s.io/external-dns/external-dns:v0.14.1
+        name: external-dns
+      securityContext:
+        fsGroup: 65534
+      serviceAccountName: external-dns

@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: nvidia-device-plugin-daemonset
+  namespace: kube-system
+spec:
+  selector:
+    matchLabels:
+      name: nvidia-device-plugin-ds
+  template:
+    metadata:
+      labels:
+        name: nvidia-device-plugin-ds
+    spec:
+      containers:
+      - env:
+        - name: FAIL_ON_INIT_ERROR
+          value: "true"
+        image: nvcr.io/nvidia/k8s-device-plugin:v0.19.3
+        name: nvidia-device-plugin-ctr
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+        volumeMounts:
+        - mountPath: /var/lib/kubelet/device-plugins
+          name: kubelet-device-plugins-dir
+      nodeSelector:
+        nvidia.com/gpu: "true"
+      priorityClassName: system-node-critical
+      tolerations:
+      - key: CriticalAddonsOnly
+        operator: Exists
+      - effect: NoSchedule
+        key: nvidia.com/gpu
+        operator: Equal
+        value: "true"
+      - key: hub.jupyter.org/dedicated
+        value: user
+      volumes:
+      - hostPath:
+          path: /var/lib/kubelet/device-plugins
+          type: Directory
+        name: kubelet-device-plugins-dir
+  updateStrategy:
+    type: RollingUpdate

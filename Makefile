@@ -1,12 +1,14 @@
-PHONY: clean init fmt validate deps features
+PHONY: clean init fmt validate deps features tests k8s-templating-tests
+
+REPORT_DIR := reports
 
 clean:
-	rm -rf .terraform modules/*/.terraform
+	rm -rf .terraform modules/*/.terraform temp
 
 fmt:
 	tofu fmt --recursive
-	pre-commit run --all-files || echo "Fixing new-lines at end-of-file"
-	pre-commit uninstall
+# 	pre-commit run --all-files || echo "Fixing new-lines at end-of-file"
+# 	pre-commit uninstall
 
 init:
 	find modules -mindepth 1 -maxdepth 1 -type d | sort | xargs  -I {}  tofu -chdir={} init
@@ -17,9 +19,21 @@ validate:
 	find modules -mindepth 1 -maxdepth 1 -type d | sort | xargs  -I {}  tofu -chdir={} validate
 
 deps:
+	python3 -m pip install -r requirements.txt
+	python3 -m pip install -r requirements-dev.txt
 	python3 -m pip install -r requirements-behave.txt
 
-# export HELIOCLOUD_TERRAFORM_ENVIRONMENTS_FOLDER=jhuapl-deployment 
+tests: k8s-templating-tests
+
+k8s-templating-tests:
+	export PYTHONPATH=$(PYTHONPATH):$(shell pwd):$(shell pwd)/tests
+	mkdir -p $(REPORT_DIR)/k8s-templating-tests
+	python3 -m pytest \
+		-c pytest-k8s-templating-tests.ini \
+		--junit-prefix=HelioCloud-platform-k8s-templating-tests \
+		--junitxml=$(REPORT_DIR)/k8s-templating-tests/TEST-HelioCloud-platform-k8s-templating-tests.xml \
+		--snapshot-update
+
 feature-tests:
 	python3 -m behave --junit features
 
@@ -30,5 +44,8 @@ feature-tests-portal:
 feature-tests-daskhub:
 	python3 -m behave --junit --tags=@Daskhub features
 
-feature-test-daskhub-server_launch:
+feature-tests-daskhub-run_notebook:
+	python3 -m behave --junit features/daskhub_run_notebook.feature
+	
+feature-tests-daskhub-server_launch:
 	python3 -m behave --junit features/daskhub_server_launch.feature

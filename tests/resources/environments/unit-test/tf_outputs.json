@@ -1,0 +1,102 @@
+{
+  "auth_fqdn": {
+    "sensitive": false,
+    "type": "string",
+    "value": "oauth.silly-domain.pizza"
+  },
+  "aws_region": {
+    "sensitive": false,
+    "type": "string",
+    "value": "us-west-1"
+  },
+  "cognito_client_id": {
+    "sensitive": false,
+    "type": "string",
+    "value": "cognito-client-identifier"
+  },
+  "cognito_client_secret": {
+    "sensitive": true,
+    "type": "string",
+    "value": "the-cognito-client-secret"
+  },
+  "cognito_fqdn": {
+    "sensitive": false,
+    "type": "string",
+    "value": "auth.auth.us-west-1.amazoncognito.com"
+  },
+  "cognito_user_pool_domain": {
+    "sensitive": false,
+    "type": "string",
+    "value": "auth-opentofu-us-west-1"
+  },
+  "cognito_user_pool_id": {
+    "sensitive": false,
+    "type": "string",
+    "value": "us-west-1_SOME_MADEUPKEY"
+  },
+  "daskhub_fqdn": {
+    "sensitive": false,
+    "type": "string",
+    "value": "daskhub.silly-domain.pizza"
+  },
+  "efs_file_system_id": {
+    "sensitive": false,
+    "type": "string",
+    "value": "fs-ABC123"
+  },
+  "eks_cluster_name": {
+    "sensitive": false,
+    "type": "string",
+    "value": "my-silly-cluster-name"
+  },
+  "ingress_cookie_secret": {
+    "sensitive": true,
+    "type": "string",
+    "value": "A_SECRET"
+  },
+  "oauth2_proxy_callback_url": {
+    "sensitive": false,
+    "type": "string",
+    "value": "https://oauth.silly-domain.pizza/oauth2/callback"
+  },
+  "portal_ec2_instance_profile_arn": {
+    "sensitive": false,
+    "type": "string",
+    "value": "arn:aws:iam::000000000000:instance-profile/PortalEc2InstanceProfile"
+  },
+  "portal_fqdn": {
+    "sensitive": false,
+    "type": "string",
+    "value": "portal.silly-domain.pizza"
+  },
+  "portal_identity_pool_id": {
+    "sensitive": false,
+    "type": "string",
+    "value": "us-west-1:IDENTITY_POOL_ID"
+  },
+  "portal_security_group_id": {
+    "sensitive": false,
+    "type": "string",
+    "value": "sg-0540b63f434c5dc94"
+  },
+  "portal_subnet_id": {
+    "sensitive": false,
+    "type": "string",
+    "value": "subnet-subdomain-dentifier"
+  },
+  "portal_user_role_arn": {
+    "sensitive": false,
+    "type": "string",
+    "value": "arn:aws:iam::000000000000:role/PortalEc2Role"
+  },
+  "root_domain": {
+    "sensitive": false,
+    "type": "string",
+    "value": "silly-domain.pizza"
+  },
+  "root_domain_cert_arn": {
+    "sensitive": false,
+    "type": "string",
+    "value": "arn:aws:acm:us-west-1:000000000000:certificate/ARN_OF_THE_CERTIFICATE"
+  }
+}

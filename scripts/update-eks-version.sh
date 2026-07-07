@@ -51,10 +51,6 @@ if [[ $? != 0 ]]; then
 fi
 
 TEMP_FILE=""
-# EKS cluster config
-# echo "Updating file daskhub/deploy/eksctl/base/cluster-config.yaml..."
-# sed -i "s#^  version: \"1.*#  version: \"${NEW_K8_VERSION}\"#" daskhub/deploy/eksctl/base/cluster-config.yaml
-
 # Update the cluster autoscaler version
 TARGET_FILE="kube/kubeadm/cluster-autoscaler/base/deployment.yaml"
 echo "Updating file ${TARGET_FILE}..."
@@ -74,12 +70,13 @@ for FILE in `grep -lr 's3.us-west-2.amazonaws.com/amazon-eks' scripts | grep .sh
   sed -i "s#https://s3.us-west-2.amazonaws.com/amazon-eks.*bin/linux/amd64/kubectl#${NEW_URL}#" ${FILE}
 done
 
-# # Re-generate the snapshots
+# Re-generate the snapshots
+make k8s-templating-tests
 # export PYTHONPATH=.:test/unit
 # pytest -c pytest-unit.ini  --snapshot-update
 
-# # Re-run the tests
-# pytest -c pytest-unit.ini --debug --verbose
+# Re-run the tests
+make k8s-templating-tests
 
 if [[ "${NO_COMMIT}" == "true" ]]; then
   echo "Skipping commit"

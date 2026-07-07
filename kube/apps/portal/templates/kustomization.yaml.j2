@@ -39,6 +39,13 @@ patches:
         - name: LOGOUT_URL
           value: "https://{{ tf['outputs']['auth_fqdn']['value'] }}/oauth2/sign_out"
 - target:
+    kind: ServiceAccount
+    name: portal-sa
+  patch: |
+    - op: replace
+      path: /metadata/annotations/eks.amazonaws.com~1role-arn
+      value: {{ tf['outputs']['portal_user_role_arn']['value'] }}
+- target:
     kind: Ingress
     name: portal-ingress
   patch: |

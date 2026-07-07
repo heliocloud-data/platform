@@ -1,5 +1,13 @@
+#/bin/bash
 
 EKS_CLUSTER_NAME=$1
+
+if [[ "${EKS_CLUSTER_NAME}" == "" ]]; then
+    echo "error: missing eks-cluster-name"
+    echo "usage: ${0} <eks-cluster-name>"
+    echo ""
+    exit 1
+fi
 
 NODEGROUP_LIST_FILE=.cluster.${EKS_CLUSTER_NAME}.nodegroups.txt
 rm -rf $NODEGROUP_LIST_FILE

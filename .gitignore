@@ -39,6 +39,9 @@ Thumbs.db
 **/Chart.lock
 **/charts/*.tgz
 
+# Utility script cache files
+.cluster*
+
 # Test output files
 __pycache__
 .heliocloud-context-*.json

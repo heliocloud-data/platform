@@ -43,7 +43,7 @@ daskhub:
       userScheduler:
         image:
           name: registry.k8s.io/kube-scheduler
-          tag: v1.34.9
+          tag: v1.35.6
         plugins:
           score:
             disabled:

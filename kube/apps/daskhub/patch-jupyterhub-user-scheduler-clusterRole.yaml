@@ -191,3 +191,13 @@ rules:
       - patch
       - update
       - watch
+  # Starting in k8s v1.34 these are required
+  - apiGroups:
+      - 'resource.k8s.io'
+    verbs:
+      - list
+      - watch
+    resources:
+      - resourceclaims
+      - resourceslices
+      - deviceclasses

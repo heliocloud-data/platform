@@ -112,12 +112,18 @@ resource "aws_iam_role_policy_attachment" "HelioCloud_Portal_PolicyAttachment" {
   role       = aws_iam_role.HelioCloud_Portal_ServiceAccount.name
 }
 
-resource "aws_eks_pod_identity_association" "HelioCloud_Portal_PodIdentityAssociation" {
-  cluster_name    = var.cluster_name
-  namespace       = var.kubernetes_namespace
-  service_account = var.kubernetes_service_account
-  role_arn        = aws_iam_role.HelioCloud_Portal_ServiceAccount.arn
-}
+# TODO: There's some sort of issue w/ using the Pod Identity Agent with our implementation
+#       of portal.
+#
+# See:
+#  https://repost.aws/knowledge-center/eks-pods-iam-role-service-accounts
+#
+# resource "aws_eks_pod_identity_association" "HelioCloud_Portal_PodIdentityAssociation" {
+#   cluster_name    = var.cluster_name
+#   namespace       = var.kubernetes_namespace
+#   service_account = var.kubernetes_service_account
+#   role_arn        = aws_iam_role.HelioCloud_Portal_UserRole
+# }
 
 
 resource "aws_iam_role_policy_attachment" "HelioCloud_Portal_UserS3Policy_Attachment" {

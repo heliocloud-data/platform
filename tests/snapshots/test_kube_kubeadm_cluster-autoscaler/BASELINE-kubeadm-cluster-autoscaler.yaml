@@ -233,7 +233,7 @@ spec:
           value: my-silly-cluster-name
         - name: AWS_REGION
           value: us-west-1
-        image: registry.k8s.io/autoscaling/cluster-autoscaler:v1.34.4
+        image: registry.k8s.io/autoscaling/cluster-autoscaler:v1.35.1
         imagePullPolicy: Always
         name: cluster-autoscaler
         resources:

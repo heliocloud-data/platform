@@ -25,7 +25,7 @@ spec:
     spec:
       serviceAccountName: cluster-autoscaler
       containers:
-        - image: registry.k8s.io/autoscaling/cluster-autoscaler:v1.34.4
+        - image: registry.k8s.io/autoscaling/cluster-autoscaler:v1.35.1
           name: cluster-autoscaler
           resources:
             limits:

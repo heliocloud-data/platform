@@ -36,7 +36,7 @@ resource "aws_eks_node_group" "mng_jupyterhub_burst_compute" {
 
   subnet_ids = var.subnet_ids
 
-  instance_types = data.aws_ec2_instance_type_offerings.mng_jupyterhub_burst_compute_instance_types.instance_types
+  instance_types = sort(data.aws_ec2_instance_type_offerings.mng_jupyterhub_burst_compute_instance_types.instance_types)
 
   scaling_config {
     desired_size = 0
@@ -95,7 +95,7 @@ resource "aws_eks_node_group" "mng_jupyterhub_burst_compute_gpu_xlarge" {
 
   subnet_ids = var.subnet_ids
 
-  instance_types = data.aws_ec2_instance_type_offerings.mng_jupyterhub_burst_compute_gpu_xlarge_instance_types.instance_types
+  instance_types = sort(data.aws_ec2_instance_type_offerings.mng_jupyterhub_burst_compute_gpu_xlarge_instance_types.instance_types)
 
   scaling_config {
     desired_size = 0

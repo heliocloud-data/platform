@@ -10,12 +10,22 @@ tofu plan -var-file environments/dev/terraform.tfvars.json
 
 ## Deploy the AWS resources
 
-To Deploy HelioCloud via OpenTofu
+To Deploy HelioCloud via OpenTofu, you can use either of the following methods:
 
+
+### Deploy using raw Tofu/Terraform commands
 ```
 tofu init
-tofu apply -var-file environments/dev/terraform.tfvars.json
+tofu apply -var-file environments/${HELIOCLOUD_TERRAFORM_ENVIRONMENT}$/terraform.tfvars.json
 ```
+
+
+### Deploy using make targets
+```
+make tf-init
+make tf-apply HELIOCLOUD_TERRAFORM_ENVIRONMENT=dev
+```
+
 
 ## Deploy the Kubernetes Applications
 

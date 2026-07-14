@@ -327,6 +327,12 @@ module "heliocloud_eks_node_group_jupyterhub_burst_compute" {
     aws_iam_role_policy_attachment.nodegroup_CloudWatchAgentServerPolicy
   ]
 }
+module "heliocloud_eks_addon_kube_proxy" {
+  source = "./modules/heliocloud_eks_addon_kube_proxy"
+
+  cluster_name       = aws_eks_cluster.private.name
+  kubernetes_version = var.kubernetes_version
+}
 
 module "heliocloud_eks_addon_pod_identity" {
   source = "./modules/heliocloud_eks_addon_pod_identity"

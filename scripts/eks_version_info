@@ -1,2 +1,2 @@
-NEW_K8_VERSION=1.34
-NEW_URL=https://s3.us-west-2.amazonaws.com/amazon-eks/1.34.6/2026-04-08/bin/linux/amd64/kubectl
+NEW_K8_VERSION=1.35
+NEW_URL=https://s3.us-west-2.amazonaws.com/amazon-eks/1.35.3/2026-04-08/bin/linux/amd64/kubectl

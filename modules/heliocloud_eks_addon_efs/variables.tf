@@ -5,7 +5,7 @@ variable "worker_node_role_name" {
 variable "enable_addon_version_lookup" {
   type        = bool
   description = "Enable AWS lookup for addon version (disable for tests/CI)"
-  default     = false
+  default     = true
 }
 
 variable "qualifier" {

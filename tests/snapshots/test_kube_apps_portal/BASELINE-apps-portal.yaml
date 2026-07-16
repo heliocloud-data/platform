@@ -8,6 +8,8 @@ metadata:
 apiVersion: v1
 kind: ServiceAccount
 metadata:
+  annotations:
+    eks.amazonaws.com/role-arn: arn:aws:iam::000000000000:role/PortalEc2Role
   name: portal-sa
   namespace: portal
 ---

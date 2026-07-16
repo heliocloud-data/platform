@@ -57,7 +57,9 @@ def run_helm_template(name, chart, chart_version=None, namespace=None, values_fi
             os.chdir(wd)
 
         if chart == "./":
-            os.system(f"helm dep update")
+            return_code = os.system(f"helm dep update")
+            if return_code != 0:
+                raise Exception(f"helm command '{helm_cmd}' in directory {wd}, failed with return code {return_code}")
 
 
         if chart_version is not None:
@@ -78,7 +80,10 @@ def run_helm_template(name, chart, chart_version=None, namespace=None, values_fi
             helm_cmd = f"{helm_cmd} {extra_opts}"
 
         helm_cmd = f"{helm_cmd} > {abs_output_file}"
-        os.system(helm_cmd)
+        return_code = os.system(helm_cmd)
+        if return_code != 0:
+            raise Exception(f"helm command '{helm_cmd}' in directory {wd}, failed with return code {return_code}")
+
     except Exception as e:
         raise e
     finally:

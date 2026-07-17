@@ -10,569 +10,567 @@
 #
 
 rbac:
+  create: true  # Create and use roles and service accounts on an RBAC-enabled cluster.
   enable: true  # Create and use roles and service accounts on an RBAC-enabled cluster.
 
-daskhub:
-  rbac:
-    create: true  # Create and use roles and service accounts on an RBAC-enabled cluster.
 
-  jupyterhub:
-    # Performance-wise, the pre-puller should be completely disabled, node groups
-    # with shared user servers are inheriently locked to a single (docker) image
-    # so there's not really a benifit as scheduling of the first user's server
-    # will pull the image at that moment anyway.
-    #
-    # In the event that we choose to support multiple docker runtimes per shared
-    # server OR we re-configure the autoscaler to be less reactive, we might
-    # revisit this setting.
-    prePuller:
-      hook:
-        enabled: false
-      pullProfileListImages: false
-      pause:
-        image:
-          name: registry.k8s.io/pause
-      continuous:
-        enabled: false
-
-    scheduling:
-      userPods:
-        nodeAffinity:
-          matchNodePurpose: require
-
-      userScheduler:
-        image:
-          name: registry.k8s.io/kube-scheduler
-          tag: v1.35.6
-        plugins:
-          score:
-            disabled:
-            - name: NodeResourcesBalancedAllocation
-            - name: NodeAffinity
-            - name: InterPodAffinity
-            - name: NodeResourcesFit
-            - name: ImageLocality
-            enabled:
-            - name: NodeAffinity
-              weight: 14631
-            - name: InterPodAffinity
-              weight: 1331
-            - name: NodeResourcesFit
-              weight: 121
-            - name: ImageLocality
-              weight: 11
-
-      userPlaceholder:
-        image:
-          name: registry.k8s.io/pause
-
-    debug:
-      enabled: true
-    cull:
-      enabled: true
-      timeout: 7201
-      every: 300
-    # JupyterHub configuration goes here.
-    # See https://github.com/jupyterhub/zero-to-jupyterhub-k8s/blob/master/jupyterhub/values.yaml
-    hub:
-      config:
-        Authenticator:
-          auto_login: true
-
-      extraConfig:
-        00-auth.py: |
-          from jupyterhub.auth import Authenticator
-          from jupyterhub.handlers.login import LogoutHandler
-          from urllib.parse import urlencode
-          import base64
-          import json
-          import os
-
-          # decode JWT from cognito
-          def decode_jwt_no_verify(token: str):
-              header_b64, payload_b64, signature_b64 = token.split('.')
-
-              # Add padding if necessary
-              def fix_padding(b64_str):
-                  return b64_str + "=" * (-len(b64_str) % 4)
-
-              header_json = base64.urlsafe_b64decode(fix_padding(header_b64)).decode()
-              payload_json = base64.urlsafe_b64decode(fix_padding(payload_b64)).decode()
-
-              header = json.loads(header_json)
-              payload = json.loads(payload_json)
-
-              return header, payload, signature_b64
-
-          # Custom Logout Handler to redirect to oauth2-proxy and cognito logout
-          class LogoutRedirectHandler(LogoutHandler):
-            async def render_logout_page(self):
-
-              # set redirect/logout/callback urls
-              daskhub_url = os.getenv("DASKHUB_URL")
-              client_id = os.getenv("CLIENT_ID")
-              response_type = "code"
-              cognito_url = os.getenv("COGNITO_URL")
-              oauth_logout_url = os.getenv("OAUTH_LOGOUT_URL")
-
-              params = {
-                "client_id": client_id,
-                "logout_uri": daskhub_url,
-                "response_type": response_type,
-              }
-
-              # cognito logout url will be last, it logs a user out of their cognito account
-              cognito_logout_full_url = f"{cognito_url}?{urlencode(params)}"
-
-              params_oauth2 = {
-                  "rd": cognito_logout_full_url,
-              }
-
-              # oauth2 proxy clears a users current oauth2 session
-              oauth2_logout_full_url = f"{oauth_logout_url}?{urlencode(params_oauth2)}"
-
-              if oauth2_logout_full_url:
-                  self.redirect(oauth2_logout_full_url)
-              else:
-                  await super().render_logout_page()
-
-          # Custom JupyterHub Authenticator
-          # The username is pulled from the access token from cognito
-          # The token needs to be decoded
-          class ProxiedHeaderAuthenticator(Authenticator):
-            
-            async def authenticate(self, handler, data=None):
-              token = handler.request.headers.get("X-Auth-Request-Access-Token")
-              try:
-                  _, claims, _ = decode_jwt_no_verify(token)
-                  username = claims.get("username")   # This is the access token username claim
-                  return username
-              except Exception as e:
-                  print("Error decoding JWT:", e)
-                  return None
-
-            # override the logout url to redirect to the custom logout handler
-            def logout_url(self, base_url):
-              return url_path_join(base_url, 'redirect/logout')
-            
-            # appends the custom logout handler to jupyterhub's base handlers
-            # this is slightly hacky but the only alternative is depricated
-            # or a full custom flask app service would have to replace it
-            def get_handlers(self, app):
-              return super().get_handlers(None) + [("redirect/logout", LogoutRedirectHandler)]
-
-          # overrides the default authenticator
-          c.JupyterHub.authenticator_class = ProxiedHeaderAuthenticator
-      extraEnv:
-        EXTRA_PIP_PACKAGES: >-
-          boto3
-          dask_gateway_server
-
-
-    singleuser:
-      startTimeout: 900
-      storage:
-        capacity: 100Gi
-        extraVolumes:
-          - name: dh-helio-efs
-            persistentVolumeClaim:
-              claimName: efs-scratch-space
-          - name: shm-volume
-            emptyDir:
-              medium: Memory
-        extraVolumeMounts:
-          - name: dh-helio-efs
-            mountPath: /home/jovyan/scratch_space
-          - name: shm-volume
-            mountPath: /dev/shm
-      initContainers:
-        - name: deploy-science-tutorials
-          image: public.ecr.aws/q3h7b4o8/helio-science-tutorials:latest
-          securityContext:
-            runAsUser: 0
-          command:
-          - sh
-          - -c
-          - (mkdir /home/jovyan/science-tutorials && cd /home/jovyan/science-tutorials && git clone https://github.com/heliocloud-data/science-tutorials.git . && chown 1000:100 -R /home/jovyan/science-tutorials) || echo "warning files already exist"
-          volumeMounts:
-          - name: volume-{username}{servername}
-            mountPath: /home/jovyan
-      # The following profile list has been tuned for XX.4xlarge instances (16 Core/64GB RAM)
-      # and memory limits were selected to allocate the majority of the available RAM whole
-      # numbers where "Server", "Large Server", "X-Large Server" and, "The Big Big Server"
-      # can support 8, 4, 2 and 1 servers per node respectively.
-      #
-      # The trick here is to ensure the remaining RAM after hitting that whole number is
-      # less than the memory_limit on the smallest server.
-      #
-      # The cost information came from https://aws.amazon.com/ec2/pricing/on-demand/
-      profileList:
-      - display_name: "Server"
-        description: "Large notebook server. 16GB RAM/4 CPU. <b>$0.20/hr</b>"
-        kubespawner_override:
-          mem_guarantee: 14G
-          mem_limit: 14G
-          cpu_guarantee: 3
-          cpu_limit: 4
-          node_selector:
-            nvidia.com/gpu: "false"
-          tolerations:
-            - key: 'hub.jupyter.org/dedicated'
-              operator: 'Equal'
-              value: 'user'
-              effect: 'NoSchedule'
-      - display_name: "The Big Big Server"
-        description: "Use resources like you mean it. 64GB RAM/16 CPU reserved. <b>$0.77/hr</b>"
-        kubespawner_override:
-          mem_guarantee: 56G
-          mem_limit: 56G
-          cpu_guarantee: 12
-          cpu_limit: 16
-          node_selector:
-            nvidia.com/gpu: "false"
-            heliocloud.org/instance-type: "4xlarge"
-          tolerations:
-            - key: 'hub.jupyter.org/dedicated'
-              operator: 'Equal'
-              value: 'big-user'
-              effect: 'NoSchedule'
-      - display_name: "GPU Server - PyTorch"
-        description: "Notebook server with access to an NVidia T4 GPU. Up to 32GB RAM/8 CPU. <b>$0.73/hr</b><br><i>This may take up to 15 minutes to start. Grab a coffee!</i>"
-        kubespawner_override:
-          mem_guarantee: 28G
-          mem_limit: 28G
-          cpu_guarantee: 6
-          cpu_limit: 8
-          image: public.ecr.aws/q3h7b4o8/heliocloud/helio-daskhub-mltrch:2026.03.11
-          environment: {'NVIDIA_DRIVER_CAPABILITIES': 'compute,utility'}
-          node_selector:
-            nvidia.com/gpu: "true"
-            heliocloud.org/instance-type: "2xlarge"
-          tolerations:
-            - key: 'nvidia.com/gpu'
-              operator: 'Equal'
-              value: 'true'
-              effect: 'NoSchedule'
-            - key: 'hub.jupyter.org/dedicated'
-              operator: 'Equal'
-              value: 'user'
-              effect: 'NoSchedule'
-          extra_resource_limits: {"nvidia.com/gpu": "1"}
-      - display_name: "GPU Server - Tensor Flow"
-        description: "Notebook server with access to an NVidia T4 GPU. Up to 32GB RAM/8 CPU. <b>$0.73/hr</b><br><i>This may take up to 15 minutes to start. Grab a coffee!</i>"
-        kubespawner_override:
-          mem_guarantee: 28G
-          mem_limit: 28G
-          cpu_guarantee: 6
-          cpu_limit: 8
-          image: public.ecr.aws/q3h7b4o8/heliocloud/helio-daskhub-mltf:2026.03.11
-          environment: {'NVIDIA_DRIVER_CAPABILITIES': 'compute,utility'}
-          node_selector:
-            nvidia.com/gpu: "true"
-            heliocloud.org/instance-type: "2xlarge"
-          tolerations:
-            - key: 'nvidia.com/gpu'
-              operator: 'Equal'
-              value: 'true'
-              effect: 'NoSchedule'
-            - key: 'hub.jupyter.org/dedicated'
-              operator: 'Equal'
-              value: 'user'
-              effect: 'NoSchedule'
-          extra_resource_limits: {"nvidia.com/gpu": "1"}
+jupyterhub:
+  # Performance-wise, the pre-puller should be completely disabled, node groups
+  # with shared user servers are inheriently locked to a single (docker) image
+  # so there's not really a benifit as scheduling of the first user's server
+  # will pull the image at that moment anyway.
+  #
+  # In the event that we choose to support multiple docker runtimes per shared
+  # server OR we re-configure the autoscaler to be less reactive, we might
+  # revisit this setting.
+  prePuller:
+    hook:
+      enabled: false
+    pullProfileListImages: false
+    pause:
       image:
-        name: public.ecr.aws/q3h7b4o8/heliocloud/helio-daskhub-core
-        tag: "2026.03.11"
-      cpu:
-        guarantee: 1
-        limit: 4
-      memory:
-        guarantee: 1G
-        limit: 4G
+        name: registry.k8s.io/pause
+    continuous:
+      enabled: false
 
-      # Specifically, this '{JUPYTER_IMAGE_SPEC}' was causing jupyterhub to crash When
-      # attempting to render the string in python, explicitly resolving it appeared to
-      # resolve the issue.
-      #
-      # Here's what the values are in JHUAPL's staging environment:
-      #   DASK_GATEWAY__CLUSTER__OPTIONS__IMAGE={JUPYTER_IMAGE_SPEC}
-      #   JUPYTER_IMAGE_SPEC=public.ecr.aws/q3h7b4o8/heliocloud/helio-daskhub-core:{date}
+  scheduling:
+    userPods:
+      nodeAffinity:
+        matchNodePurpose: require
 
-      extraEnv:
-        DASK_GATEWAY__CLUSTER__OPTIONS__IMAGE: "public.ecr.aws/q3h7b4o8/heliocloud/helio-daskhub-core:2026.03.11"
+    userScheduler:
+      image:
+        name: registry.k8s.io/kube-scheduler
+        tag: v1.35.6
+      plugins:
+        score:
+          disabled:
+          - name: NodeResourcesBalancedAllocation
+          - name: NodeAffinity
+          - name: InterPodAffinity
+          - name: NodeResourcesFit
+          - name: ImageLocality
+          enabled:
+          - name: NodeAffinity
+            weight: 14631
+          - name: InterPodAffinity
+            weight: 1331
+          - name: NodeResourcesFit
+            weight: 121
+          - name: ImageLocality
+            weight: 11
 
-      serviceAccountName: helio-dh-role
-      defaultUrl: "/lab"  # Use jupyterlab by default.
-    proxy:
-      service:
-        type: ClusterIP
+    userPlaceholder:
+      image:
+        name: registry.k8s.io/pause
 
-  dask-gateway:
-    enabled: true  # Enabling dask-gateway will install Dask Gateway as a dependency.
-    # Futher Dask Gateway configuration goes here
-    # See https://github.com/dask/dask-gateway/blob/master/resources/helm/dask-gateway/values.yaml
+  debug:
+    enabled: true
+  cull:
+    enabled: true
+    timeout: 7201
+    every: 300
+  # JupyterHub configuration goes here.
+  # See https://github.com/jupyterhub/zero-to-jupyterhub-k8s/blob/master/jupyterhub/values.yaml
+  hub:
+    config:
+      Authenticator:
+        auto_login: true
 
-    gateway:
-      prefix: "/services/dask-gateway"  # Users connect to the Gateway through the JupyterHub service.
+    extraConfig:
+      00-auth.py: |
+        from jupyterhub.auth import Authenticator
+        from jupyterhub.handlers.login import LogoutHandler
+        from urllib.parse import urlencode
+        import base64
+        import json
+        import os
 
-      auth:
-        type: jupyterhub  # Use JupyterHub to authenticate with Dask Gateway
+        # decode JWT from cognito
+        def decode_jwt_no_verify(token: str):
+            header_b64, payload_b64, signature_b64 = token.split('.')
 
-      # These settings ensure that we properly select the node group with
-      # Ec2Spot.  It might be better to switch to taint/toleration, not sure.
-      #
-      # See:
-      #   https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector
-      #   https://discourse.jupyter.org/t/tailoring-spawn-options-and-server-configuration-to-certain-users/8449
-      backend:
-        scheduler:
-          extraPodConfig:
-            spec:
-              volumes:
-              - name: dh-helio-efs
-                persistentVolumeClaim:
-                  claimName: efs-persist
-            affinity:
-              nodeAffinity:
-                requiredDuringSchedulingIgnoredDuringExecution:
-                  nodeSelectorTerms:
-                  - matchExpressions:
-                    - key: hub.jupyter.org/node-purpose
-                      operator: In
-                      values: [core, user, dask]
-          extraContainerConfig:
-            spec:
-              volumeMounts:
-              - name: dh-helio-efs
-                mountPath: /home/jovyan/scratch_space
-        worker:
-          extraPodConfig:
-            spec:
-              volumes:
-              - name: dh-helio-efs
-                persistentVolumeClaim:
-                  claimName: efs-scratch-space
-            affinity:
-              nodeAffinity:
-                requiredDuringSchedulingIgnoredDuringExecution:
-                  nodeSelectorTerms:
-                  - matchExpressions:
-                    - key: lifecycle
-                      operator: In
-                      values: [Ec2Spot]
-          extraContainerConfig:
-            spec:
-              volumeMounts:
-              - name: dh-helio-efs
-                mountPath: /home/jovyan/scratch_space
+            # Add padding if necessary
+            def fix_padding(b64_str):
+                return b64_str + "=" * (-len(b64_str) % 4)
 
-      extraConfig:
-        optionHandler: |
-          from dask_gateway_server.options import Options, Integer, Float, String, Select
-          import copy
+            header_json = base64.urlsafe_b64decode(fix_padding(header_b64)).decode()
+            payload_json = base64.urlsafe_b64decode(fix_padding(payload_b64)).decode()
 
-          extra_pod_affinity_config = {
-            "nodeAffinity": {
-              "requiredDuringSchedulingIgnoredDuringExecution": {
-                "nodeSelectorTerms": [{
-                  "matchExpressions": [{
-                    "key": "heliocloud.org/dask-worker",
-                    "operator": "In",
-                    "values": [
-                      "true",
-                    ]
-                  }]
-                }]
-              }
+            header = json.loads(header_json)
+            payload = json.loads(payload_json)
+
+            return header, payload, signature_b64
+
+        # Custom Logout Handler to redirect to oauth2-proxy and cognito logout
+        class LogoutRedirectHandler(LogoutHandler):
+          async def render_logout_page(self):
+
+            # set redirect/logout/callback urls
+            daskhub_url = os.getenv("DASKHUB_URL")
+            client_id = os.getenv("CLIENT_ID")
+            response_type = "code"
+            cognito_url = os.getenv("COGNITO_URL")
+            oauth_logout_url = os.getenv("OAUTH_LOGOUT_URL")
+
+            params = {
+              "client_id": client_id,
+              "logout_uri": daskhub_url,
+              "response_type": response_type,
             }
-          }
 
-          # Enumerate all the instance profiles that we want to support dask scheduling
-          # for.  We'll need corresponding node groups in the cluster.  We control this
-          # via the cluster-config.yaml.
-          profiles = {
-            "default": {
-              "extra_node_selectors": {
-                "nvidia.com/gpu": "false",
-                "heliocloud.org/dask-worker": "true",
-              },
+            # cognito logout url will be last, it logs a user out of their cognito account
+            cognito_logout_full_url = f"{cognito_url}?{urlencode(params)}"
 
-              "extra_node_affinity": [{
+            params_oauth2 = {
+                "rd": cognito_logout_full_url,
+            }
+
+            # oauth2 proxy clears a users current oauth2 session
+            oauth2_logout_full_url = f"{oauth_logout_url}?{urlencode(params_oauth2)}"
+
+            if oauth2_logout_full_url:
+                self.redirect(oauth2_logout_full_url)
+            else:
+                await super().render_logout_page()
+
+        # Custom JupyterHub Authenticator
+        # The username is pulled from the access token from cognito
+        # The token needs to be decoded
+        class ProxiedHeaderAuthenticator(Authenticator):
+          
+          async def authenticate(self, handler, data=None):
+            token = handler.request.headers.get("X-Auth-Request-Access-Token")
+            try:
+                _, claims, _ = decode_jwt_no_verify(token)
+                username = claims.get("username")   # This is the access token username claim
+                return username
+            except Exception as e:
+                print("Error decoding JWT:", e)
+                return None
+
+          # override the logout url to redirect to the custom logout handler
+          def logout_url(self, base_url):
+            return url_path_join(base_url, 'redirect/logout')
+          
+          # appends the custom logout handler to jupyterhub's base handlers
+          # this is slightly hacky but the only alternative is depricated
+          # or a full custom flask app service would have to replace it
+          def get_handlers(self, app):
+            return super().get_handlers(None) + [("redirect/logout", LogoutRedirectHandler)]
+
+        # overrides the default authenticator
+        c.JupyterHub.authenticator_class = ProxiedHeaderAuthenticator
+    extraEnv:
+      EXTRA_PIP_PACKAGES: >-
+        boto3
+        dask_gateway_server
+
+
+  singleuser:
+    startTimeout: 900
+    storage:
+      capacity: 100Gi
+      extraVolumes:
+        - name: dh-helio-efs
+          persistentVolumeClaim:
+            claimName: efs-scratch-space
+        - name: shm-volume
+          emptyDir:
+            medium: Memory
+      extraVolumeMounts:
+        - name: dh-helio-efs
+          mountPath: /home/jovyan/scratch_space
+        - name: shm-volume
+          mountPath: /dev/shm
+    initContainers:
+      - name: deploy-science-tutorials
+        image: public.ecr.aws/q3h7b4o8/helio-science-tutorials:latest
+        securityContext:
+          runAsUser: 0
+        command:
+        - sh
+        - -c
+        - (mkdir /home/jovyan/science-tutorials && cd /home/jovyan/science-tutorials && git clone https://github.com/heliocloud-data/science-tutorials.git . && chown 1000:100 -R /home/jovyan/science-tutorials) || echo "warning files already exist"
+        volumeMounts:
+        - name: volume-{username}{servername}
+          mountPath: /home/jovyan
+    # The following profile list has been tuned for XX.4xlarge instances (16 Core/64GB RAM)
+    # and memory limits were selected to allocate the majority of the available RAM whole
+    # numbers where "Server", "Large Server", "X-Large Server" and, "The Big Big Server"
+    # can support 8, 4, 2 and 1 servers per node respectively.
+    #
+    # The trick here is to ensure the remaining RAM after hitting that whole number is
+    # less than the memory_limit on the smallest server.
+    #
+    # The cost information came from https://aws.amazon.com/ec2/pricing/on-demand/
+    profileList:
+    - display_name: "Server"
+      description: "Large notebook server. 16GB RAM/4 CPU. <b>$0.20/hr</b>"
+      kubespawner_override:
+        mem_guarantee: 14G
+        mem_limit: 14G
+        cpu_guarantee: 3
+        cpu_limit: 4
+        node_selector:
+          nvidia.com/gpu: "false"
+        tolerations:
+          - key: 'hub.jupyter.org/dedicated'
+            operator: 'Equal'
+            value: 'user'
+            effect: 'NoSchedule'
+    - display_name: "The Big Big Server"
+      description: "Use resources like you mean it. 64GB RAM/16 CPU reserved. <b>$0.77/hr</b>"
+      kubespawner_override:
+        mem_guarantee: 56G
+        mem_limit: 56G
+        cpu_guarantee: 12
+        cpu_limit: 16
+        node_selector:
+          nvidia.com/gpu: "false"
+          heliocloud.org/instance-type: "4xlarge"
+        tolerations:
+          - key: 'hub.jupyter.org/dedicated'
+            operator: 'Equal'
+            value: 'big-user'
+            effect: 'NoSchedule'
+    - display_name: "GPU Server - PyTorch"
+      description: "Notebook server with access to an NVidia T4 GPU. Up to 32GB RAM/8 CPU. <b>$0.73/hr</b><br><i>This may take up to 15 minutes to start. Grab a coffee!</i>"
+      kubespawner_override:
+        mem_guarantee: 28G
+        mem_limit: 28G
+        cpu_guarantee: 6
+        cpu_limit: 8
+        image: public.ecr.aws/q3h7b4o8/heliocloud/helio-daskhub-mltrch:2026.03.11
+        environment: {'NVIDIA_DRIVER_CAPABILITIES': 'compute,utility'}
+        node_selector:
+          nvidia.com/gpu: "true"
+          heliocloud.org/instance-type: "2xlarge"
+        tolerations:
+          - key: 'nvidia.com/gpu'
+            operator: 'Equal'
+            value: 'true'
+            effect: 'NoSchedule'
+          - key: 'hub.jupyter.org/dedicated'
+            operator: 'Equal'
+            value: 'user'
+            effect: 'NoSchedule'
+        extra_resource_limits: {"nvidia.com/gpu": "1"}
+    - display_name: "GPU Server - Tensor Flow"
+      description: "Notebook server with access to an NVidia T4 GPU. Up to 32GB RAM/8 CPU. <b>$0.73/hr</b><br><i>This may take up to 15 minutes to start. Grab a coffee!</i>"
+      kubespawner_override:
+        mem_guarantee: 28G
+        mem_limit: 28G
+        cpu_guarantee: 6
+        cpu_limit: 8
+        image: public.ecr.aws/q3h7b4o8/heliocloud/helio-daskhub-mltf:2026.03.11
+        environment: {'NVIDIA_DRIVER_CAPABILITIES': 'compute,utility'}
+        node_selector:
+          nvidia.com/gpu: "true"
+          heliocloud.org/instance-type: "2xlarge"
+        tolerations:
+          - key: 'nvidia.com/gpu'
+            operator: 'Equal'
+            value: 'true'
+            effect: 'NoSchedule'
+          - key: 'hub.jupyter.org/dedicated'
+            operator: 'Equal'
+            value: 'user'
+            effect: 'NoSchedule'
+        extra_resource_limits: {"nvidia.com/gpu": "1"}
+    image:
+      name: public.ecr.aws/q3h7b4o8/heliocloud/helio-daskhub-core
+      tag: "2026.03.11"
+    cpu:
+      guarantee: 1
+      limit: 4
+    memory:
+      guarantee: 1G
+      limit: 4G
+
+    # Specifically, this '{JUPYTER_IMAGE_SPEC}' was causing jupyterhub to crash When
+    # attempting to render the string in python, explicitly resolving it appeared to
+    # resolve the issue.
+    #
+    # Here's what the values are in JHUAPL's staging environment:
+    #   DASK_GATEWAY__CLUSTER__OPTIONS__IMAGE={JUPYTER_IMAGE_SPEC}
+    #   JUPYTER_IMAGE_SPEC=public.ecr.aws/q3h7b4o8/heliocloud/helio-daskhub-core:{date}
+
+    extraEnv:
+      DASK_GATEWAY__CLUSTER__OPTIONS__IMAGE: "public.ecr.aws/q3h7b4o8/heliocloud/helio-daskhub-core:2026.03.11"
+
+    serviceAccountName: helio-dh-role
+    defaultUrl: "/lab"  # Use jupyterlab by default.
+  proxy:
+    service:
+      type: ClusterIP
+
+dask-gateway:
+  enabled: true  # Enabling dask-gateway will install Dask Gateway as a dependency.
+  # Futher Dask Gateway configuration goes here
+  # See https://github.com/dask/dask-gateway/blob/master/resources/helm/dask-gateway/values.yaml
+
+  gateway:
+    prefix: "/services/dask-gateway"  # Users connect to the Gateway through the JupyterHub service.
+
+    auth:
+      type: jupyterhub  # Use JupyterHub to authenticate with Dask Gateway
+
+    # These settings ensure that we properly select the node group with
+    # Ec2Spot.  It might be better to switch to taint/toleration, not sure.
+    #
+    # See:
+    #   https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector
+    #   https://discourse.jupyter.org/t/tailoring-spawn-options-and-server-configuration-to-certain-users/8449
+    backend:
+      scheduler:
+        extraPodConfig:
+          spec:
+            volumes:
+            - name: dh-helio-efs
+              persistentVolumeClaim:
+                claimName: efs-persist
+          affinity:
+            nodeAffinity:
+              requiredDuringSchedulingIgnoredDuringExecution:
+                nodeSelectorTerms:
+                - matchExpressions:
+                  - key: hub.jupyter.org/node-purpose
+                    operator: In
+                    values: [core, user, dask]
+        extraContainerConfig:
+          spec:
+            volumeMounts:
+            - name: dh-helio-efs
+              mountPath: /home/jovyan/scratch_space
+      worker:
+        extraPodConfig:
+          spec:
+            volumes:
+            - name: dh-helio-efs
+              persistentVolumeClaim:
+                claimName: efs-scratch-space
+          affinity:
+            nodeAffinity:
+              requiredDuringSchedulingIgnoredDuringExecution:
+                nodeSelectorTerms:
+                - matchExpressions:
+                  - key: lifecycle
+                    operator: In
+                    values: [Ec2Spot]
+        extraContainerConfig:
+          spec:
+            volumeMounts:
+            - name: dh-helio-efs
+              mountPath: /home/jovyan/scratch_space
+
+    extraConfig:
+      optionHandler: |
+        from dask_gateway_server.options import Options, Integer, Float, String, Select
+        import copy
+
+        extra_pod_affinity_config = {
+          "nodeAffinity": {
+            "requiredDuringSchedulingIgnoredDuringExecution": {
+              "nodeSelectorTerms": [{
                 "matchExpressions": [{
-                  "key": "nvidia.com/gpu",
-                  "operator": "In",
-                  "values": [
-                    "false",
-                  ]
-                }]
-              }],
-
-              "scheduler_extra_pod_config": {
-                "affinity": extra_pod_affinity_config,
-                "tolerations": [{
-                  "key": "heliocloud.org/dask-worker-profile",
-                  "operator": "Equal",
-                  "value": "default",
-                  "effect": "NoSchedule",
-                }]
-              },
-              "worker_extra_pod_config": {
-                "affinity": extra_pod_affinity_config,
-                "tolerations": [{
-                  "key": "heliocloud.org/dask-worker-profile",
-                  "operator": "Equal",
-                  "value": "default",
-                  "effect": "NoSchedule",
-                }]
-              },
-              "environment": {},
-            },
-            "gpu-xlarge": {
-              "overrides": {
-                "worker_cores": 3.5,
-                "worker_memory": "14G",
-              },
-
-              "extra_node_selectors": {
-                "nvidia.com/gpu": "true",
-                "heliocloud.org/dask-worker": "true",
-              },
-
-              "extra_node_affinity": [{
-                "matchExpressions": [{
-                  "key": "nvidia.com/gpu",
+                  "key": "heliocloud.org/dask-worker",
                   "operator": "In",
                   "values": [
                     "true",
                   ]
                 }]
-              }],
-
-              "scheduler_extra_pod_config": {
-                "affinity": extra_pod_affinity_config,
-                "tolerations": [{
-                  "key": "heliocloud.org/dask-worker-profile",
-                  "operator": "Equal",
-                  "value": "gpu-xlarge",
-                  "effect": "NoSchedule",
-                }]
-              },
-              "worker_extra_pod_config": {
-                "affinity": extra_pod_affinity_config,
-                "tolerations": [{
-                  "key": "heliocloud.org/dask-worker-profile",
-                  "operator": "Equal",
-                  "value": "gpu-xlarge",
-                  "effect": "NoSchedule",
-                }]
-              },
-              "environment": {
-                "NVIDIA_DRIVER_CAPABILITIES": "compute,utility",
-              },
+              }]
             }
           }
+        }
 
-          EFS_VOLUME_NAME = "dh-helio-efs"
-          efs_volume = {
-            "name": EFS_VOLUME_NAME,
-            "persistentVolumeClaim": {"claimName": "efs-scratch-space"}
+        # Enumerate all the instance profiles that we want to support dask scheduling
+        # for.  We'll need corresponding node groups in the cluster.  We control this
+        # via the cluster-config.yaml.
+        profiles = {
+          "default": {
+            "extra_node_selectors": {
+              "nvidia.com/gpu": "false",
+              "heliocloud.org/dask-worker": "true",
+            },
+
+            "extra_node_affinity": [{
+              "matchExpressions": [{
+                "key": "nvidia.com/gpu",
+                "operator": "In",
+                "values": [
+                  "false",
+                ]
+              }]
+            }],
+
+            "scheduler_extra_pod_config": {
+              "affinity": extra_pod_affinity_config,
+              "tolerations": [{
+                "key": "heliocloud.org/dask-worker-profile",
+                "operator": "Equal",
+                "value": "default",
+                "effect": "NoSchedule",
+              }]
+            },
+            "worker_extra_pod_config": {
+              "affinity": extra_pod_affinity_config,
+              "tolerations": [{
+                "key": "heliocloud.org/dask-worker-profile",
+                "operator": "Equal",
+                "value": "default",
+                "effect": "NoSchedule",
+              }]
+            },
+            "environment": {},
+          },
+          "gpu-xlarge": {
+            "overrides": {
+              "worker_cores": 3.5,
+              "worker_memory": "14G",
+            },
+
+            "extra_node_selectors": {
+              "nvidia.com/gpu": "true",
+              "heliocloud.org/dask-worker": "true",
+            },
+
+            "extra_node_affinity": [{
+              "matchExpressions": [{
+                "key": "nvidia.com/gpu",
+                "operator": "In",
+                "values": [
+                  "true",
+                ]
+              }]
+            }],
+
+            "scheduler_extra_pod_config": {
+              "affinity": extra_pod_affinity_config,
+              "tolerations": [{
+                "key": "heliocloud.org/dask-worker-profile",
+                "operator": "Equal",
+                "value": "gpu-xlarge",
+                "effect": "NoSchedule",
+              }]
+            },
+            "worker_extra_pod_config": {
+              "affinity": extra_pod_affinity_config,
+              "tolerations": [{
+                "key": "heliocloud.org/dask-worker-profile",
+                "operator": "Equal",
+                "value": "gpu-xlarge",
+                "effect": "NoSchedule",
+              }]
+            },
+            "environment": {
+              "NVIDIA_DRIVER_CAPABILITIES": "compute,utility",
+            },
           }
-          efs_mount = {"name": EFS_VOLUME_NAME, "mountPath": "/home/jovyan/scratch_space"}
+        }
 
-          def _inject_efs_volume(pod_cfg: dict) -> dict:
-            pod_cfg = copy.deepcopy(pod_cfg)
-            pod_cfg.setdefault("volumes", [])
-            if not any(v.get("name") == EFS_VOLUME_NAME for v in pod_cfg["volumes"]):
-              pod_cfg["volumes"].append(efs_volume)
-            return pod_cfg
+        EFS_VOLUME_NAME = "dh-helio-efs"
+        efs_volume = {
+          "name": EFS_VOLUME_NAME,
+          "persistentVolumeClaim": {"claimName": "efs-scratch-space"}
+        }
+        efs_mount = {"name": EFS_VOLUME_NAME, "mountPath": "/home/jovyan/scratch_space"}
 
-          def get_extra_pod_config_from_profile(options, user, pod_config_key):
-            extra_toleration_user_config = {
-              "key": "hub.jupyter.org/username",
-              "operator": "Equal",
-              "value": user.name,
-              "effect": "NoSchedule",
-            }
+        def _inject_efs_volume(pod_cfg: dict) -> dict:
+          pod_cfg = copy.deepcopy(pod_cfg)
+          pod_cfg.setdefault("volumes", [])
+          if not any(v.get("name") == EFS_VOLUME_NAME for v in pod_cfg["volumes"]):
+            pod_cfg["volumes"].append(efs_volume)
+          return pod_cfg
 
-            extra_pod_config = copy.deepcopy(profiles[options.profile][pod_config_key])
+        def get_extra_pod_config_from_profile(options, user, pod_config_key):
+          extra_toleration_user_config = {
+            "key": "hub.jupyter.org/username",
+            "operator": "Equal",
+            "value": user.name,
+            "effect": "NoSchedule",
+          }
 
-            extra_pod_config['serviceAccountName'] = 'helio-dh-role'
-            extra_pod_config['serviceAccount'] = 'helio-dh-role'
+          extra_pod_config = copy.deepcopy(profiles[options.profile][pod_config_key])
 
-            if 'tolerations' not in extra_pod_config:
-              extra_pod_config['tolerations'] = []
+          extra_pod_config['serviceAccountName'] = 'helio-dh-role'
+          extra_pod_config['serviceAccount'] = 'helio-dh-role'
 
-            # Inject tolerations associated w/ this user.
-            extra_pod_config['tolerations'].append(extra_toleration_user_config)
+          if 'tolerations' not in extra_pod_config:
+            extra_pod_config['tolerations'] = []
 
-            # Apply any additional node selectors for the given profile
-            # configuration
-            if 'extra_node_selectors' in profiles[options.profile]:
-              extra_pod_config['nodeSelector'] = profiles[options.profile]['extra_node_selectors']
+          # Inject tolerations associated w/ this user.
+          extra_pod_config['tolerations'].append(extra_toleration_user_config)
 
-            # Apply any additional node affinity for the given profile
-            # configuration
-            if 'extra_node_affinity' in profiles[options.profile] and len(profiles[options.profile]['extra_node_affinity']) > 0:
-              if 'affinity' not in extra_pod_config:
-                extra_pod_config['affinity'] = {}
-              if 'nodeAffinity' not in extra_pod_config['affinity']:
-                extra_pod_config['affinity']['nodeAffinity'] = {}
-              if 'requiredDuringSchedulingIgnoredDuringExecution' not in extra_pod_config['affinity']['nodeAffinity']:
-                extra_pod_config['affinity']['nodeAffinity']['requiredDuringSchedulingIgnoredDuringExecution'] = {}
-              if 'nodeSelectorTerms' not in extra_pod_config['affinity']['nodeAffinity']['requiredDuringSchedulingIgnoredDuringExecution']:
-                extra_pod_config['affinity']['nodeAffinity']['requiredDuringSchedulingIgnoredDuringExecution']['nodeSelectorTerms'] = []
-              for extra_node_selector in profiles[options.profile]['extra_node_affinity']:
-                extra_pod_config['affinity']['nodeAffinity']['requiredDuringSchedulingIgnoredDuringExecution']['nodeSelectorTerms'].append(extra_node_selector)
+          # Apply any additional node selectors for the given profile
+          # configuration
+          if 'extra_node_selectors' in profiles[options.profile]:
+            extra_pod_config['nodeSelector'] = profiles[options.profile]['extra_node_selectors']
 
-            return extra_pod_config
+          # Apply any additional node affinity for the given profile
+          # configuration
+          if 'extra_node_affinity' in profiles[options.profile] and len(profiles[options.profile]['extra_node_affinity']) > 0:
+            if 'affinity' not in extra_pod_config:
+              extra_pod_config['affinity'] = {}
+            if 'nodeAffinity' not in extra_pod_config['affinity']:
+              extra_pod_config['affinity']['nodeAffinity'] = {}
+            if 'requiredDuringSchedulingIgnoredDuringExecution' not in extra_pod_config['affinity']['nodeAffinity']:
+              extra_pod_config['affinity']['nodeAffinity']['requiredDuringSchedulingIgnoredDuringExecution'] = {}
+            if 'nodeSelectorTerms' not in extra_pod_config['affinity']['nodeAffinity']['requiredDuringSchedulingIgnoredDuringExecution']:
+              extra_pod_config['affinity']['nodeAffinity']['requiredDuringSchedulingIgnoredDuringExecution']['nodeSelectorTerms'] = []
+            for extra_node_selector in profiles[options.profile]['extra_node_affinity']:
+              extra_pod_config['affinity']['nodeAffinity']['requiredDuringSchedulingIgnoredDuringExecution']['nodeSelectorTerms'].append(extra_node_selector)
 
-          def option_handler(options, user):
-            environment = copy.deepcopy(profiles[options.profile]['environment'])
+          return extra_pod_config
 
-            worker_extra_pod_config = get_extra_pod_config_from_profile(options, user, 'worker_extra_pod_config')
-            scheduler_extra_pod_config = get_extra_pod_config_from_profile(options, user, 'scheduler_extra_pod_config')
+        def option_handler(options, user):
+          environment = copy.deepcopy(profiles[options.profile]['environment'])
 
-            extra_annotations = {
-              "hub.jupyter.org/username": user.name,
-            }
+          worker_extra_pod_config = get_extra_pod_config_from_profile(options, user, 'worker_extra_pod_config')
+          scheduler_extra_pod_config = get_extra_pod_config_from_profile(options, user, 'scheduler_extra_pod_config')
 
-            extra_labels = {
-              "hub.jupyter.org/username": user.name,
-            }
+          extra_annotations = {
+            "hub.jupyter.org/username": user.name,
+          }
 
-            if ":" not in options.image:
-              raise ValueError("When specifying an image you must also provide a tag")
+          extra_labels = {
+            "hub.jupyter.org/username": user.name,
+          }
 
-            return {
-              "image": options.image,
-              "worker_cores": profiles[options.profile].get("overrides",{}).get("worker_cores",options.worker_cores),
-              "worker_memory": profiles[options.profile].get("overrides",{}).get("worker_memory", int(options.worker_memory * 2 ** 30)),
-              "scheduler_extra_pod_annotations": extra_annotations,
-              "worker_extra_pod_annotations": extra_annotations,
-              "scheduler_extra_pod_labels": extra_labels,
-              "worker_extra_pod_labels": extra_labels,
-              "environment": environment,
-              "worker_extra_pod_config": worker_extra_pod_config,
-              "scheduler_extra_pod_config": scheduler_extra_pod_config,
-            }
-          c.Backend.cluster_options = Options(
-            String("image", default="public.ecr.aws/q3h7b4o8/heliocloud/helio-daskhub-core:2026.03.11", label="Image"),
-            Integer("worker_cores", default=1, min=1, max=4, label="Worker Cores"),
-            Float("worker_memory", default=1, min=1, max=8, label="Worker Memory (GiB)"),
-            Select("profile", list(profiles.keys()), default="default", label="Profile"),
-            handler=option_handler,
-          )
-        idle: |
-          # timeout after 2 hours of inactivity
-          c.KubeClusterConfig.idle_timeout = 7200
+          if ":" not in options.image:
+            raise ValueError("When specifying an image you must also provide a tag")
 
-    traefik: # Traefik is unavoidable here - tightly coupled with Dask Gateway. See: https://dask.discourse.group/t/deploying-dask-gateway-without-traefik/3554
-      service:
-        type: ClusterIP  # Access Dask Gateway through JupyterHub. To access the Gateway from outside JupyterHub, this must be changed to a `LoadBalancer`.
+          return {
+            "image": options.image,
+            "worker_cores": profiles[options.profile].get("overrides",{}).get("worker_cores",options.worker_cores),
+            "worker_memory": profiles[options.profile].get("overrides",{}).get("worker_memory", int(options.worker_memory * 2 ** 30)),
+            "scheduler_extra_pod_annotations": extra_annotations,
+            "worker_extra_pod_annotations": extra_annotations,
+            "scheduler_extra_pod_labels": extra_labels,
+            "worker_extra_pod_labels": extra_labels,
+            "environment": environment,
+            "worker_extra_pod_config": worker_extra_pod_config,
+            "scheduler_extra_pod_config": scheduler_extra_pod_config,
+          }
+        c.Backend.cluster_options = Options(
+          String("image", default="public.ecr.aws/q3h7b4o8/heliocloud/helio-daskhub-core:2026.03.11", label="Image"),
+          Integer("worker_cores", default=1, min=1, max=4, label="Worker Cores"),
+          Float("worker_memory", default=1, min=1, max=8, label="Worker Memory (GiB)"),
+          Select("profile", list(profiles.keys()), default="default", label="Profile"),
+          handler=option_handler,
+        )
+      idle: |
+        # timeout after 2 hours of inactivity
+        c.KubeClusterConfig.idle_timeout = 7200
 
-  dask-kubernetes:
-    # Use dask-kubernetes, rather than Dask Gateway, for creating Dask Clusters.
-    # Enabling this also requires
-    # 1. Setting `jupyterhub.singleuser.serviceAccountName: daskkubernetes`.
-    # 2. Ensuring that `dask-kubernetes` is in your singleuser environment.
-    enabled: false
+  traefik: # Traefik is unavoidable here - tightly coupled with Dask Gateway. See: https://dask.discourse.group/t/deploying-dask-gateway-without-traefik/3554
+    service:
+      type: ClusterIP  # Access Dask Gateway through JupyterHub. To access the Gateway from outside JupyterHub, this must be changed to a `LoadBalancer`.
+
+dask-kubernetes:
+  # Use dask-kubernetes, rather than Dask Gateway, for creating Dask Clusters.
+  # Enabling this also requires
+  # 1. Setting `jupyterhub.singleuser.serviceAccountName: daskkubernetes`.
+  # 2. Ensuring that `dask-kubernetes` is in your singleuser environment.
+  enabled: false

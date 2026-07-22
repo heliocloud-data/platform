@@ -1,0 +1,29 @@
+name: OpenTofu CI
+on: [push, pull_request]
+
+jobs:
+  secret-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0 # Important for Gitleaks to scan history
+      
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_ENABLE_WARNINGS: true # Set to true to warn instead of failing the build
+
+  iac-scan:
+      runs-on: ubuntu-latest
+      steps:
+        - uses: actions/checkout@v3
+        - name: Run Trivy vulnerability scanner in IaC mode
+          uses: aquasecurity/trivy-action@master
+          with:
+            scan-type: 'config'
+            hide-progress: false
+            format: 'table'
+            exit-code: '1' # Change to 0 if you only want a warning
+            ignore-unfixed: true

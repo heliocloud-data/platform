@@ -1,0 +1,4 @@
+bucket         = "heliocloud-tofu-state-bucket-hsdcloud"
+key            = "prod/hsdcloud-production/terraform.tfstate"
+region         = "us-east-1"
+dynamodb_table = "heliocloud-tofu-state-lock-hsdcloud"

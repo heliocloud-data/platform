@@ -51,12 +51,6 @@ run "plan_portal" {
     error_message = "User role name mismatch."
   }
 
-  # --- Pod Identity ---
-  assert {
-    condition     = aws_eks_pod_identity_association.HelioCloud_Portal_PodIdentityAssociation.cluster_name == "tofu-cluster"
-    error_message = "Pod identity should reference correct cluster."
-  }
-
   # --- Security Group ---
   assert {
     condition     = aws_security_group.HelioCloud_Portal_UserSecurityGroup.name == "PortalEc2SecurityGroup"

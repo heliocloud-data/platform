@@ -11,8 +11,9 @@ provider "aws" {
 }
 
 variables {
-  cluster_name       = "tofu-cluster"
-  kubernetes_version = "1.29"
+  cluster_name                = "tofu-cluster"
+  kubernetes_version          = "1.29"
+  enable_addon_version_lookup = false
 }
 
 run "plan_pod_identity_addon" {

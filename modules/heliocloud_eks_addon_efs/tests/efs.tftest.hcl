@@ -11,12 +11,13 @@ provider "aws" {
 }
 
 variables {
-  cluster_name               = "tofu-cluster"
-  kubernetes_version         = "1.29"
-  kubernetes_namespace       = "kube-system"
-  kubernetes_service_account = "efs-csi-controller-sa"
-  worker_node_role_name      = "tofu-node-role"
-  qualifier                  = ""
+  cluster_name                = "tofu-cluster"
+  kubernetes_version          = "1.29"
+  kubernetes_namespace        = "kube-system"
+  kubernetes_service_account  = "efs-csi-controller-sa"
+  worker_node_role_name       = "tofu-node-role"
+  enable_addon_version_lookup = false
+  qualifier                   = ""
 }
 
 run "plan_efs_addon" {

@@ -288,16 +288,10 @@ jupyterhub:
       guarantee: 1G
       limit: 4G
 
-    # Specifically, this '{JUPYTER_IMAGE_SPEC}' was causing jupyterhub to crash When
-    # attempting to render the string in python, explicitly resolving it appeared to
-    # resolve the issue.
-    #
-    # Here's what the values are in JHUAPL's staging environment:
-    #   DASK_GATEWAY__CLUSTER__OPTIONS__IMAGE={JUPYTER_IMAGE_SPEC}
-    #   JUPYTER_IMAGE_SPEC=public.ecr.aws/q3h7b4o8/heliocloud/helio-daskhub-core:{date}
-
     extraEnv:
+      DASK_GATEWAY__ADDRESS: "http://traefik-daskhub-dask-gateway/services/dask-gateway"
       DASK_GATEWAY__CLUSTER__OPTIONS__IMAGE: "public.ecr.aws/q3h7b4o8/heliocloud/helio-daskhub-core:2026.03.11"
+      DASK_GATEWAY__AUTH__TYPE:  "jupyterhub"
 
     serviceAccountName: helio-dh-role
     defaultUrl: "/lab"  # Use jupyterlab by default.

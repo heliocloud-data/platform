@@ -17,6 +17,9 @@ jupyterhub:
         nginx.ingress.kubernetes.io/auth-response-headers: "X-Auth-Request-Access-Token" # headers from cognito
         nginx.ingress.kubernetes.io/proxy-buffer-size: "8k"
         nginx.ingress.kubernetes.io/proxy-buffering: "on"
+  singleuser:
+    extraEnv:
+      DASK_GATEWAY__AUTH__API_TOKEN: "{{  heritage_params['config']['daskhub']['api_key2'] }}"
   hub:
     config:
       Authenticator:

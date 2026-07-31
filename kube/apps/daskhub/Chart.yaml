@@ -6,7 +6,7 @@ dependencies:
   version: 3.2.1
 - name: dask-gateway
   repository: https://helm.dask.org/
-  version: 2024.1.0
+  version: 2025.4.0
 description: HelioCloud's multi-user JupyterHub and Dask deployment.
 icon: https://avatars3.githubusercontent.com/u/17131925?v=3&s=200
 maintainers:

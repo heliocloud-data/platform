@@ -49,3 +49,4 @@ temp/
 reports/
 TEST*.xml
 *.pyc
+scripts/import-cdk-to-opentofu.sh

@@ -1,0 +1,580 @@
+{
+    "hsdcloudtestingv120DaskhubAB78933B": [
+        {
+            "LogicalId": "AllowExternalDNSUpdates745D9756",
+            "PhysicalId": "arn:aws:iam::320962816401:policy/hsdcloudtestingv120DaskhubAB78933B-AllowExternalDNSUpdates745D9756-6F87zZbLCDz0",
+            "Type": "AWS::IAM::ManagedPolicy",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "CDKMetadata",
+            "PhysicalId": "8b718070-2e32-11f1-9d40-06c68577b70f",
+            "Type": "AWS::CDK::Metadata",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "CnameRecord2351B7B9",
+            "PhysicalId": "daskhub-testing-us-east-2.hsdcloud2.org",
+            "Type": "AWS::Route53::RecordSet",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "CnameRecordDeleteExistingRecordSetCustomResource967B106B",
+            "PhysicalId": "daskhub-testing-us-east-2.hsdcloud2.org.-CNAME",
+            "Type": "Custom::DeleteExistingRecordSet",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "CustomDeleteExistingRecordSetCustomResourceProviderHandlerAD00231E",
+            "PhysicalId": "hsdcloudtestingv120Daskhu-CustomDeleteExistingReco-izDSXCW0OciX",
+            "Type": "AWS::Lambda::Function",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "CustomDeleteExistingRecordSetCustomResourceProviderRole03A7ED08",
+            "PhysicalId": "hsdcloudtestingv120Daskhu-CustomDeleteExistingRecor-Fgb6j1vg35B2",
+            "Type": "AWS::IAM::Role",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "DaskhubEFSDDAFDBE4",
+            "PhysicalId": "fs-02f706c97e25ab252",
+            "Type": "AWS::EFS::FileSystem",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "DaskhubEFSEfsMountTarget17DE1E03A",
+            "PhysicalId": "fsmt-00be889105c2d94e9",
+            "Type": "AWS::EFS::MountTarget",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "DaskhubEFSEfsMountTarget2069C3D6C",
+            "PhysicalId": "fsmt-02fd54ed5b767b2a6",
+            "Type": "AWS::EFS::MountTarget",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "DaskhubEFSEfsSecurityGroup92713B17",
+            "PhysicalId": "sg-0092d75a6937b94ce",
+            "Type": "AWS::EC2::SecurityGroup",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "DaskhubInstance8C66E676efaa26e612275c03",
+            "PhysicalId": "i-045a8c7e5ba558f12",
+            "Type": "AWS::EC2::Instance",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "DaskhubInstanceInstanceProfileCB18ECAE",
+            "PhysicalId": "hsdcloudtestingv120DaskhubAB78933B-DaskhubInstanceInstanceProfileCB18ECAE-PnN7FImZtfyb",
+            "Type": "AWS::IAM::InstanceProfile",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "DaskhubInstanceInstanceSecurityGroupB3CB9674",
+            "PhysicalId": "sg-050f0b67de2ec03de",
+            "Type": "AWS::EC2::SecurityGroup",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "Daskhubkey4465FB27",
+            "PhysicalId": "18ceea3e-55d4-4f6e-9e0c-a2f29c7b39b8",
+            "Type": "AWS::KMS::Key",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "EC2AdminRoleB230CBD9",
+            "PhysicalId": "hsdcloudtestingv120DaskhubAB78-EC2AdminRoleB230CBD9-k62mO8KG3Zl6",
+            "Type": "AWS::IAM::Role",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "EC2AdminRoleDefaultPolicy61FE02BB",
+            "PhysicalId": "hsdcl-EC2Ad-Sh9GYd9jVDuv",
+            "Type": "AWS::IAM::Policy",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "EfsMountManagedPolicy6ED03503",
+            "PhysicalId": "arn:aws:iam::320962816401:policy/hsdcloudtestingv120DaskhubAB78933B-EfsMountManagedPolicy6ED03503-ugvvMymn488C",
+            "Type": "AWS::IAM::ManagedPolicy",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "K8AutoScalingManagedPolicyD4C9010C",
+            "PhysicalId": "arn:aws:iam::320962816401:policy/hsdcloudtestingv120DaskhubAB78933B-K8AutoScalingManagedPolicyD4C9010C-GRYLGlmPHuY8",
+            "Type": "AWS::IAM::ManagedPolicy",
+            "Status": "CREATE_COMPLETE"
+        }
+    ],
+    "hsdcloudtestingv120RegistrationPage3EDD5277": [
+        {
+            "LogicalId": "CDKMetadata",
+            "PhysicalId": "f95ad1f0-2e31-11f1-88b4-0ae7adf36fe3",
+            "Type": "AWS::CDK::Metadata",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "FargateTaskRole44F4EBFF",
+            "PhysicalId": "hsdcloudtestingv120Registra-FargateTaskRole44F4EBFF-bMfdcj2JolxR",
+            "Type": "AWS::IAM::Role",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "FargateTaskRoleDefaultPolicyB13BF0E1",
+            "PhysicalId": "hsdcl-Farga-tDCwoviujozz",
+            "Type": "AWS::IAM::Policy",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "RegistrationClusterDefaultServiceDiscoveryNamespace98003129",
+            "PhysicalId": "ns-7suip7ai3jxtv545",
+            "Type": "AWS::ServiceDiscovery::PrivateDnsNamespace",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "RegistrationClusterE6DC33A8",
+            "PhysicalId": "hsdcloudtestingv120RegistrationPage3EDD5277-RegistrationClusterE6DC33A8-vo21TNF4Q0Iu",
+            "Type": "AWS::ECS::Cluster",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "RegistrationEc2SecurityGroup74CC7052",
+            "PhysicalId": "sg-0492e33fcf2013728",
+            "Type": "AWS::EC2::SecurityGroup",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "RegistrationFargateDNS5C96104F",
+            "PhysicalId": "registration-testing-us-east-2.hsdcloud2.org",
+            "Type": "AWS::Route53::RecordSet",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "RegistrationFargateLB1423DC55",
+            "PhysicalId": "arn:aws:elasticloadbalancing:us-east-2:320962816401:loadbalancer/app/hsdclo-Regis-1glcz8krlOIm/1576e41f63154000",
+            "Type": "AWS::ElasticLoadBalancingV2::LoadBalancer",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "RegistrationFargateLBPublicListener336E9BD0",
+            "PhysicalId": "arn:aws:elasticloadbalancing:us-east-2:320962816401:listener/app/hsdclo-Regis-1glcz8krlOIm/1576e41f63154000/0dd57532c498210c",
+            "Type": "AWS::ElasticLoadBalancingV2::Listener",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "RegistrationFargateLBPublicListenerECSGroupBF37E439",
+            "PhysicalId": "arn:aws:elasticloadbalancing:us-east-2:320962816401:targetgroup/hsdclo-Regis-ZNDRTFMR7DC0/e11a0f77135d6a03",
+            "Type": "AWS::ElasticLoadBalancingV2::TargetGroup",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "RegistrationFargateLBPublicRedirectListener261E8523",
+            "PhysicalId": "arn:aws:elasticloadbalancing:us-east-2:320962816401:listener/app/hsdclo-Regis-1glcz8krlOIm/1576e41f63154000/56dd4960b220c93e",
+            "Type": "AWS::ElasticLoadBalancingV2::Listener",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "RegistrationFargateLBSecurityGroup16871943",
+            "PhysicalId": "sg-03bb36d2bcc9039a2",
+            "Type": "AWS::EC2::SecurityGroup",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "RegistrationFargateLBSecurityGrouptohsdcloudtestingv120RegistrationPageRegistrationSecurityGroupC840F550804044FA5D",
+            "PhysicalId": "sgr-0ff737b8a388abfe6",
+            "Type": "AWS::EC2::SecurityGroupEgress",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "RegistrationFargateService8474C924",
+            "PhysicalId": "arn:aws:ecs:us-east-2:320962816401:service/hsdcloudtestingv120RegistrationPage3EDD5277-RegistrationClusterE6DC33A8-vo21TNF4Q0Iu/hsdcloudtestingv120RegistrationPage3EDD5277-RegistrationFargateService8474C924-NGkVR8FBaZYW",
+            "Type": "AWS::ECS::Service",
+            "Status": "UPDATE_COMPLETE"
+        },
+        {
+            "LogicalId": "RegistrationFargateTaskAD41F9F0",
+            "PhysicalId": "arn:aws:ecs:us-east-2:320962816401:task-definition/hsdcloudtestingv120RegistrationPageRegistrationFargateTaskB89D5FA9:2",
+            "Type": "AWS::ECS::TaskDefinition",
+            "Status": "UPDATE_COMPLETE"
+        },
+        {
+            "LogicalId": "RegistrationFargateTaskExecutionRoleC35A1B85",
+            "PhysicalId": "hsdcloudtestingv120Regist-RegistrationFargateTaskEx-gO1dgkSPu1LB",
+            "Type": "AWS::IAM::Role",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "RegistrationFargateTaskExecutionRoleDefaultPolicy2C4EE326",
+            "PhysicalId": "hsdcl-Regis-itUjWUMzfFqX",
+            "Type": "AWS::IAM::Policy",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "RegistrationFargateTaskRegistrationContainerLogGroup37D28348",
+            "PhysicalId": "hsdcloudtestingv120RegistrationPage3EDD5277-RegistrationFargateTaskRegistrationContainerLogGroup37D28348-P1IZbtQUwgb4",
+            "Type": "AWS::Logs::LogGroup",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "RegistrationSecurityGroupFE9A74EE",
+            "PhysicalId": "sg-0b29115c8c1f6b53b",
+            "Type": "AWS::EC2::SecurityGroup",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "RegistrationSecurityGroupfromhsdcloudtestingv120RegistrationPageRegistrationFargateLBSecurityGroup1C3784FA80B9E794C2",
+            "PhysicalId": "sgr-03499ec3f8c3fe520",
+            "Type": "AWS::EC2::SecurityGroupIngress",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "registrationuserpoolclientid5A5D2A53",
+            "PhysicalId": "arn:aws:secretsmanager:us-east-2:320962816401:secret:registrationuserpoolclienti-7iASxFNx1xh3-rs1Kch",
+            "Type": "AWS::SecretsManager::Secret",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "registrationuserpoolclientsecret7050C3B0",
+            "PhysicalId": "arn:aws:secretsmanager:us-east-2:320962816401:secret:registrationuserpoolclients-UkSRmIMj1Jqp-rCMu1k",
+            "Type": "AWS::SecretsManager::Secret",
+            "Status": "CREATE_COMPLETE"
+        }
+    ],
+    "hsdcloudtestingv120Portal4F1A2284": [
+        {
+            "LogicalId": "CDKMetadata",
+            "PhysicalId": "9776da60-2e31-11f1-a853-0a11c89e198b",
+            "Type": "AWS::CDK::Metadata",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "IdentityPoolAuthenticatedRole42131CF5",
+            "PhysicalId": "hsdcloudtestingv120Portal-IdentityPoolAuthenticated-RvHmpZzLANkE",
+            "Type": "AWS::IAM::Role",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "IdentityPoolDefaultRoleAttachmentD81AFC39",
+            "PhysicalId": "us-east-2:f4ac6d4a-729e-49df-8887-a74faa646bdd",
+            "Type": "AWS::Cognito::IdentityPoolRoleAttachment",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "IdentityPoolEC8A1A0D",
+            "PhysicalId": "us-east-2:f4ac6d4a-729e-49df-8887-a74faa646bdd",
+            "Type": "AWS::Cognito::IdentityPool",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "IdentityPoolUnauthenticatedRole68AEFF8B",
+            "PhysicalId": "hsdcloudtestingv120Portal-IdentityPoolUnauthenticat-CD2yHy6yNpO9",
+            "Type": "AWS::IAM::Role",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "PortalAuthPolicyF61B8883",
+            "PhysicalId": "hsdcl-Porta-cy0pGvq5qWBf",
+            "Type": "AWS::IAM::Policy",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "PortalEc2InstanceProfile",
+            "PhysicalId": "hsdcloudtestingv120Portal4F1A2284-PortalEc2InstanceProfile-Hxmzo2jVDhLB",
+            "Type": "AWS::IAM::InstanceProfile",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "PortalEc2Role5DB76A9E",
+            "PhysicalId": "hsdcloudtestingv120Portal4F1A-PortalEc2Role5DB76A9E-jdWnLMYZVQLm",
+            "Type": "AWS::IAM::Role",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "PortalEc2SecurityGroup31D704DE",
+            "PhysicalId": "sg-0a7ccbbd5ea4e925c",
+            "Type": "AWS::EC2::SecurityGroup",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "PortalUnauthPolicyA5E25F05",
+            "PhysicalId": "hsdcl-Porta-zLl3ta4n9qe3",
+            "Type": "AWS::IAM::Policy",
+            "Status": "CREATE_COMPLETE"
+        }
+    ],
+    "hsdcloudtestingv120AuthEA1C881B": [
+        {
+            "LogicalId": "AWS679f53fac002430cb0da5b7982bd22872D164C4C",
+            "PhysicalId": "hsdcloudtestingv120AuthEA-AWS679f53fac002430cb0da5-5ZNC1KqGlBqb",
+            "Type": "AWS::Lambda::Function",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "AWS679f53fac002430cb0da5b7982bd2287ServiceRoleC1EA0FF2",
+            "PhysicalId": "hsdcloudtestingv120AuthEA-AWS679f53fac002430cb0da5b-cx38BTNWb7VK",
+            "Type": "AWS::IAM::Role",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "CDKMetadata",
+            "PhysicalId": "20ccbd80-2e31-11f1-99fc-02de513acb35",
+            "Type": "AWS::CDK::Metadata",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "PoolCognitoDomainC3A3EAD2",
+            "PhysicalId": "hsdcloud-testing",
+            "Type": "AWS::Cognito::UserPoolDomain",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "PoolD3F588B8",
+            "PhysicalId": "us-east-2_cmlsOEWzA",
+            "Type": "AWS::Cognito::UserPool",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "Poolhelioclouddaskhub6E4DEA6D",
+            "PhysicalId": "71gu8h6p8psks53948i95gqd3s",
+            "Type": "AWS::Cognito::UserPoolClient",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "PoolheliocloudkubecostA36013EE",
+            "PhysicalId": "fgofihol50qcb5nuk9nn61ken",
+            "Type": "AWS::Cognito::UserPoolClient",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "PoolheliocloudoauthclientC19E368F",
+            "PhysicalId": "6671f2pss6ije51dls3bgf6itf",
+            "Type": "AWS::Cognito::UserPoolClient",
+            "Status": "UPDATE_COMPLETE"
+        },
+        {
+            "LogicalId": "Poolheliocloudportal12745481",
+            "PhysicalId": "7vmokj2avc26hf1famjnjrimqb",
+            "Type": "AWS::Cognito::UserPoolClient",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "Poolheliocloudregistrationsite63C13FA3",
+            "PhysicalId": "1i2n6sqc327k84o8kr8tth2hkj",
+            "Type": "AWS::Cognito::UserPoolClient",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "PoolheliocloudregistrationsiteDescribeCognitoUserPoolClientCustomResourcePolicyF5730625",
+            "PhysicalId": "hsdcl-Poolh-0UKONUP4A9ix",
+            "Type": "AWS::IAM::Policy",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "PoolheliocloudregistrationsiteDescribeCognitoUserPoolClientD67D4FCD",
+            "PhysicalId": "1i2n6sqc327k84o8kr8tth2hkj",
+            "Type": "Custom::DescribeCognitoUserPoolClient",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "UserPoolHostedUICustomResourceCustomResourcePolicyCDF06BAC",
+            "PhysicalId": "hsdcl-UserP-IngvQWZmZYI6",
+            "Type": "AWS::IAM::Policy",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "UserPoolHostedUICustomResourceDB2FDF30",
+            "PhysicalId": "id",
+            "Type": "Custom::AWS",
+            "Status": "CREATE_COMPLETE"
+        }
+    ],
+    "hsdcloudtestingv120UserSharedBucket632120FA": [
+        {
+            "LogicalId": "CDKMetadata",
+            "PhysicalId": "19104d50-2e31-11f1-a448-021a2c87a145",
+            "Type": "AWS::CDK::Metadata",
+            "Status": "CREATE_COMPLETE"
+        }
+    ],
+    "hsdcloudtestingv120Base15F50E52": [
+        {
+            "LogicalId": "CDKMetadata",
+            "PhysicalId": "c4f51520-2e30-11f1-815f-065c8d2175e7",
+            "Type": "AWS::CDK::Metadata",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "HelioCloudVPC023891E8",
+            "PhysicalId": "vpc-0b9883707724bfaf4",
+            "Type": "AWS::EC2::VPC",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "HelioCloudVPCIGW36F182CA",
+            "PhysicalId": "igw-01002e709843bf797",
+            "Type": "AWS::EC2::InternetGateway",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "HelioCloudVPCPrivateSubnet1DefaultRouteF33AC1CF",
+            "PhysicalId": "rtb-08bc151366c9b4fd7|0.0.0.0/0",
+            "Type": "AWS::EC2::Route",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "HelioCloudVPCPrivateSubnet1RouteTableAssociation0318E2BF",
+            "PhysicalId": "rtbassoc-010bfd61d25076b03",
+            "Type": "AWS::EC2::SubnetRouteTableAssociation",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "HelioCloudVPCPrivateSubnet1RouteTableEE540F3D",
+            "PhysicalId": "rtb-08bc151366c9b4fd7",
+            "Type": "AWS::EC2::RouteTable",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "HelioCloudVPCPrivateSubnet1Subnet19EEB3D4",
+            "PhysicalId": "subnet-012401fc5331a7ebd",
+            "Type": "AWS::EC2::Subnet",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "HelioCloudVPCPrivateSubnet2DefaultRouteE5D302F8",
+            "PhysicalId": "rtb-06f761f9057227f87|0.0.0.0/0",
+            "Type": "AWS::EC2::Route",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "HelioCloudVPCPrivateSubnet2RouteTable4A123B56",
+            "PhysicalId": "rtb-06f761f9057227f87",
+            "Type": "AWS::EC2::RouteTable",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "HelioCloudVPCPrivateSubnet2RouteTableAssociationC6D91274",
+            "PhysicalId": "rtbassoc-0593195df7364cd0b",
+            "Type": "AWS::EC2::SubnetRouteTableAssociation",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "HelioCloudVPCPrivateSubnet2SubnetA61912A5",
+            "PhysicalId": "subnet-06b2aaf7c4ca2cc38",
+            "Type": "AWS::EC2::Subnet",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "HelioCloudVPCPublicSubnet1DefaultRouteA3E8003A",
+            "PhysicalId": "rtb-0d879888c8db73a6a|0.0.0.0/0",
+            "Type": "AWS::EC2::Route",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "HelioCloudVPCPublicSubnet1EIPAD83F929",
+            "PhysicalId": "3.23.13.112",
+            "Type": "AWS::EC2::EIP",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "HelioCloudVPCPublicSubnet1NATGateway03A8F0E7",
+            "PhysicalId": "nat-015c19062d64508a1",
+            "Type": "AWS::EC2::NatGateway",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "HelioCloudVPCPublicSubnet1RouteTable591274B8",
+            "PhysicalId": "rtb-0d879888c8db73a6a",
+            "Type": "AWS::EC2::RouteTable",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "HelioCloudVPCPublicSubnet1RouteTableAssociation5B982F15",
+            "PhysicalId": "rtbassoc-05c16c915f422681f",
+            "Type": "AWS::EC2::SubnetRouteTableAssociation",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "HelioCloudVPCPublicSubnet1Subnet5DE4372D",
+            "PhysicalId": "subnet-087f06850d95fa818",
+            "Type": "AWS::EC2::Subnet",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "HelioCloudVPCPublicSubnet2DefaultRouteA4947797",
+            "PhysicalId": "rtb-0d71d70436e35aac9|0.0.0.0/0",
+            "Type": "AWS::EC2::Route",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "HelioCloudVPCPublicSubnet2RouteTable3A6BD26D",
+            "PhysicalId": "rtb-0d71d70436e35aac9",
+            "Type": "AWS::EC2::RouteTable",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "HelioCloudVPCPublicSubnet2RouteTableAssociation55978CC4",
+            "PhysicalId": "rtbassoc-041a571b8a33b2500",
+            "Type": "AWS::EC2::SubnetRouteTableAssociation",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "HelioCloudVPCPublicSubnet2Subnet233FE31B",
+            "PhysicalId": "subnet-0c7a8b52a306e1a39",
+            "Type": "AWS::EC2::Subnet",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "HelioCloudVPCVPCGWA03C94F3",
+            "PhysicalId": "IGW|vpc-0b9883707724bfaf4",
+            "Type": "AWS::EC2::VPCGatewayAttachment",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "S3ManagedPolicy988D4D4C",
+            "PhysicalId": "arn:aws:iam::320962816401:policy/hsdcloudtestingv120Base15F50E52-S3ManagedPolicy988D4D4C-Ke3IvjkslsG7",
+            "Type": "AWS::IAM::ManagedPolicy",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "UserSharedBucketB43D72C8",
+            "PhysicalId": "hsdcloudtestingv120base15-usersharedbucketb43d72c8-o2647piqvwnq",
+            "Type": "AWS::S3::Bucket",
+            "Status": "CREATE_COMPLETE"
+        }
+    ],
+    "hsdcloudtestingv120Identity62A0B9CB": [
+        {
+            "LogicalId": "CDKMetadata",
+            "PhysicalId": "5bfab160-2e30-11f1-ac10-0a4b67b1fdf1",
+            "Type": "AWS::CDK::Metadata",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "Identity2D60E2CC",
+            "PhysicalId": "hsdcloud2.org",
+            "Type": "AWS::SES::EmailIdentity",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "IdentityDkimDnsToken133E6CCBA",
+            "PhysicalId": "qjg5h2f7gq5f4a6tfxssnsnejs2d6cp6._domainkey.hsdcloud2.org",
+            "Type": "AWS::Route53::RecordSet",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "IdentityDkimDnsToken2AD0AA6D9",
+            "PhysicalId": "6yxcize7m5ijbqerychlvbc2vu5mo2mb._domainkey.hsdcloud2.org",
+            "Type": "AWS::Route53::RecordSet",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "IdentityDkimDnsToken3A6A24F78",
+            "PhysicalId": "3usxp4yyyz2xisq3bxkxf763calfxj5v._domainkey.hsdcloud2.org",
+            "Type": "AWS::Route53::RecordSet",
+            "Status": "CREATE_COMPLETE"
+        }
+    ]
+}

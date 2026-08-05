@@ -1,0 +1,560 @@
+{
+    "eksctl-eks-helio-hsdcloud-test-nodegroup-mng-burst-compute-spot-gpu-xlarge": [
+        {
+            "LogicalId": "LaunchTemplate",
+            "PhysicalId": "lt-03d2cbde65d3ac2e4",
+            "Type": "AWS::EC2::LaunchTemplate",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "ManagedNodeGroup",
+            "PhysicalId": "eks-helio-hsdcloud-test/mng-burst-compute-spot-gpu-xlarge",
+            "Type": "AWS::EKS::Nodegroup",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "NodeInstanceRole",
+            "PhysicalId": "eksctl-eks-helio-hsdcloud-test-nod-NodeInstanceRole-h5FLlu1vbSpq",
+            "Type": "AWS::IAM::Role",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "PolicyAWSLoadBalancerController",
+            "PhysicalId": "eksct-Polic-4uM7jJQLtkXJ",
+            "Type": "AWS::IAM::Policy",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "PolicyAutoScaling",
+            "PhysicalId": "eksct-Polic-dIkTsaH3IPDN",
+            "Type": "AWS::IAM::Policy",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "PolicyEFS",
+            "PhysicalId": "eksct-Polic-oj9HzJiiMO8O",
+            "Type": "AWS::IAM::Policy",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "PolicyEFSEC2",
+            "PhysicalId": "eksct-Polic-tCW7HpKjOraA",
+            "Type": "AWS::IAM::Policy",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "PolicyFSX",
+            "PhysicalId": "eksct-Polic-CFYkf44VYpBe",
+            "Type": "AWS::IAM::Policy",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "PolicyServiceLinkRole",
+            "PhysicalId": "eksct-Polic-W7Ep50oYR4cZ",
+            "Type": "AWS::IAM::Policy",
+            "Status": "CREATE_COMPLETE"
+        }
+    ],
+    "eksctl-eks-helio-hsdcloud-test-nodegroup-mng-user-compute": [
+        {
+            "LogicalId": "LaunchTemplate",
+            "PhysicalId": "lt-01ae94c6466f929fe",
+            "Type": "AWS::EC2::LaunchTemplate",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "ManagedNodeGroup",
+            "PhysicalId": "eks-helio-hsdcloud-test/mng-user-compute",
+            "Type": "AWS::EKS::Nodegroup",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "NodeInstanceRole",
+            "PhysicalId": "eksctl-eks-helio-hsdcloud-test-nod-NodeInstanceRole-LeSlGHHnKZnV",
+            "Type": "AWS::IAM::Role",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "PolicyAWSLoadBalancerController",
+            "PhysicalId": "eksct-Polic-CUocub6JAo8H",
+            "Type": "AWS::IAM::Policy",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "PolicyAutoScaling",
+            "PhysicalId": "eksct-Polic-qNmLi8uI2ptB",
+            "Type": "AWS::IAM::Policy",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "PolicyEFS",
+            "PhysicalId": "eksct-Polic-fJjQ1jesLOqG",
+            "Type": "AWS::IAM::Policy",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "PolicyEFSEC2",
+            "PhysicalId": "eksct-Polic-tRbaR3t1Hi8q",
+            "Type": "AWS::IAM::Policy",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "PolicyFSX",
+            "PhysicalId": "eksct-Polic-tQtERgxkS9TT",
+            "Type": "AWS::IAM::Policy",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "PolicyServiceLinkRole",
+            "PhysicalId": "eksct-Polic-RK9mQtCA1BE7",
+            "Type": "AWS::IAM::Policy",
+            "Status": "CREATE_COMPLETE"
+        }
+    ],
+    "eksctl-eks-helio-hsdcloud-test-nodegroup-mng-burst-compute-spot": [
+        {
+            "LogicalId": "LaunchTemplate",
+            "PhysicalId": "lt-0fd79635ab3b9ed6e",
+            "Type": "AWS::EC2::LaunchTemplate",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "ManagedNodeGroup",
+            "PhysicalId": "eks-helio-hsdcloud-test/mng-burst-compute-spot",
+            "Type": "AWS::EKS::Nodegroup",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "NodeInstanceRole",
+            "PhysicalId": "eksctl-eks-helio-hsdcloud-test-nod-NodeInstanceRole-uMmUi0xEpM86",
+            "Type": "AWS::IAM::Role",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "PolicyAWSLoadBalancerController",
+            "PhysicalId": "eksct-Polic-B3NQxSSSDxOO",
+            "Type": "AWS::IAM::Policy",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "PolicyAutoScaling",
+            "PhysicalId": "eksct-Polic-MKRfx7hiXRXb",
+            "Type": "AWS::IAM::Policy",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "PolicyEFS",
+            "PhysicalId": "eksct-Polic-6jsIj2YZV60k",
+            "Type": "AWS::IAM::Policy",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "PolicyEFSEC2",
+            "PhysicalId": "eksct-Polic-2W5gcSKFlXS2",
+            "Type": "AWS::IAM::Policy",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "PolicyFSX",
+            "PhysicalId": "eksct-Polic-dWuIvXuiFR2g",
+            "Type": "AWS::IAM::Policy",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "PolicyServiceLinkRole",
+            "PhysicalId": "eksct-Polic-vcD86pC16RPK",
+            "Type": "AWS::IAM::Policy",
+            "Status": "CREATE_COMPLETE"
+        }
+    ],
+    "eksctl-eks-helio-hsdcloud-test-nodegroup-ng-daskhub-services": [
+        {
+            "LogicalId": "LaunchTemplate",
+            "PhysicalId": "lt-0af00544b3b85ad81",
+            "Type": "AWS::EC2::LaunchTemplate",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "ManagedNodeGroup",
+            "PhysicalId": "eks-helio-hsdcloud-test/ng-daskhub-services",
+            "Type": "AWS::EKS::Nodegroup",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "NodeInstanceRole",
+            "PhysicalId": "eksctl-eks-helio-hsdcloud-test-nod-NodeInstanceRole-0EWmhVCnZJKe",
+            "Type": "AWS::IAM::Role",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "PolicyAWSLoadBalancerController",
+            "PhysicalId": "eksct-Polic-sXvncdB1W4SX",
+            "Type": "AWS::IAM::Policy",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "PolicyAutoScaling",
+            "PhysicalId": "eksct-Polic-YRoBMdCVIuP8",
+            "Type": "AWS::IAM::Policy",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "PolicyEFS",
+            "PhysicalId": "eksct-Polic-5el4gtA0gzPI",
+            "Type": "AWS::IAM::Policy",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "PolicyEFSEC2",
+            "PhysicalId": "eksct-Polic-QOtsGuYFukA2",
+            "Type": "AWS::IAM::Policy",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "PolicyFSX",
+            "PhysicalId": "eksct-Polic-ryogjTrluqsK",
+            "Type": "AWS::IAM::Policy",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "PolicyServiceLinkRole",
+            "PhysicalId": "eksct-Polic-N16Jtle3ebJq",
+            "Type": "AWS::IAM::Policy",
+            "Status": "CREATE_COMPLETE"
+        }
+    ],
+    "eksctl-eks-helio-hsdcloud-test-nodegroup-mng-user-gpu-2xlarge": [
+        {
+            "LogicalId": "LaunchTemplate",
+            "PhysicalId": "lt-052d259493a20e4e1",
+            "Type": "AWS::EC2::LaunchTemplate",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "ManagedNodeGroup",
+            "PhysicalId": "eks-helio-hsdcloud-test/mng-user-gpu-2xlarge",
+            "Type": "AWS::EKS::Nodegroup",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "NodeInstanceRole",
+            "PhysicalId": "eksctl-eks-helio-hsdcloud-test-nod-NodeInstanceRole-HB5fbUGOEsU6",
+            "Type": "AWS::IAM::Role",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "PolicyAWSLoadBalancerController",
+            "PhysicalId": "eksct-Polic-B5Dv9TTKx5QO",
+            "Type": "AWS::IAM::Policy",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "PolicyAutoScaling",
+            "PhysicalId": "eksct-Polic-CFRLN1SLIGgA",
+            "Type": "AWS::IAM::Policy",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "PolicyEFS",
+            "PhysicalId": "eksct-Polic-gj5dEEpigMQa",
+            "Type": "AWS::IAM::Policy",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "PolicyEFSEC2",
+            "PhysicalId": "eksct-Polic-UvGGtzC7CYcf",
+            "Type": "AWS::IAM::Policy",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "PolicyFSX",
+            "PhysicalId": "eksct-Polic-lZXIaFs7Rb4z",
+            "Type": "AWS::IAM::Policy",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "PolicyServiceLinkRole",
+            "PhysicalId": "eksct-Polic-3BjPPd2vzRLz",
+            "Type": "AWS::IAM::Policy",
+            "Status": "CREATE_COMPLETE"
+        }
+    ],
+    "eksctl-eks-helio-hsdcloud-test-nodegroup-mng-user-compute-big": [
+        {
+            "LogicalId": "LaunchTemplate",
+            "PhysicalId": "lt-0fc24641f5d1fcb33",
+            "Type": "AWS::EC2::LaunchTemplate",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "ManagedNodeGroup",
+            "PhysicalId": "eks-helio-hsdcloud-test/mng-user-compute-big",
+            "Type": "AWS::EKS::Nodegroup",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "NodeInstanceRole",
+            "PhysicalId": "eksctl-eks-helio-hsdcloud-test-nod-NodeInstanceRole-WcajRviP2ADX",
+            "Type": "AWS::IAM::Role",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "PolicyAWSLoadBalancerController",
+            "PhysicalId": "eksct-Polic-E2fXjeUVW42w",
+            "Type": "AWS::IAM::Policy",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "PolicyAutoScaling",
+            "PhysicalId": "eksct-Polic-imqqNCdY3ocd",
+            "Type": "AWS::IAM::Policy",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "PolicyEFS",
+            "PhysicalId": "eksct-Polic-xU1T0gZYn7PP",
+            "Type": "AWS::IAM::Policy",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "PolicyEFSEC2",
+            "PhysicalId": "eksct-Polic-7kmJ6sckO8kC",
+            "Type": "AWS::IAM::Policy",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "PolicyFSX",
+            "PhysicalId": "eksct-Polic-rCA0maFypsjq",
+            "Type": "AWS::IAM::Policy",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "PolicyServiceLinkRole",
+            "PhysicalId": "eksct-Polic-BgFl7DJNjPkU",
+            "Type": "AWS::IAM::Policy",
+            "Status": "CREATE_COMPLETE"
+        }
+    ],
+    "eksctl-eks-helio-hsdcloud-test-addon-vpc-cni": [
+        {
+            "LogicalId": "Role1",
+            "PhysicalId": "eksctl-eks-helio-hsdcloud-test-addon-vpc-cni-Role1-Tn26wvM2sZNj",
+            "Type": "AWS::IAM::Role",
+            "Status": "UPDATE_COMPLETE"
+        }
+    ],
+    "eksctl-eks-helio-hsdcloud-test-addon-iamserviceaccount-kube-system-admin": [
+        {
+            "LogicalId": "Role1",
+            "PhysicalId": "eksctl-eks-helio-hsdcloud-test-addon-iamservi-Role1-8OxDTfmjNvGu",
+            "Type": "AWS::IAM::Role",
+            "Status": "UPDATE_COMPLETE"
+        }
+    ],
+    "eksctl-eks-helio-hsdcloud-test-addon-iamserviceaccount-default-external-dns": [
+        {
+            "LogicalId": "Role1",
+            "PhysicalId": "eksctl-eks-helio-hsdcloud-test-addon-iamservi-Role1-azzd51bLkPY8",
+            "Type": "AWS::IAM::Role",
+            "Status": "UPDATE_COMPLETE"
+        }
+    ],
+    "eksctl-eks-helio-hsdcloud-test-addon-iamserviceaccount-kube-system-efs-mount": [
+        {
+            "LogicalId": "Role1",
+            "PhysicalId": "eksctl-eks-helio-hsdcloud-test-addon-iamservi-Role1-eRuqrzC2n30H",
+            "Type": "AWS::IAM::Role",
+            "Status": "UPDATE_COMPLETE"
+        }
+    ],
+    "eksctl-eks-helio-hsdcloud-test-addon-iamserviceaccount-kube-system-ebs-csi-controller-sa": [
+        {
+            "LogicalId": "Role1",
+            "PhysicalId": "AmazonEKS_EBS_CSI_DriverRole-us-east-2-eks-helio-hsdcloud-test",
+            "Type": "AWS::IAM::Role",
+            "Status": "CREATE_COMPLETE"
+        }
+    ],
+    "eksctl-eks-helio-hsdcloud-test-addon-iamserviceaccount-default-helio-dh-role": [
+        {
+            "LogicalId": "Role1",
+            "PhysicalId": "eksctl-eks-helio-hsdcloud-test-addon-iamservi-Role1-e9ebjCNWhwC9",
+            "Type": "AWS::IAM::Role",
+            "Status": "UPDATE_COMPLETE"
+        }
+    ],
+    "eksctl-eks-helio-hsdcloud-test-addon-iamserviceaccount-kube-system-cluster-autoscaler": [
+        {
+            "LogicalId": "Role1",
+            "PhysicalId": "eksctl-eks-helio-hsdcloud-test-addon-iamservi-Role1-CqJhvGokoNFm",
+            "Type": "AWS::IAM::Role",
+            "Status": "UPDATE_COMPLETE"
+        }
+    ],
+    "eksctl-eks-helio-hsdcloud-test-addon-iamserviceaccount-daskhub-helio-dh-role": [
+        {
+            "LogicalId": "Role1",
+            "PhysicalId": "eksctl-eks-helio-hsdcloud-test-addon-iamservi-Role1-H9NB8K1L7Cr1",
+            "Type": "AWS::IAM::Role",
+            "Status": "UPDATE_COMPLETE"
+        }
+    ],
+    "eksctl-eks-helio-hsdcloud-test-cluster": [
+        {
+            "LogicalId": "ClusterSharedNodeSecurityGroup",
+            "PhysicalId": "sg-0591f50c69fc636f0",
+            "Type": "AWS::EC2::SecurityGroup",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "ControlPlane",
+            "PhysicalId": "eks-helio-hsdcloud-test",
+            "Type": "AWS::EKS::Cluster",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "ControlPlaneSecurityGroup",
+            "PhysicalId": "sg-0620d95952b5a5fb3",
+            "Type": "AWS::EC2::SecurityGroup",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "IngressDefaultClusterToNodeSG",
+            "PhysicalId": "sgr-03b15790908b18cf9",
+            "Type": "AWS::EC2::SecurityGroupIngress",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "IngressInterNodeGroupSG",
+            "PhysicalId": "sgr-0eb584c07c0be86dd",
+            "Type": "AWS::EC2::SecurityGroupIngress",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "IngressNodeToDefaultClusterSG",
+            "PhysicalId": "sgr-0c3f7772937c281cb",
+            "Type": "AWS::EC2::SecurityGroupIngress",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "InternetGateway",
+            "PhysicalId": "igw-0e46d4699ed77b54f",
+            "Type": "AWS::EC2::InternetGateway",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "NATGateway",
+            "PhysicalId": "nat-0fc7e71508175366f",
+            "Type": "AWS::EC2::NatGateway",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "NATIP",
+            "PhysicalId": "3.128.101.148",
+            "Type": "AWS::EC2::EIP",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "NATPrivateSubnetRouteUSEAST2A",
+            "PhysicalId": "rtb-03593f290db81ac06|0.0.0.0/0",
+            "Type": "AWS::EC2::Route",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "NATPrivateSubnetRouteUSEAST2B",
+            "PhysicalId": "rtb-028c3ecf639041107|0.0.0.0/0",
+            "Type": "AWS::EC2::Route",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "PrivateRouteTableUSEAST2A",
+            "PhysicalId": "rtb-03593f290db81ac06",
+            "Type": "AWS::EC2::RouteTable",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "PrivateRouteTableUSEAST2B",
+            "PhysicalId": "rtb-028c3ecf639041107",
+            "Type": "AWS::EC2::RouteTable",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "PublicRouteTable",
+            "PhysicalId": "rtb-00985e95bd9287487",
+            "Type": "AWS::EC2::RouteTable",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "PublicSubnetRoute",
+            "PhysicalId": "rtb-00985e95bd9287487|0.0.0.0/0",
+            "Type": "AWS::EC2::Route",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "RouteTableAssociationPrivateUSEAST2A",
+            "PhysicalId": "rtbassoc-0462abf4606c40194",
+            "Type": "AWS::EC2::SubnetRouteTableAssociation",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "RouteTableAssociationPrivateUSEAST2B",
+            "PhysicalId": "rtbassoc-0588848502c2a3916",
+            "Type": "AWS::EC2::SubnetRouteTableAssociation",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "RouteTableAssociationPublicUSEAST2A",
+            "PhysicalId": "rtbassoc-059de5fe111b14cb6",
+            "Type": "AWS::EC2::SubnetRouteTableAssociation",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "RouteTableAssociationPublicUSEAST2B",
+            "PhysicalId": "rtbassoc-0dad8e4cecec100a9",
+            "Type": "AWS::EC2::SubnetRouteTableAssociation",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "ServiceRole",
+            "PhysicalId": "eksctl-eks-helio-hsdcloud-test-cluster-ServiceRole-fVTIPcmpe0AH",
+            "Type": "AWS::IAM::Role",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "SubnetPrivateUSEAST2A",
+            "PhysicalId": "subnet-097fb9d9f7c35ed02",
+            "Type": "AWS::EC2::Subnet",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "SubnetPrivateUSEAST2B",
+            "PhysicalId": "subnet-020e82a176fc44bea",
+            "Type": "AWS::EC2::Subnet",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "SubnetPublicUSEAST2A",
+            "PhysicalId": "subnet-0be9f2acc8e5ce9dd",
+            "Type": "AWS::EC2::Subnet",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "SubnetPublicUSEAST2B",
+            "PhysicalId": "subnet-0476025d239a58b5a",
+            "Type": "AWS::EC2::Subnet",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "VPC",
+            "PhysicalId": "vpc-09f7ec088a387a144",
+            "Type": "AWS::EC2::VPC",
+            "Status": "CREATE_COMPLETE"
+        },
+        {
+            "LogicalId": "VPCGatewayAttachment",
+            "PhysicalId": "IGW|vpc-09f7ec088a387a144",
+            "Type": "AWS::EC2::VPCGatewayAttachment",
+            "Status": "CREATE_COMPLETE"
+        }
+    ]
+}

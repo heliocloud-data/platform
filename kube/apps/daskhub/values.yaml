@@ -195,6 +195,21 @@ jupyterhub:
         volumeMounts:
         - name: volume-{username}{servername}
           mountPath: /home/jovyan
+      # Run the initialization script that sets up the AI agents data
+      - name: init-ai-agents
+        image: public.ecr.aws/q3h7b4o8/heliocloud/helio-daskhub-core:2026.07.17_dg
+        securityContext:
+          runAsUser: 1000
+          allowPrivilegeEscalation: false
+        # The script returns a non-zero exit code on success.  For now, treat all as successful.
+        command:
+        - sh
+        - -c
+        - (whoami && pwd && ls -la && printenv && (sh /etc/profile.d/init_agents.sh || exit 0) )
+        volumeMounts:
+        - name: volume-{username}{servername}
+          mountPath: /home/jovyan
+
     # The following profile list has been tuned for XX.4xlarge instances (16 Core/64GB RAM)
     # and memory limits were selected to allocate the majority of the available RAM whole
     # numbers where "Server", "Large Server", "X-Large Server" and, "The Big Big Server"
@@ -241,7 +256,7 @@ jupyterhub:
         mem_limit: 28G
         cpu_guarantee: 6
         cpu_limit: 8
-        image: public.ecr.aws/q3h7b4o8/heliocloud/helio-daskhub-mltrch:2026.03.11
+        image: public.ecr.aws/q3h7b4o8/heliocloud/helio-daskhub-mltrch:2026.07.17_dg
         environment: {'NVIDIA_DRIVER_CAPABILITIES': 'compute,utility'}
         node_selector:
           nvidia.com/gpu: "true"
@@ -263,7 +278,7 @@ jupyterhub:
         mem_limit: 28G
         cpu_guarantee: 6
         cpu_limit: 8
-        image: public.ecr.aws/q3h7b4o8/heliocloud/helio-daskhub-mltf:2026.03.11
+        image: public.ecr.aws/q3h7b4o8/heliocloud/helio-daskhub-mltf:2026.07.17_dg
         environment: {'NVIDIA_DRIVER_CAPABILITIES': 'compute,utility'}
         node_selector:
           nvidia.com/gpu: "true"
@@ -280,7 +295,7 @@ jupyterhub:
         extra_resource_limits: {"nvidia.com/gpu": "1"}
     image:
       name: public.ecr.aws/q3h7b4o8/heliocloud/helio-daskhub-core
-      tag: "2026.03.11"
+      tag: "2026.07.17_dg"
     cpu:
       guarantee: 1
       limit: 4
@@ -290,7 +305,7 @@ jupyterhub:
 
     extraEnv:
       DASK_GATEWAY__ADDRESS: "http://traefik-daskhub-dask-gateway/services/dask-gateway"
-      DASK_GATEWAY__CLUSTER__OPTIONS__IMAGE: "public.ecr.aws/q3h7b4o8/heliocloud/helio-daskhub-core:2026.03.11"
+      DASK_GATEWAY__CLUSTER__OPTIONS__IMAGE: "public.ecr.aws/q3h7b4o8/heliocloud/helio-daskhub-core:2026.07.17_dg"
       DASK_GATEWAY__AUTH__TYPE:  "jupyterhub"
 
     serviceAccountName: helio-dh-role
@@ -548,7 +563,7 @@ dask-gateway:
             "scheduler_extra_pod_config": scheduler_extra_pod_config,
           }
         c.Backend.cluster_options = Options(
-          String("image", default="public.ecr.aws/q3h7b4o8/heliocloud/helio-daskhub-core:2026.03.11", label="Image"),
+          String("image", default="public.ecr.aws/q3h7b4o8/heliocloud/helio-daskhub-core:2026.07.17_dg", label="Image"),
           Integer("worker_cores", default=1, min=1, max=4, label="Worker Cores"),
           Float("worker_memory", default=1, min=1, max=8, label="Worker Memory (GiB)"),
           Select("profile", list(profiles.keys()), default="default", label="Profile"),

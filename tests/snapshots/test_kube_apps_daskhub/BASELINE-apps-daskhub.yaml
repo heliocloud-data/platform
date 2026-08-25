@@ -809,7 +809,7 @@ data:
         "scheduler_extra_pod_config": scheduler_extra_pod_config,
       }
     c.Backend.cluster_options = Options(
-      String("image", default="public.ecr.aws/q3h7b4o8/heliocloud/helio-daskhub-core:2026.03.11", label="Image"),
+      String("image", default="public.ecr.aws/q3h7b4o8/heliocloud/helio-daskhub-core:2026.07.17_dg", label="Image"),
       Integer("worker_cores", default=1, min=1, max=4, label="Worker Cores"),
       Float("worker_memory", default=1, min=1, max=8, label="Worker Memory (GiB)"),
       Select("profile", list(profiles.keys()), default="default", label="Profile"),

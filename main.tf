@@ -2,6 +2,8 @@ provider "aws" {
   region = var.aws_region
 }
 
+data "aws_caller_identity" "current" {}
+
 locals {
   oauth2_proxy_host         = "${var.auth_subdomain}.${var.root_domain}"
   oauth2_proxy_callback_url = "https://${local.oauth2_proxy_host}/oauth2/callback"
@@ -114,7 +116,7 @@ resource "aws_route_table" "public" {
 
 resource "aws_subnet" "subnet_public_01" {
   vpc_id                  = aws_vpc.myvpc.id
-  cidr_block              = "192.168.64.0/19"
+  cidr_block              = var.aws_eks_public_subnet_01_cidr_block
   availability_zone       = var.aws_eks_az1
   map_public_ip_on_launch = true
   tags = {
@@ -124,7 +126,7 @@ resource "aws_subnet" "subnet_public_01" {
 
 resource "aws_subnet" "subnet_public_02" {
   vpc_id                  = aws_vpc.myvpc.id
-  cidr_block              = "192.168.96.0/19"
+  cidr_block              = var.aws_eks_public_subnet_02_cidr_block
   availability_zone       = var.aws_eks_az2
   map_public_ip_on_launch = true
   tags = {
@@ -147,11 +149,21 @@ resource "aws_iam_role" "HelioCloud_EKS_ClusterRole" {
   assume_role_policy = jsonencode({
     Version = "2012-10-17",
     Statement = [{
-      Action    = ["sts:AssumeRole"]
+      Action    = [
+        "sts:AssumeRole",
+        "sts:TagSession"
+      ]
       Effect    = "Allow"
       Principal = { Service = "eks.amazonaws.com" }
     }]
   })
+  
+  lifecycle {
+    ignore_changes = [
+      name,
+      tags
+    ]
+  }
 }
 
 resource "aws_iam_role_policy_attachment" "cluster_AmazonEKSClusterPolicy" {
@@ -203,7 +215,22 @@ resource "aws_iam_role_policy_attachment" "nodegroup_CloudWatchAgentServerPolicy
   role       = aws_iam_role.HelioCloud_EKS_NodeGroupRole.name
 }
 
-
+resource "aws_kms_key" "HelioCloud_eks_secrets" {
+  description             = "KMS key for EKS secrets encryption"
+  enable_key_rotation     = false
+  deletion_window_in_days = 30
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect    = "Allow"
+        Principal = { AWS = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root" }
+        Action    = "kms:*"
+        Resource  = "*"
+      }
+    ]
+  })
+}
 
 resource "aws_eks_cluster" "private" {
   name     = var.cluster_name
@@ -213,6 +240,13 @@ resource "aws_eks_cluster" "private" {
   access_config {
     authentication_mode                         = "API_AND_CONFIG_MAP"
     bootstrap_cluster_creator_admin_permissions = true
+  }
+
+  encryption_config {
+    resources = ["secrets"]
+    provider  {
+      key_arn = aws_kms_key.HelioCloud_eks_secrets.arn
+    }
   }
 
   vpc_config {
@@ -379,25 +413,40 @@ module "heliocloud_auth" {
   domain_prefix         = replace(var.cognito_subdomain, "_", "-")
   user_pool_client_name = "${replace(var.cluster_name, "_", "-")}-client"
 
+  cognito_user_pool_client_generate_secret = var.cognito_user_pool_client_generate_secret
   deletion_protection = false
   callback_urls       = distinct(concat(var.cognito_callback_urls, [local.oauth2_proxy_callback_url]))
   logout_urls         = var.cognito_logout_urls
   tags                = var.tags
 }
 
+locals {
+  efs_mount_target_1 = {
+    "${var.aws_eks_az1}" = { subnet_id = aws_subnet.subnet_public_01.id }
+  }
+
+  efs_mount_target_2 = {
+    "${var.aws_eks_az2}" = { subnet_id = aws_subnet.subnet_public_02.id }
+  }
+
+  efs_mount_targets = var.aws_efs_number_of_mount_targets == 1 ? merge({}, local.efs_mount_target_1) : merge(local.efs_mount_target_1, local.efs_mount_target_2)
+}
+
 module "efs" {
   source               = "terraform-aws-modules/efs/aws"
   version              = "~> 2.0"
-  name                 = "heliocloud-efs-user-share"
-  creation_token       = "heliocloud-efs-user-share-token"
+  name                 = var.aws_efs_name
+  creation_token       = var.aws_efs_creation_token
   encrypted            = true
   performance_mode     = "generalPurpose"
   enable_backup_policy = true
 
-  mount_targets = {
-    "${var.aws_eks_az1}" = { subnet_id = aws_subnet.subnet_public_01.id }
-    "${var.aws_eks_az2}" = { subnet_id = aws_subnet.subnet_public_02.id }
-  }
+  kms_key_arn = var.aws_efs_kms_key_arn
+
+  mount_targets = local.efs_mount_targets
+
+  security_group_name = var.aws_efs_security_group_name
+  security_group_description = var.aws_efs_security_group_description
   security_group_vpc_id = aws_vpc.myvpc.id
   security_group_ingress_rules = {
     vpc_1 = {
@@ -419,6 +468,7 @@ module "heliocloud_portal" {
   identity_provider_client_id = module.heliocloud_auth.user_pool_client_id
   identity_provider_name      = "cognito-idp.${var.aws_region}.amazonaws.com/${module.heliocloud_auth.user_pool_id}"
 
+  identity_pool_name          = var.aws_cognito_identity_pool_name
 }
 
 resource "aws_eks_pod_identity_association" "HelioCloud_Daskhub_PodIdentityAssociation" {

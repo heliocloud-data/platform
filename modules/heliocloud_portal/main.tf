@@ -140,6 +140,10 @@ resource "aws_security_group" "HelioCloud_Portal_UserSecurityGroup" {
   name        = "PortalEc2SecurityGroup"
   description = "SecurityGroup attached to all user spawned instances withing the HelioCloud Portal."
   vpc_id      = aws_vpc.HelioCloud_Portal_VPC.id
+
+  lifecycle {
+    ignore_changes = [ name, description ]
+  }
 }
 
 resource "aws_vpc_security_group_ingress_rule" "HelioCloud_Portal_UserSecurityGroup_IngressRule_SSH" {
@@ -175,7 +179,7 @@ resource "aws_vpc_security_group_ingress_rule" "HelioCloud_Portal_UserSecurityGr
 }
 
 resource "aws_cognito_identity_pool" "HelioCloud_Portal_IdentityPool" {
-  identity_pool_name               = "IdentityPool"
+  identity_pool_name               = var.identity_pool_name
   allow_unauthenticated_identities = true
   allow_classic_flow               = false
 

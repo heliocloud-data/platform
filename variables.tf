@@ -35,6 +35,20 @@ variable "aws_eks_az2" {
   }
 }
 
+variable "aws_eks_public_subnet_01_cidr_block" {
+  type        = string
+  description = "The cidr_block for public subnet 1 of the EKS cluster"
+  default = "192.168.64.0/19"
+  sensitive   = false
+}
+
+variable "aws_eks_public_subnet_02_cidr_block" {
+  type        = string
+  description = "The cidr_block for public subnet 2 of the EKS cluster"
+  default = "192.168.96.0/19"
+  sensitive   = false
+}
+
 variable "cluster_name" {
   type        = string
   description = "The name of the cluster"
@@ -129,4 +143,57 @@ variable "oauth2_proxy_cookie_secret" {
   type        = string
   default     = null
   sensitive   = true
+}
+
+variable "cognito_user_pool_client_generate_secret" {
+  type = bool
+  default = true
+}
+
+variable "aws_efs_name" {
+  description = "The name of the HelioCloud EFS Shared File System"
+  type        = string
+  default     = "heliocloud-efs-user-share"
+  sensitive   = false
+}
+
+variable "aws_efs_number_of_mount_targets" {
+  description = "The name of the HelioCloud EFS Shared File System"
+  type        = number
+  default     = 1
+  sensitive   = false
+}
+
+variable "aws_efs_creation_token" {
+  description = "The creation token of the HelioCloud EFS Shared File System"
+  type        = string
+  default     = "heliocloud-efs-user-share-token"
+  sensitive   = false
+}
+
+variable "aws_efs_kms_key_arn" {
+  description = "The ARN of the KMS Key used for encryption of the HelioCloud EFS Shared File System"
+  type        = string
+  default     = null
+  sensitive   = false
+}
+
+variable "aws_efs_security_group_name" {
+  description = "The name of the security group included with the HelioCloud EFS Shared File System"
+  type        = string
+  default     = null
+  sensitive   = false
+}
+
+variable "aws_efs_security_group_description" {
+  description = "The description of the security group included with the HelioCloud EFS Shared File System"
+  type        = string
+  default     = null
+  sensitive   = false
+}
+
+variable "aws_cognito_identity_pool_name" {
+  description = ""
+  type        = string
+  default     = "IdentityPool"
 }

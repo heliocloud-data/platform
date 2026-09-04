@@ -126,6 +126,11 @@ variable "email_configuration" {
   }
 }
 
+variable "cognito_user_pool_client_generate_secret" {
+  type = bool
+  default = true
+}
+
 variable "tags" {
   description = "Tags to apply to resources"
   type        = map(string)

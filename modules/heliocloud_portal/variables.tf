@@ -27,6 +27,12 @@ variable "identity_provider_server_side_token_check" {
   default     = false
 }
 
+variable "identity_pool_name" {
+  description = ""
+  type        = string
+  default     = "IdentityPool"
+}
+
 variable "cluster_name" {
   type        = string
   description = "The name of the cluster"

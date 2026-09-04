@@ -145,6 +145,11 @@ variable "oauth2_proxy_cookie_secret" {
   sensitive   = true
 }
 
+variable "cognito_user_pool_client_generate_secret" {
+  type = bool
+  default = true
+}
+
 variable "aws_efs_name" {
   description = "The name of the HelioCloud EFS Shared File System"
   type        = string

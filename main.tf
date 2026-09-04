@@ -413,6 +413,7 @@ module "heliocloud_auth" {
   domain_prefix         = replace(var.cognito_subdomain, "_", "-")
   user_pool_client_name = "${replace(var.cluster_name, "_", "-")}-client"
 
+  cognito_user_pool_client_generate_secret = var.cognito_user_pool_client_generate_secret
   deletion_protection = false
   callback_urls       = distinct(concat(var.cognito_callback_urls, [local.oauth2_proxy_callback_url]))
   logout_urls         = var.cognito_logout_urls

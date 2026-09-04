@@ -444,10 +444,7 @@ module "efs" {
   kms_key_arn = var.aws_efs_kms_key_arn
 
   mount_targets = local.efs_mount_targets
-  # mount_targets = {
-  #   "${var.aws_eks_az1}" = { subnet_id = aws_subnet.subnet_public_01.id }
-  #   "${var.aws_eks_az2}" = { subnet_id = aws_subnet.subnet_public_02.id }
-  # }
+
   security_group_name = var.aws_efs_security_group_name
   security_group_description = var.aws_efs_security_group_description
   security_group_vpc_id = aws_vpc.myvpc.id
@@ -471,6 +468,7 @@ module "heliocloud_portal" {
   identity_provider_client_id = module.heliocloud_auth.user_pool_client_id
   identity_provider_name      = "cognito-idp.${var.aws_region}.amazonaws.com/${module.heliocloud_auth.user_pool_id}"
 
+  identity_pool_name          = var.aws_cognito_identity_pool_name
 }
 
 resource "aws_eks_pod_identity_association" "HelioCloud_Daskhub_PodIdentityAssociation" {

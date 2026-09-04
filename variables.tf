@@ -191,3 +191,9 @@ variable "aws_efs_security_group_description" {
   default     = null
   sensitive   = false
 }
+
+variable "aws_cognito_identity_pool_name" {
+  description = ""
+  type        = string
+  default     = "IdentityPool"
+}

@@ -2,6 +2,8 @@ provider "aws" {
   region = var.aws_region
 }
 
+data "aws_caller_identity" "current" {}
+
 locals {
   oauth2_proxy_host         = "${var.auth_subdomain}.${var.root_domain}"
   oauth2_proxy_callback_url = "https://${local.oauth2_proxy_host}/oauth2/callback"
@@ -203,7 +205,22 @@ resource "aws_iam_role_policy_attachment" "nodegroup_CloudWatchAgentServerPolicy
   role       = aws_iam_role.HelioCloud_EKS_NodeGroupRole.name
 }
 
-
+resource "aws_kms_key" "HelioCloud_eks_secrets" {
+  description             = "KMS key for EKS secrets encryption"
+  enable_key_rotation     = false
+  deletion_window_in_days = 30
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect    = "Allow"
+        Principal = { AWS = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root" }
+        Action    = "kms:*"
+        Resource  = "*"
+      }
+    ]
+  })
+}
 
 resource "aws_eks_cluster" "private" {
   name     = var.cluster_name
@@ -213,6 +230,13 @@ resource "aws_eks_cluster" "private" {
   access_config {
     authentication_mode                         = "API_AND_CONFIG_MAP"
     bootstrap_cluster_creator_admin_permissions = true
+  }
+
+  encryption_config {
+    resources = ["secrets"]
+    provider  {
+      key_arn = aws_kms_key.HelioCloud_eks_secrets.arn
+    }
   }
 
   vpc_config {

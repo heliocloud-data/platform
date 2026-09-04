@@ -116,7 +116,7 @@ resource "aws_route_table" "public" {
 
 resource "aws_subnet" "subnet_public_01" {
   vpc_id                  = aws_vpc.myvpc.id
-  cidr_block              = "192.168.64.0/19"
+  cidr_block              = var.aws_eks_public_subnet_01_cidr_block
   availability_zone       = var.aws_eks_az1
   map_public_ip_on_launch = true
   tags = {
@@ -126,7 +126,7 @@ resource "aws_subnet" "subnet_public_01" {
 
 resource "aws_subnet" "subnet_public_02" {
   vpc_id                  = aws_vpc.myvpc.id
-  cidr_block              = "192.168.96.0/19"
+  cidr_block              = var.aws_eks_public_subnet_02_cidr_block
   availability_zone       = var.aws_eks_az2
   map_public_ip_on_launch = true
   tags = {
@@ -149,11 +149,21 @@ resource "aws_iam_role" "HelioCloud_EKS_ClusterRole" {
   assume_role_policy = jsonencode({
     Version = "2012-10-17",
     Statement = [{
-      Action    = ["sts:AssumeRole"]
+      Action    = [
+        "sts:AssumeRole",
+        "sts:TagSession"
+      ]
       Effect    = "Allow"
       Principal = { Service = "eks.amazonaws.com" }
     }]
   })
+  
+  lifecycle {
+    ignore_changes = [
+      name,
+      tags
+    ]
+  }
 }
 
 resource "aws_iam_role_policy_attachment" "cluster_AmazonEKSClusterPolicy" {

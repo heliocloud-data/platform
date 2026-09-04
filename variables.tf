@@ -130,3 +130,45 @@ variable "oauth2_proxy_cookie_secret" {
   default     = null
   sensitive   = true
 }
+
+variable "aws_efs_name" {
+  description = "The name of the HelioCloud EFS Shared File System"
+  type        = string
+  default     = "heliocloud-efs-user-share"
+  sensitive   = false
+}
+
+variable "aws_efs_number_of_mount_targets" {
+  description = "The name of the HelioCloud EFS Shared File System"
+  type        = number
+  default     = 1
+  sensitive   = false
+}
+
+variable "aws_efs_creation_token" {
+  description = "The creation token of the HelioCloud EFS Shared File System"
+  type        = string
+  default     = "heliocloud-efs-user-share-token"
+  sensitive   = false
+}
+
+variable "aws_efs_kms_key_arn" {
+  description = "The ARN of the KMS Key used for encryption of the HelioCloud EFS Shared File System"
+  type        = string
+  default     = null
+  sensitive   = false
+}
+
+variable "aws_efs_security_group_name" {
+  description = "The name of the security group included with the HelioCloud EFS Shared File System"
+  type        = string
+  default     = null
+  sensitive   = false
+}
+
+variable "aws_efs_security_group_description" {
+  description = "The description of the security group included with the HelioCloud EFS Shared File System"
+  type        = string
+  default     = null
+  sensitive   = false
+}

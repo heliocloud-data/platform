@@ -409,19 +409,36 @@ module "heliocloud_auth" {
   tags                = var.tags
 }
 
+locals {
+  efs_mount_target_1 = {
+    "${var.aws_eks_az1}" = { subnet_id = aws_subnet.subnet_public_01.id }
+  }
+
+  efs_mount_target_2 = {
+    "${var.aws_eks_az2}" = { subnet_id = aws_subnet.subnet_public_02.id }
+  }
+
+  efs_mount_targets = var.aws_efs_number_of_mount_targets == 1 ? merge({}, local.efs_mount_target_1) : merge(local.efs_mount_target_1, local.efs_mount_target_2)
+}
+
 module "efs" {
   source               = "terraform-aws-modules/efs/aws"
   version              = "~> 2.0"
-  name                 = "heliocloud-efs-user-share"
-  creation_token       = "heliocloud-efs-user-share-token"
+  name                 = var.aws_efs_name
+  creation_token       = var.aws_efs_creation_token
   encrypted            = true
   performance_mode     = "generalPurpose"
   enable_backup_policy = true
 
-  mount_targets = {
-    "${var.aws_eks_az1}" = { subnet_id = aws_subnet.subnet_public_01.id }
-    "${var.aws_eks_az2}" = { subnet_id = aws_subnet.subnet_public_02.id }
-  }
+  kms_key_arn = var.aws_efs_kms_key_arn
+
+  mount_targets = local.efs_mount_targets
+  # mount_targets = {
+  #   "${var.aws_eks_az1}" = { subnet_id = aws_subnet.subnet_public_01.id }
+  #   "${var.aws_eks_az2}" = { subnet_id = aws_subnet.subnet_public_02.id }
+  # }
+  security_group_name = var.aws_efs_security_group_name
+  security_group_description = var.aws_efs_security_group_description
   security_group_vpc_id = aws_vpc.myvpc.id
   security_group_ingress_rules = {
     vpc_1 = {

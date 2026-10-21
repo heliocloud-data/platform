@@ -1,0 +1,17 @@
+[
+    "eksctl-eks-helio-hsdcloud-test-nodegroup-mng-burst-compute-spot-gpu-xlarge",
+    "eksctl-eks-helio-hsdcloud-test-nodegroup-mng-user-compute",
+    "eksctl-eks-helio-hsdcloud-test-nodegroup-mng-burst-compute-spot",
+    "eksctl-eks-helio-hsdcloud-test-nodegroup-ng-daskhub-services",
+    "eksctl-eks-helio-hsdcloud-test-nodegroup-mng-user-gpu-2xlarge",
+    "eksctl-eks-helio-hsdcloud-test-nodegroup-mng-user-compute-big",
+    "eksctl-eks-helio-hsdcloud-test-addon-vpc-cni",
+    "eksctl-eks-helio-hsdcloud-test-addon-iamserviceaccount-kube-system-admin",
+    "eksctl-eks-helio-hsdcloud-test-addon-iamserviceaccount-default-external-dns",
+    "eksctl-eks-helio-hsdcloud-test-addon-iamserviceaccount-kube-system-efs-mount",
+    "eksctl-eks-helio-hsdcloud-test-addon-iamserviceaccount-kube-system-ebs-csi-controller-sa",
+    "eksctl-eks-helio-hsdcloud-test-addon-iamserviceaccount-default-helio-dh-role",
+    "eksctl-eks-helio-hsdcloud-test-addon-iamserviceaccount-kube-system-cluster-autoscaler",
+    "eksctl-eks-helio-hsdcloud-test-addon-iamserviceaccount-daskhub-helio-dh-role",
+    "eksctl-eks-helio-hsdcloud-test-cluster"
+]

@@ -24,7 +24,7 @@ variable "identity_provider_name" {
 variable "identity_provider_server_side_token_check" {
   description = ""
   type        = bool
-  default     = false
+  default     = true
 }
 
 variable "identity_pool_name" {

@@ -149,7 +149,7 @@ resource "aws_iam_role" "HelioCloud_EKS_ClusterRole" {
   assume_role_policy = jsonencode({
     Version = "2012-10-17",
     Statement = [{
-      Action    = [
+      Action = [
         "sts:AssumeRole",
         "sts:TagSession"
       ]
@@ -157,7 +157,7 @@ resource "aws_iam_role" "HelioCloud_EKS_ClusterRole" {
       Principal = { Service = "eks.amazonaws.com" }
     }]
   })
-  
+
   lifecycle {
     ignore_changes = [
       name,
@@ -244,7 +244,7 @@ resource "aws_eks_cluster" "private" {
 
   encryption_config {
     resources = ["secrets"]
-    provider  {
+    provider {
       key_arn = aws_kms_key.HelioCloud_eks_secrets.arn
     }
   }
@@ -414,10 +414,10 @@ module "heliocloud_auth" {
   user_pool_client_name = "${replace(var.cluster_name, "_", "-")}-client"
 
   cognito_user_pool_client_generate_secret = var.cognito_user_pool_client_generate_secret
-  deletion_protection = false
-  callback_urls       = distinct(concat(var.cognito_callback_urls, [local.oauth2_proxy_callback_url]))
-  logout_urls         = var.cognito_logout_urls
-  tags                = var.tags
+  deletion_protection                      = false
+  callback_urls                            = distinct(concat(var.cognito_callback_urls, [local.oauth2_proxy_callback_url]))
+  logout_urls                              = var.cognito_logout_urls
+  tags                                     = var.tags
 }
 
 locals {
@@ -445,9 +445,9 @@ module "efs" {
 
   mount_targets = local.efs_mount_targets
 
-  security_group_name = var.aws_efs_security_group_name
+  security_group_name        = var.aws_efs_security_group_name
   security_group_description = var.aws_efs_security_group_description
-  security_group_vpc_id = aws_vpc.myvpc.id
+  security_group_vpc_id      = aws_vpc.myvpc.id
   security_group_ingress_rules = {
     vpc_1 = {
       # relying on the defaults provided for EFS/NFS (2049/TCP + ingress)
@@ -468,7 +468,7 @@ module "heliocloud_portal" {
   identity_provider_client_id = module.heliocloud_auth.user_pool_client_id
   identity_provider_name      = "cognito-idp.${var.aws_region}.amazonaws.com/${module.heliocloud_auth.user_pool_id}"
 
-  identity_pool_name          = var.aws_cognito_identity_pool_name
+  identity_pool_name = var.aws_cognito_identity_pool_name
 }
 
 resource "aws_eks_pod_identity_association" "HelioCloud_Daskhub_PodIdentityAssociation" {

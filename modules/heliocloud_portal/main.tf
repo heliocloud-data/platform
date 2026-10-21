@@ -1,8 +1,15 @@
-
 resource "aws_vpc" "HelioCloud_Portal_VPC" {
   cidr_block = "10.0.0.0/16"
   tags = {
     Name = "HelioCloud/Portal/VPC"
+  }
+
+  lifecycle {
+    ignore_changes = [
+      tags["Application ID"],
+      tags["Name"],
+      tags["Product"],
+    ]
   }
 }
 
@@ -10,6 +17,14 @@ resource "aws_internet_gateway" "HelioCloud_Portal_InternetGateway" {
   vpc_id = aws_vpc.HelioCloud_Portal_VPC.id
   tags = {
     Name = "HelioCloud/Portal/InternetGateway"
+  }
+
+  lifecycle {
+    ignore_changes = [
+      tags["Application ID"],
+      tags["Name"],
+      tags["Product"],
+    ]
   }
 }
 
@@ -39,6 +54,16 @@ resource "aws_subnet" "HelioCloud_Portal_Subnet_Public_01" {
   tags = {
     Name = "HelioCloud/Portal/SubnetPublic-${var.aws_az1}"
   }
+
+  lifecycle {
+    ignore_changes = [
+      tags["Application ID"],
+      tags["Name"],
+      tags["Product"],
+      tags["aws-cdk:subnet-name"],
+      tags["aws-cdk:subnet-type"],
+    ]
+  }
 }
 
 resource "aws_subnet" "HelioCloud_Portal_Subnet_Public_02" {
@@ -48,6 +73,16 @@ resource "aws_subnet" "HelioCloud_Portal_Subnet_Public_02" {
   map_public_ip_on_launch = true
   tags = {
     Name = "HelioCloud/Portal/SubnetPublic-${var.aws_az2}"
+  }
+
+  lifecycle {
+    ignore_changes = [
+      tags["Application ID"],
+      tags["Name"],
+      tags["Product"],
+      tags["aws-cdk:subnet-name"],
+      tags["aws-cdk:subnet-type"],
+    ]
   }
 }
 
@@ -142,7 +177,15 @@ resource "aws_security_group" "HelioCloud_Portal_UserSecurityGroup" {
   vpc_id      = aws_vpc.HelioCloud_Portal_VPC.id
 
   lifecycle {
-    ignore_changes = [ name, description ]
+    ignore_changes = [
+      name,
+      description,
+      tags["Application ID"],
+      tags["Name"],
+      tags["Product"],
+      tags["aws-cdk:subnet-name"],
+      tags["aws-cdk:subnet-type"],
+    ]
   }
 }
 
@@ -180,13 +223,17 @@ resource "aws_vpc_security_group_ingress_rule" "HelioCloud_Portal_UserSecurityGr
 
 resource "aws_cognito_identity_pool" "HelioCloud_Portal_IdentityPool" {
   identity_pool_name               = var.identity_pool_name
-  allow_unauthenticated_identities = true
+  allow_unauthenticated_identities = var.allow_unauthenticated_identities
   allow_classic_flow               = false
 
   cognito_identity_providers {
     client_id               = var.identity_provider_client_id
     provider_name           = var.identity_provider_name
     server_side_token_check = var.identity_provider_server_side_token_check
+  }
+
+  lifecycle {
+    ignore_changes = [tags["Application ID"], tags["Product"]]
   }
 }
 

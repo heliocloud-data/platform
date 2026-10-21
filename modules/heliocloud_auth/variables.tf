@@ -127,7 +127,7 @@ variable "email_configuration" {
 }
 
 variable "cognito_user_pool_client_generate_secret" {
-  type = bool
+  type    = bool
   default = true
 }
 

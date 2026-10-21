@@ -38,14 +38,14 @@ variable "aws_eks_az2" {
 variable "aws_eks_public_subnet_01_cidr_block" {
   type        = string
   description = "The cidr_block for public subnet 1 of the EKS cluster"
-  default = "192.168.64.0/19"
+  default     = "192.168.64.0/19"
   sensitive   = false
 }
 
 variable "aws_eks_public_subnet_02_cidr_block" {
   type        = string
   description = "The cidr_block for public subnet 2 of the EKS cluster"
-  default = "192.168.96.0/19"
+  default     = "192.168.96.0/19"
   sensitive   = false
 }
 
@@ -146,7 +146,7 @@ variable "oauth2_proxy_cookie_secret" {
 }
 
 variable "cognito_user_pool_client_generate_secret" {
-  type = bool
+  type    = bool
   default = true
 }
 

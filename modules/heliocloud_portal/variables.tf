@@ -27,6 +27,12 @@ variable "identity_provider_server_side_token_check" {
   default     = true
 }
 
+variable "allow_unauthenticated_identities" {
+  description = "Indicates if the deployment should allow unauthenticated identities"
+  type        = bool
+  default     = false
+}
+
 variable "identity_pool_name" {
   description = ""
   type        = string

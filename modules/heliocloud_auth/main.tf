@@ -99,7 +99,7 @@ resource "aws_cognito_user_pool_client" "client" {
   user_pool_id = aws_cognito_user_pool.user_pool.id
 
   # Generate client secret
-  generate_secret = true
+  generate_secret = var.cognito_user_pool_client_generate_secret
 
   # OAuth settings
   allowed_oauth_flows_user_pool_client = true

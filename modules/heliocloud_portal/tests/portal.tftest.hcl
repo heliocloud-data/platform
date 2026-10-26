@@ -59,7 +59,7 @@ run "plan_portal" {
 
   # --- Cognito Identity Pool ---
   assert {
-    condition     = aws_cognito_identity_pool.HelioCloud_Portal_IdentityPool.allow_unauthenticated_identities
+    condition     = aws_cognito_identity_pool.HelioCloud_Portal_IdentityPool.allow_unauthenticated_identities == false
     error_message = "Identity pool should allow unauthenticated identities."
   }
 

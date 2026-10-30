@@ -1,3 +1,4 @@
+import argparse
 import boto3
 import re
 
@@ -5,19 +6,26 @@ CLOUDFORMATION_API_SCAN_ENABLED = True
 VPC_API_SCAN_ENABLED = True
 EFS_API_SCAN_ENABLED = True
 
-# TODO  Add command-line argument
-region_name='us-west-1'
+
+parser = argparse.ArgumentParser(description="Utility script scanning heritage CDK HelioCloud deployments and importing them into OpenTofu/Terraform files")
+
+parser.add_argument("instance_name", type=str, help="The CDK instance")
+parser.add_argument("--region", type=str, default="us-east-1", help="The AWS region")
+parser.add_argument("--eks_cluster_name", type=str, default="eks-helio", help="The name of the EKS cluster")
+parser.add_argument("--dump_resources", action='store_true', help="Dumps the AWS resources, used for debugging")
+parser.add_argument("--debug", action='store_true', help="Enables debug output")
+
+args = parser.parse_args()
+
+region_name = args.region
+instance_name = args.instance_name
+eks_cluster_name = args.eks_cluster_name
+dump_resources = args.dump_resources
+debug = args.debug
+
 session = boto3.Session(
     region_name=region_name
 )
-
-# TODO  Add command-line argument
-instance_name="testing-develop"
-# TODO  Add command-line argument
-eks_cluster_name="eks-helio"
-
-dump_resources = False
-debug = False
 
 def cloudformation_namify(text):
   ret = text.replace("-", "")

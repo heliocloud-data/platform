@@ -10,6 +10,12 @@ variable "aws_az2" {
   type        = string
 }
 
+variable "qualifier" {
+  description = "Used to distinguish environment specific resources for resource names and tags"
+  type        = string
+  default     = "default"
+}
+
 variable "identity_provider_client_id" {
   description = ""
   type        = string

@@ -103,7 +103,7 @@ locals {
 }
 
 resource "aws_iam_role" "HelioCloud_Portal_UserRole" {
-  name        = "PortalEc2Role"
+  name        = "HelioCloud_${var.qualifier}_Portal_IdentityPool_Ec2UserRole"
   description = "Default Portal EC2 Role with S3 access"
   assume_role_policy = jsonencode({
     Version = "2012-10-17",
@@ -116,7 +116,7 @@ resource "aws_iam_role" "HelioCloud_Portal_UserRole" {
 }
 
 resource "aws_iam_policy" "HelioCloud_Portal_UserS3Policy" {
-  name   = "HelioCloud_Portal_UserS3Policy"
+  name   = "HelioCloud_${var.qualifier}_Portal_UserS3Policy"
   policy = local.iam_policy_document_json_UserS3Policy
 }
 
@@ -167,7 +167,7 @@ resource "aws_iam_role_policy_attachment" "HelioCloud_Portal_UserS3Policy_Attach
 }
 
 resource "aws_iam_instance_profile" "HelioCloud_Portal_UserInstanceProfile" {
-  name = "PortalEc2InstanceProfile"
+  name = "HelioCloud_${var.qualifier}_Portal_UserInstanceProfile_UserEc2"
   role = aws_iam_role.HelioCloud_Portal_UserRole.name
 }
 
@@ -195,6 +195,7 @@ resource "aws_vpc_security_group_ingress_rule" "HelioCloud_Portal_UserSecurityGr
   from_port         = 22
   ip_protocol       = "tcp"
   to_port           = 22
+  description       = "from 0.0.0.0/0:22"
 }
 
 resource "aws_vpc_security_group_ingress_rule" "HelioCloud_Portal_UserSecurityGroup_IngressRule_HTTPS" {
@@ -203,6 +204,7 @@ resource "aws_vpc_security_group_ingress_rule" "HelioCloud_Portal_UserSecurityGr
   from_port         = 443
   ip_protocol       = "tcp"
   to_port           = 443
+  description       = "from 0.0.0.0/0:443"
 }
 
 resource "aws_vpc_security_group_ingress_rule" "HelioCloud_Portal_UserSecurityGroup_IngressRule_HTTP" {
@@ -211,6 +213,7 @@ resource "aws_vpc_security_group_ingress_rule" "HelioCloud_Portal_UserSecurityGr
   from_port         = 80
   ip_protocol       = "tcp"
   to_port           = 80
+  description       = "from 0.0.0.0/0:80"
 }
 
 resource "aws_vpc_security_group_ingress_rule" "HelioCloud_Portal_UserSecurityGroup_IngressRule_TCP_8000" {
@@ -219,6 +222,7 @@ resource "aws_vpc_security_group_ingress_rule" "HelioCloud_Portal_UserSecurityGr
   from_port         = 8000
   ip_protocol       = "tcp"
   to_port           = 8000
+  description       = "from 0.0.0.0/0:8000"
 }
 
 resource "aws_cognito_identity_pool" "HelioCloud_Portal_IdentityPool" {
@@ -238,7 +242,7 @@ resource "aws_cognito_identity_pool" "HelioCloud_Portal_IdentityPool" {
 }
 
 resource "aws_iam_role" "HelioCloud_Portal_IdentityPool_AuthenticatedRole" {
-  name        = "HelioCloud_Portal_IdentityPool_AuthenticatedRole"
+  name        = "HelioCloud_${var.qualifier}_Portal_IdentityPool_AuthenticatedRole"
   description = "Authenticated Role for HelioCloud Portal Identity Pool"
   assume_role_policy = jsonencode({
     Version = "2012-10-17",
@@ -259,7 +263,7 @@ resource "aws_iam_role" "HelioCloud_Portal_IdentityPool_AuthenticatedRole" {
 }
 
 resource "aws_iam_policy" "HelioCloud_Portal_IdentityPool_AuthenticatedPolicy" {
-  name   = "HelioCloud_Portal_IdentityPool_AuthenticatedPolicy"
+  name   = "HelioCloud_${var.qualifier}_Portal_IdentityPool_AuthenticatedPolicy"
   policy = local.iam_policy_document_json_IdentityPool_AuthenticatedPolicy
 }
 
@@ -269,7 +273,7 @@ resource "aws_iam_role_policy_attachment" "HelioCloud_Portal_AuthenticatedPolicy
 }
 
 resource "aws_iam_role" "HelioCloud_Portal_IdentityPool_UnauthenticatedRole" {
-  name        = "HelioCloud_Portal_IdentityPool_UnauthenticatedRole"
+  name        = "HelioCloud_${var.qualifier}_Portal_IdentityPool_UnauthenticatedRole"
   description = "Unauthenticated Role for HelioCloud Portal Identity Pool"
   assume_role_policy = jsonencode({
     Version = "2012-10-17",
@@ -290,7 +294,7 @@ resource "aws_iam_role" "HelioCloud_Portal_IdentityPool_UnauthenticatedRole" {
 }
 
 resource "aws_iam_policy" "HelioCloud_Portal_IdentityPool_UnauthenticatedPolicy" {
-  name   = "HelioCloud_Portal_IdentityPool_UnauthenticatedPolicy"
+  name   = "HelioCloud_${var.qualifier}_Portal_IdentityPool_UnauthenticatedPolicy"
   policy = local.iam_policy_document_json_IdentityPool_UnauthenticatedPolicy
 }
 

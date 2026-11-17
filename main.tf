@@ -91,9 +91,15 @@ resource "aws_vpc" "myvpc" {
 
 resource "aws_internet_gateway" "gw" {
   vpc_id = aws_vpc.myvpc.id
+  
   tags = {
     Name = "${var.cluster_name}/InternetGateway"
   }
+
+  depends_on = [
+    aws_vpc.myvpc
+  ]
+
 }
 
 resource "aws_route_table" "public" {
@@ -311,6 +317,10 @@ resource "aws_eks_node_group" "mng_daskhub_service" {
     aws_iam_role_policy_attachment.nodegroup_AmazonRoute53AutoNamingRegistrantAccess,
     aws_iam_role_policy_attachment.nodegroup_CloudWatchAgentServerPolicy
   ]
+
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 module "heliocloud_eks_node_group_jupyterhub_user_compute" {
@@ -366,6 +376,10 @@ module "heliocloud_eks_addon_kube_proxy" {
 
   cluster_name       = aws_eks_cluster.private.name
   kubernetes_version = var.kubernetes_version
+
+  depends_on = [
+    aws_eks_node_group.mng_daskhub_service
+  ]
 }
 
 module "heliocloud_eks_addon_pod_identity" {
@@ -373,6 +387,10 @@ module "heliocloud_eks_addon_pod_identity" {
 
   cluster_name       = aws_eks_cluster.private.name
   kubernetes_version = var.kubernetes_version
+
+  depends_on = [
+    aws_eks_node_group.mng_daskhub_service
+  ]
 }
 
 module "heliocloud_eks_addon_cluster_autoscaler" {
@@ -380,6 +398,10 @@ module "heliocloud_eks_addon_cluster_autoscaler" {
 
   cluster_name          = aws_eks_cluster.private.name
   worker_node_role_name = aws_iam_role.HelioCloud_EKS_NodeGroupRole.name
+  
+  depends_on = [
+    aws_eks_node_group.mng_daskhub_service
+  ]
 }
 
 module "heliocloud_eks_addon_external_dns" {
@@ -387,6 +409,10 @@ module "heliocloud_eks_addon_external_dns" {
 
   cluster_name          = aws_eks_cluster.private.name
   worker_node_role_name = aws_iam_role.HelioCloud_EKS_NodeGroupRole.name
+  
+  depends_on = [
+    aws_eks_node_group.mng_daskhub_service
+  ]
 }
 
 module "heliocloud_eks_addon_ebs" {
@@ -395,6 +421,10 @@ module "heliocloud_eks_addon_ebs" {
   cluster_name          = aws_eks_cluster.private.name
   kubernetes_version    = var.kubernetes_version
   worker_node_role_name = aws_iam_role.HelioCloud_EKS_NodeGroupRole.name
+
+  depends_on = [
+    aws_eks_node_group.mng_daskhub_service
+  ]
 }
 
 module "heliocloud_eks_addon_efs" {
@@ -404,6 +434,10 @@ module "heliocloud_eks_addon_efs" {
   kubernetes_version    = var.kubernetes_version
   qualifier             = "${aws_eks_cluster.private.region}_${aws_eks_cluster.private.name}"
   worker_node_role_name = aws_iam_role.HelioCloud_EKS_NodeGroupRole.name
+
+  depends_on = [
+    aws_eks_node_group.mng_daskhub_service
+  ]
 }
 
 module "heliocloud_auth" {
@@ -461,6 +495,7 @@ module "efs" {
 module "heliocloud_portal" {
   source = "./modules/heliocloud_portal"
 
+  qualifier    = var.qualifier
   cluster_name = var.cluster_name
 
   aws_az1                     = var.aws_eks_az1

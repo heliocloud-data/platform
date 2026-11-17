@@ -49,6 +49,11 @@ variable "aws_eks_public_subnet_02_cidr_block" {
   sensitive   = false
 }
 
+variable "qualifier" {
+  type        = string
+  sensitive   = false
+  default     = "default"
+}
 variable "cluster_name" {
   type        = string
   description = "The name of the cluster"

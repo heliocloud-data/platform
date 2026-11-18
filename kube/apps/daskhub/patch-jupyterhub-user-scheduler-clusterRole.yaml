@@ -195,6 +195,7 @@ rules:
   - apiGroups:
       - 'resource.k8s.io'
     verbs:
+      - get
       - list
       - watch
     resources:

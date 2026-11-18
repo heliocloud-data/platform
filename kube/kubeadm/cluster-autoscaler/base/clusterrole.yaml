@@ -53,3 +53,6 @@ rules:
     resourceNames: ["cluster-autoscaler"]
     resources: ["leases"]
     verbs: ["get", "update"]
+  - apiGroups: ["resource.k8s.io"]
+    resources: ["deviceclasses", "resourceslices"]
+    verbs: ["watch", "list", "get"]
